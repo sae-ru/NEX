@@ -1,0 +1,21 @@
+module references;
+struct Counter { count: i64; }
+struct Fault { value: cell<Counter>; }
+struct Node { next: list<cell<Node>>; }
+fn identity<F<_>, T>(value: F<T>) -> F<T> { return value; }
+fn answer() -> i64 !{state,throw} {
+  let value: cell<Counter> = cell_new(Counter(41));
+  let alias: cell<Counter> = identity<cell, Counter>(value);
+  let snapshot: Counter = cell_read(value);
+  let callback: fn() -> i64 !{state} = fn() -> i64 !{state} { return cell_read(value).count; };
+  cell_write(alias, Counter(42));
+  assert(snapshot.count == 41 && value == alias);
+  let cycle: cell<Node> = cell_new(Node([]));
+  cell_write(cycle, Node([cycle]));
+  cell_collect();
+  try { throw(Fault(value)); }
+  catch (fault: Fault) { assert(fault.value == value); }
+  return callback();
+}
+fn main() -> unit !{state,throw,io} { print(answer()); }
+test fn aliases_and_captures() -> unit !{state,throw} { assert(answer() == 42); }

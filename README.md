@@ -55,29 +55,28 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.264.0 / language 0.28 / task ABI 7**, in development.
-Language 0.29 is an explicit opt-in for partial type lambdas and higher-order kinds;
-0.28 remains the default and rejects those constructs. The compiler default is not
-a project default: `nex.json` selects 0.28 or 0.29 explicitly per project;
-new `nex init` projects select 0.29.
+Current source: **toolchain 0.265.0 / language 0.28 / task ABI 7**, in development.
+The compiler fallback remains0.28. `nex.json` selects0.28,0.29 or0.30 per project;
+new `nex init` projects select0.30. Language0.29 adds partial type lambdas and
+higher-order kinds;0.30 adds typed cells and the `state` effect. Retained projects
+preserve their selected version and require explicit migration to change it.
 
-Recent source blocks add persistent AVL [ordered map/set](docs/ordered-containers.md)
-and an explicit [Java int domain](docs/java-integers.md). The
-[reference foundation](docs/managed-references-prototype.md) includes modules,
-resource-owning cells and per-call [TypeScript value exports](docs/managed-reference-value-exports.md).
-Explicit [030 development APIs](docs/references030.md) add canonical reference
-graphs and guarded migration; ordinary030 CLI publication remains pending.
+Recent source adds persistent AVL [ordered map/set](docs/ordered-containers.md),
+an explicit [Java int domain](docs/java-integers.md) and resource-owning cells.
+[Ordinary030 projects](docs/references030.md) use canonical reference graphs,
+guarded migration and normal CLI authoring, static components, API projection
+and captured-task replay. See the [cell example](examples/references/README.md).
 Code-only [native reference libraries](docs/reference-library-abi.md) share one
 host/application context across related calls and live handles.
 Native [HTTP requests](docs/reference-http.md) own separate reference contexts.
 Ordinary values and retained snapshots now use
 [iterative deep cleanup](docs/value-retirement.md).
-Ordinary030 CLI/project references and migration, machine i32 and other
-[migration prerequisites](docs/migration-readiness.md) remain open.
+Reference task/parallel transfer, persistent UI state, live cell debugger views,
+machine i32 and other [migration prerequisites](docs/migration-readiness.md)
+remain open. Focused development acceptance is separate from full SDK/platform gates.
+The [0.265 receipt](docs/evidence/references030-cli-0.265.0-2026-11-16.json)
+records source/installation checks and their exact limits.
 The [implementation sequence](docs/implementation-1-6.md) tracks remaining work.
-[Container](docs/evidence/containers-0.247.0-2026-11-15.json) and
-[Java int](docs/evidence/java-int32-language-0.248.0-2026-11-15.json) qualification
-retain their exact scopes; matching full SDK/platform gates remain pending.
 
 The [0.246.1 macOS source regression](docs/evidence/full-ctest-0.246.1-current-2026-11-15.json)
 passed **351/351 groups** at `3b008a4e`. The immutable

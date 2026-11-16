@@ -198,7 +198,16 @@ llvm::json::Value Store::bundle(const std::string &rev){
   auto parsed=llvm::json::parse(text);if(!parsed)throw Error("E_REVISION",llvm::toString(parsed.takeError()));return std::move(*parsed);
 }
 std::string Store::headRevision(){return head(impl->db);}
-std::string Store::identityNamespace(){return graphIdentityNamespace(impl->db);}
+std::string Store::identityNamespace(bool allowLegacy){
+  if(allowLegacy){
+    Statement value(impl->db,"SELECT value FROM metadata WHERE key='identity_namespace'");
+    if(!value.row()){
+      Statement extension(impl->db,"SELECT value FROM metadata WHERE key='identity_schema'");
+      if(!extension.row())return {};
+    }
+  }
+  return graphIdentityNamespace(impl->db);
+}
 void Store::recordTask(const std::string &id,const std::string &task,const std::string &taskHash,const std::string &status,const std::string &report,const std::string &reportHash){
   Statement q(impl->db,"INSERT INTO task_runs(id,task,task_hash,status,report,report_hash) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET status=excluded.status,report_hash=excluded.report_hash");
   q.bind(1,id);q.bind(2,task);q.bind(3,taskHash);q.bind(4,status);q.bind(5,report);q.bind(6,reportHash);q.row();

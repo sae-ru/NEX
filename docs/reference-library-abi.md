@@ -1,17 +1,18 @@
 ---
 status: current
-applies_to: "toolchain 0.263.0; source0.30 development APIs"
+applies_to: "toolchain 0.265.0; language 0.30"
 owner: repository
 ---
 
 # Native reference libraries: one enclosing context
 
-The source030 C++ build API accepts sequential reference functions in code-only
-native archives. It records their verified physical signatures in
+Source030 ordinary project components and C++ build APIs accept sequential
+reference functions in code-only native archives. They record verified physical signatures in
 [`native_entry_abi`](native-entry-abi.md), with an optional
 `nex.native-reference-context/1` ownership contract. This is a compiler-private,
-matching-runtime development interface. Ordinary030 CLI publication and portable
-SDK/platform acceptance remain separate.
+matching-runtime development interface. Ordinary static library components use
+the consuming application's context. Portable SDK/platform acceptance remains
+separate.
 
 ## Runtime and context ownership
 

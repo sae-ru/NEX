@@ -8,6 +8,9 @@ const std::map<std::string,std::string> &cliGuides(){
     {"format","docs/formatting.md"},
     {"stdlib","docs/stdlib.md"},
     {"quick","llm/QUICK_REFERENCE.md"},
+    {"references","docs/references030.md"},
+    {"reference-http","docs/reference-http.md"},
+    {"reference-library","docs/reference-library-abi.md"},
     {"source-contract","docs/source-contracts.md"},
     {"source-contract-migration","docs/source-contract-migration.md"},
     {"typed-web-delivery","docs/typed-web-delivery.md"},
@@ -145,7 +148,7 @@ const std::vector<CliOption> &cliOptions(){
     add("--configuration","NAME","Select a project build configuration.");
     add("--profile","NAME","Native optimization/debug profile.");
     add("--target","TARGET","Native target/triple or a supported adapter target.");
-    add("--language-version","VERSION","Explicit source-language target for migration.");
+    add("--language-version","VERSION","Explicit source-language selection for init or migration.");
     add("--toolchain","FILE","Explicit native toolchain configuration.");
     add("--toolchains","FILE","Task replay toolchain catalogue.");
     add("--entry","NAME","Select an executable/emitted entry function.");
@@ -311,6 +314,7 @@ const std::vector<CliCommand> &cliCommands(){
       if(c.name=="debug")c.choices["--kind"]={"lldb","dap","nex-dap"};
       if(c.name=="project")c.choices["--kind"]={"plan","build","package","run","test","build-test","debug","profile"};
       if(c.name=="migrate")c.choices["--kind"]={"plan","apply"};
+      if(c.name=="init"||c.name=="migrate")c.choices["--language-version"]={"0.28","0.29","0.30"};
       if(c.name=="contract")c.choices["--kind"]={"runtime","intent"};
       if(c.name=="task")c.choices["--kind"]={"init","notices","check","run","history","replay"};
       if(c.name=="inspect"||c.name=="inspect-private-task")c.choices["--kind"]={"plan","demand","value"};

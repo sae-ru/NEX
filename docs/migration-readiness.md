@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; explicit030 API development; toolchain 0.264.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.265.0"
 owner: repository
 ---
 
@@ -90,9 +90,9 @@ version/history migration remain open; see [value exports](managed-reference-val
 
 | Required behavior | Existing foundation | Missing language/runtime result |
 |---|---|---|
-| Java `int`/`long`, casts, bits and shifts | Checked i64 and ordinary nominal values | Exact wrapping operations, narrow-width types/conversions and efficient native lowering |
+| Java `int`/`long`, casts, bits and shifts | Checked i64 and an explicit nominal Java32 domain with qualified wrapping/cast/bit/shift behavior | Java long, remaining narrow-width domains/conversions and efficient machine-width native lowering |
 | Java `float`/`double` | Finite f64; zero normalization | Binary32, IEEE special values, signed zero, casts and specified rounding in an explicit domain |
-| Java object references and identity | Immutable values, owned resources; versioned030 sequential cells, native libraries and HTTP request contexts | Ordinary030 CLI/project publication, nullability/class layouts, task integration and full SDK/platform qualification |
+| Java object references and identity | Immutable values, owned resources; ordinary030 sequential cells, static components and HTTP request contexts | Nullability/class layouts, reference task integration and full SDK/platform qualification |
 | Java classes and interfaces | Records, enums, generics, coherent static traits | Constructors/class initialization, virtual/interface dispatch, subtyping and runtime type tests; generic erasure/boxing rules |
 | Exceptions | Nominal typed throw/catch, filters, finally, task propagation | Exception subtyping/identity, causes/suppression/stack data and source-specific abrupt-completion rules |
 | Java strings/arrays | Scalar-indexed strict UTF-8 strings; immutable lists/bytes | UTF-16 code-unit representation including lone surrogates; mutable aliased arrays and bounds/error mapping |
@@ -131,6 +131,28 @@ independent request heaps and copied uncaught diagnostics. Compatible static
 archives, response/error cleanup and file-owner cycles have focused functional
 coverage. Task transfer, foreign-resource HTTP acceptance, class/nullability
 layouts and the remaining Java/Python semantics stay open.
+
+Toolchain0.265 exposes ordinary030 CLI projects, graph authoring/migration,
+static components, API source projection and source-deleted task replay.
+New projects explicitly select0.30; retained028/029 keep their semantics.
+Task acceptance protocol0.28 remains separate from each captured source version.
+This closes project selection, not the Java/Python object models or a new
+portable SDK release.
+
+## Python-specific preparation
+
+Python migration requires more than translating syntax. The current cell
+foundation can express typed identity and shared mutation; it does not provide
+Python's dynamic attribute lookup, special-method dispatch, mutable collection
+contracts or unbounded integers. Generators, context managers and async source
+semantics also need explicit lowering and error/exit rules.
+
+Keep static NEX code directly compiled where source behavior can be established.
+Define any dynamic compatibility layer separately, with explicit runtime cost
+and supported facilities. Library adapters need their own contracts; native
+FFI alone does not establish Python package compatibility. A complete Python
+project cannot yet be accepted for automated conversion, and equivalent speedup
+across static code, dynamic code and native extension workloads is unmeasured.
 
 ## Implementation order
 

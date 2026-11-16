@@ -124,9 +124,10 @@ JSON inspectCore(const CoreOptions &options){
   validateCoreOptions(options);
   auto path=fs::absolute(options.manifest).lexically_normal(),folder=path.parent_path();
   auto manifest=read(path,8*1048576);const auto &m=object(manifest);
-  if(m.getString("schema")!="nex.debug/1"||m.getString("compiler_build")!=NEX_BUILD_ID||m.getString("toolchain")!=NEX_VERSION||m.getString("language")!=languageVersion||m.getString("runtime_view")!="nex.runtime-view/3"||m.getString("expression_protocol")!="nex.debug-expression/3")throw Error("E_CORE_BUILD","core inspection requires its matching compiler/debug manifest");
+  const auto language=m.getString("language");
+  if(m.getString("schema")!="nex.debug/1"||m.getString("compiler_build")!=NEX_BUILD_ID||m.getString("toolchain")!=NEX_VERSION||!language||(*language!="0.28"&&*language!="0.29"&&*language!="0.30")||m.getString("runtime_view")!="nex.runtime-view/3"||m.getString("expression_protocol")!="nex.debug-expression/3")throw Error("E_CORE_BUILD","core inspection requires its matching compiler/debug manifest");
   if(!m.getBoolean("host_compatible").value_or(false))throw Error("E_CORE_BUILD","core inspection currently requires a matching-host build");
-  auto bundle=read(folder/"source-bundle.json",16*1048576);auto program=loadBundle(bundle,folder.string());
+  auto bundle=read(folder/"source-bundle.json",16*1048576);auto program=loadVersionedBundle(bundle,folder.string(),language->str());
   if(!options.recordedProgram.empty())requireCapsuleProgram(program);
   if(required(m,"source_hash")!=hash(json(bundle,false))||required(m,"revision")!=revision(program))throw Error("E_CORE_BUILD","core source bundle/revision differs from the debug manifest");
   auto formatter=resourceFile("debug/lldb_nex.py");
@@ -239,7 +240,7 @@ JSON inspectCore(const CoreOptions &options){
   while(!remaining.empty()){auto [line,rest]=remaining.split('\n');remaining=rest;if(line.consume_front(marker)){if(++found!=1)throw Error("E_CORE_READ","duplicate native core report");report=parseNativeManifest(line.str());}}
   if(found!=1||!report.getAsObject())throw Error("E_CORE_READ","native core reader returned no checked report: "+child.process.errors.substr(0,4096));
   auto &result=*report.getAsObject();if(!result.getBoolean("ok").value_or(false))throw Error("E_CORE_READ",result.getString("error").value_or("native core inspection failed").str());
-  result["toolchain"]=NEX_VERSION;result["language"]=languageVersion;result["compiler_build"]=NEX_BUILD_ID;result["revision"]=required(m,"revision");result["source_hash"]=required(m,"source_hash");result["build_key"]=required(m,"build_key");
+  result["toolchain"]=NEX_VERSION;result["language"]=programLanguage(program);result["compiler_build"]=NEX_BUILD_ID;result["revision"]=required(m,"revision");result["source_hash"]=required(m,"source_hash");result["build_key"]=required(m,"build_key");
   result["core"]=Object{{"path",core.string()},{"bytes",int64_t(input.initialSize)},{"sha256",before},{"unchanged",true}};result["build_completion_checked"]=true;
   auto executable=result.getObject("executable");if(!executable)throw Error("E_CORE_READ","native core report lacks executable identity");(*executable)["blake3"]=imageHash;(*executable)["bytes"]=int64_t(imageBytes);
   return report;
@@ -267,7 +268,8 @@ JSON exportCoreCapsule(const std::string &directory,const CoreOptions &options){
   if(error||!fs::is_directory(parent))throw Error("E_CORE_CAPSULE","core capsule destination requires an existing parent directory");
   destination=parent/destination.filename();
   auto original=fs::absolute(options.manifest).lexically_normal();
-  requireCapsuleProgram(loadBundle(read(original.parent_path()/"source-bundle.json",16*1048576),original.parent_path().string()));
+  auto manifest=read(original,8*1048576);
+  requireCapsuleProgram(loadVersionedBundle(read(original.parent_path()/"source-bundle.json",16*1048576),original.parent_path().string(),required(object(manifest),"language")));
   auto inspected=inspectCore(options);const auto &initial=object(inspected);const auto *core=initial.getObject("core");
   if(!core)throw Error("E_CORE_CAPSULE","core export lacks checked input identity");
   Temporary staging{capsuleStagingDirectory(parent)};

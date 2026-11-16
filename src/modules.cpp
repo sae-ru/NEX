@@ -279,6 +279,7 @@ SourceLanguage manifestSourceLanguage(const std::string &root){
   auto value=decoded(readFile(path.string()));auto object=value.getAsObject();
   if(!object)return currentSourceLanguage;
   auto language=object->getString("language");
+  if(language&&*language=="0.30")return SourceLanguage::References030;
   if(language&&*language=="0.29")return SourceLanguage::Contracts029;
   if(language&&*language=="0.28")return SourceLanguage::Contracts028;
   return currentSourceLanguage;
@@ -290,6 +291,7 @@ SourceLanguage buildSourceLanguage(const std::string &root){
   if(!object)return currentSourceLanguage;
   auto language=object->getString("language");
   if(language){
+    if(*language=="0.30")return SourceLanguage::References030;
     if(*language=="0.29")return SourceLanguage::Contracts029;
     if(*language=="0.28")return SourceLanguage::Contracts028;
     if(*language=="0.27")return SourceLanguage::TypedErrors027;
@@ -359,6 +361,10 @@ Program loadVersionedBundle(const llvm::json::Value &bundle,const std::string &r
   throw Error("E_LANGUAGE_VERSION","versioned source recheck supports explicit languages0.18,0.19,0.20,0.21,0.22,0.23,0.24,0.25,0.26,0.27,0.28,0.29 and0.30");
 }
 Program bindBundle(const llvm::json::Value &bundle,const std::string &root){return bundleProgram(bundle,root,false);}
+Program bindVersionedBundle(const llvm::json::Value &bundle,const std::string &root,SourceLanguage language){
+  if(language==SourceLanguage::ManagedReferencesPrototype)throw Error("E_LANGUAGE_VERSION","private references require their transient bundle loader");
+  return bundleProgram(bundle,root,false,language!=SourceLanguage::Language018,language);
+}
 llvm::json::Object sourceExceptionTaskContext(const Program &p){
   if(!sourceExceptionTasksPrototype(p))throw Error("E_LANGUAGE_VERSION","private task source context requires the explicit025 frontend");
   llvm::json::Array units;for(const auto &[key,unit]:p.units)units.push_back(llvm::json::Object{{"unit",key},{"file",unit.path},{"source",unit.source}});

@@ -3,7 +3,10 @@
 You write and maintain checked NEX programs. The installed compiler is the
 capability authority. A plan, design, old receipt or earlier milestone does not
 establish current support. Toolchain and source-language versions are different.
-The ordinary development default is0.28; installed or retained SDKs may advertise earlier versions. Discover the selected compiler before choosing syntax, metadata or migration. Compiled applications do not require an LLM.
+The compiler fallback is0.28. Current source advertises project_languages0.28/0.29/0.30;
+new `nex init` projects select0.30. Installed or retained SDKs may advertise
+earlier versions. Discover the selected compiler before choosing syntax,
+metadata or migration. Compiled applications do not require an LLM.
 
 Use typed source errors only when source_exceptions.typed_payloads is true.
 Language0.27 and later have throw(value), ordered catch(error:T) with optional guards,
@@ -65,11 +68,12 @@ For native library hosts, discover `native_entry_abi` and read the matching buil
 hidden source-error output. A context `native_symbol` alone is not a call
 prototype. Match the runtime cohort and ownership scope; task continuations
 require their executor. See the indexed native entry ABI guide.
-For explicit030 C++ development reference libraries, obey the optional
+For030 reference libraries, obey the optional
 `reference_context` contract: code-only images, one matching runtime and one
 enclosing scope spanning all related calls/handles. Retire that scope after a
 fatal trap and keep code images loaded until captures and cleanup retire.
-This does not publish030 CLI support or a stable public foreign ABI.
+Ordinary static project components use that consuming context; the foreign ABI
+remains compiler-private and matching-runtime.
 Explicit030 native HTTP builds own one sequential context per request. They
 return ordinary immutable responses and copy uncaught diagnostics before context
 close; reference-bearing task/parallel handlers remain unsupported.
@@ -80,6 +84,16 @@ State observable behavior, constraints and acceptance criteria. Inspect sources,
 tests and manifests before editing. `nex.json` selects language, entry and
 libraries; `nex.build.json` describes components/configurations/edges;
 `nex.lock.json` pins dependencies. Use `nex init PATH` for a new project.
+
+When `managed_references.public_source_enabled` and the selected project0.30
+are advertised, retrieve `nex guide --kind references --json`. `cell<T>` has
+identity and aliased mutation; `cell_read` returns an immutable snapshot and
+cell operations require `state`. Ordinary aggregates/captures keep snapshot
+semantics, while captured cells keep their reference identity. Reference-bearing
+task/parallel paths, Wasm references and persistent UI cell state remain pending.
+For an old graph, inspect `nex migrate --language-version 0.30 --kind plan` and
+apply with its exact expected revision and reviewed conflict candidate. Preserve
+the graph namespace, old source and rows; changing nex.json alone is not migration.
 
 Query `standard_library` before reimplementing text/list/math helpers. If
 advertised, read `nex guide --kind stdlib --json` for exact empty/Unicode, callback

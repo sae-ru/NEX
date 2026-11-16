@@ -87,7 +87,15 @@ class ProjectVersions(harness.ToolchainCase):
         self.assertEqual(self.cli('check',ok=False)['code'],'E_LANGUAGE_VERSION')
         self.assertEqual(self.rows(),before)
         self.assertEqual(dict(before['metadata'])['schema'],'3')
+        plan=self.cli('migrate','--kind','plan')
+        # The retained pre018 compatibility path does not claim a versioned
+        # origin recheck. It still fully checks the target before any write.
+        self.assertFalse(plan['origin_verified'])
+        self.assertTrue(plan['target_valid'])
+        self.assertEqual(plan['identity_namespace'],'')
+        self.assertEqual(self.rows(),before)
         migrated=self.cli('migrate');self.assertEqual(migrated['language'],harness.CURRENT_LANGUAGE)
+        self.assertEqual(len(migrated['identity_namespace']),32)
         self.assertFalse(migrated['materialized'])
         self.assertEqual({v['language'] for v in self.cli('history')['revisions']},{'0.14',harness.CURRENT_LANGUAGE})
         change,=self.cli('changes')['changes']
@@ -98,6 +106,23 @@ class ProjectVersions(harness.ToolchainCase):
         exported=self.root/'migrated-source';self.cli('export','--directory',exported)
         self.assertEqual(json.loads((exported/'nex.json').read_text())['language'],harness.CURRENT_LANGUAGE)
         self.assertEqual(self.cli('check',cwd=exported)['revision'],migrated['revision'])
+
+    def test_migration_keeps_modern_identity_extension_strict(self):
+        self.ready()
+        path=self.root/'.nex/graph.db'
+        with sqlite3.connect(path) as db:
+            namespace=db.execute("SELECT value FROM metadata WHERE key='identity_namespace'").fetchone()[0]
+        for replacement in (None,'invalid'):
+            with self.subTest(namespace=replacement):
+                with sqlite3.connect(path) as db:
+                    db.execute("DELETE FROM metadata WHERE key='identity_namespace'")
+                    if replacement is not None:
+                        db.execute("INSERT INTO metadata VALUES('identity_namespace',?)",(replacement,))
+                before=self.rows()
+                self.assertEqual(self.cli('migrate','--kind','plan',ok=False)['code'],'E_STORE')
+                self.assertEqual(self.rows(),before)
+                with sqlite3.connect(path) as db:
+                    db.execute("INSERT OR REPLACE INTO metadata VALUES('identity_namespace',?)",(namespace,))
 
     def library(self):
         self.source('module application;import "numbers/value.nex" as n;fn main()->unit!{io}{print(n::value());}')

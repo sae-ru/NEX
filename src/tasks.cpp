@@ -95,6 +95,7 @@ Object toolchainValues(const Prepared &p){Object result;for(const auto &[id,s]:p
 std::set<std::string> reach(const Program &p,const std::set<std::string> &roots){std::set<std::string> found;std::function<void(const std::string&)> visit=[&](const auto &name){if(found.insert(name).second){const auto &f=p.function(name);if(!f.templateName.empty())visit(f.templateName);for(const auto &d:f.dependencies)visit(d);}};for(const auto &r:roots)visit(r);return found;}
 SourceLanguage captureLanguage(const JSON &capture){
   auto language=object(capture).getString("language");
+  if(language=="0.30")return SourceLanguage::References030;
   if(language=="0.28")return SourceLanguage::Contracts028;
   if(language=="0.29")return SourceLanguage::Contracts029;
   if(language=="0.27")return SourceLanguage::TypedErrors027;
@@ -135,7 +136,7 @@ void validateShape(const JSON &task){
     if(kind=="build"||kind=="run"){auto profile=optional(c,"profile","debug");if(profile!="debug"&&profile!="release"&&profile!="profile")invalid("unknown build profile");if(kind=="build"){auto mode=optional(c,"mode","application");if(mode!="application"&&mode!="library"&&mode!="module")invalid("unknown build mode");}if(c.get("entry"))text(c,"entry");}
     if(kind=="run"){auto e=c.getObject("expect");if(!e)invalid("run requires expect");fields(*e,{"stdout","exit_code","runtime_code"});text(*e,"stdout",true,true);number(*e,"exit_code",999,0,255);if(!e->get("exit_code"))invalid("run requires exit_code");if(e->get("runtime_code"))text(*e,"runtime_code");}
     if(kind=="verify"){pathName(text(c,"contracts"));digest(c,"intent_hash");number(c,"solver_timeout_ms",2000,1,60000);number(c,"resource_limit",1000000,1,100000000);}
-    if(kind=="effects"){strings(c,"symbols");for(const auto &s:strings(c,"allowed_effects",0))if(s!="io"&&s!="db"&&s!="fs"&&s!="ffi"&&s!="task"&&s!="throw")invalid("unknown effect");if(c.get("allowed_realms"))for(const auto &s:strings(c,"allowed_realms"))if(s!="shared"&&s!="client"&&s!="server")invalid("unknown realm");}
+    if(kind=="effects"){strings(c,"symbols");for(const auto &s:strings(c,"allowed_effects",0))if(s!="io"&&s!="db"&&s!="fs"&&s!="ffi"&&s!="task"&&s!="throw"&&s!="state")invalid("unknown effect");if(c.get("allowed_realms"))for(const auto &s:strings(c,"allowed_realms"))if(s!="shared"&&s!="client"&&s!="server")invalid("unknown realm");}
     if(kind=="profile"){text(c,"entry");text(c,"scenario");auto b=c.getObject("budget");if(!b||b->empty())invalid("profile requires nonempty budget");fields(*b,{"max_duration_ns","max_peak_handles","max_peak_objects","max_calls","max_p95_latency_ns","max_p99_latency_ns","min_requests_per_second"});for(const auto &[k,v]:*b){if(k=="max_calls"){const auto &calls=object(v);if(calls.empty()||calls.size()>64)invalid("invalid call budget");for(const auto &[name,count]:calls){if(name.str().empty())invalid("empty call symbol");decimal(count);}}else decimal(v);}if(c.get("hardware")){const auto &h=object(*c.get("hardware"));fields(h,{"cpu","target"});text(h,"cpu");text(h,"target");}bool performance=b->get("max_duration_ns");for(auto key:{"max_p95_latency_ns","max_p99_latency_ns","min_requests_per_second"})if(b->get(key)){if(!c.get("workload"))invalid("request budgets require a server workload");performance=true;}if(performance&&!c.get("hardware"))invalid("timing/rate budget requires explicit hardware cpu/target");}
   }
   std::map<std::pair<std::string,std::string>,bool> variants;
@@ -185,16 +186,30 @@ Prepared prepare(const JSON &task,const TaskOptions &options,const fs::path &fro
       if(archived->revisionLanguage(selected)!=programLanguage(projectSourceLanguage(options.root)))throw Error("E_LANGUAGE_VERSION","task candidate requires an explicit language migration");
     }
   }
+  std::map<std::string,std::string> frozenLanguages;
+  if(!frozen.empty()&&fs::is_regular_file(frozen/"inputs/program-languages.json")){
+    auto saved=readJSON(frozen/"inputs/program-languages.json",16384);const auto &languages=object(saved);
+    fields(languages,{"schema","programs"});if(text(languages,"schema")!="nex.task-program-languages/1")invalid("unsupported program language index");
+    auto entries=languages.getObject("programs");if(!entries||entries->size()!=array(t,"programs").size())invalid("program language index differs from task programs");
+    for(const auto &[id,value]:*entries){auto version=value.getAsString();if(!version)invalid("program language must be a version string");frozenLanguages[id.str()]=version->str();}
+  }
   Store store(fs::path(options.root)/".nex");std::map<std::string,std::string> shared;
   for(const auto &value:array(t,"programs")){
     const auto &p=object(value);auto id=text(p,"id"),entry=text(p,"entry"),selected=options.revision;
     if(options.candidates.contains(id))selected=options.candidates.at(id);
     JSON bundle=nullptr;Program program;
-    if(!frozen.empty()){bundle=readJSON(frozen/("inputs/programs/"+id+".json"),16*1048576);program=loadBundle(bundle,options.root);}
+    if(!frozen.empty()){
+      bundle=readJSON(frozen/("inputs/programs/"+id+".json"),16*1048576);
+      if(!frozenLanguages.empty()&&!frozenLanguages.contains(id))invalid("program language index lacks task program: "+id);
+      // Earlier matching-compiler receipts used the028 task/source default.
+      const auto language=frozenLanguages.empty()?std::string(languageVersion):frozenLanguages.at(id);
+      program=loadVersionedBundle(bundle,options.root,language);
+    }
     else if(!selected.empty()){
       auto chosen=selected=="HEAD"?store.headRevision():selected;
-      if(store.revisionLanguage(chosen)!=languageVersion)throw Error("E_LANGUAGE_VERSION","task candidate requires an explicit language migration");
-      bundle=store.bundle(chosen);program=loadBundle(bundle,options.root);if(revision(program)!=chosen)throw Error("E_REVISION","candidate snapshot does not match its revision");
+      auto language=store.revisionLanguage(chosen);
+      if(language!=programLanguage(projectSourceLanguage(options.root)))throw Error("E_LANGUAGE_VERSION","task candidate requires an explicit language migration");
+      bundle=store.bundle(chosen);program=loadVersionedBundle(bundle,options.root,language);if(revision(program)!=chosen)throw Error("E_REVISION","candidate snapshot does not match its revision");
     }
     else {program=loadProgram(inside(options.root,entry).string(),options.root);bundle=sourceBundle(program);}
     if(program.entryUnit!=entry)invalid("candidate entry differs from task program: "+id);
@@ -382,6 +397,8 @@ Object fileIndex(const fs::path &root,size_t maximumFiles=8192,const fs::path &l
 }
 void saveInputs(const Prepared &p,const fs::path &directory,const TaskOptions &options){
   writeFile((directory/"inputs/task.json").string(),json(p.task)+"\n");
+  Object languages;for(const auto &[id,candidate]:p.programs)languages[id]=programLanguage(candidate.program);
+  writeFile((directory/"inputs/program-languages.json").string(),json(Object{{"schema","nex.task-program-languages/1"},{"programs",std::move(languages)}})+"\n");
   for(const auto &[id,candidate]:p.programs)writeFile((directory/("inputs/programs/"+id+".json")).string(),json(candidate.bundle)+"\n");
   for(const auto &[id,workload]:p.workloads)writeFile((directory/"inputs/workloads"/id/"workload.json").string(),workload.source);
   for(const auto &[id,capture]:p.projects)writeFile((directory/"inputs/projects"/(id+".json")).string(),json(capture)+"\n");
@@ -798,8 +815,8 @@ struct Runner {
     Store store(fs::path(options.root)/".nex");auto inputs=readFile((directory/"inputs/manifest.json").string());report=Object{{"schema","nex.task-receipt/1"},{"run_id","run-"+nonce()},{"task",p.id},{"task_hash",p.taskHash},{"language",languageVersion},{"toolchain",NEX_VERSION},{"compiler_build",NEX_BUILD_ID},{"input_hash",hash(inputs)},{"status","running"},{"ok",false},{"checks",Array{}},{"bindings",Object(p.linkage)},{"programs",*object(summary(p)).get("programs")},{"replay_of",replayOf},{"toolchains",toolchainValues(p)},{"foreign_catalogue",foreignValues(p)},{"workloads",workloadValues(p)},{"hardware",Object{{"cpu",llvm::sys::getHostCPUName().str()},{"target",llvm::sys::getDefaultTargetTriple()}}}};
     for(const auto &[id,candidate]:p.programs){
       if(auto project=p.projects.find(id);project!=p.projects.end()){projectRoots[id]=materializeProjectCapture(project->second,(directory/"workspaces"/id).string(),captureLanguage(project->second));verifyProject(id);}
-      else writeFile((workspace(id)/"nex.json").string(),json(Object{{"schema","nex.project/1"},{"language",languageVersion},{"entry",candidate.program.entryUnit}})+"\n");
-      Store local(workspace(id)/".nex");local.save(loadBundle(candidate.bundle,workspace(id).string()));
+      else writeFile((workspace(id)/"nex.json").string(),json(Object{{"schema","nex.project/1"},{"language",programLanguage(candidate.program)},{"entry",candidate.program.entryUnit}})+"\n");
+      Store local(workspace(id)/".nex");local.save(loadVersionedBundle(candidate.bundle,workspace(id).string(),programLanguage(candidate.program)));
     }
     checkpoint(store);
     for(const auto &v:array(object(p.task),"checks")){
@@ -840,7 +857,7 @@ JSON replayTask(const std::string &receipt,const TaskOptions &options){
   ReplayPreflight temporary;auto preparation=options;preparation.root=temporary.directory.string();auto p=prepare(task,preparation,old);
   auto directory=runDirectory(options);auto execution=options;execution.root=(directory/"state").string();fs::create_directory(execution.root);
   createGraphSnapshot(temporary.directory.string(),(fs::path(execution.root)/".nex").string());
-  writeFile((fs::path(execution.root)/"nex.json").string(),json(Object{{"schema","nex.project/1"},{"language",languageVersion},{"entry","main.nex"}})+"\n");
+  writeFile((fs::path(execution.root)/"nex.json").string(),json(Object{{"schema","nex.project/1"},{"language",programLanguage(p.programs.begin()->second.program)},{"entry","main.nex"}})+"\n");
   writeFile((fs::path(execution.root)/"task.json").string(),json(task)+"\n");
   for(const auto &[name,_]:object(*object(manifest).get("files"))){auto destination=directory/name.str();fs::create_directories(destination.parent_path());copyFile(inside(old,name.str()).string(),destination.string());}
   atomic(directory/"inputs/manifest.json",manifest);Runner runner{p,execution,directory,{}};return runner.run(path.string());

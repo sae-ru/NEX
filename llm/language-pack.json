@@ -1,6 +1,7 @@
 {
   "schema": "nex.language-pack/1",
   "language_version": "0.28",
+  "project_languages": ["0.28", "0.29", "0.30"],
   "language_pack_contract": {
     "authority": "selected compiled descriptor",
     "command": "python3 tools/llm/language_pack.py --compiler NEX --resources RESOURCES --check",
@@ -46,6 +47,7 @@
       "opencl_codegen",
       "patch_entities",
       "project_capture_layout",
+      "project_languages",
       "resource_executor",
       "resource_regions",
       "result_propagation",
@@ -4961,6 +4963,7 @@
     "syntax_checked": true,
     "type_checked": false,
     "graph_store_opened": false,
+    "project_language_selection": true,
     "imports_loaded": false,
     "language_migration": false,
     "project_recursion": false,
@@ -5211,7 +5214,7 @@
     "introduced_toolchain": "0.249.0",
     "limit_accounting": "registered cells, all adopted data nodes, and all Value payload slots; includes retired payloads until collection; not a byte-memory bound",
     "mutation": "thread-affine; foreign heap and thread operations rejected",
-    "native_source_enabled": false,
+    "native_source_enabled": true,
     "owned_capability_payloads": true,
     "parallel_transfer": false,
     "payloads": [
@@ -5372,19 +5375,19 @@
         "public_source_enabled": false
       }
     },
-    "public_flag_scope": "ordinary published source languages; private candidate has its own selection",
-    "public_source_enabled": false,
-    "reference_interpreter_source_enabled": false,
+    "public_flag_scope": "explicit030 projects; retained028/029 preserve their source versions",
+    "public_source_enabled": true,
+    "reference_interpreter_source_enabled": true,
     "schema": "nex.managed-references/1",
     "snapshots": "read retains an immutable value snapshot; write replaces only the cell payload",
     "source_language_changed": false,
-    "source_type_enabled": false,
-    "state_effect_enabled": false,
-    "status": "private_checked_reference_candidate",
+    "source_type_enabled": true,
+    "state_effect_enabled": true,
+    "status": "source030_cli_development",
     "task_transfer": false,
     "teardown": "detach mutable edges and release registry in reverse immutable-adoption order; no collector graph workspace allocated at close",
     "test": "tests/cells.cpp",
-    "typescript_source_enabled": false,
+    "typescript_source_enabled": true,
     "external_snapshot_teardown": {
       "introduced_toolchain": "0.254.0",
       "guide": "docs/value-retirement.md",
@@ -5420,8 +5423,8 @@
     "source030_development": {
       "introduced_toolchain": "0.262.0",
       "language": "0.30",
-      "status": "versioned_archive_backend_development",
-      "selection": "parseVersioned/References030; loadVersionedBundle/0.30",
+      "status": "ordinary_cli_graph_development",
+      "selection": "nex init; language0.30 in nex.json; explicit versioned C++ APIs",
       "guide": "docs/references030.md",
       "grammar": "docs/references030.ebnf",
       "test": "tests/references030.py",
@@ -5467,8 +5470,8 @@
         "runtime_unload": false,
         "stable_public_ABI": false
       },
-      "ordinary_CLI": false,
-      "new_project_default": false,
+      "ordinary_CLI": true,
+      "new_project_default": true,
       "SDK_delivery_accepted": false,
       "full_platform_acceptance": false
     }

@@ -54,7 +54,7 @@ Value openAPI(const Program &p){
     auto method=endpoint->method;std::transform(method.begin(),method.end(),method.begin(),[](unsigned char c){return std::tolower(c);});
     if(!paths.get(endpoint->path))paths[endpoint->path]=Object{};(*paths.getObject(endpoint->path))[method]=std::move(operation);
   }
-  return Object{{"openapi","3.1.1"},{"info",Object{{"title",p.module},{"version",revision(p)}}},{"paths",std::move(paths)},{"components",Object{{"schemas",std::move(schemas.records)},{"securitySchemes",Object{{"bearerAuth",Object{{"type","http"},{"scheme","bearer"}}}}}}},{"x-nex-wire","nex.wire/2"},{"x-nex-language",languageVersion}};
+  return Object{{"openapi","3.1.1"},{"info",Object{{"title",p.module},{"version",revision(p)}}},{"paths",std::move(paths)},{"components",Object{{"schemas",std::move(schemas.records)},{"securitySchemes",Object{{"bearerAuth",Object{{"type","http"},{"scheme","bearer"}}}}}}},{"x-nex-wire","nex.wire/2"},{"x-nex-language",programLanguage(p)}};
 }
 struct SourceTypes {
   const Program &p;std::string unit,owner;std::map<std::string,std::string> aliases;
@@ -175,12 +175,13 @@ std::string implementationDeclaration(const Program &p,const Implementation &val
   }
   return text+"}\n";
 }
-Value clientProjection(std::map<std::string,std::string> sources,const std::string &entry,const std::string &directory){
+Value clientProjection(std::map<std::string,std::string> sources,const std::string &entry,const std::string &directory,SourceLanguage language){
   // Check the complete captured program before selecting declarations. Neither
   // checking nor binding executes server/foreign functions. Bound syntax keeps
   // source references that concrete associated-type normalization would erase.
-  auto original=bundle(sources,entry);auto p=loadBundle(original,directory);
-  auto syntax=bindBundle(original,directory);ModelClosure models(p);
+  auto original=bundle(sources,entry);Program selected;selected.sourceLanguage=language;
+  auto p=loadVersionedBundle(original,directory,programLanguage(selected));
+  auto syntax=bindVersionedBundle(original,directory,language);ModelClosure models(p);
   std::set<std::string> functions,sourceFunctions;
   std::map<std::string,std::set<std::string>> methods,references;
   std::map<std::string,std::pair<std::string,std::string>> contracts;
@@ -292,7 +293,7 @@ Value clientProjection(std::map<std::string,std::string> sources,const std::stri
     }
     projected[key]="module "+source.module+";\n"+imports+body;
   };unit(entry);
-  auto result=bundle(projected,entry);loadBundle(result,directory);return result;
+  auto result=bundle(projected,entry);loadVersionedBundle(result,directory,programLanguage(selected));return result;
 }
 
 }
@@ -301,7 +302,7 @@ Value describeAPI(const Program &p){
   for(auto e:ordered(p)){const auto &handler=p.function(e->target);Array effects;for(const auto &effect:handler.effects)effects.push_back(effect);
     endpoints.push_back(Object{{"name",e->name},{"operation",e->localName},{"method",e->method},{"path",e->path},{"success_status",e->successStatus},{"handler",e->target},{"input",handler.params.size()==2?wireSchema(p,handler.params[1].type):Value(nullptr)},{"result",wireSchema(p,handler.result)},{"effects",std::move(effects)},{"request_function","request_"+e->localName},{"response_function","response_"+e->localName}});
   }
-  return Object{{"schema","nex.api/1"},{"language",languageVersion},{"revision",revision(p)},{"endpoints",std::move(endpoints)}};
+  return Object{{"schema","nex.api/1"},{"language",programLanguage(p)},{"revision",revision(p)},{"endpoints",std::move(endpoints)}};
 }
 Value generateAPI(const Program &p,const std::string &directory){
   if(p.endpoints.empty())throw Error("E_API_EMPTY","declare at least one endpoint before generation");
@@ -312,7 +313,7 @@ Value generateAPI(const Program &p,const std::string &directory){
     if(files.contains(key))return;
     if(!p.units.contains(key)&&!key.starts_with("@std/"))throw Error("E_API_LIBRARY","missing captured API library source "+key);
     auto text=p.units.contains(key)?p.units.at(key).source:readFile(resourceFile("lib/"+key.substr(5)));files[key]=text;
-    auto parsed=parse(text,key);for(const auto &dependency:parsed.imports){std::string target;if(dependency.path.starts_with("std/"))target="@std/"+dependency.path.substr(4);else if(dependency.path.starts_with("./")||dependency.path.starts_with("../")){target=(fs::path(key).parent_path()/dependency.path).lexically_normal().generic_string();auto base=key.starts_with("@std/")?"@std/":key.substr(0,key.find('/',5)+1);if(!target.starts_with(base))throw Error("E_API_LIBRARY","dependency escapes library root");}else target="@pkg/"+dependency.path;standard(files,target);}
+    auto parsed=parseVersioned(text,key,p.sourceLanguage);for(const auto &dependency:parsed.imports){std::string target;if(dependency.path.starts_with("std/"))target="@std/"+dependency.path.substr(4);else if(dependency.path.starts_with("./")||dependency.path.starts_with("../")){target=(fs::path(key).parent_path()/dependency.path).lexically_normal().generic_string();auto base=key.starts_with("@std/")?"@std/":key.substr(0,key.find('/',5)+1);if(!target.starts_with(base))throw Error("E_API_LIBRARY","dependency escapes library root");}else target="@pkg/"+dependency.path;standard(files,target);}
   };
   standard(server,"@std/http.nex");standard(server,"@std/api.nex");standard(client,"@std/net.nex");
   auto basePrefix="_nex_api_"+hash(p.module).substr(0,16);std::string prefix=basePrefix;for(unsigned i=0;;++i){bool collision=false;for(const auto &[key,unit]:p.units)if(unit.module==prefix||unit.module.starts_with(prefix+"::"))collision=true;if(!collision)break;prefix=basePrefix+"_"+std::to_string(i);}
@@ -354,7 +355,7 @@ Value generateAPI(const Program &p,const std::string &directory){
   // permits real trait conformance without fabricating client-side stubs.
   std::map<std::string,std::string> clientPaths;
   for(const auto &[key,unit]:p.units)clientPaths[key]=key.starts_with("@")?key:modelPath(unit.module);
-  for(const auto &[key,unit]:p.units){auto source=parse(unit.source,key);auto path=clientPaths.at(key);std::string text="module "+unit.module+";\n";
+  for(const auto &[key,unit]:p.units){auto source=parseVersioned(unit.source,key,p.sourceLanguage);auto path=clientPaths.at(key);std::string text="module "+unit.module+";\n";
     for(const auto &dep:unit.imports)text+="import "+quote(importPath(path,clientPaths.at(dep.target)))+" as "+dep.alias+";\n";
     for(const auto &value:source.structures)text+=source.definition(value)+"\n";
     for(const auto &value:source.traits)text+=source.definition(value)+"\n";
@@ -370,20 +371,20 @@ Value generateAPI(const Program &p,const std::string &directory){
     helpers+="pub fn response_"+e->localName+"(event: web::Event) -> "+result+" {\n  let envelope: result<net::Response> = net::response(event);\n  if !is_ok(envelope) { return err(error_code(envelope), error_message(envelope)); }\n  let response: net::Response = unwrap(envelope);\n  if !is_ok(response.body) { return err(error_code(response.body), error_message(response.body)); }\n  let decoded: result<"+result+"> = decode_json<"+result+">(unwrap(response.body));\n  if response.status == "+std::to_string(e->successStatus)+" {\n    if !is_ok(decoded) { return err(error_code(decoded), error_message(decoded)); }\n    if !is_ok(unwrap(decoded)) { return err(\"E_API_PROTOCOL\", \"Success status contains an error result\"); }\n    return unwrap(decoded);\n  }\n  if response.status >= 400 {\n    if is_ok(decoded) && !is_ok(unwrap(decoded)) { return unwrap(decoded); }\n    return err(\"HTTP_\" + str(response.status), \"Request rejected\");\n  }\n  return err(\"E_API_PROTOCOL\", \"Unexpected endpoint status\");\n}\n";
   }
   client["api.nex"]="module "+prefix+"::client_sdk;\nimport \"std/net.nex\" as net;\nimport \"std/web.nex\" as web;\n"+clientTypes.imports()+"import "+quote(importPath("api.nex",clientPaths.at(p.entryUnit)))+" as _original_sources;\n"+helpers;
-  auto serverBundle=bundle(server,entry),clientBundle=clientProjection(std::move(client),"api.nex",output.string()+"/client");
+  auto serverBundle=bundle(server,entry),clientBundle=clientProjection(std::move(client),"api.nex",output.string()+"/client",p.sourceLanguage);
   // Both generated projects are checked before any final output is created.
-  auto checkedServer=loadBundle(serverBundle,output.string()+"/server"),checkedClient=loadBundle(clientBundle,output.string()+"/client");
+  auto checkedServer=loadVersionedBundle(serverBundle,output.string()+"/server",programLanguage(p)),checkedClient=loadVersionedBundle(clientBundle,output.string()+"/client",programLanguage(p));
   auto descriptor=describeAPI(p);auto docs=openAPI(p);
   fs::create_directories(output.parent_path());fs::path temporary;
   do{temporary=output;temporary+=".tmp."+std::to_string(std::random_device{}());}while(!fs::create_directory(temporary));
   try{
-    exportProject(serverBundle,(temporary/"server").string(),languageVersion);exportProject(clientBundle,(temporary/"client").string(),languageVersion);
+    exportProject(serverBundle,(temporary/"server").string(),programLanguage(p));exportProject(clientBundle,(temporary/"client").string(),programLanguage(p));
     writeFile((temporary/"server/nex.lock.json").string(),json(dependencyLock(checkedServer))+"\n");writeFile((temporary/"client/nex.lock.json").string(),json(dependencyLock(checkedClient))+"\n");
     writeFile((temporary/"api.json").string(),json(descriptor)+"\n");writeFile((temporary/"openapi.json").string(),json(docs)+"\n");
     writeFile((temporary/"README.md").string(),"# Generated NEX API\n\nServer: run `nex build --target server --profile release --json` in server/. Use runtime --auth/--database and optional --static/--cert/--key.\n\nClient: import client/api.nex and its extracted models from models/MODULE/PATH.nex. request_OPERATION returns a typed browser command; response_OPERATION validates the result. Use a unique request ID and ignore stale responses. Runtime credentials are not generated. The SDK contains model declarations and pure client helpers, without server implementations.\n\napi.json records the exact NEX wire contracts; openapi.json documents OpenAPI 3.1.1. Context is injected; fixed routes have no implicit query parameters. Successful bodies are tagged results; handler errors use 422 and roll back.\n\nRegenerate from reviewed NEX sources; do not edit generated files. Both projects contain pinned local dependency sources.\n");
     if(fs::exists(output)&&!fs::is_empty(output))throw Error("E_EXISTS","API destination changed during generation");
     fs::rename(temporary,output);
   }catch(...){fs::remove_all(temporary);throw;}
-  return Object{{"schema","nex.api-generation/1"},{"ok",true},{"language",languageVersion},{"revision",revision(p)},{"directory",output.string()},{"server_entry",(output/"server"/entry).string()},{"client_entry",(output/"client/api.nex").string()},{"contract",(output/"api.json").string()},{"openapi",(output/"openapi.json").string()}};
+  return Object{{"schema","nex.api-generation/1"},{"ok",true},{"language",programLanguage(p)},{"revision",revision(p)},{"directory",output.string()},{"server_entry",(output/"server"/entry).string()},{"client_entry",(output/"client/api.nex").string()},{"contract",(output/"api.json").string()},{"openapi",(output/"openapi.json").string()}};
 }
 }

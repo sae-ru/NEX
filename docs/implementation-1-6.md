@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; explicit030 API development; toolchain 0.264.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.265.0"
 owner: repository
 ---
 
@@ -26,6 +26,14 @@ retain their exact source/platform scopes and do not qualify later changes.
 The old implementation worktree has no commits absent from current main.
 
 ## Executable backlog
+
+Toolchain0.265 adds ordinary030 CLI selection, guarded migration preserving
+the namespace and old rows, static project components, API source projection,
+version-aware formatting/editor metadata and source-deleted task replay.
+New projects select0.30. The compiler fallback0.28 and retained028/029 project
+semantics are unchanged. Reference task transfer, persistent UI state, class/
+nullability and Python dynamic/numeric contracts remain open, together with full
+source/debugger/profile/platform/portable-SDK acceptance.
 
 The0.264 [native HTTP reference contexts](reference-http.md) bind sequential030
 handlers to independent request heaps, compatible static libraries and copied

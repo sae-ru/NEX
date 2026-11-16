@@ -13,9 +13,9 @@ struct Item {
   Role role=Role::Plain;
   unsigned newlines=0;
 };
-std::vector<Item> items(const std::string &source,const std::string &file){
+std::vector<Item> items(const std::string &source,const std::string &file,SourceLanguage language){
   auto tokens=sourceTokens(source,file);
-  auto hints=sourceFormatHints(source,file);
+  auto hints=sourceFormatHints(source,file,language);
   std::vector<Item> result;size_t cursor=0;unsigned newlines=0;
   auto trivia=[&](size_t end){
     while(cursor<end){
@@ -112,11 +112,11 @@ std::string render(const std::vector<Item> &input){
   return out.finish();
 }
 }
-std::string formatSource(const std::string &source,const std::string &file){
+std::string formatSource(const std::string &source,const std::string &file,SourceLanguage language){
   if(source.size()>4*1024*1024)throw Error("E_LIMIT","format source exceeds 4 MiB");
-  auto original=items(source,file);auto formatted=render(original);
+  auto original=items(source,file,language);auto formatted=render(original);
   if(formatted.size()>4*1024*1024)throw Error("E_LIMIT","formatted source exceeds 4 MiB");
-  auto checked=items(formatted,file);
+  auto checked=items(formatted,file,language);
   // Compare exact token spelling and ordered comments, after only the parser's
   // type-closing >= split. Never accept a lexical change introduced by spacing.
   if(original.size()!=checked.size())throw Error("E_INTERNAL","formatter changed source tokens");
@@ -149,6 +149,7 @@ llvm::json::Value sourceFormattingCapability(){
     {"comments_preserved",true},{"literal_spelling_preserved",true},{"parser_classified_tokens",true},
     {"idempotent",true},{"syntax_checked",true},{"type_checked",false},
     {"graph_store_opened",false},{"imports_loaded",false},{"language_migration",false},
+    {"project_language_selection",true},
     {"project_recursion",false},{"line_width_wrapping",false},
     {"exit_codes",llvm::json::Object{{"success",0},{"check_needs_formatting",1},{"invalid_input",1}}}};
 }

@@ -30,6 +30,8 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--schema-root', type=Path, default=REPO/'llm')
     parser.add_argument('--language', default='0.28')
+    parser.add_argument('--source-language', help='Explicit project source version; compiler default remains separately checked')
+    parser.add_argument('--source-file', type=Path, help='Optional single-unit source fixture after init')
     args = parser.parse_args()
     compiler = args.compiler.resolve(strict=True)
     schemas = args.schema_root.resolve(strict=True)
@@ -82,11 +84,15 @@ def main():
         registry = Registry().with_resources(resources)
         report['schema_documents_meta_valid'] = len(documents)
         project = output/'project'
-        command('init', ['init', project], output)
+        selected_language=args.source_language or args.language
+        command('init', ['init', project, '--language-version', selected_language], output)
         manifest = json.loads((project/'nex.json').read_bytes())
-        if manifest['language'] != args.language:
+        if manifest['language'] != selected_language:
             raise ValueError('initialized project did not select the actual language')
         entry = manifest['entry']
+        if args.source_file:
+            (project/entry).write_bytes(args.source_file.read_bytes())
+        report['source_language']=selected_language
         samples = {'project': manifest}
         for label, arguments in [
                 ('editor-analysis', ['analyze', entry]),
@@ -118,7 +124,7 @@ def main():
             else:
                 report['positive'].append(name)
             # These are invalid copies of actual artifacts, not replayed old SDKs.
-            for language in ['0.29', '0.99', True]:
+            for language in ['0.99', True]:
                 changed = copy.deepcopy(value)
                 changed['language'] = language
                 rejected = not validator.is_valid(changed)
@@ -157,7 +163,7 @@ def main():
             report['negative'].append({'artifact': 'metal-emission', 'mutation': label, 'rejected': rejected})
             if not rejected:
                 report['failures'].append({'artifact': 'metal-emission', 'invalid_mutation_accepted': label})
-        if len(report['positive']) != 8 or len(report['negative']) != 37 or report['failures']:
+        if len(report['positive']) != 8 or len(report['negative']) != 2*len(samples)+len(mutations)+2 or report['failures']:
             raise RuntimeError('current artifact/schema contract failed; inspect report.json')
         if sha(compiler) != report['compiler_sha256'] or any(sha(schemas/name) != digest for name, digest in source_inputs.items()):
             raise RuntimeError('compiler or schema inputs changed during validation')

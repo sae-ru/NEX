@@ -24,6 +24,7 @@ install(FILES tests/managed_heap_trace.cpp tests/managed_heap_typescript.py test
 install(FILES tests/managed_reference_typescript.cpp tests/managed_reference_typescript.py tests/managed_reference_cases.py tests/managed_reference_value_entries.py DESTINATION share/nex/tests)
 install(FILES tests/managed_reference_modules.cpp tests/managed_reference_module_cases.py DESTINATION share/nex/tests)
 install(FILES tests/references030.cpp tests/references030.py DESTINATION share/nex/tests)
+install(FILES tests/references030_cli.py DESTINATION share/nex/tests)
 install(FILES tests/reference_library.py tests/reference_library_host.cpp DESTINATION share/nex/tests)
 install(FILES tests/reference_http.py DESTINATION share/nex/tests)
 install(DIRECTORY tests/fixtures/reference-http DESTINATION share/nex/tests/fixtures)

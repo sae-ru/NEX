@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.264.0; source0.30 development APIs"
+applies_to: "toolchain 0.265.0; language 0.30"
 owner: repository
 ---
 
@@ -9,11 +9,27 @@ owner: repository
 Source0.30 now has a distinct checked semantic identity, canonical program
 format `nex.program/18`, ordinary `nex.sources/1` archives and an explicit
 history-preserving migration target. It composes the reference foundation with
-the0.29 parser, kinds, contracts, errors and task syntax. This is an explicit C++
-development API stage. The ordinary compiler default stays0.28, new projects
-select0.29 and ordinary CLI/project selection of0.30 remains pending.
+the0.29 parser, kinds, contracts, errors and task syntax. Toolchain0.265 makes
+this an ordinary project source version. `nex init` selects0.30; explicit0.28
+and0.29 projects retain their original semantics. The compiler's unconfigured
+fallback remains0.28, independently of the new-project choice.
 
 ## Select and recheck
+
+```sh
+nex init example
+cd example
+nex check
+nex eval
+nex run --profile release
+nex test
+nex test --target web
+```
+
+`nex.json` records `"language":"0.30"`. Graph context, edits, archives,
+formatting, dependency locks, component builds and API projections select the
+project or retained program's actual source version. For a checked cell example,
+see [examples/references](../examples/references/README.md).
 
 ```cpp
 auto program = loadVersionedBundle(bundle, root, "0.30");
@@ -55,8 +71,8 @@ TypeScript entries needing a reference heap use the [ordinary host-value boundar
 checked immutable arguments/results, one context per call, independent errors
 and synchronous print observations. Their `nex.typescript-map/3` map carries the
 actual030 semantic revision, source-bundle hash, operation sites and host entry
-schemas. `public_revision:true` means a valid archival semantic identity; the
-separate `ordinary_CLI:false` flag retains this stage's selection boundary.
+schemas. `public_revision:true` means a valid archival semantic identity;
+`ordinary_CLI:true` records ordinary project selection.
 The normal test-entry runner accepts this value contract and retains its
 rejection of the older private diagnostic envelope.
 
@@ -91,9 +107,31 @@ bundle. Renaming the conflicting old declaration is explicit. A rejected
 candidate/preflight preserves the store. Ordinary synchronization cannot perform
 the version transition. A new `nex.json` value alone cannot migrate its HEAD.
 
-Use fresh isolated stores for this API stage. The ordinary CLI is not yet a
-030 project driver; its version selectors and defaults remain unchanged.
-Retained SDKs and graph histories are independent of this new development stage.
+For an existing project, first inspect the read-only plan:
+
+```sh
+nex migrate --language-version 0.30 --kind plan --json
+nex migrate --language-version 0.30 --expected-revision OLD_REVISION --json
+```
+
+If the plan reports a builtin-name conflict, review its candidate sources and
+pass `--candidate candidate.json` when applying. The apply operation checks the
+origin revision and graph namespace again. After successful graph migration,
+update the project's language metadata to0.30 and materialize the migrated
+source with an explicit export to a fresh directory when needed. Changing only
+`nex.json` cannot migrate old HEAD; it produces `E_LANGUAGE_VERSION` instead.
+The no-flag migration target remains the compiler fallback; specify0.30 explicitly.
+Retained SDKs and old graph rows keep their own identities and capabilities.
+Genuine older graphs without the identity extension can be inspected read-only;
+apply creates that extension through the existing schema upgrade. Pre0.18
+compatibility retains its limited `origin_verified:false` result rather than
+claiming a modern versioned origin recheck; the target is still fully checked.
+
+Task acceptance documents retain their independent0.28 protocol version.
+New captures index each source program's version in
+`inputs/program-languages.json`; replay rechecks that version even after live
+source removal. Reference-free task programs inherit029 execution. Capturing a
+sequential cell program does not enable cell transfer into concurrent tasks.
 
 ## Remaining integration
 
@@ -103,8 +141,10 @@ history migration and a relocated normal installation. The matching source
 files, compiler identities, initial fixture failures and qualification bounds
 are retained; this is not a full SDK/platform release receipt.
 
-030 CLI/project publication still requires complete entry/component/task,
-debugger/profile and SDK/platform qualification. Persistent UI state needs a
+Ordinary030 CLI authoring, static components, task capture/replay and API source
+projection have focused development acceptance. Complete debugger/profile,
+full source regression and SDK/platform qualification remain separate gates.
+Live cell payload inspection is not qualified. Persistent UI state needs a
 longer-lived owned context; per-call exports do not implement it. Nullable
 object layouts, class/interface dispatch, mutable arrays, memory visibility,
 Java numerics/exception hierarchies and Python dynamic protocols/big integers

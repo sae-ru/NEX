@@ -483,9 +483,8 @@ public:
       if(p.sourceLanguage==SourceLanguage::References030){
         mapping["schema"]="nex.typescript-map/3";mapping["revision"]=revision(p);mapping["source_hash"]=hash(json(sourceBundle(p),false));
         mapping["public_revision"]=true;mapping["source_version_selected"]=true;
-        // Source0.30 is an explicit compiler API development version. Ordinary
-        // CLI/project promotion and UI/worker lifetime acceptance are separate.
-        mapping["ordinary_CLI"]=false;
+        mapping["public_source_enabled"]=true;
+        mapping["ordinary_CLI"]=true;
       }
       if(!p.units.empty()){
         llvm::json::Object units;

@@ -446,7 +446,8 @@
                     "fs",
                     "ffi",
                     "task",
-                    "throw"
+                    "throw",
+                    "state"
                   ]
                 },
                 "minItems": 0,

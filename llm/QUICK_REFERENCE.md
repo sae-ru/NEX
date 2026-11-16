@@ -6,6 +6,11 @@ and the selected compiler decide support. Retrieve it once, then request a
 feature guide only for a concrete uncertainty. For a rejection, use the code,
 message and byte location; `nex explain CODE --json` gives bounded builtin advice.
 
+New projects in toolchain0.265 select0.30. This sheet's baseline examples remain
+valid there; query `project_languages` and retrieve the `references` guide for
+cell/state syntax. Existing projects and the compiler fallback retain0.28/0.29
+as selected. Migrating a graph requires the explicit guarded migration command.
+
 ## Syntax to copy
 
 ```nex

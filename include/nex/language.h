@@ -14,7 +14,7 @@ namespace nexrt { struct TaskExecutionLimits;struct SourceErrorPayload;struct Va
 namespace nex {
 inline constexpr const char *languageVersion = "0.28";
 inline constexpr const char *taskCandidateLanguageVersion = "0.28";
-inline constexpr const char *developmentLanguageVersion = "0.29";
+inline constexpr const char *developmentLanguageVersion = "0.30";
 // Append semantic versions: retained ordinal values and archived interpretation
 // must never change when the public compiler default advances.
 enum class SourceLanguage { Language018, Tasks019, TaskFiles020, OwnedResources021, TaskForeign022, TaskWrites023, TaskStreams024, SourceExceptions025Prototype, SourceExceptions025, ExceptionHandlers026, TypedErrors027, Contracts028, Contracts029, ManagedReferencesPrototype, References030 };
@@ -298,6 +298,7 @@ Program loadVersionedBundle(const llvm::json::Value &bundle,const std::string &r
 // Binding-only source syntax for reference projection. Never pass it to a
 // backend: separately check both the original and projected source bundles.
 Program bindBundle(const llvm::json::Value &bundle,const std::string &root);
+Program bindVersionedBundle(const llvm::json::Value &bundle,const std::string &root,SourceLanguage language);
 llvm::json::Value sourceBundle(const Program &program);
 llvm::json::Value dependencyLock(const Program &program);
 void exportProject(const llvm::json::Value &bundle,const std::string &directory,const std::string &language);

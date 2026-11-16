@@ -13,7 +13,9 @@ public:
   explicit Store(const std::filesystem::path &directory,StoreOpenMode mode=StoreOpenMode::ReadWrite);
   ~Store();
   std::string save(const Program &program, const std::string &expected = "",bool makeHead=true,const ChangeInfo &change={},const std::string &expectedNamespace="");
-  std::string identityNamespace();
+  // Read-only legacy migration preflight may encounter a graph from before the
+  // identity extension. Only that absent extension may return an empty value.
+  std::string identityNamespace(bool allowLegacy=false);
   llvm::json::Value graph(const Program &program);
   llvm::json::Value declarations(const Program &program,const std::string &kind="",const std::string &symbol="",unsigned offset=0,unsigned limit=100);
   llvm::json::Value search(const Program &program,const GraphQueryOptions &options);

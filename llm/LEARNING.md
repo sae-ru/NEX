@@ -27,6 +27,12 @@ resolve syntax/semantic questions. [The workflow](WORKFLOW.md) explains guarded
 graph changes, export and recovery. `PLAN.md` contains intentions and historical
 notes; it is not a substitute for compiler discovery.
 
+Current development advertises project languages0.28/0.29/0.30; `nex init`
+selects0.30 and the unconfigured compiler fallback remains0.28. Read the
+[reference guide](../docs/references030.md) and [cell example](../examples/references/README.md)
+for explicit mutation/identity. Retained SDKs and existing project histories
+keep their original versions; migration is explicit.
+
 ## Examples with explicit labels
 
 [corpus.json](corpus.json) identifies positive projects, expected stdout and

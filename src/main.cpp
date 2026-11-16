@@ -156,11 +156,12 @@ Program load(const Options &o,const fs::path &root,Store &store,bool saved=false
 void migrate(const Options &o,const fs::path &root){
   const auto kind=o.get("--kind","apply");if(kind!="apply"&&kind!="plan")throw Error("E_OPTION","migration kind must be apply or plan");
   const auto requested=o.get("--language-version");SourceLanguage target=currentSourceLanguage;
-  if(!requested.empty()){if(requested=="0.28")target=SourceLanguage::Contracts028;else if(requested=="0.29")target=SourceLanguage::Contracts029;else throw Error("E_OPTION","migration language-version must be 0.28 or 0.29");}
+  if(!requested.empty()){if(requested=="0.28")target=SourceLanguage::Contracts028;else if(requested=="0.29")target=SourceLanguage::Contracts029;else if(requested=="0.30")target=SourceLanguage::References030;else throw Error("E_OPTION","migration language-version must be 0.28, 0.29 or 0.30");}
   const auto targetLanguage=programLanguage(target);
   std::unique_ptr<Store> archive;
   if(fs::exists(root/".nex/graph.db"))archive=std::make_unique<Store>(root/".nex",StoreOpenMode::ReadOnly);
   auto previous=archive?archive->headRevision():std::string{};
+  auto expectedNamespace=archive?archive->identityNamespace(true):std::string{};
   auto expected=o.get("--expected-revision",previous.empty()?"EMPTY":previous);
   if(expected.empty())throw Error("E_OPTION","migration requires a nonempty expected revision");
   if(previous!=(expected=="EMPTY"?"":expected))throw Error("E_CONFLICT","graph HEAD changed; read context and retry");
@@ -198,6 +199,7 @@ void migrate(const Options &o,const fs::path &root){
     llvm::json::Object response{{"schema","nex.migration-plan/1"},{"ok",true},{"graph_read_only",true},
       {"origin_revision",original},{"origin_language",originLanguage},{"origin_verified",verified},
       {"expected_revision",expected},{"target_language",targetLanguage},{"candidate_used",candidateUsed},
+      {"identity_namespace",expectedNamespace},
       {"candidate",llvm::json::Object{{"schema","nex.migration-candidate/1"},{"origin_revision",original},
         {"origin_language",originLanguage},{"origin_source_hash",originSourceHash},{"target_language",targetLanguage},{"sources",bundle}}}};
     try{auto checkedTarget=preflightMigrationTarget(bundle,root,target);response["target_valid"]=true;response["target_revision"]=revision(checkedTarget);}
@@ -206,10 +208,10 @@ void migrate(const Options &o,const fs::path &root){
   }
   auto program=preflightMigrationTarget(bundle,root,target);auto sourceHash=hash(json(bundle,false));
   archive.reset();
-  Store store(root/".nex");auto selected=store.save(program,expected,true,changeInfo(o,"migrate",sourceHash));
+  Store store(root/".nex");auto selected=store.save(program,expected,true,changeInfo(o,"migrate",sourceHash),expectedNamespace);
   print(llvm::json::Object{{"schema","nex.migration/1"},{"ok",true},{"declared_original_revision",original},
     {"origin_language",originLanguage},{"origin_verified",verified},{"origin_source_hash",originSourceHash},{"candidate_used",candidateUsed},{"previous_revision",previous},
-    {"revision",selected},{"language",programLanguage(program)},{"source_hash",sourceHash},
+    {"revision",selected},{"language",programLanguage(program)},{"source_hash",sourceHash},{"identity_namespace",store.identityNamespace()},
     {"changed",previous!=selected},{"materialized",false}});
 }
 int fixSource(const Options &o,const fs::path &root){
@@ -346,13 +348,14 @@ int run(const Options &o) {
         auto file=path.lexically_normal().string();
         auto original=readBoundedText(file,4*1024*1024,"format source","E_LIMIT",false);
         total+=original.size();if(total>64*1024*1024)throw Error("E_LIMIT","directory format exceeds64MiB of source");
-        auto formatted=wrapFormatted(formatSource(original,file),width);const bool changed=original!=formatted;anyChanged|=changed;
+        auto language=projectSourceLanguage(projectRoot(path.parent_path()).string());
+        auto formatted=wrapFormatted(formatSource(original,file,language),width);const bool changed=original!=formatted;anyChanged|=changed;
         if(o.has("--write")&&changed){replaceFormattedSource(file,original,formatted);++written;}
-        rows.push_back(llvm::json::Object{{"file",file},{"changed",changed},{"written",o.has("--write")&&changed},
+        rows.push_back(llvm::json::Object{{"file",file},{"language",programLanguage(language)},{"changed",changed},{"written",o.has("--write")&&changed},
           {"source_hash",hash(original)},{"formatted_hash",hash(formatted)}});
       }
       if(o.has("--json"))print(llvm::json::Object{{"schema","nex.format-directory/1"},{"ok",!o.has("--check")||!anyChanged},
-        {"directory",target.string()},{"language",languageVersion},{"style","nex/1"},
+        {"directory",target.string()},{"language",programLanguage(projectSourceLanguage(projectRoot(target).string()))},{"style","nex/1"},
         {"mode",o.has("--write")?"write":"check"},{"width",width},{"files",std::move(rows)},{"file_count",int64_t(files.size())},
         {"changed",anyChanged},{"written_files",int64_t(written)},
         {"compiler",llvm::json::Object{{"version",NEX_VERSION},{"build",NEX_BUILD_ID}}}});
@@ -363,12 +366,13 @@ int run(const Options &o) {
     if(!fs::is_regular_file(target))throw Error("E_OPTION","fmt requires a regular source file or directory");
     auto file=target.string();
     auto original=readBoundedText(file,4*1024*1024,"format source","E_LIMIT",false);
-    auto formatted=wrapFormatted(formatSource(original,file),width);const bool changed=original!=formatted;
+    auto language=projectSourceLanguage(projectRoot(target.parent_path()).string());
+    auto formatted=wrapFormatted(formatSource(original,file,language),width);const bool changed=original!=formatted;
     const bool writing=o.has("--write"),checking=o.has("--check");
     if(writing)replaceFormattedSource(file,original,formatted);
     if(o.has("--json")){
       llvm::json::Object result{{"schema","nex.format/1"},{"ok",!checking||!changed},
-        {"file",file},{"language",languageVersion},{"style","nex/1"},
+        {"file",file},{"language",programLanguage(language)},{"style","nex/1"},
         {"mode",writing?"write":checking?"check":"preview"},{"width",width},{"changed",changed},{"written",writing&&changed},
         {"source_hash",hash(original)},{"formatted_hash",hash(formatted)},
         {"compiler",llvm::json::Object{{"version",NEX_VERSION},{"build",NEX_BUILD_ID}}}};
@@ -704,7 +708,7 @@ int run(const Options &o) {
     fs::path root=fs::absolute(o.positional.empty()?".":o.positional[0]);
     if(fs::exists(root/"nex.json")||fs::exists(root/"src/main.nex"))throw Error("E_EXISTS","project already exists; refusing to overwrite");
     auto requested=o.get("--language-version");if(requested.empty())requested=developmentLanguageVersion;
-    if(requested!="0.28"&&requested!="0.29")throw Error("E_OPTION","init language-version must be 0.28 or 0.29");
+    if(requested!="0.28"&&requested!="0.29"&&requested!="0.30")throw Error("E_OPTION","init language-version must be 0.28, 0.29 or 0.30");
     writeFile((root/"nex.json").string(),json(llvm::json::Object{{"schema","nex.project/1"},{"language",requested},{"entry","src/main.nex"}})+"\n");
     writeFile((root/"nex.build.json").string(),json(llvm::json::Object{
       {"schema","nex.project-build/1"},{"default_configuration","debug"},
@@ -758,7 +762,7 @@ int run(const Options &o) {
     auto bundle=store.bundle(selected);auto directory=o.get("--directory");
     if(!directory.empty()){
       llvm::json::Value lock=nullptr;auto language=store.revisionLanguage(selected);
-      if(language=="0.28"||language=="0.29"){auto p=loadVersionedBundle(bundle,root.string(),language);if(revision(p)!=selected)throw Error("E_REVISION","stored source snapshot is corrupt");lock=dependencyLock(p);}
+      if(language=="0.28"||language=="0.29"||language=="0.30"){auto p=loadVersionedBundle(bundle,root.string(),language);if(revision(p)!=selected)throw Error("E_REVISION","stored source snapshot is corrupt");lock=dependencyLock(p);}
       exportProject(bundle,directory,language);
       if(!lock.getAsNull())writeFile((fs::path(directory)/"nex.lock.json").string(),json(lock)+"\n");
       print(llvm::json::Object{{"ok",true},{"directory",fs::absolute(directory).string()},{"revision",selected}});return 0;
@@ -926,7 +930,7 @@ int run(const Options &o) {
     auto output=o.get("--output",(root/"nex.lock.json").string());auto lock=dependencyLock(p);
     if(fs::is_regular_file(output)){
       auto old=parseJSON(readFile(output));auto previous=old.getAsObject();
-      if(previous&&previous->getString("schema")=="nex.lock/1"&&previous->getString("language")==languageVersion){
+      if(previous&&previous->getString("schema")=="nex.lock/1"&&previous->getString("language")==programLanguage(p)){
         auto entries=previous->getObject("dependencies");auto current=lock.getAsObject()->getObject("dependencies");
         if(entries)for(const auto &[key,value]:*entries)if(!current->get(key))(*current)[key]=value;
       }
@@ -1045,7 +1049,7 @@ int run(const Options &o) {
           {"generated_first_line",int64_t(function.firstLine)},{"generated_last_line",int64_t(function.lastLine)}});
       }
       auto shaderDigest=llvm::SHA256::hash(llvm::ArrayRef<uint8_t>(reinterpret_cast<const uint8_t*>(generated.source.data()),generated.source.size()));
-      llvm::json::Object response{{"schema",cudaSource?"nex.cuda-emission/1":openclSource?"nex.opencl-emission/1":"nex.metal-emission/1"},{"ok",true},{"kind",cudaSource?"cuda":openclSource?"opencl":"metal"},{"language",languageVersion},{"toolchain",NEX_VERSION},
+      llvm::json::Object response{{"schema",cudaSource?"nex.cuda-emission/1":openclSource?"nex.opencl-emission/1":"nex.metal-emission/1"},{"ok",true},{"kind",cudaSource?"cuda":openclSource?"opencl":"metal"},{"language",programLanguage(p)},{"toolchain",NEX_VERSION},
         {"compiler_build",NEX_BUILD_ID},{"descriptor_hash",hash(json(describe(),false))},{"revision",revision(p)},{"entry",generated.entry},
         {"kernel",cudaSource?"nex_generated_cuda_map":"nex_generated_map"},{"input_layout",generated.inputLayout},{"parameter_types",std::move(parameters)},{"result_type",generated.resultType},
         {"functions",std::move(functions)},{"function_map",std::move(mapping)},{"shader_sha256",llvm::toHex(shaderDigest,true)},

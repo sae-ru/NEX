@@ -1,13 +1,13 @@
 ---
 status: current
-applies_to: "toolchain 0.264.0; source0.30 development APIs"
+applies_to: "toolchain 0.265.0; language 0.30"
 owner: repository
 ---
 
 # Sequential reference objects in native HTTP requests
 
-Explicit030 C++ build APIs accept sequential `state` handlers in the existing
-native HTTP adapter. Select a checked030 program, set `BuildOptions.target` to
+Ordinary030 projects and C++ build APIs accept sequential `state` handlers in the
+existing native HTTP adapter. For a C++ host, select a checked030 program, set `BuildOptions.target` to
 `"server"` and select a server function with the ordinary signature:
 
 ```nex
@@ -21,8 +21,8 @@ server fn handle(req: http::Request) -> http::Response !{state} {
 
 The program imports `std/http.nex` through the normal checked module loader.
 Archived `nex.sources/1` inputs include that library's actual `@std/http.nex`
-source, as well as their application units. Ordinary030 CLI/project selection,
-portable SDK delivery and full platform acceptance remain pending. The existing
+source, as well as their application units. `nex.json` selects0.30 for ordinary
+CLI builds; portable SDK delivery and full platform acceptance remain pending. The existing
 028/029 server behavior and task ABI7 are unchanged.
 
 ## One request owns its reference graph

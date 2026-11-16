@@ -1,5 +1,13 @@
 # NEX language specification 0.28
 
+Toolchain0.265 adds ordinary project selection of [language0.30](references030.md),
+including the [reference grammar](references030.ebnf), `cell<T>` and `state`.
+`nex init` now records0.30; explicit0.28/0.29 and the unconfigured compiler
+fallback0.28 retain their semantics. This document specifies the baseline;
+the versioned0.29 and0.30 additions apply only to projects selecting them.
+Use explicit guarded migration to0.30 for an existing graph. Task acceptance
+protocol0.28, task ABI7 and public C ABI1 are independent and unchanged.
+
 Toolchain0.264 connects sequential030 references to [native HTTP request contexts](reference-http.md).
 It adds no source production or version transition; ordinary028/029 selection,
 task ABI7 and the public C ABI remain unchanged.

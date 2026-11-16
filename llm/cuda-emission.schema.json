@@ -42,7 +42,11 @@
       "const": "cuda"
     },
     "language": {
-      "const": "0.28"
+      "enum": [
+        "0.28",
+        "0.29",
+        "0.30"
+      ]
     },
     "toolchain": {
       "type": "string",

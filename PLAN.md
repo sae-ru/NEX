@@ -1,3 +1,28 @@
+# Ordinary source0.30 projects — development0.265.0
+
+New `nex init` projects now select0.30 explicitly. Ordinary check/eval/run/test,
+graph editing/history/export, formatting, editor metadata, dependency locks,
+static components and API projections use the selected source version. Retained
+028/029 projects and the unconfigured compiler fallback0.28 keep their semantics.
+Read the [source030 guide](docs/references030.md) and [cell example](examples/references/README.md).
+
+Task acceptance documents retain protocol0.28, while a hash-indexed source-version
+map restores each captured program for replay without live sources. Source effect
+checks can explicitly allow state. Guarded migration checks the existing namespace
+and expected HEAD; genuine pre-extension archives remain readable without writes
+before migration. The existing graph and old sources/identities are preserved.
+
+[Focused qualification](docs/evidence/references030-cli-0.265.0-2026-11-16.json)
+records the compiler/source/resource identities, ordinary source and relocated
+normal-installation workflows, exact backend/migration checks and initial failures.
+[Preceding0.264 hosted core](docs/evidence/core-ci-0.264.0-2026-11-16.json) passed
+macOS/Linux; matching hosted qualification follows this functional commit.
+
+Reference transfer across tasks/threads, persistent UI state, live cell debugger
+views, nullability/class dispatch, Java/Python numeric/object protocols and full
+source/platform/portable-SDK acceptance remain open. Public SDK0.246.1 stays
+immutable. Converters remain deferred; the complete original PLAN remains required.
+
 # Native HTTP reference contexts — development0.264.0
 
 Explicit030 C++ server builds now attach sequential reference handlers to one

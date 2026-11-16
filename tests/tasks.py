@@ -145,7 +145,12 @@ test fn examples() -> unit { assert(increment(2) == 3); }
         schema=json.loads((harness.REPO/'llm/task.schema.json').read_text())
         effect_shape=next(value for value in schema['properties']['checks']['items']['oneOf']
                           if value['properties']['kind'].get('const')=='effects')
-        self.assertEqual(set(effect_shape['properties']['allowed_effects']['items']['enum']),set(descriptor['effects']))
+        effects=set(descriptor['effects'])
+        # Task JSON is version-independent; its effect criteria also describe
+        # explicitly selected030 source, while the fallback remains028.
+        if '0.30' in descriptor.get('project_languages',[]) and descriptor['managed_references']['state_effect_enabled']:
+            effects.add('state')
+        self.assertEqual(set(effect_shape['properties']['allowed_effects']['items']['enum']),effects)
         self.source('module retained_head;fn main()->i64{return 71;}')
         head=self.cli('check')['revision'];database=self.root/'.nex/graph.db';original=harness.database_rows(database)
         task=self.scaffold(STRUCTURED_SOURCE);candidate=task['programs'][0]['baseline_revision']

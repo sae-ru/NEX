@@ -7,8 +7,8 @@ namespace nex {
 struct SourceFormatHints {
   std::set<size_t> genericOpens, genericCloses, prefixes, effectBraces;
 };
-SourceFormatHints sourceFormatHints(const std::string &source,const std::string &file);
-std::string formatSource(const std::string &source,const std::string &file);
+SourceFormatHints sourceFormatHints(const std::string &source,const std::string &file,SourceLanguage language=currentSourceLanguage);
+std::string formatSource(const std::string &source,const std::string &file,SourceLanguage language=currentSourceLanguage);
 void replaceFormattedSource(const std::string &file,const std::string &original,
                             const std::string &formatted);
 llvm::json::Value sourceFormattingCapability();

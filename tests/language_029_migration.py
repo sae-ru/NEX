@@ -65,7 +65,7 @@ fn main()->unit!{io}{let p:Pair<i64,str>=forward<Pair<i64,_>,str>(Pair<i64,str>(
             checked=run(root,'check','--json');self.assertTrue(checked['ok'])
             (root/'main.nex').write_text('module app;\nstruct Pair<A,B>{first:A;second:B;}\nfn forward<F<_>,T>(value:F<T>)->F<T>{return value;}\nfn main()->unit !{io}{let p:Pair<i64,str>=forward<Pair<i64,_>,str>(Pair<i64,str>(1,"x"));print(p.first);}\n')
             run(root,'check','--json')
-            bad=run(root,'migrate','--language-version','0.30','--kind','plan','--json',ok=False)
+            bad=run(root,'migrate','--language-version','0.31','--kind','plan','--json',ok=False)
             self.assertEqual(bad['code'],'E_OPTION')
 
 if __name__=='__main__':unittest.main()

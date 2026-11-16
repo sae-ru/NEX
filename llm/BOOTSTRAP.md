@@ -2,6 +2,9 @@
 
 Use the installed compiler as the capability authority. PLAN and proposed
 designs are not implemented features. Preserve the project's language version.
+Current development's `project_languages` lists0.28/0.29/0.30; new projects
+select0.30, separately from the unconfigured compiler fallback0.28. Discover
+`managed_references` and read its `references` guide before using cells/state.
 
 1. Run `nex describe --kind index --json` once. On an older SDK that rejects it,
    use `nex describe --json`. Request only relevant `nex describe --field PATH`

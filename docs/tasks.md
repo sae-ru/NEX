@@ -7,6 +7,16 @@ requirements, clauses and budgets. Source/SDK/platform receipts remain separate.
 
 # Tasks and acceptance evidence
 
+Task JSON's `language` remains0.28 as an independent acceptance protocol.
+An effects check may explicitly allow `state` for the selected030 source.
+It does not select a candidate program's source language. Toolchain0.265 captures
+the actual per-program0.28/0.29/0.30 language in the hash-indexed
+`inputs/program-languages.json` (`nex.task-program-languages/1`). Replay rebuilds
+the isolated workspace using those versions, including when live sources have
+been removed. Older captures without the index retain the legacy0.28 selection.
+Sequential030 cell programs can be checked and captured; this does not permit
+reference transfer into source task/parallel execution.
+
 Language0.19 structured source tasks can be checked, executed and replayed by
 an external `nex.task/1` acceptance contract. Its `effects` checks accept `task`
 alongside `io`, `db`, `fs` and `ffi`. These two uses of “task” have separate roles:

@@ -1,4 +1,5 @@
 #include "nex/editor.h"
+#include "nex/managed_references.h"
 #include <algorithm>
 #include <filesystem>
 #include <functional>
@@ -97,7 +98,7 @@ struct Index {
         if(selfParameters.contains(target))identifierOverrides[key(at)]=selfParameters.at(target);
       }
       if(name.kind=="builtin_type"||name.kind=="builtin_bound"||(name.kind=="type"&&name.name=="result"&&name.target.empty())){
-        auto constructor=name.name=="list"||name.name=="result";intrinsicIdentifiers[key(at)]={name.kind=="builtin_bound"?"builtin_bound":"builtin_type",name.kind=="builtin_bound"?"constraint "+name.name:constructor?"type constructor "+name.name+"<_>":"type "+name.name};
+        auto constructor=name.name=="list"||name.name=="result"||name.name=="task"||name.name=="channel"||(supportsManagedReferences(p)&&name.name=="cell");intrinsicIdentifiers[key(at)]={name.kind=="builtin_bound"?"builtin_bound":"builtin_type",name.kind=="builtin_bound"?"constraint "+name.name:constructor?"type constructor "+name.name+"<_>":"type "+name.name};
       }
     }
     std::map<Key,JSON> rows;size_t bytes=2; // Include array brackets and separators.
@@ -271,7 +272,7 @@ struct Index {
       }
       if(details&&e->kind==Expr::Boolean)intrinsicIdentifiers[{e->span.file,e->span.begin,e->span.end}]={"literal",shown(e->type)};
       reference(e,target,e->kind==Expr::Call?"call":"read");
-      if(details&&target.kind()==JSON::Null&&(e->kind==Expr::Call||e->kind==Expr::Name||e->kind==Expr::FunctionRef)&&builtinNames().contains(e->text))
+      if(details&&target.kind()==JSON::Null&&(e->kind==Expr::Call||e->kind==Expr::Name||e->kind==Expr::FunctionRef)&&(builtinNames().contains(e->text)||(supportsManagedReferences(p)&&managedReferenceBuiltins().contains(e->text))))
         if(auto at=referenceName(e->span,e->sourceRange))intrinsicIdentifiers[key(*at)]={"builtin_function","builtin "+e->text+"; result "+shown(e->type)};
       tick();expressions.push_back(Object{{"file",e->span.file},{"range",interval(e->sourceRange.begin,e->sourceRange.end)},
         {"type",typeName(e->type)},{"definition",std::move(target)}});
@@ -375,7 +376,7 @@ llvm::json::Value editorAnalysis(const std::string &entry,const std::string &roo
       sources[path.str()]=text->str();
     }
   }
-  validateProjectMetadata(root);
+  validateProjectMetadata(root,projectSourceLanguage(root));
   auto program=loadProgram(entry,root,true,sources,references||details,details);
   return Index(program,references,details).run();
 }

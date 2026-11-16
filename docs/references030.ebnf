@@ -1,6 +1,7 @@
 (* Explicit source-language0.30 development additions to grammar.ebnf/0.29.
    Selected by parseVersioned(...,References030) or loadVersionedBundle(...,"0.30").
-   Ordinary CLI/new-project selection is not enabled by this development stage.
+   Ordinary nex.json project selection is enabled by toolchain0.265; new init
+   projects select0.30. Retained028/029 versions preserve their own grammar.
    All0.29 productions, kinds, contracts, errors and task syntax remain present. *)
 reference_type = "cell", "<", type, ">" ;
 reference_constructor = "cell" ; (* Unary constructor in a type argument. *)

@@ -15,7 +15,7 @@ out=(a.output or Path(tempfile.mkdtemp(prefix='nex-references030-'))).resolve();
 probe=a.probe.resolve();compiler=a.compiler.resolve();migration=a.migration.resolve();native=a.native_host.resolve();clang=a.clang.absolute()
 node=os.environ.get('NEX_NODE','node');tsc=os.environ.get('NEX_TSC',str(root/'web/node_modules/typescript/bin/tsc'))
 def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
-report={'schema':'nex.references030-acceptance/1','ok':False,'language':'0.30','ordinary_CLI':False,'probe_sha256':sha(probe),
+report={'schema':'nex.references030-acceptance/1','ok':False,'language':'0.30','ordinary_CLI':True,'probe_sha256':sha(probe),
         'compiler_sha256':sha(compiler),'native_host_sha256':sha(native),'cases':[],'native':[],'migration':[],'gates':[]}
 def save():(out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
 def run(command,folder,name,allowed=(0,),cwd=None):
@@ -59,7 +59,7 @@ if not a.migration_only and not a.entry_only:
         generated=folder/'generated';run([probe,'typescript',path,generated],folder,'emit-typescript')
         mapping=json.loads((generated/'nex-map.json').read_text())
         assert mapping['schema']==('nex.typescript-map/3'if inspection['references']else'nex.typescript-map/2')and mapping['revision']==inspection['revision'],(case['name'],mapping)
-        if inspection['references']:assert mapping['public_revision']and mapping['ordinary_CLI']is False
+        if inspection['references']:assert mapping['public_revision']and mapping['ordinary_CLI']is True
         if 'absent'in case:assert case['absent']not in(generated/'program.ts').read_text()+(generated/'nex-map.json').read_text()
         source_errors=""if inspection['references']else"import * as errors from './nex-source-exception-runtime.ts';\n"
         normalize="if(!(error instanceof base.NexError))throw error;result={kind:'trap',output,code:error.code,message:error.message,line:error.site?.[1]??0,file:error.site?.[0]??''};"if inspection['references']else"if(error instanceof base.NexError)result={kind:'trap',output,code:error.code,message:error.message,line:error.site?.[1]??0,file:error.site?.[0]??''};else {const detail=errors.details(error);if(detail===undefined)throw error;result={kind:'trap',output,code:'E_SOURCE_EXCEPTION',message:detail.code+': '+detail.message,line:detail.site[1],file:detail.site[0]};}"
@@ -126,7 +126,7 @@ finally {console.log=previous;}console.log(JSON.stringify(result));
         assert code in r.stderr or json.loads(r.stdout).get('code')==code,(name,r.stdout,r.stderr)
         report['gates'].append({'name':name,'code':code,'passed':True})
 
-# Isolated actual graph store; CLI remains029. Changing metadata alone cannot
+# Isolated actual retained029 graph store. Changing metadata alone cannot
 # select030 or downgrade its new HEAD back into029.
 origin=(a.origin_compiler or compiler).resolve()
 migration_root=Path(tempfile.mkdtemp(prefix='migration-run-',dir=out))
