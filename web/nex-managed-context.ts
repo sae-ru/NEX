@@ -139,20 +139,20 @@ export function finalize(body: () => void, finalizer: () => void): void {
 export function print(text: string): void { context().output += text + '\n'; }
 export type Execution = Readonly<{
   kind: 'return' | 'trap'; value_json?: string; output: string;
-  code?: string; message?: string; line?: number;
+  code?: string; message?: string; line?: number; file?: string;
   beforeCollection: HeapStats; afterCollection: HeapStats; afterClose: HeapStats;
 }>;
 export function run(body: () => HeapValue | void, limits: HeapLimits, render: (value: HeapValue | void) => string): Execution {
   const previous = active, ctx: Context = {heap: new CellHeap(limits), roots: [], scopes: [], flight: new Map(), output: ''};
-  active = ctx; let value_json: string | undefined, failure: {code: string; message: string; line: number} | undefined;
+  active = ctx; let value_json: string | undefined, failure: {code: string; message: string; line: number; file: string} | undefined;
   try {
     try { scope(() => { const value = body(); value_json = render(value); }); }
     catch (error) {
       if (error instanceof SourceCompletion) {
         const owner = acquire(error);
-        try { failure = {code: 'E_SOURCE_EXCEPTION', message: error.detail.code + ': ' + error.detail.message, line: error.detail.site[1]}; }
+        try { failure = {code: 'E_SOURCE_EXCEPTION', message: error.detail.code + ': ' + error.detail.message, line: error.detail.site[1], file: error.detail.site[0]}; }
         finally { owner.close(); }
-      } else if (error instanceof NexError) failure = {code: error.code, message: error.message, line: error.site?.[1] ?? 0};
+      } else if (error instanceof NexError) failure = {code: error.code, message: error.message, line: error.site?.[1] ?? 0, file: error.site?.[0] ?? ''};
       else throw error;
     }
     if (ctx.flight.size) throw new NexError('E_INTERNAL', 'managed execution retained an abandoned completion');

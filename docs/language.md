@@ -8,7 +8,9 @@ source semantics. Future capabilities are in PLAN.md.
 
 Language028 uses checked program format `nex.program/16`. Retained027 keeps
 `nex.program/15` and its parser, revisions, local IDs and graph history. New
-physical projects declare `language: "0.28"` in nex.json. Updating that field
+`nex init` projects select `language: "0.29"` explicitly; retained 0.28 projects
+declare `language: "0.28"` in nex.json, and unconfigured projects keep the 0.28
+compiler default. Updating a project's version field
 alone does not migrate an existing graph; use the [explicit migration](source-contract-migration.md).
 Snapshots copy graph data without granting a language upgrade. Historical scoped
 milestones are preserved in [language-history.md](language-history.md).
@@ -401,6 +403,8 @@ The separately selected [private source candidate](managed-references-prototype.
 in toolchain0.256 composes cells with 0.29 generic kinds and static traits using
 declaration-local type binders. This is an unarchived C++ development entry;
 ordinary 0.28/0.29 projects retain the immutable source contract above.
+Toolchain0.257 adds [private source modules](managed-reference-modules.md) through
+the shared import binder; it changes no ordinary source version or graph format.
 
 ### Enums and exhaustive matching
 

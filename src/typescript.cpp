@@ -429,9 +429,17 @@ public:
       if(managedMode)write("export function "+alias+"(): nex.Execution { return nex.run(() => "+symbol(p.function(name).name)+"(), {maximumCells: "+std::to_string(managedLimits.maximumCells)+", maximumNodes: "+std::to_string(managedLimits.maximumNodes)+", maximumEdges: "+std::to_string(managedLimits.maximumEdges)+"}); }\n");
       else write("export { "+symbol(p.function(name).name)+" as "+alias+" };\n");
     }
-    if(managedMode)return {out.str(),llvm::json::Object{{"schema","nex.private-typescript-managed-map/1"},{"language",programLanguage(p)},
+    if(managedMode){auto mapping=llvm::json::Object{{"schema","nex.private-typescript-managed-map/1"},{"language",programLanguage(p)},
       {"public_source_enabled",false},{"public_revision",false},{"entry_text_hash",hash(p.source)},
-      {"functions",std::move(included)},{"statements",std::move(mappings)},{"execution","sequential-owned-heap"}},false,true,true};
+      {"functions",std::move(included)},{"statements",std::move(mappings)},{"execution","sequential-owned-heap"}};
+      if(!p.units.empty()){
+        llvm::json::Object units;
+        for(const auto &name:functions){const auto &unit=p.function(name).unit;if(p.units.contains(unit))units[unit]=hash(p.units.at(unit).source);}
+        for(const auto &name:structures){const auto &unit=p.structure(name).unit;if(p.units.contains(unit))units[unit]=hash(p.units.at(unit).source);}
+        mapping["reachable_source_units"]=std::move(units);
+      }
+      return {out.str(),std::move(mapping),false,true,true};
+    }
     if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)return {out.str(),llvm::json::Object{{"schema","nex.private-typescript-exception-map/1"},{"language",programLanguage(p)},{"source_support",false},{"public_revision",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"},{"task_source_exceptions",taskMode}},taskMode,true};
     if(privateSource)return {out.str(),llvm::json::Object{{"schema","nex.private-typescript-task-map/1"},{"language",programLanguage(p)},{"public_source_tasks",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)}},taskMode};
     if(isTypedSourceErrorLanguage(p.sourceLanguage))return {out.str(),llvm::json::Object{{"schema",isContractsLanguage(p.sourceLanguage)?"nex.development-typescript/028-1":"nex.development-typescript/027-3"},{"language",programLanguage(p)},{"public_revision",false},{"source027_delivery_accepted",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"},{"source_exceptions","nex.source-errors/2"},{"source_transfer_contracts",int64_t(sourceContracts.size())}},taskMode,true};

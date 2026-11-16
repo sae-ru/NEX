@@ -32,9 +32,12 @@ int main(int argc,char **argv){try{
       throw std::runtime_error("managed client included unreachable server code");
     std::cout<<"{\"ok\":true,\"rejected\":8,\"reachable_only\":true}\n";return 0;
   }
-  if(argc!=7||std::string(argv[1])!="emit")throw std::runtime_error("expected emit source directory cells nodes edges, or gates");
+  const bool bundled=argc>1&&std::string(argv[1])=="bundle-emit";
+  if(argc!=7||(!bundled&&std::string(argv[1])!="emit"))throw std::runtime_error("expected [bundle-]emit input directory cells nodes edges, or gates");
   auto source=std::filesystem::absolute(argv[2]),output=std::filesystem::absolute(argv[3]);
-  auto p=parseManagedReferencesPrototype(readFile(source.string()),source.string());check(p);
+  Program p;
+  if(bundled){auto value=llvm::json::parse(readFile(source.string()));if(!value)throw Error("E_BUNDLE","invalid private source bundle JSON");p=loadManagedReferencesPrototypeBundle(*value,source.parent_path().string());}
+  else{p=parseManagedReferencesPrototype(readFile(source.string()),source.string());check(p);}
   nexrt::CellHeapLimits limits{std::stoull(argv[4]),std::stoull(argv[5]),std::stoull(argv[6])};
   auto module=emitManagedReferencesPrototypeTypeScript(p,"main",limits);
   std::filesystem::create_directories(output);writeWebModule(module,output.string());

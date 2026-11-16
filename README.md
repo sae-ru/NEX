@@ -55,7 +55,7 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.256.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.257.0 / language 0.28 / task ABI 7**, in development.
 Language 0.29 is an explicit opt-in for partial type lambdas and higher-order kinds;
 0.28 remains the default and rejects those constructs. The compiler default is not
 a project default: `nex.json` selects 0.28 or 0.29 explicitly per project;
@@ -64,7 +64,8 @@ new `nex init` projects select 0.29.
 Recent source blocks add persistent AVL [ordered map/set](docs/ordered-containers.md)
 and an explicit [Java int domain](docs/java-integers.md). The
 [managed-reference candidate](docs/managed-references-prototype.md) has private
-checking/reference/native and [TypeScript execution](docs/managed-reference-typescript-prototype.md).
+checking/reference/native, [TypeScript](docs/managed-reference-typescript-prototype.md)
+and [source modules](docs/managed-reference-modules.md).
 Ordinary values and retained snapshots now use
 [iterative deep cleanup](docs/value-retirement.md).
 Public references/state effects, graph migration, machine i32 and other

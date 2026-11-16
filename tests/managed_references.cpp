@@ -249,6 +249,14 @@ fn main()->unit!{state,io}{let anchor:cell<i64>=cell_new(41);let same:cell<i64>=
     rejects("E_EFFECT",[&]{auto old=parseVersioned("module old;fn main()->unit!{state}{}","old.nex",language);check(old);});
     rejects("E_GENERIC_ARITY",[&]{auto old=parseVersioned("module old;fn f(x:cell<i64>)->unit{}fn main()->unit{}","old.nex",language);check(old);});
   }
+  {
+    auto modules=loadManagedReferencesPrototypeBundle(llvm::json::Object{
+      {"schema","nex.private-reference-sources/1"},{"entry","main.nex"},{"files",llvm::json::Object{
+        {"main.nex","module app;import \"./value.nex\" as value;fn main()->unit!{state,io}{let target:cell<i64>=value::make();value::change(target);cell_collect();print(cell_read(target));}"},
+        {"value.nex","module value;pub fn make()->cell<i64>!{state}{return cell_new(1);}pub fn change(target:cell<i64>)->unit!{state}{cell_write(target,42);}"}}}},".");
+    auto result=evaluateManagedReferencesPrototype(modules);
+    require(modules.units.size()==2&&result.evaluation.output=="42\n"&&result.afterCollection.nodes==0,"private module calls lost shared cell state or roots");++accepted;
+  }
   require(nexrt::liveObjects.load()==baseline,"private reference error or source packet leaked values");
   std::cout<<"{\"ok\":true,\"accepted_scenarios\":"<<accepted<<",\"rejected_scenarios\":"<<rejected<<",\"public_source_enabled\":false,\"live_value_delta\":"<<(nexrt::liveObjects.load()-baseline)<<"}\n";
   return 0;

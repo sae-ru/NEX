@@ -56,10 +56,14 @@ int main(int argc,char **argv){try{
     nex_runtime_finish();return status;
   }
   const auto mode=argc>1?std::string(argv[1]):std::string{};
-  if(!((mode=="reference"&&argc==6)||(mode=="emit"&&argc==10)))throw std::runtime_error("expected reference source cells nodes edges, or emit source out triple layout optimized cells nodes edges");
-  const bool emit=mode=="emit";const auto start=emit?7:3;
+  const bool bundled=mode=="bundle-reference"||mode=="bundle-emit";
+  const bool emit=mode=="emit"||mode=="bundle-emit";
+  if(!(((!emit&&(mode=="reference"||mode=="bundle-reference"))&&argc==6)||(emit&&argc==10)))throw std::runtime_error("expected [bundle-]reference input cells nodes edges, or [bundle-]emit input out triple layout optimized cells nodes edges");
+  const auto start=emit?7:3;
   nexrt::CellHeapLimits limits{std::stoull(argv[start]),std::stoull(argv[start+1]),std::stoull(argv[start+2])};
-  auto path=std::filesystem::absolute(argv[2]);auto p=parseManagedReferencesPrototype(readFile(path.string()),path.string());check(p);
+  auto path=std::filesystem::absolute(argv[2]);Program p;
+  if(bundled){auto value=llvm::json::parse(readFile(path.string()));if(!value)throw Error("E_BUNDLE","invalid private source bundle JSON");p=loadManagedReferencesPrototypeBundle(*value,path.parent_path().string());}
+  else{p=parseManagedReferencesPrototype(readFile(path.string()),path.string());check(p);}
   if(!emit){
     const auto baseline=nexrt::liveObjects.load();
     try{
@@ -67,7 +71,17 @@ int main(int argc,char **argv){try{
       auto stats=[](const nexrt::CellHeapStats &s){return llvm::json::Object{{"cells",int64_t(s.cells)},{"nodes",int64_t(s.nodes)},{"edges",int64_t(s.edges)},{"collections",int64_t(s.collections)}};};
       std::cout<<json(llvm::json::Object{{"kind","return"},{"value",std::move(result.evaluation.value)},{"output",result.evaluation.output},{"remaining_cells",int64_t(result.afterCollection.cells)},{"remaining_nodes",int64_t(result.afterCollection.nodes)},
         {"heap_before",stats(result.beforeCollection)},{"heap_after",stats(result.afterCollection)},{"live_delta",nexrt::liveObjects.load()-baseline}})<<'\n';
-    }catch(const Error &error){std::cout<<json(llvm::json::Object{{"kind","trap"},{"code",error.code},{"message",error.message},{"output",error.output},{"line",int64_t(error.span.line)},{"live_delta",nexrt::liveObjects.load()-baseline}})<<'\n';}
+    }catch(const Error &error){
+      llvm::json::Object result{{"kind","trap"},{"code",error.code},{"message",error.message},{"output",error.output},{"line",int64_t(error.span.line)},{"file",error.span.file},{"live_delta",nexrt::liveObjects.load()-baseline}};
+      if(bundled){
+        const Function *origin=nullptr;
+        for(const auto &function:p.functions)if(!function.traitSignature&&function.span.file==error.span.file&&function.span.begin<=error.span.begin&&error.span.begin<function.span.end)
+          if(!origin||function.span.end-function.span.begin<origin->span.end-origin->span.begin)origin=&function;
+        if(!origin)throw std::runtime_error("module failure has no source function");
+        result["origin"]=llvm::json::Object{{"function_hash",hash(json(canonical(*origin),false))},{"function_source_hash",hash(p.definition(*origin))}};
+      }
+      std::cout<<json(std::move(result))<<'\n';
+    }
     return 0;
   }
   auto folder=std::filesystem::absolute(argv[3]);std::filesystem::create_directories(folder);

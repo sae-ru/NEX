@@ -1757,11 +1757,16 @@ Program parseSourceExceptionTasksPrototype(std::string source,std::string path){
   sourceUTF8(source,path,"unit");return Parser(std::move(source),std::move(path),0,"unit",false,false,true,false,true).run();
 }
 Program parse(std::string source,std::string path,bool editorNames,bool editorDetails){return parseVersioned(std::move(source),std::move(path),currentSourceLanguage,editorNames,editorDetails);}
-Program parseManagedReferencesPrototype(std::string source,std::string path){
+Program detail::parseManagedReferenceUnit(std::string source,std::string path){
   const auto language=SourceLanguage::ManagedReferencesPrototype;sourceUTF8(source,path,"unit",programLanguage(language));
   auto p=Parser(std::move(source),std::move(path),0,"unit",false,false,false,false,true,true,true,true,true,programLanguage(language),true).run();
   p.sourceLanguage=language;
-  if(!p.imports.empty()||!p.endpoints.empty())throw Error("E_CELL_STAGE","private reference candidate is one unarchived source unit without endpoints");
+  if(!p.endpoints.empty())throw Error("E_CELL_STAGE","private reference candidate has no endpoint execution contract");
+  return p;
+}
+Program parseManagedReferencesPrototype(std::string source,std::string path){
+  auto p=detail::parseManagedReferenceUnit(std::move(source),std::move(path));
+  if(!p.imports.empty())throw Error("E_CELL_STAGE","single-unit private reference parsing rejects imports; use the private bundle loader");
   bindManagedReferencePrototypeTypes(p);
   return p;
 }

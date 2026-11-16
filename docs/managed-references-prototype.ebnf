@@ -1,7 +1,9 @@
 (* Compiler-private 0.30-refs-prototype additions to the 0.29 parser.
-   Selected only by parseManagedReferencesPrototype in C++.
+   Selected by explicit single-unit/private-bundle C++ entry points.
    Not an ordinary CLI source version; no archival or migration contract.
-   No imports, endpoints, task/parallel execution or owned payload capabilities. *)
+   Single-unit parsing rejects imports; toolchain0.257's transient module bundle
+   uses the ordinary import production and shared binder. No endpoints,
+   task/parallel execution or owned payload capabilities. *)
 (* Toolchain0.256 scopes declaration-local generic binders and trait Self before
    checking. 0.29 partial type lambdas/higher-order kinds retain their grammar;
    trait method argument lists are bound before specialization. No new token. *)

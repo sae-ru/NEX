@@ -612,7 +612,8 @@
     "managed_references": "docs/managed-references-design.md",
     "managed_references_prototype": "docs/managed-references-prototype.md",
     "managed_references_prototype_grammar": "docs/managed-references-prototype.ebnf",
-    "managed_reference_native": "docs/managed-reference-native-prototype.md"
+    "managed_reference_native": "docs/managed-reference-native-prototype.md",
+    "managed_reference_modules": "docs/managed-reference-modules.md"
   },
   "document_access": "nex guide --kind format|text-construction|bytes-construction|source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -5226,7 +5227,7 @@
     "pending": [
       "public reference types and state effect",
       "versioned public grammar and explicit history-preserving migration",
-      "native/TypeScript lowering and source backend agreement",
+      "public backend integration and whole-source acceptance",
       "native entry/module/ABI ownership",
       "owned capability integration",
       "cross-thread sharing, monitors and atomics",
@@ -5247,7 +5248,7 @@
       ],
       "grammar": "docs/managed-references-prototype.ebnf",
       "guide": "docs/managed-references-prototype.md",
-      "input": "one unarchived source unit; no imports or endpoints",
+      "input": "single-unit parser or transient private source-module bundle; no endpoints",
       "introduced_toolchain": "0.250.0",
       "language": "0.30-refs-prototype",
       "migration": false,
@@ -5302,6 +5303,19 @@
           "generic constructor methods"
         ],
         "type_binders": "declaration-local identities; same-spelled parameters keep independent kinds and bounds"
+      },
+      "source_modules": {
+        "binding": "shared module loader: imports, visibility, qualified nominal identities, trait witnesses and declaration-local type binders",
+        "cases": "tests/managed_reference_module_cases.py",
+        "guide": "docs/managed-reference-modules.md",
+        "introduced_toolchain": "0.257.0",
+        "native_linkage": "one generated application image; separate DLL/reference host ABI remains pending",
+        "public_source_enabled": false,
+        "runtime_context": "one heap across source units and calls in one sequential application",
+        "schema": "nex.private-reference-sources/1",
+        "selection": "loadManagedReferencesPrototypeBundle",
+        "test": "tests/managed_reference_modules.cpp",
+        "typescript_map": "reachable_source_units hashes and copied failure file/line; no source text or public revision"
       }
     },
     "public_flag_scope": "ordinary published source languages; private candidate has its own selection",

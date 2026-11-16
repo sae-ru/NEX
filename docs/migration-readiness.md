@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.256.0"
+applies_to: "language 0.28; toolchain 0.257.0"
 owner: repository
 ---
 
@@ -61,6 +61,11 @@ Toolchain0.256 fixes declaration-local type binding in the private candidate:
 compose with cell identity, snapshot payloads and typed errors. This remains one
 unarchived sequential unit. Public version/migration, modules, host-returned
 references and Java/Python object semantics are still pending.
+
+Toolchain0.257 adds private source-module binding and execution in one application
+context. Imported functions, nominal identities, traits, errors and closures use
+the same heap and existing visibility rules. This does not define separate
+DLL/component/host reference lifetimes or promote a public source version.
 
 | Required behavior | Existing foundation | Missing language/runtime result |
 |---|---|---|

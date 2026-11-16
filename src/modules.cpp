@@ -3,6 +3,7 @@
 #include "nex/language.h"
 #include "nex/frontend_diagnostics.h"
 #include "nex/traits.h"
+#include "nex/managed_references.h"
 #include "llvm/Support/Error.h"
 #include <filesystem>
 #include <functional>
@@ -76,6 +77,7 @@ bool inside(const fs::path &path,const fs::path &base){
 }
 struct Symbols{std::map<std::string,bool> functions,structures,variants,traits,projections;std::set<std::string> enumerations,traitMethods;};
 template<class Units> std::string resolveSymbol(const Units &units,const std::map<std::string,Symbols> &symbols,const std::string &key,const std::string &name,bool type,Span span){
+  if(!type&&units.at(key).sourceLanguage==SourceLanguage::ManagedReferencesPrototype&&managedReferenceBuiltins().contains(name))return name;
   if(!type&&builtinNames(units.at(key).taskPrototype,(units.at(key).sourceLanguage==SourceLanguage::SourceExceptions025Prototype||units.at(key).sourceLanguage==SourceLanguage::OwnedResources021||units.at(key).sourceLanguage==SourceLanguage::TaskForeign022||units.at(key).sourceLanguage==SourceLanguage::TaskWrites023||units.at(key).sourceLanguage==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(units.at(key).sourceLanguage))).contains(name))return name;
   auto target=key,local=name;auto separator=name.find("::");bool external=separator!=std::string::npos;
   if(external&&(symbols.at(key).enumerations.contains(name.substr(0,separator))||symbols.at(key).traits.contains(name.substr(0,separator)))){external=false;}
@@ -102,6 +104,7 @@ template<class Units> std::string resolveTraitSymbol(const Units &units,const st
 template<class Units> void bindValueName(const Units &units,const std::map<std::string,Symbols> &symbols,const std::string &key,E expression){
   if(expression->kind!=Expr::Call&&expression->kind!=Expr::Name)return;
   const auto &name=expression->text;bool qualified=name.find("::")!=std::string::npos;
+  if(!qualified&&units.at(key).sourceLanguage==SourceLanguage::ManagedReferencesPrototype&&managedReferenceBuiltins().contains(name))return;
   if(!qualified)expression->localName=name;
   const auto &local=symbols.at(key);
   if(qualified||local.functions.contains(name)||(expression->kind==Expr::Call&&(builtinNames(units.at(key).taskPrototype,(units.at(key).sourceLanguage==SourceLanguage::OwnedResources021||units.at(key).sourceLanguage==SourceLanguage::TaskForeign022||units.at(key).sourceLanguage==SourceLanguage::TaskWrites023||units.at(key).sourceLanguage==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(units.at(key).sourceLanguage))).contains(name)||local.structures.contains(name)||local.variants.contains(name))))
@@ -118,7 +121,7 @@ class Loader {
   std::vector<std::string> stack;
   std::map<std::string,Symbols> symbols;
   std::set<std::string> checkedPackages;
-  const std::set<std::string> &builtins;
+  std::set<std::string> builtins;
   fs::path physical(const std::string &key){
     if(frozen)return root/(key.starts_with("@")?fs::path(".nex/snapshot")/key:fs::path(key));
     fs::path base=root;std::string relative=key;
@@ -151,7 +154,7 @@ class Loader {
     }catch(Error &e){if((e.code!="E_LANGUAGE_VERSION"&&e.code!="E_MANIFEST")||e.span.file.empty())e.span=importing;throw;}
     catch(const fs::filesystem_error &e){throw Error("E_IMPORT_FILE",e.what(),importing);}
     Program unit;
-    try{unit=privateExceptions?parseSourceExceptionTasksPrototype(texts.at(key),path.string()):taskPrototype&&sourceVersion==SourceLanguage::Language018
+    try{unit=sourceVersion==SourceLanguage::ManagedReferencesPrototype?detail::parseManagedReferenceUnit(texts.at(key),path.string()):privateExceptions?parseSourceExceptionTasksPrototype(texts.at(key),path.string()):taskPrototype&&sourceVersion==SourceLanguage::Language018
       ?parseTaskPrototype(texts.at(key),path.string(),captureNames,captureDetails)
       :parseVersioned(texts.at(key),path.string(),sourceVersion,captureNames,captureDetails);}catch(Error &e){e.span.file=key;throw;}
     capturedNames+=unit.editorNames.size();if(capturedNames>200000)throw Error("E_ANALYSIS_LIMIT","editor names exceed 200000 entries",Span{1,1,0,0,key});
@@ -195,6 +198,8 @@ class Loader {
       auto parameterScope=[&](auto &declaration){parameters.clear();for(auto &name:declaration.typeParameters){auto original=name;name=unit.module+"::"+declaration.localName+"::"+name;parameters[original]=name;}bounds(declaration.typeBounds,declaration.span);};
       std::function<void(Type&,Span)> type=[&](Type &t,Span span){
         if(t.kind==Type::Parameter){if(!parameters.contains(t.name))throw Error("E_GENERIC_SCOPE","type parameter is outside its declaration",span);t.name=parameters.at(t.name);}
+        if(supportsManagedReferences(unit)&&t.kind==Type::Constructor&&t.name!="$cell"&&t.name!="list"&&t.name!="result")
+          t.name=resolve(key,t.name,true,span);
         if(t.kind==Type::Record){
           if(t.name=="result"&&!symbols.at(key).structures.contains("result")&&t.arguments.empty()){t=Type::constructor("result",1);return;}
           t.name=resolve(key,t.name,true,span);
@@ -216,8 +221,8 @@ class Loader {
         for(auto &method:value.methods){auto local=method.name;method.name=value.name+"::"+local;parameterScope(method);parameters["Self"]=value.name+"::Self";type(method.result,method.span);for(auto &parameter:method.params)type(parameter.type,parameter.span);method.traitOwner=value.name;method.traitSignature=true;method.exported=value.exported;}
       }
       for(auto &value:unit.implementations){value.name=unit.module+"::"+value.localName;parameterScope(value);value.trait=resolveTraitSymbol(parsed,symbols,key,value.trait,value.span);type(value.self,value.span);for(auto &[name,alias]:value.associated)type(alias,value.span);for(auto &[name,method]:value.methods){method.target=resolve(key,method.target,false,method.span);for(auto &argument:method.typeArguments)type(argument,method.span);}}
-      for(auto &f:unit.functions){f.name=unit.module+"::"+f.localName;parameterScope(f);type(f.result,f.span);for(auto &p:f.params)type(p.type,p.span);block(f.body);}
-      for(auto &s:unit.structures){s.name=unit.module+"::"+s.localName;parameterScope(s);for(auto field:s.members())type(field->type,field->span);}
+      for(auto &f:unit.functions){f.name=unit.module+"::"+f.localName;parameterScope(f);type(f.result,f.span);for(auto &p:f.params)type(p.type,p.span);if(supportsManagedReferences(unit))for(auto &value:f.typeDefaults)type(value,f.span);block(f.body);}
+      for(auto &s:unit.structures){s.name=unit.module+"::"+s.localName;parameterScope(s);for(auto field:s.members())type(field->type,field->span);if(supportsManagedReferences(unit))for(auto &value:s.typeDefaults)type(value,s.span);}
       for(auto &endpoint:unit.endpoints){endpoint.name=unit.module+"::"+endpoint.localName;endpoint.target=resolve(key,endpoint.target,false,endpoint.span);}
       // Resolve source projections with the exact same visibility/alias tables.
       for(auto &name:unit.editorNames){
@@ -236,6 +241,7 @@ class Loader {
 public:
   Loader(fs::path root,std::string entry,bool frozen,std::map<std::string,std::string> sources={},std::map<std::string,std::string> overlays={},bool editorNames=false,bool editorDetails=false,bool tasks=false,SourceLanguage version=SourceLanguage::Language018,SourceLanguage metadataLanguage=currentSourceLanguage,bool exceptions=false)
       :root(fs::weakly_canonical(root)),frozen(frozen),captureNames(editorNames||editorDetails),captureDetails(editorDetails),taskPrototype(tasks),privateExceptions(exceptions),sourceVersion(version),entry(std::move(entry)),overlays(std::move(overlays)),texts(std::move(sources)),builtins(builtinNames(tasks,(exceptions||version==SourceLanguage::OwnedResources021||version==SourceLanguage::TaskForeign022||version==SourceLanguage::TaskWrites023||version==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(version)))){
+    if(version==SourceLanguage::ManagedReferencesPrototype)builtins.insert(managedReferenceBuiltins().begin(),managedReferenceBuiltins().end());
     if(!frozen&&fs::is_regular_file(this->root/"nex.json")){
       auto value=decoded(readFile((this->root/"nex.json").string()));auto obj=value.getAsObject();if(!obj)throw Error("E_MANIFEST","nex.json must be an object");
       projectVersion(*obj,"nex.json",metadataLanguage);
@@ -311,6 +317,7 @@ Program loadProgram(const std::string &entry,const std::string &root,bool enforc
   return loadVersionedProgram(entry,root,projectSourceLanguage(root),enforceLock,overlays,editorNames,editorDetails);
 }
 Program loadVersionedProgram(const std::string &entry,const std::string &root,SourceLanguage language,bool enforceLock,const std::map<std::string,std::string> &overlays,bool editorNames,bool editorDetails){
+  if(language==SourceLanguage::ManagedReferencesPrototype)throw Error("E_LANGUAGE_VERSION","private references require their transient bundle loader");
   (void)programLanguage(language);
   auto base=std::filesystem::weakly_canonical(root);auto path=std::filesystem::weakly_canonical(entry);
   if(!inside(path,base))throw Error("E_IMPORT_PATH","entry is outside the project root");
@@ -324,14 +331,17 @@ Program loadVersionedProgram(const std::string &entry,const std::string &root,So
   }
   return p;
 }
-static Program bundleProgram(const llvm::json::Value &bundle,const std::string &root,bool validate,bool tasks=true,SourceLanguage version=currentSourceLanguage){
-  auto obj=bundle.getAsObject();if(!obj||required(*obj,"schema")!="nex.sources/1")throw Error("E_BUNDLE","expected nex.sources/1");
+static Program bundleProgram(const llvm::json::Value &bundle,const std::string &root,bool validate,bool tasks=true,SourceLanguage version=currentSourceLanguage,const std::string &schema="nex.sources/1"){
+  auto obj=bundle.getAsObject();if(!obj||required(*obj,"schema")!=schema)throw Error("E_BUNDLE","expected "+schema);
   auto files=obj->getObject("files");if(!files||files->empty())throw Error("E_BUNDLE","snapshot requires source files");
   std::map<std::string,std::string> sources;
   for(const auto &[key,value]:*files){safeKey(key.str());auto text=value.getAsString();if(!text)throw Error("E_BUNDLE","source file must contain text");sources[key.str()]=text->str();}
   return Loader(root,required(*obj,"entry"),true,std::move(sources),{},false,false,tasks,version).run(validate);
 }
 Program loadBundle(const llvm::json::Value &bundle,const std::string &root){return bundleProgram(bundle,root,true);}
+Program loadManagedReferencesPrototypeBundle(const llvm::json::Value &bundle,const std::string &root){
+  return bundleProgram(bundle,root,true,false,SourceLanguage::ManagedReferencesPrototype,"nex.private-reference-sources/1");
+}
 Program loadVersionedBundle(const llvm::json::Value &bundle,const std::string &root,const std::string &language){
   if(language=="0.18")return bundleProgram(bundle,root,true,false,SourceLanguage::Language018);
   if(language=="0.19")return bundleProgram(bundle,root,true,true,SourceLanguage::Tasks019);

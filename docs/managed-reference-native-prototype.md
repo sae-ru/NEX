@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.255.0; private 0.30-refs-prototype candidate"
+applies_to: "toolchain 0.257.0; private 0.30-refs-prototype candidate"
 owner: repository
 ---
 
@@ -13,6 +13,10 @@ CLI builds, stored graph formats and migration remain separate. The dedicated
 [TypeScript candidate](managed-reference-typescript-prototype.md) is implemented;
 Wasm/device reference lowering and native reference module/host ABIs remain
 pending. This candidate does not qualify a public SDK.
+
+Toolchain0.257's [private source modules](managed-reference-modules.md) use this
+same emitter/context across imported source units in one generated application
+image. Separate component/DLL reference ownership remains pending.
 
 The checked unit uses the existing native emitter and its verifier. `cell<T>`
 uses an owned heap handle. Scalar helpers preserve the i64/bool/f64 value tag;

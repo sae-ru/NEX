@@ -1,3 +1,23 @@
+# Private reference source modules — development0.257.0
+
+A dedicated transient source bundle now uses the shared module loader for imports,
+visibility, qualified nominal identities, traits and declaration-local type
+binders. One sequential application heap spans source units, returned closures,
+errors and snapshots. Private TypeScript maps hash reachable source units and
+retain failure file/line; native imported failures match function/source hashes.
+Retained public0.28/0.29 loading/identities and archival formats are unchanged.
+
+Sixteen core groups pass, including20 accepted/41 rejected reference scenarios
+and a two-unit state/cleanup case. Thirteen affected groups pass: the full module
+gates accept1/reject21; ten manual module programs agree in reference,20 native
+O0/O2 comparisons (each host image plus independent executable), and10 strict
+executed TypeScript cases. All44 retained single-unit TypeScript cases also pass.
+[Exact source/tool identities and bounds](docs/evidence/managed-reference-modules-0.257.0-2026-11-16.json).
+[Previous0.256 core CI](docs/evidence/core-ci-0.256.0-2026-11-16.json) passed on
+Mac/Linux. New public source versions/history migration, separate DLL/host
+reference lifetimes, remaining Java/Python semantics, full compiler/platform
+qualification and a matching new portable SDK remain open. SDK0.246.1 is unchanged.
+
 # Private reference generic composition — development0.256.0
 
 The single-unit reference frontend now scopes each declaration's type binders

@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.256.0"
+applies_to: "language 0.28; toolchain 0.257.0"
 owner: repository
 ---
 
@@ -37,6 +37,11 @@ restrictions are unchanged.
 The0.256 private frontend scopes independent type binders and trait Self before
 checking, composing cells with 0.29 kinds, projections and static methods. Its
 public version/history migration and module/host lifetime work remain next.
+
+The0.257 private module loader uses the shared import/visibility/type binder and
+one application heap across source units, with reference/native/TypeScript
+agreement. Separate DLL/host lifetime, public version/history migration and the
+remaining object/numeric/class/concurrency semantics stay open.
 
 | Item | Implemented baseline | Remaining result | Acceptance |
 |---|---|---|---|

@@ -13,6 +13,7 @@ parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('probe',type=Path)
 parser.add_argument('reference',type=Path)
 parser.add_argument('--output',type=Path)
+parser.add_argument('--modules',action='store_true')
 args=parser.parse_args()
 root=Path(__file__).resolve().parents[1]
 out=(args.output or Path(tempfile.mkdtemp(prefix='nex-managed-source-ts-'))).resolve()
@@ -33,21 +34,29 @@ report={'schema':'nex.managed-reference-typescript-agreement/1','ok':False,'priv
         'public_source_enabled':False,'runtime_sources':runtime_hashes,'probe_sha256':sha(args.probe),'reference_probe_sha256':sha(args.reference),
         'node_sha256':sha(shutil.which(node)or node),'tsc_sha256':sha(tsc),'source_corpus_sha256':sha(root/'tests/managed_reference_cases.py'),
         'gates':gates,'cases':[]}
-cases=source_cases(root)+host_cases()
+if args.modules:
+    from managed_reference_module_cases import module_cases
+    cases=module_cases();report.update(input_kind='private_module_bundle',module_corpus_sha256=sha(root/'tests/managed_reference_module_cases.py'))
+else:cases=source_cases(root)+host_cases()
 for case in cases:
     folder=out/case['name'];folder.mkdir(exist_ok=True)
-    source=folder/'main.nex';source.write_text('module managed_native;\n'+case['source']+'\n')
+    source=folder/('bundle.json' if args.modules else 'main.nex');source.write_text(json.dumps(case['bundle']) if args.modules else 'module managed_native;\n'+case['source']+'\n')
     limits=case.get('limits',[1048576,4194304,16777216])
-    reference=json.loads(run([args.reference.resolve(),'reference',source,*limits],folder,'reference').stdout)
+    reference=json.loads(run([args.reference.resolve(),'bundle-reference' if args.modules else 'reference',source,*limits],folder,'reference').stdout)
     assert reference['live_delta']==0,(case['name'],'reference live values',reference)
     if 'error'in case:assert reference['kind']=='trap'and reference['code']==case['error'],(case['name'],reference)
     else:
         assert reference['kind']=='return'and reference['output']==case.get('output',''),(case['name'],reference)
         if 'value'in case:assert reference['value']==case['value'],(case['name'],reference)
     generated=folder/'generated'
-    run([args.probe.resolve(),'emit',source,generated,*limits],folder,'emit')
+    run([args.probe.resolve(),'bundle-emit' if args.modules else 'emit',source,generated,*limits],folder,'emit')
     mapping=json.loads((generated/'nex-map.json').read_text())
     assert mapping['schema']=='nex.private-typescript-managed-map/1'and mapping['public_source_enabled']is False and mapping['public_revision']is False
+    if args.modules:
+        assert mapping['reachable_source_units'] and set(mapping['reachable_source_units'])<=case['bundle']['files'].keys(),case['name']
+        if 'absent' in case:
+            assert case['absent'] not in (generated/'program.ts').read_text()+(generated/'nex-map.json').read_text(),case['name']
+            assert 'server.nex' not in mapping['reachable_source_units'],case['name']
     assert {p.name for p in generated.glob('nex-*.ts')}==set(runtime_names),case['name']
     for name in runtime_names:assert sha(generated/name)==runtime_hashes[name],(case['name'],name)
     assert (generated/'runtime-inputs.sha256').read_text().strip()==hashlib.sha256(b''.join((generated/name).read_bytes()for name in runtime_names)).hexdigest(),case['name']
@@ -58,7 +67,7 @@ for case in cases:
     if reference['kind']=='return':
         assert json.loads(actual['value_json'])==reference['value'],(case['name'],actual,reference)
         assert actual['beforeCollection']==reference['heap_before']and actual['afterCollection']==reference['heap_after'],(case['name'],'heap accounting',actual,reference)
-    else:assert all(actual.get(key)==reference.get(key)for key in ['code','message','line']),(case['name'],actual,reference)
+    else:assert all(actual.get(key)==reference.get(key)for key in (['code','message','line','file'] if args.modules else ['code','message','line'])),(case['name'],actual,reference)
     assert all(actual['afterClose'][key]==0 for key in ['cells','nodes','edges']),case['name']
     report['cases'].append({'name':case['name'],'outcome':actual['kind'],'limits':limits,'source_sha256':sha(source),
         'typescript_sha256':sha(generated/'program.ts'),'map_sha256':sha(generated/'nex-map.json'),'reference_result_sha256':sha(folder/'reference.stdout'),
@@ -66,6 +75,11 @@ for case in cases:
     (out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
 assert sha(args.probe)==report['probe_sha256']and sha(args.reference)==report['reference_probe_sha256'],'source tools changed during acceptance'
 assert all(sha(root/'web'/name)==value for name,value in runtime_hashes.items()),'managed runtime changed during acceptance'
-report.update(ok=True,comparisons=len(cases),source_programs=len(source_cases(root)),host_wire_results=len(host_cases()))
+if args.modules:
+    original=json.loads((out/'module-client-reachability/generated/nex-map.json').read_text())
+    changed=json.loads((out/'module-import-change/generated/nex-map.json').read_text())
+    assert original['entry_text_hash']==changed['entry_text_hash']
+    assert original['reachable_source_units']['provider.nex']!=changed['reachable_source_units']['provider.nex']
+report.update(ok=True,comparisons=len(cases),source_programs=len(cases) if args.modules else len(source_cases(root)),host_wire_results=0 if args.modules else len(host_cases()))
 (out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps({'ok':True,'comparisons':len(cases),'report':str(out/'report.json')}))

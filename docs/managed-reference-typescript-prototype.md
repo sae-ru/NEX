@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.253.0; private 0.30-refs-prototype candidate"
+applies_to: "toolchain 0.257.0; private 0.30-refs-prototype candidate"
 owner: repository
 ---
 
@@ -35,6 +35,11 @@ closure or owned authority cannot escape to the host. Realm checks apply to the
 reachable entry closure; unreachable server code is omitted. The private parser
 still excludes imports/endpoints, task/parallel execution and resource effects.
 Limits must be positive safe JS integers.
+
+The [private module loader](managed-reference-modules.md) in toolchain0.257 also
+supplies checked multi-unit input. Only reachable client/shared code is emitted;
+the single-unit parser keeps its import rejection. Multi-unit maps add hashes
+for reachable source units, and the private failure envelope copies file/line.
 
 The generated module imports a separate boxed runtime and exports `main()`.
 That function returns a private evaluation envelope: `kind`, `output`, an exact

@@ -5,7 +5,7 @@ from pathlib import Path
 import argparse,hashlib,json,os,platform,re,subprocess,tempfile
 
 parser=argparse.ArgumentParser();parser.add_argument('probe',type=Path);parser.add_argument('compiler',type=Path)
-parser.add_argument('--output',type=Path);args=parser.parse_args();probe=args.probe.resolve();compiler=args.compiler.absolute()
+parser.add_argument('--output',type=Path);parser.add_argument('--modules',action='store_true');args=parser.parse_args();probe=args.probe.resolve();compiler=args.compiler.absolute()
 root=Path(__file__).resolve().parents[1]
 folder=(args.output or Path(tempfile.mkdtemp(prefix='nex-managed-native-'))).resolve();folder.mkdir(parents=True,exist_ok=True)
 def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
@@ -20,13 +20,19 @@ def error_agrees(stderr,reference):
     else:
         record=next(json.loads(line.split(' ',1)[1])for line in stderr.splitlines()if line.startswith('NEX_NATIVE_TRAP '))
         assert record['code']==reference['code']and record['reported_line']==reference['line'],(record,reference)
+    if args.modules:
+        assert all(record.get('source',{}).get(key)==value for key,value in reference['origin'].items()),(record,reference)
 layout=folder/'host.ll';run([compiler,'-x','c','-S','-emit-llvm',os.devnull,'-o',layout])
 host=layout.read_text();triple=re.search(r'target triple = "(.*?)"',host)[1];layout_text=re.search(r'target datalayout = "(.*?)"',host)[1]
 # The same source/expected observations feed the TypeScript acceptance path.
-cases=source_cases(root)
+if args.modules:
+    from managed_reference_module_cases import module_cases
+    cases=module_cases()
+else:cases=source_cases(root)
 runtime_inputs=sorted(path for path in (root/'runtime').rglob('*')if path.is_file()and path.suffix in ['.h','.hpp','.c','.cpp','.manifest'])
 runtime_identity=''.join(path.relative_to(root).as_posix()+':'+sha(path)+'\n'for path in runtime_inputs)
 report={'schema':'nex.managed-reference-native-agreement/1','ok':False,'private_language':'0.30-refs-prototype','public_source_enabled':False,'platform':platform.platform(),'probe_sha256':sha(probe),'compiler_sha256':sha(compiler),'compiler_version':run([compiler,'--version']).stdout,'core_fixture_sha256':sha(root/'tests/managed_references.cpp'),'shared_corpus_sha256':sha(root/'tests/managed_reference_cases.py'),'runtime_source_tree_sha256':hashlib.sha256(runtime_identity.encode()).hexdigest(),'cases':[]}
+if args.modules:report.update(input_kind='private_module_bundle',module_corpus_sha256=sha(root/'tests/managed_reference_module_cases.py'))
 runtime_objects={}
 for optimization in ['0','2']:
     objects=[];build=folder/('standalone-runtime-O'+optimization);build.mkdir(exist_ok=True)
@@ -35,15 +41,15 @@ for optimization in ['0','2']:
         run([compiler,'-std=c++20','-O'+optimization,'-pthread','-I',root/'runtime','-c',root/'runtime'/name,'-o',target]);objects.append(target)
     runtime_objects[optimization]=objects
 for case in cases:
-    directory=folder/case['name'];directory.mkdir(exist_ok=True);path=directory/'main.nex';path.write_text('module managed_native;\n'+case['source']+'\n')
+    directory=folder/case['name'];directory.mkdir(exist_ok=True);path=directory/('bundle.json' if args.modules else 'main.nex');path.write_text(json.dumps(case['bundle']) if args.modules else 'module managed_native;\n'+case['source']+'\n')
     limits=list(map(str,case.get('limits',[1048576,4194304,16777216])))
-    reference=json.loads(run([probe,'reference',path,*limits]).stdout)
+    reference=json.loads(run([probe,'bundle-reference' if args.modules else 'reference',path,*limits]).stdout)
     (directory/'reference.json').write_text(json.dumps(reference,indent=2)+'\n')
     if 'error'in case:assert reference['kind']=='trap'and reference['code']==case['error'],(case,reference)
     else:assert reference['kind']=='return'and reference['output']==case['output']and reference['remaining_nodes']==0,(case,reference)
     for optimization in ['0','2']:
         build=directory/('O'+optimization);build.mkdir(exist_ok=True)
-        run([probe,'emit',path,build,triple,layout_text,str(optimization=='2').lower(),*limits])
+        run([probe,'bundle-emit' if args.modules else 'emit',path,build,triple,layout_text,str(optimization=='2').lower(),*limits])
         library=build/('program.dylib'if platform.system()=='Darwin'else'program.dll'if os.name=='nt'else'program.so')
         flags=['-dynamiclib','-undefined','dynamic_lookup']if platform.system()=='Darwin'else(['-shared',*probe_dll_inputs(str(probe),folder)]if os.name=='nt'else['-shared','-fPIC'])
         run([compiler,'-O'+optimization,*flags,build/'program.ll','-o',library])

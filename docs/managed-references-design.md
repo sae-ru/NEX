@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.255.0; no public source-language extension"
+applies_to: "toolchain 0.257.0; no public source-language extension"
 owner: repository
 ---
 
@@ -21,6 +21,11 @@ false for ordinary published source languages. Ordinary project checking,
 evaluation, MLIR and TypeScript paths do not enable the candidate. There is no public cell syntax, state effect,
 wire representation, C ABI or new source-language version. Converters remain
 deferred. This kernel alone does not establish Java/Python compatibility.
+
+Toolchain0.257's [private source modules](managed-reference-modules.md) share one
+execution context across imported files in a generated application. Public
+promotion/migration and separately compiled module/host reference ABIs remain
+open. Private reference/native/TypeScript checks have their own bounded receipts.
 
 ## Current ownership contract
 

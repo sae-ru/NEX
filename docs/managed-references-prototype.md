@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.256.0; private 0.30-refs-prototype candidate"
+applies_to: "toolchain 0.257.0; private 0.30-refs-prototype candidate"
 owner: repository
 ---
 
@@ -108,6 +108,12 @@ return unit or an immutable wire value; cells, cell-containing types (including
 phantom arguments) and closures cannot escape through JSON. Source debugging,
 profiling, watch execution, device lowering and native module lifetimes are not
 qualified by this interpreter.
+
+Toolchain0.257 adds a separate [transient source-module loader](managed-reference-modules.md)
+with imports, visibility and qualified type/trait binding. It executes those
+units in one application context. The single-unit parser above still rejects
+imports; ordinary physical projects, public archival/migration and separate
+DLL/reference host ABIs remain pending.
 
 ## Context ownership and bounds
 
