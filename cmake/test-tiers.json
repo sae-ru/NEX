@@ -263,6 +263,8 @@
     "managed_reference_native_context": ["core"],
     "managed_heap_typescript": ["extended", "browser", "platform"],
     "managed_references_typescript": ["extended", "browser", "platform"],
+    "managed_reference_value_exports": ["extended", "browser", "platform"],
+    "managed_reference_module_value_exports": ["extended", "browser", "platform"],
     "effect_parameters": ["extended", "browser", "platform", "sdk"],
     "storage": ["extended", "browser"],
     "store_transactions_native": ["extended", "platform"],

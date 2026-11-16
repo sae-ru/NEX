@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.260.0"
+applies_to: "language 0.28; toolchain 0.261.0"
 owner: repository
 ---
 
@@ -26,6 +26,12 @@ retain their exact source/platform scopes and do not qualify later changes.
 The old implementation worktree has no commits absent from current main.
 
 ## Executable backlog
+
+The0.261 private TypeScript emitter adds checked ordinary host-value entries:
+immutable arguments/results, separate per-call heaps, independent diagnostics
+and synchronous nested host calls. This prepares an entry boundary; it does not
+promote references or implement persistent UI state, worker transfer or ordinary
+graph/project migration. See [the contract](managed-reference-value-exports.md).
 
 The 0.254 runtime block added iterative sequential value retirement for ordinary
 deep values and snapshots released after heap close. The 0.255

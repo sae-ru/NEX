@@ -1,5 +1,8 @@
 # NEX language specification 0.28
 
+Toolchain0.261 adds a private [TypeScript value-entry boundary](managed-reference-value-exports.md).
+It adds no public type, effect, grammar production or source-version migration.
+
 Toolchain0.260 adds private [resource-owning reference graphs](managed-reference-owned-payloads.md)
 without promoting a public reference type or changing language0.28/0.29.
 

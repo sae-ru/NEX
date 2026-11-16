@@ -17,7 +17,7 @@ class ReturnCompletion {
 type Completion = SourceCompletion | ReturnCompletion;
 const sourceDetails = new WeakMap<SourceDetails, SourceCompletion>();
 type Roots = {frame: RootFrame; kind: 'scope' | 'expression' | 'statement'};
-type Context = {heap: CellHeap; roots: Roots[]; scopes: RootFrame[]; flight: Map<Completion, RootFrame>; output: string};
+type Context = {heap: CellHeap; roots: Roots[]; scopes: RootFrame[]; flight: Map<Completion, RootFrame>; output: string; print?: (text: string) => void};
 let active: Context | undefined;
 function context(): Context {
   if (active === undefined) throw new NexError('E_CELL_CONTEXT', 'managed source execution has no active context');
@@ -136,23 +136,24 @@ export function finalize(body: () => void, finalizer: () => void): void {
     if (pending !== undefined) rethrow(pending);
   } finally { owner?.close(); }
 }
-export function print(text: string): void { context().output += text + '\n'; }
+export function print(text: string): void { const ctx = context(); ctx.output += text + '\n'; ctx.print?.(text); }
 export type Execution = Readonly<{
   kind: 'return' | 'trap'; value_json?: string; output: string;
   code?: string; message?: string; line?: number; file?: string;
+  site?: Site;
   beforeCollection: HeapStats; afterCollection: HeapStats; afterClose: HeapStats;
 }>;
-export function run(body: () => HeapValue | void, limits: HeapLimits, render: (value: HeapValue | void) => string): Execution {
-  const previous = active, ctx: Context = {heap: new CellHeap(limits), roots: [], scopes: [], flight: new Map(), output: ''};
-  active = ctx; let value_json: string | undefined, failure: {code: string; message: string; line: number; file: string} | undefined;
+export function run(body: () => HeapValue | void, limits: HeapLimits, render: (value: HeapValue | void) => string, print?: (text: string) => void): Execution {
+  const previous = active, ctx: Context = {heap: new CellHeap(limits), roots: [], scopes: [], flight: new Map(), output: '', print};
+  active = ctx; let value_json: string | undefined, failure: {code: string; message: string; line: number; file: string; site?: Site} | undefined;
   try {
     try { scope(() => { const value = body(); value_json = render(value); }); }
     catch (error) {
       if (error instanceof SourceCompletion) {
         const owner = acquire(error);
-        try { failure = {code: 'E_SOURCE_EXCEPTION', message: error.detail.code + ': ' + error.detail.message, line: error.detail.site[1], file: error.detail.site[0]}; }
+        try { failure = {code: 'E_SOURCE_EXCEPTION', message: error.detail.code + ': ' + error.detail.message, line: error.detail.site[1], file: error.detail.site[0], site: error.detail.site}; }
         finally { owner.close(); }
-      } else if (error instanceof NexError) failure = {code: error.code, message: error.message, line: error.site?.[1] ?? 0, file: error.site?.[0] ?? ''};
+      } else if (error instanceof NexError) failure = {code: error.code, message: error.message, line: error.site?.[1] ?? 0, file: error.site?.[0] ?? '', site: error.site === undefined ? undefined : Object.freeze([...error.site]) as Site};
       else throw error;
     }
     if (ctx.flight.size) throw new NexError('E_INTERNAL', 'managed execution retained an abandoned completion');

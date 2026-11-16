@@ -5354,6 +5354,22 @@
         "guide": "docs/managed-reference-resources.md",
         "test": "tests/managed_reference_resources.py",
         "public_source_enabled": false
+      },
+      "typescript_value_exports": {
+        "introduced_toolchain": "0.261.0",
+        "selection": "emitManagedReferencesValueTypeScript",
+        "guide": "docs/managed-reference-value-exports.md",
+        "input": "checked immutable ordinary browser values; exact primitive kinds and nominal layouts; bounded copies",
+        "output": "ordinary immutable browser values; unit returns undefined; no execution envelope",
+        "context": "one sequential heap per invocation; copied result outlives close; nested host calls restore enclosing context",
+        "errors": "independent NexError code/message/site; no live source packet escapes",
+        "output_order": "source print observed synchronously, including before a failure",
+        "transfer": "no references, closures, tasks or owned resources at host signatures",
+        "persistent_browser_state": false,
+        "UI_adapter": false,
+        "worker_transfer": false,
+        "test": "tests/managed_reference_value_entries.py",
+        "public_source_enabled": false
       }
     },
     "public_flag_scope": "ordinary published source languages; private candidate has its own selection",

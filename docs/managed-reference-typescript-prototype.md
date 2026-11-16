@@ -6,6 +6,10 @@ owner: repository
 
 # Private TypeScript reference execution
 
+Toolchain0.261 also provides [ordinary host-value exports](managed-reference-value-exports.md)
+through a separate private API. The diagnostic-envelope API described below
+retains its existing no-argument contract and heap-accounting result.
+
 `emitManagedReferencesPrototypeTypeScript` emits the checked
 [private reference candidate](managed-references-prototype.md) through a dedicated
 C++ API. It supports sequential source calls, `cell<T>`/`state`, immutable

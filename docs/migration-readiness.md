@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.260.0"
+applies_to: "language 0.28; toolchain 0.261.0"
 owner: repository
 ---
 
@@ -82,6 +82,11 @@ Toolchain0.260 adds genuine owned resource payloads/captures to private cells,
 snapshot-preserving resource aliases and collection of visible cell/resource
 cycles. It guards native cleanup reentry and callback-ended heap owners. Source
 finalizers, opaque callback cycles and public migration remain separate contracts.
+
+Toolchain0.261 adds private TypeScript host-value entries with checked immutable
+arguments/results, per-call owned heaps and independent copied diagnostics.
+Persistent UI state, live reference host returns, worker transfer and public
+version/history migration remain open; see [value exports](managed-reference-value-exports.md).
 
 | Required behavior | Existing foundation | Missing language/runtime result |
 |---|---|---|

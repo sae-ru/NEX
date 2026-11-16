@@ -55,7 +55,7 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.260.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.261.0 / language 0.28 / task ABI 7**, in development.
 Language 0.29 is an explicit opt-in for partial type lambdas and higher-order kinds;
 0.28 remains the default and rejects those constructs. The compiler default is not
 a project default: `nex.json` selects 0.28 or 0.29 explicitly per project;
@@ -67,17 +67,16 @@ and an explicit [Java int domain](docs/java-integers.md). The
 reference/native/TypeScript [modules](docs/managed-reference-modules.md) and
 [native request contexts](docs/managed-reference-requests.md) and
 [resource-owning cells](docs/managed-reference-owned-payloads.md).
+Its private [TypeScript value exports](docs/managed-reference-value-exports.md)
+accept and return immutable browser values with a separate heap per call.
 Ordinary values and retained snapshots now use
 [iterative deep cleanup](docs/value-retirement.md).
 Public references/state effects, graph migration, machine i32 and other
 [migration prerequisites](docs/migration-readiness.md) remain open.
-The [implementation sequence](docs/implementation-1-6.md) tracks current
-work. [Focused acceptance](docs/evidence/containers-0.247.0-2026-11-15.json) covers
-12 core groups, the affected containers and relocated local installation;
-the published 0.246.1 SDK and its full acceptance remain version-specific.
-[0.248 language checks](docs/evidence/java-int32-language-0.248.0-2026-11-15.json)
-compare 524 JDK cases and verify 0.29 diagnostics, saved graph workflows and local
-installation. Matching full SDK/platform qualification remains pending.
+The [implementation sequence](docs/implementation-1-6.md) tracks remaining work.
+[Container](docs/evidence/containers-0.247.0-2026-11-15.json) and
+[Java int](docs/evidence/java-int32-language-0.248.0-2026-11-15.json) qualification
+retain their exact scopes; matching full SDK/platform gates remain pending.
 
 The [0.246.1 macOS source regression](docs/evidence/full-ctest-0.246.1-current-2026-11-15.json)
 passed **351/351 groups** at `3b008a4e`. The immutable

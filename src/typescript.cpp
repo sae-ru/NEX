@@ -35,12 +35,24 @@ std::string typescriptType(const Type &t,bool tasks,bool managed=false){
   }
   throw Error("E_TASK_UNIMPLEMENTED","standalone synchronous TypeScript exports cannot carry task authority; emit a task-effect entry that owns the execution scope");
 }
+std::string hostValueType(const Type &type){
+  switch(type.kind){
+  case Type::I64:return "bigint";case Type::Bool:return "boolean";
+  case Type::F64:return "number";case Type::Str:return "string";
+  case Type::Bytes:return "host.ByteBuffer";case Type::Unit:return "void";
+  case Type::List:return "ReadonlyArray<"+hostValueType(*type.element)+">";
+  case Type::Result:return "host.Result<"+hostValueType(*type.element)+">";
+  case Type::Record:return "H_"+symbol(type.name);
+  default:throw Error("E_CELL_ENTRY","managed host entry requires immutable wire values");
+  }
+}
 class Generator {
   const Program &p;
   bool taskMode=false;
   bool privateSource=false;
   bool exceptionPrototype=false;
   bool managedMode=false;
+  bool hostValues=false;
   nexrt::CellHeapLimits managedLimits;
   std::vector<std::string> caughtSourceErrors;
   std::set<std::string> functions,structures;
@@ -357,7 +369,7 @@ class Generator {
     if(scoped)scopes.pop_back();
   }
 public:
-  explicit Generator(const Program &p,bool tasks=false,bool staging=false,bool exceptions=false,const nexrt::CellHeapLimits *managed=nullptr):p(p),taskMode(tasks),privateSource(staging),exceptionPrototype(exceptions||isPublicSourceExceptionLanguage(p.sourceLanguage)),managedMode(managed!=nullptr),managedLimits(managed?*managed:nexrt::CellHeapLimits{}){
+  explicit Generator(const Program &p,bool tasks=false,bool staging=false,bool exceptions=false,const nexrt::CellHeapLimits *managed=nullptr,bool hostValues=false):p(p),taskMode(tasks),privateSource(staging),exceptionPrototype(exceptions||isPublicSourceExceptionLanguage(p.sourceLanguage)),managedMode(managed!=nullptr),hostValues(hostValues),managedLimits(managed?*managed:nexrt::CellHeapLimits{}){
     if(supportsManagedReferences(p)&&!managedMode)throw Error("E_CELL_BACKEND","managed source requires its dedicated TypeScript emitter");
     if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype&&!exceptionPrototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require the dedicated experimental TypeScript emitter");
     if(!privateSource){for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;return;}
@@ -373,6 +385,7 @@ public:
       visit(p.function(name));
     }
     write("// Generated from checked NEX "+std::string(programLanguage(p))+"; edit NEX sources.\nimport * as nex from './"+std::string(managedMode?"nex-managed-runtime.ts":"nex-runtime.ts")+"';\n\n");
+    if(hostValues)write("import * as host from './nex-runtime.ts';\n\n");
     if(privateSource||p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)write("// Private staging only; this module has no public source revision.\n");
     if(exceptionPrototype)write("import * as sourceException from './"+std::string(managedMode?"nex-managed-runtime.ts":"nex-source-exception-runtime.ts")+"';\n\n");
     if(taskMode)write("import * as task from './nex-task-runtime.ts';\n\n");
@@ -384,6 +397,25 @@ public:
       if(s.enumeration){write("export type "+type(Type::record(name))+" =\n");for(size_t i=0;i<s.variants.size();++i){const auto &variant=s.variants[i];write("  "+std::string(i?"| ":"  ")+"(nex.RecordValue & { readonly [nex.TYPE]: "+quote(name)+"; readonly [nex.CASE]: "+quote(variant.name)+"; ");for(const auto &field:variant.fields)write("readonly "+quote(field.name)+": "+type(field.type)+"; ");write("})\n");}write(";\n\n");continue;}
       write("export type "+type(Type::record(name))+" = nex.RecordValue & {\n  readonly [nex.TYPE]: "+quote(name)+";\n");
       for(const auto &field:s.fields)write("  readonly "+quote(field.name)+": "+type(field.type)+";\n");write("};\n\n");
+    }
+    if(hostValues){
+      std::set<std::string> records;
+      std::function<void(const Type&)> needed=[&](const Type &type){
+        if(type.element)needed(*type.element);
+        if(type.kind==Type::Record&&records.insert(type.name).second)
+          for(auto field:p.structure(type.name).members())needed(field->type);
+      };
+      for(const auto &[alias,name]:entries){const auto &function=p.function(name);needed(function.result);for(const auto &parameter:function.params)needed(parameter.type);}
+      for(const auto &name:records){
+        const auto &record=p.structure(name);
+        auto fields=[&](const auto &members){for(const auto &field:members)write("readonly "+quote(field.name)+": "+hostValueType(field.type)+"; ");};
+        write("export type "+hostValueType(Type::record(name))+" = ");
+        if(record.enumeration){
+          for(size_t i=0;i<record.variants.size();++i){const auto &variant=record.variants[i];
+            write(std::string(i?" | ":"")+"(host.RecordValue & { readonly [host.TYPE]: "+quote(name)+"; readonly [host.CASE]: "+quote(variant.name)+"; ");fields(variant.fields);write("})");}
+        }else{write("host.RecordValue & { readonly [host.TYPE]: "+quote(name)+"; ");fields(record.fields);write("}");}
+        write(";\n\n");
+      }
     }
     llvm::json::Array included;
     for(const auto &name:functions){
@@ -425,13 +457,28 @@ public:
       for(const auto &[key,shape]:sourceContracts)write("  {key: "+quote(key)+", kind: "+quote(shape.first)+", nominal: "+quote(shape.second)+"},\n");
       write("]);\n");
     }
+    llvm::json::Object hostContracts;
     for(const auto &[alias,name]:entries){
-      if(managedMode)write("export function "+alias+"(): nex.Execution { return nex.run(() => "+symbol(p.function(name).name)+"(), {maximumCells: "+std::to_string(managedLimits.maximumCells)+", maximumNodes: "+std::to_string(managedLimits.maximumNodes)+", maximumEdges: "+std::to_string(managedLimits.maximumEdges)+"}); }\n");
+      const auto limits="{maximumCells: "+std::to_string(managedLimits.maximumCells)+", maximumNodes: "+std::to_string(managedLimits.maximumNodes)+", maximumEdges: "+std::to_string(managedLimits.maximumEdges)+"}";
+      if(hostValues){
+        const auto &function=p.function(name);std::string parameters,arguments;llvm::json::Array inputs;
+        for(size_t i=0;i<function.params.size();++i){const auto &parameter=function.params[i];auto schema=wireSchema(p,parameter.type);
+          if(i){parameters+=", ";arguments+=", ";}
+          parameters+="argument"+std::to_string(i)+": "+hostValueType(parameter.type);
+          arguments+="nex.importValue<"+type(parameter.type)+">(argument"+std::to_string(i)+", "+json(schema,false)+")";
+          inputs.push_back(std::move(schema));
+        }
+        llvm::json::Value result=nullptr;if(function.result!=Type::Unit)result=wireSchema(p,function.result);
+        write("export function "+alias+"("+parameters+"): "+hostValueType(function.result)+" { return nex.invokeValue<"+hostValueType(function.result)+">(() => "+symbol(function.name)+"("+arguments+"), "+limits+(function.result==Type::Unit?"":", "+json(result,false))+"); }\n");
+        hostContracts[alias]=llvm::json::Object{{"symbol",function.name},{"parameters",std::move(inputs)},{"result",std::move(result)}};
+      }
+      else if(managedMode)write("export function "+alias+"(): nex.Execution { return nex.run(() => "+symbol(p.function(name).name)+"(), "+limits+"); }\n");
       else write("export { "+symbol(p.function(name).name)+" as "+alias+" };\n");
     }
-    if(managedMode){auto mapping=llvm::json::Object{{"schema","nex.private-typescript-managed-map/1"},{"language",programLanguage(p)},
+    if(managedMode){auto mapping=llvm::json::Object{{"schema",hostValues?"nex.private-typescript-managed-value-map/1":"nex.private-typescript-managed-map/1"},{"language",programLanguage(p)},
       {"public_source_enabled",false},{"public_revision",false},{"entry_text_hash",hash(p.source)},
       {"functions",std::move(included)},{"statements",std::move(mappings)},{"execution","sequential-owned-heap"}};
+      if(hostValues){mapping["host_entry_contracts"]=std::move(hostContracts);mapping["host_values"]="immutable snapshots; no live reference escapes; one heap per call";}
       if(!p.units.empty()){
         llvm::json::Object units;
         for(const auto &name:functions){const auto &unit=p.function(name).unit;if(p.units.contains(unit))units[unit]=hash(p.units.at(unit).source);}
@@ -500,6 +547,20 @@ WebModule emitManagedReferencesPrototypeTypeScript(const Program &p,const std::s
   if(function.result!=Type::Unit&&!satisfiesConstraint(p,function.result,"wire"))throw Error("E_CELL_ENTRY","managed TypeScript result must be unit or an immutable wire value",function.span);
   for(auto value:{limits.maximumCells,limits.maximumNodes,limits.maximumEdges})if(!value||value>9007199254740991ULL)throw Error("E_CELL_LIMIT","TypeScript managed heap limits must be positive safe integers",function.span);
   return Generator(p,false,true,true,&limits).run({{"main",entry}});
+}
+WebModule emitManagedReferencesValueTypeScript(const Program &p,const std::map<std::string,std::string> &entries,nexrt::CellHeapLimits limits){
+  if(!supportsManagedReferences(p))throw Error("E_LANGUAGE_VERSION","managed value exports require the private reference frontend");
+  for(const auto &function:p.functions)if(!function.checked&&!function.traitSignature)throw Error("E_CELL_STATE","managed value exports require a fully checked program",function.span);
+  for(auto value:{limits.maximumCells,limits.maximumNodes,limits.maximumEdges})if(!value||value>9007199254740991ULL)throw Error("E_CELL_LIMIT","TypeScript managed heap limits must be positive safe integers");
+  static const std::set<std::string> reserved={"await","break","case","catch","class","const","continue","debugger","default","delete","do","else","enum","export","extends","false","finally","for","function","if","import","in","instanceof","new","null","return","super","switch","this","throw","true","try","typeof","var","void","while","with","yield","implements","interface","let","package","private","protected","public","static","arguments","eval","nex","host","sourceException","task"};
+  std::set<std::string> internal;for(const auto &function:p.functions)internal.insert(symbol(function.name));
+  for(const auto &[alias,name]:entries){
+    if(alias.empty()||std::isdigit(static_cast<unsigned char>(alias[0]))||!std::all_of(alias.begin(),alias.end(),[](unsigned char c){return (c>='A'&&c<='Z')||(c>='a'&&c<='z')||(c>='0'&&c<='9')||c=='_';})||reserved.contains(alias)||internal.contains(alias))throw Error("E_ENTRY","managed host export alias is invalid or conflicts with a generated binding: "+alias);
+    const auto &function=p.function(name);
+    if(!function.captures.empty()||(function.result!=Type::Unit&&!satisfiesConstraint(p,function.result,"wire")))throw Error("E_CELL_ENTRY","managed host result must be unit or an immutable wire value",function.span);
+    for(const auto &parameter:function.params)if(!satisfiesConstraint(p,parameter.type,"wire"))throw Error("E_CELL_ENTRY","managed host arguments must be immutable wire values",parameter.span);
+  }
+  return Generator(p,false,true,true,&limits,true).run(entries);
 }
 void writeWebModule(const WebModule &module,const std::string &directory){
   auto output=std::filesystem::path(directory);

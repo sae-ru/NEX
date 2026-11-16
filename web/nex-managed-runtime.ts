@@ -231,3 +231,77 @@ export function readTyped<T extends Value>(detail: execution.SourceDetails, key:
   const value = execution.payload(detail, key, site); checkedPayload(value, kind, nominal, site); return value as T;
 }
 export function run(body: () => Value | void, limits: HeapLimits): execution.Execution { return execution.run(body, limits, representation); }
+
+// This boundary accepts the ordinary browser value representation, not JSON
+// text or live managed values. Copy each checked field once into a bounded
+// immutable snapshot before any subsequent host observation. In particular a
+// host string "42" must never become an i64 argument through JSON coercion.
+function checkedHost(value: unknown, schema: base.Schema): base.Value {
+  let nodes = 0;
+  function copy(value: unknown, type: base.Schema['root'], depth: number): base.Value {
+    if (depth > 64 || ++nodes > 100000) throw new base.NexError('E_CELL_HOST', 'host value exceeds depth/node limit');
+    const invalid = (): never => { throw new base.NexError('E_CELL_HOST', 'host value does not match the checked entry type'); };
+    if (type === 'i64') { if (typeof value !== 'bigint') return invalid(); return base.checked(value); }
+    if (type === 'f64') { if (typeof value !== 'number') return invalid(); return base.finiteFloat(value); }
+    if (type === 'bool') { if (typeof value !== 'boolean') return invalid(); return value; }
+    if (type === 'str') { if (typeof value !== 'string') return invalid(); return base.string(value); }
+    if (type === 'bytes') { if (!(value instanceof base.ByteBuffer)) return invalid(); return value; }
+    if (typeof type === 'string' || value === null || typeof value !== 'object') return invalid();
+    if ('list' in type) {
+      if (!Array.isArray(value) || value.length > 10000) return invalid();
+      // Read actual indexed slots once, including sparse undefined slots.
+      const items: base.Value[] = [];
+      for (let i = 0, length = value.length; i < length; ++i) items.push(copy(value[i], type.list, depth + 1));
+      return base.list(items);
+    }
+    const record = value as base.RecordValue;
+    if ('result' in type) {
+      if (Object.keys(record).length !== 1) return invalid();
+      if (record[base.TYPE] === 'nex.result.ok' && Object.prototype.hasOwnProperty.call(record, 'ok'))
+        return base.ok(copy(record.ok, type.result, depth + 1));
+      if (record[base.TYPE] !== 'nex.result.error') return invalid();
+      const error = record.error;
+      if (error === null || typeof error !== 'object' || Object.keys(error).length !== 2 ||
+          !Object.prototype.hasOwnProperty.call(error, 'code') || !Object.prototype.hasOwnProperty.call(error, 'message')) return invalid();
+      const code = (error as base.RecordValue).code, message = (error as base.RecordValue).message;
+      if (typeof code !== 'string' || typeof message !== 'string') return invalid();
+      return base.err(base.string(code), base.string(message));
+    }
+    const nominal = 'record' in type ? type.record : type.enum;
+    if (record[base.TYPE] !== nominal) return invalid();
+    const tag = record[base.CASE];
+    const fields = 'record' in type ? schema.records[nominal]
+      : schema.enums?.[nominal]?.find(variant => variant.name === tag)?.fields;
+    if (fields === undefined || fields.length > 10000 || Object.keys(record).length !== fields.length) return invalid();
+    if ('record' in type && tag !== undefined) return invalid();
+    const copied: Array<readonly [string, base.Value]> = [];
+    for (const field of fields) {
+      if (!Object.prototype.hasOwnProperty.call(record, field.name)) return invalid();
+      copied.push([field.name, copy(record[field.name], field.type, depth + 1)]);
+    }
+    return 'record' in type ? base.record(nominal, copied) : base.enumeration(nominal, tag!, copied);
+  }
+  const copied = copy(value, schema.root, 0);
+  base.encodeJSON(copied); // Retain the ordinary bounded wire byte-size contract.
+  return copied;
+}
+export function importValue<T extends Value>(value: unknown, schema: base.Schema): T {
+  // Root each argument as soon as it is imported, before evaluating the next
+  // argument or entering generated source code (which may collect immediately).
+  const copied = sourceValue(checkedHost(value, schema)) as T;
+  execution.root(() => copied); return copied;
+}
+export function invokeValue<T extends base.Value | void>(body: () => Value | void, limits: HeapLimits, schema?: base.Schema): T {
+  let result: base.Value | void = undefined;
+  const outcome = execution.run(body, limits, value => {
+    if (schema === undefined) {
+      if (value !== undefined) throw new base.NexError('E_CELL_HOST', 'unit entry returned a value');
+    } else {
+      if (value === undefined) throw new base.NexError('E_CELL_HOST', 'value entry returned unit');
+      result = checkedHost(hostValue(value), schema);
+    }
+    return 'null';
+  }, text => console.log(text));
+  if (outcome.kind === 'trap') throw new base.NexError(outcome.code!, outcome.message!, outcome.site);
+  return result as T;
+}

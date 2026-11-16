@@ -602,6 +602,16 @@ add_test(NAME managed_references_typescript COMMAND ${Python3_EXECUTABLE} -B
   $<TARGET_FILE:nex_managed_reference_typescript_probe> $<TARGET_FILE:nex_managed_reference_native_probe>
   --output ${CMAKE_CURRENT_BINARY_DIR}/managed-reference-typescript-${PROJECT_VERSION}-acceptance)
 set_tests_properties(managed_references_typescript PROPERTIES TIMEOUT 600)
+add_test(NAME managed_reference_value_exports COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/managed_reference_typescript.py
+  $<TARGET_FILE:nex_managed_reference_typescript_probe> $<TARGET_FILE:nex_managed_reference_native_probe> --values
+  --output ${CMAKE_CURRENT_BINARY_DIR}/managed-reference-values-${PROJECT_VERSION}-acceptance)
+set_tests_properties(managed_reference_value_exports PROPERTIES TIMEOUT 600)
+add_test(NAME managed_reference_module_value_exports COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/managed_reference_typescript.py
+  $<TARGET_FILE:nex_managed_reference_typescript_probe> $<TARGET_FILE:nex_managed_reference_native_probe> --values --modules
+  --output ${CMAKE_CURRENT_BINARY_DIR}/managed-reference-module-values-${PROJECT_VERSION}-acceptance)
+set_tests_properties(managed_reference_module_value_exports PROPERTIES TIMEOUT 600)
 add_test(NAME managed_references_native COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/managed_reference_native.py $<TARGET_FILE:nex_managed_reference_native_probe>
   ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}

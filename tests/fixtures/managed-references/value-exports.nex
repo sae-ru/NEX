@@ -1,0 +1,64 @@
+module value_exports;
+
+pub struct Packet { text: str; values: list<i64>; data: bytes; }
+pub enum Choice { Empty; Full(value: Packet); }
+struct Fault { value: cell<i64>; }
+
+pub fn increment(value: i64) -> i64 !{state} {
+  let stored: cell<i64> = cell_new(value);
+  cell_write(stored, cell_read(stored) + 1);
+  return cell_read(stored);
+}
+pub fn snapshot(value: list<i64>, next: list<i64>) -> list<i64> !{state} {
+  let stored: cell<list<i64>> = cell_new(value);
+  let old: list<i64> = cell_read(stored);
+  cell_write(stored, next);
+  cell_collect();
+  return old;
+}
+pub fn packet(value: Packet) -> Packet !{state} {
+  let stored: cell<Packet> = cell_new(value);
+  cell_collect();
+  return cell_read(stored);
+}
+pub fn choice(value: Choice) -> Choice !{state} {
+  return cell_read(cell_new(value));
+}
+pub fn outcome(value: result<Packet>) -> result<Packet> !{state} {
+  return cell_read(cell_new(value));
+}
+pub fn echoed(value: str) -> str !{io,state} {
+  let stored: cell<str> = cell_new(value);
+  print(value);
+  return cell_read(stored);
+}
+pub fn fatal(value: i64) -> i64 !{io,state} {
+  let stored: cell<i64> = cell_new(value);
+  print(cell_read(stored));
+  assert(false);
+  return 0;
+}
+pub fn raised(value: i64) -> i64 !{io,state,throw} {
+  let stored: cell<i64> = cell_new(value);
+  print(cell_read(stored));
+  throw(Fault(stored));
+}
+pub fn ignored(value: bool, amount: f64) -> unit !{state} {
+  let stored: cell<bool> = cell_new(value);
+  assert(cell_read(stored));
+  assert(amount == 1.5);
+}
+server fn hidden() -> str !{fs} {
+  return unwrap(file_read_text("UNREACHABLE_VALUE_HOST_SECRET"));
+}
+fn main() -> unit !{io,state} {
+  print(increment(9007199254740993));
+  print(snapshot([1, 2], [99]));
+  let data: Packet = Packet("🧠\u0000tail", [9007199254740993], utf8_bytes("é"));
+  print(packet(data));
+  print(choice(Choice::Full(data)));
+  print(outcome(ok(data)));
+  print(outcome(err<Packet>("E_SAMPLE", "sample")));
+  print(echoed("outer"));
+  ignored(true, 1.5);
+}

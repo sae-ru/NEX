@@ -1,3 +1,27 @@
+# Private TypeScript host-value entries — development0.261.0
+
+Checked private source functions can export ordinary immutable browser values,
+including typed arguments, records/enums, bytes and Results. Each invocation owns
+one heap; copied results survive its close, output is observed synchronously and
+nested host calls restore the enclosing context. Type/shape checks and generated
+signatures reject live cell/closure/resource transfer. The existing diagnostic
+envelope API keeps its separate contract. Read [value exports](docs/managed-reference-value-exports.md).
+
+Sixteen core and11 affected groups pass. New value exports agree with reference
+execution across44 single-unit/host-result cases and10 imported-module cases,
+with two executed calls per case. Nine typed parameter exports additionally
+preserve reference output,64 repeated invocations, nested host success/error,
+observer failure and12 runtime rejections. A moved normal installation verifies
+the same exports using installed resources and four public0.29 CLI commands.
+[Exact evidence](docs/evidence/managed-reference-value-exports-0.261.0-2026-11-16.json).
+[Preceding0.260 core CI](docs/evidence/core-ci-0.260.0-2026-11-16.json) passed
+Mac/Linux; this does not qualify the new block's hosted run.
+
+Public references/history migration, persistent UI state, worker/task transfer,
+component/debugger integration, Java/Python semantics and full compiler/platform/
+portable SDK acceptance remain open. Public0.28/0.29 and immutable SDK0.246.1
+remain unchanged. Ordinary frontend/project integration is still the next stage.
+
 # Private resource-owning reference graphs — development0.260.0
 
 Private cells now retain genuine file/external owners, nested aggregates and
