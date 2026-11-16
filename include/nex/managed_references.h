@@ -33,7 +33,7 @@ std::string emitManagedReferencesPrototypeRequestMLIR(const Program &program,
     const std::string &entry="main",bool optimized=false);
 WebModule emitManagedReferencesPrototypeTypeScript(const Program &program,
     const std::string &entry="main",nexrt::CellHeapLimits limits={});
-// Checked030 generator/scheduler development; ordinary CLI stays gated.
+// Retained checked030 generator/scheduler development entry.
 WebModule emitManagedReferenceTasksDevelopmentTypeScript(const Program &program,
     const std::string &entry="main",nexrt::CellHeapLimits limits={});
 // Private host-value boundary: ordinary immutable browser values in/out, one
@@ -41,6 +41,10 @@ WebModule emitManagedReferenceTasksDevelopmentTypeScript(const Program &program,
 // Unlike the diagnostic prototype envelope, exports have checked source
 // parameters/results and throw independent NexError diagnostics on failure.
 WebModule emitManagedReferencesValueTypeScript(const Program &program,
+    const std::map<std::string,std::string> &entries,nexrt::CellHeapLimits limits={});
+// Persistent030 browser application. Raw source state stays inside one owned
+// context; the host receives copied views/commands and an async lifecycle API.
+WebModule emitManagedApplicationTypeScript(const Program &program,
     const std::map<std::string,std::string> &entries,nexrt::CellHeapLimits limits={});
 namespace detail {
 // Raw per-unit parser for the module loader; declaration binding follows there.

@@ -194,8 +194,10 @@ export class TaskSession {
   readonly lanes = new Map<number, Context>();
   private readonly result: RootFrame;
   private closed = false;
-  constructor(limits: HeapLimits, print?: (text: string) => void) {
-    this.owner = {heap: new CellHeap(limits), roots: [], scopes: [], flight: new Map(), output: {text: '', print}};
+  private readonly ownsHeap: boolean;
+  constructor(limits: HeapLimits, print?: (text: string) => void, borrowed?: CellHeap) {
+    this.ownsHeap = borrowed === undefined;
+    this.owner = {heap: borrowed ?? new CellHeap(limits), roots: [], scopes: [], flight: new Map(), output: {text: '', print}};
     this.result = this.owner.heap.frame();
   }
   turn<T>(job: number, body: () => T): T {
@@ -216,6 +218,7 @@ export class TaskSession {
   }
   keepResult(value: HeapValue | void): void { keep(this.result, value); }
   finish(value: HeapValue | void, error: unknown, failed: boolean, render: (value: HeapValue | void) => string): Execution {
+    if (!this.ownsHeap) throw new NexError('E_INTERNAL', 'borrowed task session requires an application result owner');
     try {
       let value_json: string | undefined, failure: {code: string; message: string; line: number; file: string; site?: Site} | undefined;
       if (!failed) value_json = render(value);
@@ -234,11 +237,32 @@ export class TaskSession {
         beforeCollection, afterCollection, afterClose: this.owner.heap.stats()};
     } finally { this.close(); }
   }
+  finishBorrowed<T>(value: HeapValue | void, error: unknown, failed: boolean, accept: (value: HeapValue | void) => T): T {
+    if (this.ownsHeap) throw new NexError('E_INTERNAL', 'application task session requires a borrowed heap');
+    try {
+      if (failed) {
+        if (error instanceof SourceCompletion) {
+          this.release(error);
+          throw new NexError('E_SOURCE_EXCEPTION', error.detail.code + ': ' + error.detail.message, error.detail.site);
+        }
+        throw error;
+      }
+      // The application adopts state/copies outputs before invocation roots end.
+      const result = accept(value);
+      this.result.close();
+      if (this.owner.flight.size || [...this.lanes.values()].some(lane => lane.roots.length || lane.scopes.length))
+        throw new NexError('E_INTERNAL', 'application task retained source frames or completions');
+      return result;
+    } finally {
+      this.close();
+      this.owner.heap.collect();
+    }
+  }
   close(): void {
     if (this.closed) return;
     for (const lane of this.lanes.values()) { unwind(lane, 0); lane.scopes.length = 0; }
     for (const frame of this.owner.flight.values()) frame.close(); this.owner.flight.clear();
-    this.result.close(); this.owner.heap.close(); this.lanes.clear(); this.closed = true;
+    this.result.close(); if (this.ownsHeap) this.owner.heap.close(); this.lanes.clear(); this.closed = true;
   }
 }
 export function taskOwner(): CellHeap { return context().heap; }

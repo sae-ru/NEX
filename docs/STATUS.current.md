@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.271.0"
+applies_to: "language 0.28; toolchain 0.272.0"
 owner: repository
 generated_from: README.md#development-status
 ---
@@ -12,7 +12,7 @@ It reports recorded evidence, not a live observation of devices or remote jobs.
 For syntax and capabilities, query the selected compiler. For detailed history,
 use [STATUS](../STATUS.md); for next work, use [development priorities](development-priorities.md).
 
-Current source: **toolchain 0.271.0 / language 0.28 / task ABIs 7/8**, in development.
+Current source: **toolchain 0.272.0 / language 0.28 / task ABIs 7/8**, in development.
 The compiler fallback remains0.28. `nex.json` selects0.28,0.29 or0.30 per project;
 new `nex init` projects select0.30. Language0.29 adds partial type lambdas and
 higher-order kinds;0.30 adds typed cells and the `state` effect. Retained projects
@@ -31,9 +31,10 @@ Native [HTTP requests](reference-http.md) own separate reference contexts.
 Ordinary values and retained snapshots now use
 [iterative deep cleanup](value-retirement.md).
 [Reference tasks](reference-tasks.md) now use one owner-thread heap in
-reference/native/TypeScript and native HTTP entries. Persistent UI state,
-parallel transfer, live cell inspection and remaining [migration prerequisites](migration-readiness.md)
-stay open. [Focused acceptance](evidence/reference-tasks-cli-0.271.0-2026-11-16.json)
+reference/native/TypeScript and native HTTP entries.
+[Persistent030 UI](persistent-ui.md) retains state across serialized events.
+Native task-provider lifetimes, parallel transfer, live cell inspection and remaining [migration prerequisites](migration-readiness.md)
+stay open. [Focused acceptance](evidence/persistent-ui-0.272.0-2026-11-17.json)
 is separate from full SDK/platform gates.
 The [implementation sequence](implementation-1-6.md) tracks remaining work.
 
@@ -46,9 +47,6 @@ network profile. [Download](https://github.com/sae-ru/NEX/releases/tag/v0.246.1)
 and [install](getting-started.en.md#install-the-macos-arm64-sdk).
 [Core CI](ci.md) passed. The full Linux test step passed; its artifact
 retention fix passed a separate CI check.
-The owned Metal provider previously ran on an Apple
-**M5 Max** with 15 hardware scenarios, 12 reply faults, log isolation and 27+1
-source checks; see the [Metal receipt](evidence/owned-metal-0.243.0-2026-11-13.json).
 
 Browser applications support workers, `web/app.css`, `web/public/` assets,
 `web/index.html`, application-provided `web/components.tsx` and generated file

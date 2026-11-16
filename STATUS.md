@@ -1,3 +1,25 @@
+# Persistent030 browser application state — development0.272.0
+
+Browser applications retain opaque030 State in one owned heap across serialized
+UI invocations. Cells and structured tasks compose with views, stateful command
+entries and copied HTTP/Worker response events. Child source tasks join before
+publication. The generated React adapter closes source state and its runners on
+failure/unmount. Explicit close, cancellation, deadlines, budgets and unexpected
+host failures retire pending work and owned roots. Read [the contract](docs/persistent-ui.md)
+and [example](examples/persistent-ui/README.md).
+
+The new `nex.typescript-application/1` map retains checked source identities and
+operation sites. Ordinary per-call map4/map3 exports, private development maps,
+pure synchronous UI and retained028/029 contracts remain distinct. No source
+syntax/version, graph format or task/C ABI change is introduced. No npm lock or
+bundled notice changes are made. Full current source/platform/portable SDK
+qualification, native persistent task-provider lifetimes, parallel reference
+transfer and reference task debugging/profile remain required. Published
+portable SDK0.246.1 is immutable. [Focused qualification](docs/evidence/persistent-ui-0.272.0-2026-11-17.json)
+records29 distinct passing core/affected groups,13 controller scenarios, six
+generated applications, seven rejected programs, actual Chrome interaction and
+a relocated normal installation; the original whole-project PLAN remains active.
+
 # Ordinary owner-thread reference tasks — development0.271.0
 
 Ordinary checked030 evaluation, native debug/release applications and HTTP

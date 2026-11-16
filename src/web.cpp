@@ -1,5 +1,7 @@
 #include "nex/web.h"
 #include "nex/backend.h"
+#include "nex/managed_references.h"
+#include "nex/task_frontend.h"
 #include "nex/task_process.h"
 #include "nex_task_limits.h"
 #include "llvm/Support/Error.h"
@@ -38,9 +40,9 @@ public:
     if(error){fs::copy(temporary/name,original/name,fs::copy_options::recursive|fs::copy_options::copy_symlinks);}
   }
 };
-void requireFunction(const Function &f,const std::vector<Type> &params,const Type &result,bool taskWorker=false,bool sourceErrors=false){
-  if(f.effects.contains("task")&&!taskWorker)throw Error("E_TASK_UNIMPLEMENTED","the synchronous web application adapter cannot invoke task functions",f.span);
-  bool effects=f.effects.empty()||(taskWorker&&std::all_of(f.effects.begin(),f.effects.end(),[&](const auto &effect){return effect=="task"||(sourceErrors&&effect=="throw");}));
+void requireFunction(const Function &f,const std::vector<Type> &params,const Type &result,bool taskWorker=false,bool sourceErrors=false,bool application=false){
+  if(f.effects.contains("task")&&!taskWorker&&!application)throw Error("E_TASK_UNIMPLEMENTED","the synchronous web application adapter cannot invoke task functions",f.span);
+  bool effects=f.effects.empty()||(application&&std::all_of(f.effects.begin(),f.effects.end(),[](const auto &effect){return effect=="state"||effect=="task"||effect=="throw";}))||(taskWorker&&std::all_of(f.effects.begin(),f.effects.end(),[&](const auto &effect){return effect=="task"||(sourceErrors&&effect=="throw");}));
   bool valid=!f.test&&f.realm!="server"&&effects&&f.result==result&&f.params.size()==params.size();
   if(valid)for(size_t i=0;i<params.size();++i)if(f.params[i].type!=params[i])valid=false;
   if(!valid)throw Error("E_WEB_SIGNATURE","invalid web application contract for "+f.name+"; see docs/web.md",f.span);
@@ -61,7 +63,6 @@ Project prepare(const Program &p){
   const auto &initial=p.function("initial"),&update=p.function("update"),&render=p.function("view"),&title=p.function("title");
   if(initial.result==Type::Unit)throw Error("E_WEB_SIGNATURE","initial() must return application state",initial.span);
   auto state=initial.result;
-  requireFunction(initial,{},state);requireFunction(update,{state,event},state);requireFunction(render,{state},view);requireFunction(title,{},Type::Str);
   std::map<std::string,std::string> entries={{"initial",initial.name},{"update",update.name},{"view",render.name},{"title",title.name}};
   const Function *commands=nullptr,*workerCompute=nullptr,*workerCommands=nullptr;
   for(const auto &f:p.functions)if(f.owner==p.module){
@@ -74,6 +75,13 @@ Project prepare(const Program &p){
   bool workerContract=workerCommands&&workerCommands->result.kind==Type::List&&workerCommands->result.element->kind==Type::Record&&p.structure(workerCommands->result.element->name).templateName=="std::worker::Command";
   if(!workerContract){workerCompute=nullptr;workerCommands=nullptr;}
   else if(!workerCompute)throw Error("E_WEB_SIGNATURE","typed worker_commands requires worker_compute");
+  std::set<std::string> applicationRoots={initial.name,update.name,render.name,title.name};
+  if(commands)applicationRoots.insert(commands->name);
+  if(workerContract)applicationRoots.insert(workerCommands->name);
+  bool owned=p.sourceLanguage==SourceLanguage::References030&&usesManagedReferences(p,applicationRoots);
+  if(p.sourceLanguage==SourceLanguage::References030)for(const auto &name:applicationRoots)owned|=usesTaskEffects(p,name);
+  requireFunction(initial,{},state,false,false,owned);requireFunction(update,{state,event},state,false,false,owned);
+  requireFunction(render,{state},view,false,false,owned);requireFunction(title,{},Type::Str,false,false,owned);
   llvm::json::Value workerInput=nullptr,workerOutput=nullptr;
   if(workerCompute){
     if(workerCompute->params.size()!=1)throw Error("E_WEB_SIGNATURE","worker_compute requires one wire input",workerCompute->span);
@@ -85,26 +93,32 @@ Project prepare(const Program &p){
     auto command=*workerCommands->result.element;const auto &s=p.structure(command.name);
     if(s.templateName!="std::worker::Command"||s.typeArguments!=std::vector<Type>{input})throw Error("E_WEB_SIGNATURE","worker command input must match worker_compute",workerCommands->span);
     requireStructure(p,command.name,{{"kind",Type::Str},{"id",Type::Str},{"input",Type::result(input)},{"action",Type::Str},{"timeout_ms",Type::I64}});
-    requireFunction(*workerCommands,{state,state,event},Type::list(command));entries["worker_commands"]=workerCommands->name;
+    requireFunction(*workerCommands,{state,state,event},Type::list(command),false,false,owned);entries["worker_commands"]=workerCommands->name;
   }
   if(commands){
     auto command=Type::record("std::net::Command");
     requireStructure(p,command.name,{{"kind",Type::Str},{"id",Type::Str},{"method",Type::Str},{"path",Type::Str},{"body",Type::Str},{"token",Type::Str},{"action",Type::Str},{"timeout_ms",Type::I64}});
     requireStructure(p,"std::net::Response",{{"id",Type::Str},{"status",Type::I64},{"body",Type::result(Type::Str)}});
-    requireFunction(*commands,{state,state,event},Type::list(command));entries["commands"]=commands->name;
+    requireFunction(*commands,{state,state,event},Type::list(command),false,false,owned);entries["commands"]=commands->name;
   }
-  auto module=emitTypeScriptDelivery(p,entries);
-  if(module.asynchronous)throw Error("E_TASK_UNIMPLEMENTED","the synchronous web application adapter cannot retain reachable task callables");
+  auto module=owned?emitManagedApplicationTypeScript(p,entries):emitTypeScriptDelivery(p,entries);
+  if(module.asynchronous&&!owned)throw Error("E_TASK_UNIMPLEMENTED","the synchronous web application adapter cannot retain reachable task callables");
+  auto wireAppend=[&](std::string text){
+    if(owned){size_t at=0;while((at=text.find("nex.",at))!=std::string::npos){text.replace(at,4,"host.");at+=5;}}
+    module.source+=text;
+  };
   // Names used by the renderer are explicit aliases; the source retains qualified nominal identities.
+  if(!owned){
   module.source+="\nexport type State = ReturnType<typeof "+nativeSymbol(initial.name)+">;\nexport type View = ReturnType<typeof "+nativeSymbol(render.name)+">;\nexport type Event = Parameters<typeof "+nativeSymbol(update.name)+">[1];\n";
   module.source+="export function makeEvent(name: string, value: string, path: string): Event {\n  return nex.record<Event>('std::web::Event', [['name', nex.string(name)], ['value', nex.string(value)], ['path', nex.string(path)]]);\n}\n";
   if(commands)module.source+="export type Command = ReturnType<typeof "+nativeSymbol(commands->name)+">[number];\n";
   else module.source+="export type Command = nex.RecordValue & { readonly kind: string; readonly id: string; readonly method: string; readonly path: string; readonly body: string; readonly token: string; readonly action: string; readonly timeout_ms: bigint };\nexport function commands(_before: State, _after: State, _event: Event): ReadonlyArray<Command> { return nex.list<Command>([]); }\n";
-  module.source+="export function makeResponseEvent(action: string, id: string, status: number, body: string, code: string, message: string, path: string): Event {\n  const payload = (content: nex.Result<string>) => nex.record('std::net::Response', [['id', nex.string(id)], ['status', nex.checked(BigInt(status))], ['body', content]]);\n  let encoded: string;\n  try { encoded = nex.encodeJSON(payload(code ? nex.err<string>(nex.string(code), nex.string(message)) : nex.ok(nex.string(body)))); }\n  catch (error) {\n    if (!(error instanceof nex.NexError) || error.code !== 'E_JSON') throw error;\n    encoded = nex.encodeJSON(payload(nex.err<string>('E_LIMIT', 'Response envelope exceeds wire limits')));\n  }\n  return makeEvent(action, encoded, path);\n}\n";
+  }
+  wireAppend("export function makeResponseEvent(action: string, id: string, status: number, body: string, code: string, message: string, path: string): Event {\n  const payload = (content: nex.Result<string>) => nex.record('std::net::Response', [['id', nex.string(id)], ['status', nex.checked(BigInt(status))], ['body', content]]);\n  let encoded: string;\n  try { encoded = nex.encodeJSON(payload(code ? nex.err<string>(nex.string(code), nex.string(message)) : nex.ok(nex.string(body)))); }\n  catch (error) {\n    if (!(error instanceof nex.NexError) || error.code !== 'E_JSON') throw error;\n    encoded = nex.encodeJSON(payload(nex.err<string>('E_LIMIT', 'Response envelope exceeds wire limits')));\n  }\n  return makeEvent(action, encoded, path);\n}\n");
   std::map<std::string,std::string> files;
   module.source+="\nexport const workerEnabled = "+std::string(workerCompute?"true":"false")+";\n";
   if(workerCompute){
-    module.source+="export type WorkerCommand = ReturnType<typeof "+nativeSymbol(workerCommands->name)+">[number];\n";
+    if(!owned)module.source+="export type WorkerCommand = ReturnType<typeof "+nativeSymbol(workerCommands->name)+">[number];\n";
     auto worker=emitTypeScriptDelivery(p,{{"compute",workerCompute->name}});
     // Each dedicated worker owns one root scheduler. Only wire values cross
     // the host boundary; scopes/futures/channels remain inside that scheduler.
@@ -123,14 +137,14 @@ Project prepare(const Program &p){
     files["src/workers.ts"]=readFile(resourceFile("web/workers.ts"));
     files["src/worker-entry.ts"]=readFile(resourceFile("web/worker-entry.ts"));
   }else{
-    module.source+="export type WorkerCommand = nex.RecordValue & { readonly kind: string; readonly id: string; readonly input: nex.Result<nex.Value>; readonly action: string; readonly timeout_ms: bigint };\nexport function worker_commands(_before: State, _after: State, _event: Event): ReadonlyArray<WorkerCommand> { return []; }\n";
+    if(!owned)module.source+="export type WorkerCommand = nex.RecordValue & { readonly kind: string; readonly id: string; readonly input: nex.Result<nex.Value>; readonly action: string; readonly timeout_ms: bigint };\nexport function worker_commands(_before: State, _after: State, _event: Event): ReadonlyArray<WorkerCommand> { return []; }\n";
     files["src/workers.ts"]="import type { WorkerCommand } from './program.ts';\nexport class WorkerRunner { constructor(_deliver: (action: string, id: string, body: string, code: string, message: string) => void) {} validate(_commands: ReadonlyArray<WorkerCommand>): void {} run(_commands: ReadonlyArray<WorkerCommand>): void {} close(): void {} }\n";
   }
   if(workerCompute)module.source+="import { outputSchema as workerOutputSchema } from './worker-contract.ts';\n";
-  module.source+="export function makeWorkerResponseEvent(action: string, id: string, body: string, code: string, message: string, path: string): Event {\n  const value: nex.Result<nex.Value> = "+std::string(workerCompute?"code ? nex.err(code, message) : nex.decodeJSON<nex.Value>(body, workerOutputSchema)":"nex.err('E_WORKER', 'No worker handler configured')")+";\n";
+  wireAppend("export function makeWorkerResponseEvent(action: string, id: string, body: string, code: string, message: string, path: string): Event {\n  const value: nex.Result<nex.Value> = "+std::string(workerCompute?"code ? nex.err(code, message) : nex.decodeJSON<nex.Value>(body, workerOutputSchema)":"nex.err('E_WORKER', 'No worker handler configured')")+";\n");
   // Wire input is already checked by the runner. Encode the response envelope
   // without parsing numeric wire strings into JavaScript Number values.
-  module.source+="  let encoded: string;\n  try { encoded = nex.encodeJSON(nex.record('std::worker::Response', [['id', id], ['value', value]])); }\n  catch (error) {\n    if (!(error instanceof nex.NexError) || error.code !== 'E_JSON') throw error;\n    encoded = nex.encodeJSON(nex.record('std::worker::Response', [['id', id], ['value', nex.err('E_LIMIT', 'Worker response envelope exceeds wire limits')]]));\n  }\n  return makeEvent(action, encoded, path);\n}\n";
+  wireAppend("  let encoded: string;\n  try { encoded = nex.encodeJSON(nex.record('std::worker::Response', [['id', id], ['value', value]])); }\n  catch (error) {\n    if (!(error instanceof nex.NexError) || error.code !== 'E_JSON') throw error;\n    encoded = nex.encodeJSON(nex.record('std::worker::Response', [['id', id], ['value', nex.err('E_LIMIT', 'Worker response envelope exceeds wire limits')]]));\n  }\n  return makeEvent(action, encoded, path);\n}\n");
   files["src/program.ts"]=module.source;
   files["src/nex-runtime.ts"]=readFile(resourceFile("web/nex-runtime.ts"));
   files["src/nex-bytes.ts"]=readFile(resourceFile("web/nex-bytes.ts"));
@@ -138,10 +152,12 @@ Project prepare(const Program &p){
     files["src/nex-task-runtime.ts"]=readFile(resourceFile("web/nex-task-runtime.ts"));
     files["src/nex-source-exception-runtime.ts"]=readFile(resourceFile("web/nex-source-exception-runtime.ts"));
   }
+  if(owned)for(const auto *name:{"nex-managed-heap.ts","nex-managed-context.ts","nex-managed-runtime.ts","nex-managed-task-runtime.ts","nex-managed-application.ts"})files["src/"+std::string(name)]=readFile(resourceFile("web/"+std::string(name)));
   files["nex-map.json"]=json(module.mapping)+"\n";
   const std::vector<std::string> rootFiles={"package.json","package-lock.json","tsconfig.json","vite.config.js","playwright.config.js","index.html"};
   for(const auto &file:rootFiles)files[file]=readFile(resourceFile("web/"+file));
-  for(const auto &file:{"app.tsx","renderer.tsx","components.tsx","net.ts","urls.ts","app.css","vite-env.d.ts"})files["src/"+std::string(file)]=readFile(resourceFile("web/"+std::string(file)));
+  files["src/app.tsx"]=readFile(resourceFile(owned?"web/managed-app.tsx":"web/app.tsx"));
+  for(const auto &file:{"renderer.tsx","components.tsx","net.ts","urls.ts","app.css","vite-env.d.ts"})files["src/"+std::string(file)]=readFile(resourceFile("web/"+std::string(file)));
   if(!p.path.empty()){
     auto base=std::filesystem::path(p.path);
     auto root=base.has_parent_path()?base.parent_path():std::filesystem::current_path();

@@ -298,6 +298,9 @@ function checkedHost(value: unknown, schema: base.Schema): base.Value {
   base.encodeJSON(copied); // Retain the ordinary bounded wire byte-size contract.
   return copied;
 }
+export function copyHostValue<T extends base.Value>(value: unknown, schema: base.Schema): T {
+  return checkedHost(value, schema) as T;
+}
 export function importValue<T extends Value>(value: unknown, schema: base.Schema): T {
   // Root each argument as soon as it is imported, before evaluating the next
   // argument or entering generated source code (which may collect immediately).

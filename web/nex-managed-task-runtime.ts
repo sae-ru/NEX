@@ -4,7 +4,7 @@ import * as task from './nex-task-runtime.ts';
 import * as base from './nex-runtime.ts';
 import * as nex from './nex-managed-runtime.ts';
 import * as execution from './nex-managed-context.ts';
-import {HeapNode, type HeapLimits, type RootFrame} from './nex-managed-heap.ts';
+import {CellHeap, HeapNode, type HeapLimits, type RootFrame} from './nex-managed-heap.ts';
 export type Item = nex.Value | void;
 export type Request = task.Request;
 export type Step<T extends Item> = Generator<Request, T, Item>;
@@ -41,9 +41,7 @@ export function* checkpoint(site?: base.Site): Step<void> { yield* bridge<Step<v
 export function request(operation: string, values: ReadonlyArray<nex.Value>, site?: base.Site): Request {
   return task.request(operation, bridge(values), site);
 }
-async function execute<T extends Item>(body: () => Step<T>, limits: HeapLimits, options: task.Options,
-    render: (value: Item) => string, print?: (text: string) => void): Promise<execution.Execution> {
-  const session = new execution.TaskSession(limits, print);
+async function drive<T extends Item>(body: () => Step<T>, session: execution.TaskSession, options: task.Options): Promise<{value: Item; error: unknown; failed: boolean}> {
   const policy: task.ManagedDevelopmentValues = {
     children(value, site) {
       if (value instanceof HeapNode && ['task_scope', 'task', 'channel'].includes(value.kind) &&
@@ -67,7 +65,21 @@ async function execute<T extends Item>(body: () => Step<T>, limits: HeapLimits, 
     const root = session.turn(0, () => call(body));
     value = bridge(await task.runManagedDevelopment(bridge<task.Call<base.Value | void>>(root), policy, options));
   } catch (caught) { error = caught; failed = true; }
+  return {value, error, failed};
+}
+async function execute<T extends Item>(body: () => Step<T>, limits: HeapLimits, options: task.Options,
+    render: (value: Item) => string, print?: (text: string) => void): Promise<execution.Execution> {
+  const session = new execution.TaskSession(limits, print);
+  const {value, error, failed} = await drive(body, session, options);
   return session.finish(value, error, failed, render);
+}
+// One serialized application invocation borrows its owner's heap. No live
+// result is returned until accept has installed the application's next roots.
+export async function invokeApplication<T>(body: () => Step<Item>, heap: CellHeap, limits: HeapLimits,
+    accept: (value: Item) => T, options: task.Options = {}): Promise<T> {
+  const session = new execution.TaskSession(limits, text => console.log(text), heap);
+  const {value, error, failed} = await drive(body, session, options);
+  return session.finishBorrowed(value, error, failed, accept);
 }
 
 // Private envelope remains available to the independent development corpus.

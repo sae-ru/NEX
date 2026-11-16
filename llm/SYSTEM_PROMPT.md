@@ -77,9 +77,15 @@ enclosing scope spanning all related calls/handles. Retire that scope after a
 fatal trap and keep code images loaded until captures and cleanup retire.
 Ordinary static project components use that consuming context; the foreign ABI
 remains compiler-private and matching-runtime.
-Explicit030 native HTTP builds own one sequential context per request. They
+For030 UI with cells or tasks, discover
+`managed_references.source030_development.persistent_UI` and read its guide.
+Use generated `createApplication`/`ready`/`dispatch`/`close` ownership; State stays
+inside the controller and only copied wire events/views/commands cross the host.
+Source tasks join before publication. HTTP/Worker commands deliver later events.
+
+Explicit030 native HTTP builds own one owner-thread context per request. They
 return ordinary immutable responses and copy uncaught diagnostics before context
-close; reference-bearing task/parallel handlers remain unsupported.
+close; ordinary reference tasks are supported; parallel reference handlers remain unsupported.
 
 ## Work from a checked project
 

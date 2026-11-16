@@ -54,6 +54,7 @@ class Generator {
   bool exceptionPrototype=false;
   bool managedMode=false;
   bool hostValues=false;
+  bool applicationMode=false;
   nexrt::CellHeapLimits managedLimits;
   std::vector<std::string> caughtSourceErrors;
   std::set<std::string> functions,structures;
@@ -448,7 +449,7 @@ class Generator {
     if(scoped)scopes.pop_back();
   }
 public:
-  explicit Generator(const Program &p,bool tasks=false,bool staging=false,bool exceptions=false,const nexrt::CellHeapLimits *managed=nullptr,bool hostValues=false):p(p),taskMode(tasks),privateSource(staging),exceptionPrototype(exceptions||isPublicSourceExceptionLanguage(p.sourceLanguage)),managedMode(managed!=nullptr),hostValues(hostValues),managedLimits(managed?*managed:nexrt::CellHeapLimits{}){
+  explicit Generator(const Program &p,bool tasks=false,bool staging=false,bool exceptions=false,const nexrt::CellHeapLimits *managed=nullptr,bool hostValues=false,bool application=false):p(p),taskMode(tasks),privateSource(staging),exceptionPrototype(exceptions||isPublicSourceExceptionLanguage(p.sourceLanguage)),managedMode(managed!=nullptr),hostValues(hostValues),applicationMode(application),managedLimits(managed?*managed:nexrt::CellHeapLimits{}){
     if(p.sourceLanguage==SourceLanguage::ManagedReferencesPrototype&&!managedMode)throw Error("E_CELL_BACKEND","managed source requires its dedicated TypeScript emitter");
     if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype&&!exceptionPrototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require the dedicated experimental TypeScript emitter");
     if(!privateSource){for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;return;}
@@ -464,7 +465,7 @@ public:
       visit(p.function(name));
     }
     write("// Generated from checked NEX "+std::string(programLanguage(p))+"; edit NEX sources.\nimport * as nex from './"+std::string(managedMode?"nex-managed-runtime.ts":"nex-runtime.ts")+"';\n\n");
-    if(hostValues)write("import * as host from './nex-runtime.ts';\n\n");
+    if(hostValues||applicationMode)write("import * as host from './nex-runtime.ts';\n\n");
     if(privateSource||p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)write("// Private staging only; this module has no public source revision.\n");
     if(exceptionPrototype)write("import * as sourceException from './"+std::string(managedMode?"nex-managed-runtime.ts":"nex-source-exception-runtime.ts")+"';\n\n");
     if(taskMode)write("import * as task from './"+std::string(managedMode?"nex-managed-task-runtime.ts":"nex-task-runtime.ts")+"';\n\n");
@@ -477,14 +478,17 @@ public:
       write("export type "+type(Type::record(name))+" = nex.RecordValue & {\n  readonly [nex.TYPE]: "+quote(name)+";\n");
       for(const auto &field:s.fields)write("  readonly "+quote(field.name)+": "+type(field.type)+";\n");write("};\n\n");
     }
-    if(hostValues){
+    if(hostValues||applicationMode){
       std::set<std::string> records;
       std::function<void(const Type&)> needed=[&](const Type &type){
         if(type.element)needed(*type.element);
         if(type.kind==Type::Record&&records.insert(type.name).second)
           for(auto field:p.structure(type.name).members())needed(field->type);
       };
-      for(const auto &[alias,name]:entries){const auto &function=p.function(name);needed(function.result);for(const auto &parameter:function.params)needed(parameter.type);}
+      if(applicationMode){
+        needed(p.function(entries.at("view")).result);needed(p.function(entries.at("update")).params.at(1).type);
+        for(const auto &alias:{"commands","worker_commands"})if(entries.contains(alias))needed(p.function(entries.at(alias)).result);
+      }else for(const auto &[alias,name]:entries){const auto &function=p.function(name);needed(function.result);for(const auto &parameter:function.params)needed(parameter.type);}
       for(const auto &name:records){
         const auto &record=p.structure(name);
         auto fields=[&](const auto &members){for(const auto &field:members)write("readonly "+quote(field.name)+": "+hostValueType(field.type)+"; ");};
@@ -540,6 +544,7 @@ public:
     }
     llvm::json::Object hostContracts;
     for(const auto &[alias,name]:entries){
+      if(applicationMode)continue;
       const auto limits="{maximumCells: "+std::to_string(managedLimits.maximumCells)+", maximumNodes: "+std::to_string(managedLimits.maximumNodes)+", maximumEdges: "+std::to_string(managedLimits.maximumEdges)+"}";
       if(hostValues){
         const auto &function=p.function(name);std::string parameters,arguments;llvm::json::Array inputs;
@@ -572,6 +577,13 @@ public:
         mapping["public_revision"]=true;mapping["source_version_selected"]=true;
         mapping["public_source_enabled"]=true;
         mapping["ordinary_CLI"]=true;
+      }
+      if(applicationMode){
+        mapping["schema"]="nex.typescript-application/1";mapping["revision"]=revision(p);mapping["source_hash"]=hash(json(sourceBundle(p),false));
+        mapping["public_revision"]=true;mapping["source_version_selected"]=true;mapping["public_source_enabled"]=true;mapping["ordinary_CLI"]=true;
+        mapping["execution"]="serialized-application-generators";
+        mapping["state_boundary"]="application-owned opaque state; copied wire events/views/commands";
+        llvm::json::Object roots;for(const auto &[alias,name]:entries)roots[alias]=name;mapping["application_entries"]=std::move(roots);
       }
       if(!p.units.empty()){
         llvm::json::Object units;
@@ -654,6 +666,63 @@ WebModule emitManagedReferencesPrototypeTypeScript(const Program &p,const std::s
   for(auto value:{limits.maximumCells,limits.maximumNodes,limits.maximumEdges})if(!value||value>9007199254740991ULL)throw Error("E_CELL_LIMIT","TypeScript managed heap limits must be positive safe integers",function.span);
   return Generator(p,false,true,true,&limits).run({{"main",entry}});
 }
+WebModule emitManagedApplicationTypeScript(const Program &p,const std::map<std::string,std::string> &entries,nexrt::CellHeapLimits limits){
+  if(p.sourceLanguage!=SourceLanguage::References030)throw Error("E_LANGUAGE_VERSION","persistent browser applications require source0.30");
+  for(const auto &f:p.functions)if(!f.checked&&!f.traitSignature)throw Error("E_CELL_STATE","persistent browser applications require checked source",f.span);
+  for(auto value:{limits.maximumCells,limits.maximumNodes,limits.maximumEdges})if(!value||value>9007199254740991ULL)throw Error("E_CELL_LIMIT","application heap limits must be positive safe integers");
+  for(const auto *alias:{"initial","update","view","title"})if(!entries.contains(alias))throw Error("E_WEB_SIGNATURE",std::string("missing application entry ")+alias);
+  for(const auto &[alias,name]:entries)if(alias!="initial"&&alias!="update"&&alias!="view"&&alias!="title"&&alias!="commands"&&alias!="worker_commands")throw Error("E_WEB_SIGNATURE","unknown persistent application entry "+alias);
+  const auto &initial=p.function(entries.at("initial")),&update=p.function(entries.at("update")),&view=p.function(entries.at("view")),&title=p.function(entries.at("title"));
+  const auto state=initial.result,event=Type::record("std::web::Event");
+  auto signature=[&](const Function &f,const std::vector<Type> &parameters,const Type &result){
+    bool valid=!f.test&&f.realm!="server"&&f.captures.empty()&&f.typeParameters.empty()&&f.params.size()==parameters.size()&&f.result==result;
+    if(valid)for(size_t i=0;i<parameters.size();++i)valid&=f.params[i].type==parameters[i];
+    for(const auto &effect:f.effects)valid&=effect=="state"||effect=="task"||effect=="throw";
+    if(!valid)throw Error("E_WEB_SIGNATURE","invalid persistent application entry "+f.name,f.span);
+  };
+  if(state==Type::Unit||containsTaskAuthority(p,state))throw Error("E_WEB_SIGNATURE","persistent state must be non-unit and cannot retain task/scope/channel authority",initial.span);
+  signature(initial,{},state);signature(update,{state,event},state);signature(view,{state},Type::record("std::web::View"));signature(title,{},Type::Str);
+  for(const auto *alias:{"commands","worker_commands"})if(entries.contains(alias)){
+    const auto &f=p.function(entries.at(alias));signature(f,{state,state,event},f.result);
+    if(f.result.kind!=Type::List)throw Error("E_WEB_SIGNATURE","application commands must return a wire list",f.span);
+    (void)wireSchema(p,f.result);
+  }
+  std::set<std::string> visited;
+  std::function<void(const Function&)> visit=[&](const Function &f){if(!visited.insert(f.name).second)return;if(usesParallelMap(f))throw Error("E_CELL_CONCURRENCY","persistent application source uses one cooperative heap owner",f.span);for(const auto &name:f.dependencies)visit(p.function(name));};
+  for(const auto &[alias,name]:entries)visit(p.function(name));
+  auto module=Generator(p,true,false,true,&limits,false,true).run(entries);
+  const auto eventSchema=json(wireSchema(p,event),false),viewSchema=json(wireSchema(p,view.result),false),textSchema=json(wireSchema(p,Type::Str),false);
+  const auto hasCommands=entries.contains("commands"),hasWorkers=entries.contains("worker_commands");
+  const auto commandType=hasCommands?hostValueType(*p.function(entries.at("commands")).result.element):std::string("host.RecordValue & {readonly kind:string; readonly id:string; readonly method:string; readonly path:string; readonly body:string; readonly token:string; readonly action:string; readonly timeout_ms:bigint}");
+  const auto workerType=hasWorkers?hostValueType(*p.function(entries.at("worker_commands")).result.element):std::string("host.RecordValue & {readonly kind:string; readonly id:string; readonly input:host.Result<host.Value>; readonly action:string; readonly timeout_ms:bigint}");
+  auto &out=module.source;
+  out+="\nimport {Application} from './nex-managed-application.ts';\n";
+  out+="export type View = "+hostValueType(view.result)+";\nexport type Event = "+hostValueType(event)+";\n";
+  out+="export type Command = "+commandType+";\nexport type WorkerCommand = "+workerType+";\n";
+  out+="export type ApplicationSnapshot = Readonly<{title:string; view:View; commands:ReadonlyArray<Command>; worker_commands:ReadonlyArray<WorkerCommand>}>;\n";
+  out+="export function makeEvent(name:string,value:string,path:string):Event {return host.record<Event>('std::web::Event', [['name',host.string(name)],['value',host.string(value)],['path',host.string(path)]]);}\n";
+  out+="export function createApplication(options:import('./nex-managed-application.ts').ApplicationOptions = {}):Application<Event,ApplicationSnapshot> {\n";
+  out+=" return new Application<Event,ApplicationSnapshot>({\n";
+  out+="  copyEvent: event => nex.copyHostValue<Event>(event,"+eventSchema+"),\n";
+  auto bundle=[&](bool first){
+    std::string code="";
+    if(first)code+="const next = yield* "+symbol(initial.name)+"(); ";
+    else code+="const before = state as "+typescriptType(state,true,true)+"; const input = nex.importValue<"+typescriptType(event,true,true)+">(event,"+eventSchema+"); const next = yield* "+symbol(update.name)+"(before,input); ";
+    code+="const work = "+std::string(!first&&hasCommands?"yield* "+symbol(entries.at("commands"))+"(before,next,input)":"nex.list<nex.Value>([])")+"; ";
+    code+="const worker = "+std::string(!first&&hasWorkers?"yield* "+symbol(entries.at("worker_commands"))+"(before,next,input)":"nex.list<nex.Value>([])")+"; ";
+    code+="const heading = yield* "+symbol(title.name)+"(); const tree = yield* "+symbol(view.name)+"(next); ";
+    return code+"return nex.record('$nex.application.frame', [['state',next],['title',heading],['view',tree],['commands',work],['worker_commands',worker]]);";
+  };
+  out+="  initial: function* ():task.Step<nex.Value> {return yield* nex.scopeTask<task.Request,task.Item,nex.Value>(function* ():task.Step<nex.Value> {"+bundle(true)+"});},\n";
+  out+="  update: function* (state,event):task.Step<nex.Value> {return yield* nex.scopeTask<task.Request,task.Item,nex.Value>(function* ():task.Step<nex.Value> {"+bundle(false)+"});},\n";
+  out+="  accept: value => {const frame=value as nex.RecordValue; const state=nex.field<nex.Value>(frame,0); const snapshot=Object.freeze({title:nex.exportValue<string>(nex.field(frame,1),"+textSchema+"),view:nex.exportValue<View>(nex.field(frame,2),"+viewSchema+"),commands:";
+  out+=hasCommands?"nex.exportValue<ReadonlyArray<Command>>(nex.field(frame,3),"+json(wireSchema(p,p.function(entries.at("commands")).result),false)+")":"Object.freeze([])";
+  out+=",worker_commands:";
+  out+=hasWorkers?"nex.exportValue<ReadonlyArray<WorkerCommand>>(nex.field(frame,4),"+json(wireSchema(p,p.function(entries.at("worker_commands")).result),false)+")":"Object.freeze([])";
+  out+="});return {state,snapshot};}\n },{maximumCells:"+std::to_string(limits.maximumCells)+",maximumNodes:"+std::to_string(limits.maximumNodes)+",maximumEdges:"+std::to_string(limits.maximumEdges)+"},options);\n}\n";
+  return module;
+}
+
 WebModule emitManagedReferenceTasksDevelopmentTypeScript(const Program &p,const std::string &entry,nexrt::CellHeapLimits limits){
   if(p.sourceLanguage!=SourceLanguage::References030)throw Error("E_LANGUAGE_VERSION","managed TypeScript tasks require source0.30");
   for(const auto &function:p.functions)if(!function.checked&&!function.traitSignature)throw Error("E_CELL_STATE","managed TypeScript tasks require checked source",function.span);
@@ -696,6 +765,8 @@ void writeWebModule(const WebModule &module,const std::string &directory){
       writeFile((output/name).string(),readFile(resourceFile(std::string("web/")+name)));
     if(module.asynchronous)for(const auto *name:{"nex-managed-task-runtime.ts","nex-task-runtime.ts","nex-source-exception-runtime.ts"})
       writeFile((output/name).string(),readFile(resourceFile(std::string("web/")+name)));
+    if(module.mapping.getAsObject()&&module.mapping.getAsObject()->getString("schema")=="nex.typescript-application/1")
+      writeFile((output/"nex-managed-application.ts").string(),readFile(resourceFile("web/nex-managed-application.ts")));
   }else if(module.privateSourceExceptions||module.asynchronous){
     writeFile((output/"nex-source-exception-runtime.ts").string(),readFile(resourceFile("web/nex-source-exception-runtime.ts")));
     writeFile((output/"nex-task-runtime.ts").string(),readFile(resourceFile("web/nex-task-runtime.ts")));
@@ -709,6 +780,7 @@ std::string webRuntimeInputs(const WebModule &module){
   auto source=readFile(resourceFile("web/nex-runtime.ts"))+readFile(resourceFile("web/nex-bytes.ts"));
   if(module.managedReferences){for(const auto *name:{"nex-managed-heap.ts","nex-managed-context.ts","nex-managed-runtime.ts"})source+=readFile(resourceFile(std::string("web/")+name));if(module.asynchronous)for(const auto *name:{"nex-managed-task-runtime.ts","nex-task-runtime.ts","nex-source-exception-runtime.ts"})source+=readFile(resourceFile(std::string("web/")+name));}
   else if(module.asynchronous||module.privateSourceExceptions)source+=readFile(resourceFile("web/nex-task-runtime.ts"))+readFile(resourceFile("web/nex-source-exception-runtime.ts"));
+  if(module.mapping.getAsObject()&&module.mapping.getAsObject()->getString("schema")=="nex.typescript-application/1")source+=readFile(resourceFile("web/nex-managed-application.ts"));
   return source;
 }
 }

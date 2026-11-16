@@ -5644,7 +5644,57 @@
           "Linux"
         ]
       },
-      "task_reference_contexts": true
+      "task_reference_contexts": true,
+      "persistent_UI": {
+        "introduced_toolchain": "0.272.0",
+        "public_source_enabled": true,
+        "ordinary_CLI": true,
+        "source_language": "0.30",
+        "guide": "docs/persistent-ui.md",
+        "test": "tests/persistent_ui.py",
+        "example": "examples/persistent-ui/main.nex",
+        "selection": "nex web/build --target web; reachable cells or task effects in030 UI entries",
+        "typescript_map": "nex.typescript-application/1",
+        "heap": "one application-owned heap; source state stays opaque across serialized invocations",
+        "source_workers": 1,
+        "maximum_pending_events": 256,
+        "effects": [
+          "state",
+          "task",
+          "throw"
+        ],
+        "initial_order": [
+          "initial",
+          "title",
+          "view"
+        ],
+        "event_order": [
+          "update",
+          "commands",
+          "worker_commands",
+          "title",
+          "view"
+        ],
+        "structured_tasks": "joined before view publication; wire HTTP/Worker responses become later events",
+        "host_boundary": "copied checked immutable wire events/views/commands; no live State export",
+        "cleanup": "close pending events, source frames and application heap on close, abort, source/fatal/host failure",
+        "controls": [
+          "steps",
+          "timeoutMs",
+          "workers",
+          "signal",
+          "complete"
+        ],
+        "task_capability_state": false,
+        "parallel_transfer": false,
+        "worker_reference_transfer": false,
+        "source_host_IO": false,
+        "native_persistent_application": false,
+        "retained_synchronous_UI": true,
+        "source_version_changed": false,
+        "SDK_delivery_accepted": false,
+        "full_platform_acceptance": false
+      }
     }
   },
   "ieee_numeric_kernel": {

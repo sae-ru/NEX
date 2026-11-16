@@ -1,12 +1,19 @@
 # NEX language specification 0.28
 
+Toolchain0.272 adds [persistent browser application contexts](persistent-ui.md)
+for030 entries with cells or tasks. Serialized source invocations share one
+application heap; events/views/commands cross a copied immutable wire boundary.
+The adapter adds no source syntax/version, canonical identity or ABI change.
+Native persistent task-provider contexts and parallel transfer remain pending.
+
 Toolchain0.271 enables ordinary checked030 owner-thread reference tasks through
 `eval`, native debug/release applications and HTTP handlers, and asynchronous
 TypeScript wire-value entries. Public native task ABI8 and TypeScript map4 are
 distinct from retained ABI7, private030 task descriptors and synchronous map3.
 No source production, source version, canonical format or graph history changes.
 `parallel_map` in a reference execution graph, provider images, logical task
-reference debug/profile and persistent UI contexts remain pending. Read
+reference debug/profile remain pending. Browser UI contexts have their separate
+0.272 adapter contract. Read
 [the owned task contract](reference-tasks.md).
 
 Toolchain0.270 adds a private [TypeScript cell/task emitter](reference-tasks.md)

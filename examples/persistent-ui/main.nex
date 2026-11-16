@@ -1,0 +1,92 @@
+module persistent_ui;
+import "std/web.nex" as web;
+import "std/worker.nex" as worker;
+
+struct State { counter: cell<i64>; alias: cell<i64>; label: cell<str>; snapshot: i64; pending: bool; }
+struct Fault { counter: cell<i64>; }
+struct Node { next: list<cell<Node>>; }
+fn title() -> str { return "NEX persistent state"; }
+fn initial() -> State !{state} {
+  let counter: cell<i64> = cell_new(41);
+  return State(counter, counter, cell_new("Hello 🙂"), cell_read(counter), false);
+}
+fn drop_cycle() -> unit !{state} {
+  let node: cell<Node> = cell_new(Node([]));
+  cell_write(node, Node([node]));
+}
+fn update(state: State, event: web::Event) -> State !{state,task,throw} {
+  assert(state.counter == state.alias);
+  drop_cycle();
+  task_yield();
+  cell_collect();
+  if event.name == "add" {
+    let value: i64 = with_tasks(2, fn(scope: task_scope) -> i64 !{state,task,throw} {
+      let child: task<i64> = task_spawn(scope, fn() -> i64 !{state,task} {
+        task_yield();
+        cell_write(state.alias, cell_read(state.counter) + 1);
+        return cell_read(state.counter);
+      });
+      return task_wait(child);
+    });
+    assert(value == cell_read(state.counter));
+  }
+  if event.name == "typed" {
+    try { throw(Fault(state.counter)); }
+    catch (fault: Fault) { task_yield(); cell_collect(); cell_write(fault.counter, cell_read(fault.counter) + 1); }
+  }
+  if event.name == "edit" { cell_write(state.label, event.value); }
+  if event.name == "background" { return State(state.counter, state.alias, state.label, state.snapshot, true); }
+  if event.name == "computed" {
+    let response: result<worker::Response<i64>> = worker::response<i64>(event);
+    if is_ok(response) {
+      let value: result<i64> = unwrap(response).value;
+      if is_ok(value) { cell_write(state.counter, unwrap(value)); }
+      else { cell_write(state.label, error_message(value)); }
+    } else { cell_write(state.label, error_message(response)); }
+    return State(state.counter, state.alias, state.label, state.snapshot, false);
+  }
+  if event.name == "fail" { throw(Fault(state.counter)); }
+  if event.name == "loop" { while true { task_yield(); } }
+  return state;
+}
+fn worker_commands(before: State, after: State, event: web::Event) -> list<worker::Command<list<i64>>> {
+  if event.name == "background" { return [worker::request<list<i64>>("sum", [20,22], "computed", 2000)]; }
+  return [];
+}
+fn worker_compute(input: list<i64>) -> i64 !{task} {
+  task_yield();
+  return input[0] + input[1];
+}
+fn view(state: State) -> web::View !{state} {
+  let status: str = if_pending(state.pending);
+  return web::element("main", [web::attr("class", "app")], [], [
+    web::element("h1", [], [], [web::text(title())]),
+    web::element("p", [web::attr("id", "counter")], [], [web::text(str(cell_read(state.counter)))]),
+    web::element("p", [web::attr("id", "snapshot")], [], [web::text("Initial snapshot: " + str(state.snapshot))]),
+    web::element("p", [web::attr("id", "status")], [], [web::text(status)]),
+    web::input("label", cell_read(state.label), "edit"),
+    web::element("p", [web::attr("id", "label-value")], [], [web::text(cell_read(state.label))]),
+    web::button("Add through a task", "add"),
+    web::button("Catch a typed error", "typed"),
+    web::button("Compute in a worker", "background"),
+    web::button("Raise an uncaught error", "fail")
+  ]);
+}
+fn if_pending(pending: bool) -> str { if pending { return "Working"; } return "Ready"; }
+fn main() -> unit !{state,task,throw,io} {
+  let start: State = initial();
+  print(cell_read(start.counter));
+  let next: State = update(start, web::Event("add", "", "/"));
+  print(cell_read(next.counter));
+  let caught: State = update(next, web::Event("typed", "", "/"));
+  print(cell_read(caught.counter));
+  assert(start.counter == caught.counter && caught.snapshot == 41);
+}
+test fn shared_state_after_suspension() -> unit !{state,task,throw} {
+  let start: State = initial();
+  let next: State = update(start, web::Event("add", "", "/"));
+  assert(start.counter == next.counter && cell_read(start.counter) == 42);
+  assert(start.snapshot == 41);
+  let edited: State = update(next, web::Event("edit", "λ🙂", "/"));
+  assert(cell_read(edited.label) == "λ🙂");
+}

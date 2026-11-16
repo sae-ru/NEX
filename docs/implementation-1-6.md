@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.271.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.272.0"
 owner: repository
 ---
 
@@ -47,6 +47,11 @@ This orders the work; it does not mark the original PLAN complete or discard
 its remaining requirements. Full Java/Python runtime emulation, reflection and
 metaclass compatibility are later, project-driven requirements. Exact source
 behavior remains mandatory for each advertised migrated subset.
+
+Toolchain0.272 adds [persistent030 browser application state](persistent-ui.md),
+serialized task-driven UI/command invocations, copied wire views/events and owned
+close/abort/failure cleanup. Native persistent provider lifetimes, parallel
+transfer, debugger/profile and full SDK/platform delivery remain required.
 
 Toolchain0.271 enables ordinary030 owner-thread reference tasks in evaluation,
 native debug/release applications and HTTP requests, async TypeScript host

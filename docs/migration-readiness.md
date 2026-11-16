@@ -1,10 +1,15 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.271.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.272.0"
 owner: repository
 ---
 
 # Language prerequisites for Java and Python migration
+
+Toolchain0.272 adds [persistent030 browser state](persistent-ui.md) across
+serialized source-task invocations. Native persistent application/provider
+lifetimes, Java/Python class/dynamic compatibility and complete delivery remain
+open.
 
 Toolchain0.271 enables ordinary [owned reference-task execution](reference-tasks.md)
 in evaluation, native applications/HTTP and TypeScript exports. ABI8/map4 retain

@@ -1,10 +1,14 @@
 ---
 status: development
-applies_to: "toolchain 0.271.0; source0.30; ordinary owned tasks and retained development APIs"
+applies_to: "toolchain 0.272.0; source0.30; ordinary owned tasks and retained development APIs"
 owner: repository
 ---
 
 # References in structured tasks
+
+Toolchain0.272 adds [persistent browser applications](persistent-ui.md).
+This is a separate application-owned context; ordinary async value exports
+retain their per-call heaps and map4 boundary.
 
 Toolchain0.271 enables ordinary checked source0.30 reference tasks in `eval`,
 native debug/release applications and HTTP handlers, TypeScript emission and

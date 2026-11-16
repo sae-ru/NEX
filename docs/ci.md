@@ -75,6 +75,10 @@ which a nested inventory query can overwrite. Exact JUnit/exit/registry checks
 remain the result authority; the shared LastTest file is supplementary. A real
 nested-CTest fixture exercises the direct log without weakening failure/skip gates.
 
+The [0.271 run](evidence/core-ci-0.271.0-2026-11-17.json) passed Linux and
+macOS at `5538c54b`, with17 groups. The subsequent persistent UI adapter retains
+its separate local/browser/installed qualification.
+
 ## Dependencies and provenance
 
 Linux reuses [the toolchain Dockerfile](../tools/linux/Dockerfile) with its pinned

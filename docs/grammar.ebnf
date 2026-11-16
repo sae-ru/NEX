@@ -1,4 +1,5 @@
 (* NEX language0.28. ASCII identifiers, decimal numbers, strict UTF-8 source.
+   Toolchain0.272 persistent030 UI is an adapter; it adds no production.
    Toolchain0.267's internal IEEE kernel adds no source type or production.
    Project language0.30 additions are in references030.ebnf. Toolchain0.265
    selects030 for new projects; explicit028/029 retain this baseline/029 rules.

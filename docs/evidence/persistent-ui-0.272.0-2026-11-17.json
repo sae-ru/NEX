@@ -1,0 +1,743 @@
+{
+  "schema": "nex.persistent-ui-development/1",
+  "ok": true,
+  "toolchain": "0.272.0",
+  "source_language": "0.30",
+  "qualification_local_date": "2026-11-17",
+  "timezone": "Europe/Moscow",
+  "compiler_fallback": "0.28",
+  "base_commit": "5538c54bfe986f93ed4ce5c3260214e86e43f74b",
+  "compiler_sha256": "4a6f27665472b5541948d8c56dc56f36e80dbf0b3374323b2a7ac848a17e5648",
+  "compiler_build": "764a853444ffe01297c3ab19e80eae98116b7ab9b3a1dbc1bbf5701689d6dcc9",
+  "descriptor_hash": "ec8dc12a9696b25e4de196427181e395612cae4fd3777ca52310657933bd00ae",
+  "source_version_changed": false,
+  "source_format_changed": false,
+  "public_task_ABIs_unchanged": [
+    7,
+    8
+  ],
+  "public_C_ABI": 1,
+  "source_files_sha256": {
+    ".gitignore": "048e6af9fd6566987cb3186fa9d1b188301816a6032669e0cfa987b06d04138b",
+    "README.md": "b0b0e44f356a2423ad1f2bc00bcb464b68274ac4649d5ceb6ee1318de31d64dc",
+    "README.ru.md": "989f20743b302885ad767fbcb4bbcd82c9933bdcc4e4bb4cfc01f7b4c9f1332a",
+    "STATUS.md": "d57d43a1046d7ad746fb5487187561cb2757378bf92ce7796482cf8e31e3fd41",
+    "VERSION": "48c354732a80985eefa87ae47f7268614891087bda87fa0f626bc4599c2dec93",
+    "cmake/Install.cmake": "f13aa70fb73e0c076447bd72e7813b45332268fed35d7ddc91f13ceefe3edfde",
+    "cmake/Tests.cmake": "d838c2ebb8c772bd05e7768fdc8b2c61fe17ec827de63ba4b2142d77f0bf5f2e",
+    "cmake/test-tiers.json": "4baecaca0cf7e8a5b9992b66952c55ee2f31491ae1ba01e29ef140cbc40d6cf6",
+    "docs/INDEX.md": "65a1b2ee044da790517eb9df8be51ad2faaeea9d75428a6a93b1957c6be26482",
+    "docs/STATUS.current.md": "c8c9a7358ada1fdb21636d3c2182488b4cb2caa21d050b4d46ef20028548d7d0",
+    "docs/ci.md": "ac8e0ca1905a0edced03fdca222bced657a695c162c9587bfb205181e02a1928",
+    "docs/evidence/core-ci-0.271.0-2026-11-17.json": "2e3fafe6927a1f42544a232d634ad3ff5721d2d6d655f2a0c7e21a3e3753439d",
+    "docs/grammar.ebnf": "898a3fa842775ff868657fbaaac500606e97273208d257fdfec2f4521c05a2e4",
+    "docs/implementation-1-6.md": "a7bc7acf9d7d34dd1cda826d0af37a31cafeced68102b9729999a75395622fdb",
+    "docs/language.md": "292774a6476d4f0f270eae23413cb5df840ee544d2d40fd51e2a56dcb3479e06",
+    "docs/migration-readiness.md": "3b37fb67ab6c2aba447c4a19f20ee1d71717db547872af7f28d018aa050b5837",
+    "docs/persistent-ui.md": "a232edc3718dd724f1c5c6559c738047589d93b253600691757ff1c83f620d46",
+    "docs/reference-tasks.md": "ecd3b28dfa86dc99902548e70691c38193a34f5003798b3f094cbac015fd840c",
+    "docs/references030.md": "11dc0f6c4e993a4078dc8f0164d4ddce2e817e7c57a3e59fc7e678621f095ec9",
+    "docs/web.md": "cb610c55fefe25afa0b590ab69f010382494fbb25f96445688fcac4eeb65dd9a",
+    "examples/persistent-ui/README.md": "49de41ab290149236a539de711b728d6c067ebf8b35da1dba57e6689f099612f",
+    "examples/persistent-ui/main.nex": "ca6ba70af9a98c2f41844fd15719d7aa4cbf60981706f08d50ee986d84665e7b",
+    "examples/persistent-ui/nex.json": "677a6ca3cec3fb7acd2f2aa8468af981d3288a256eafb9c041079342cf3ca3fe",
+    "include/nex/managed_references.h": "b4b0c50a5203917b25122800630565cff582b507563c155d79a3416133ef85f2",
+    "include/nex/web.h": "5526ae37eee2fa79a7ed45dee6d1dcc9edc7d587043cd6b60045b31f6365fb00",
+    "llm/SYSTEM_PROMPT.md": "18ee3d0eda6394061211ed17be20221e10c2c6d91f4936b783ad8ba4aeab5bfb",
+    "llm/language-pack.json": "0382c76b10d2e4034bdf879a478028ab92eec17661f4966539e24e5cb8f3fc64",
+    "llms.txt": "7ac848e9944ce1e1ec1f798d93bc20b1114701f6d1d8ac6e8bb773e106001736",
+    "src/managed_references.cpp": "37e07d884a2b843899ebe626cb7fba56175cbc7051a2e210b4f8716238bd0f24",
+    "src/typescript.cpp": "2f01f774b140a6b0e411b310e1aaddf818223e272cd33517517757c473e42d6c",
+    "src/web.cpp": "a7c0847e779f91824a157741725f956b23531594d0603c66c1612a75f8637cdc",
+    "tests/persistent_ui.py": "34c6d567d4ea5c2625ccc0ac6c092ce4050ad5be405a05b96ffe5225a9fe2044",
+    "tests/persistent_ui_cases.mjs": "8acac772f3193e81251448fe5d9a528aa436b511f250c73a16f5eda2d1d98596",
+    "web/managed-app.tsx": "0abe2697560e8934c4417450d229875bcf1db463423be9e5ded71ea56c98d6c0",
+    "web/nex-managed-application.ts": "d151aebd51ce8c140ae0edc40abb81b109718060aae3fd8b8e381c3791f6374b",
+    "web/nex-managed-context.ts": "caa3d488583e05796374cb5871f7b2f3f67d2281f302e0e448dad6da95cdf174",
+    "web/nex-managed-runtime.ts": "83190c2cf123b90128251bcc165a326a5097a8f11c941cc2ffcc3e7cb12edb57",
+    "web/nex-managed-task-runtime.ts": "bfdbf62fc8bd4d9b5ef8842139bbeba1d627200b5339094f86ee0d368350efa0",
+    "web/tsconfig.json": "7c523cdf5565e757a45897744e5c7f221b36d7b86e0e75f2e8c170ca48fa0e61"
+  },
+  "build": {
+    "command": "cmake --build build -j 4",
+    "exit_code": 0,
+    "stdout_sha256": "6de2979017c2cea6f8b4ab03ed26684c36571ca912107d04528d1f814e5ec1d0",
+    "stderr_sha256": "fabbca85839693a440de05b03e760dddb72d57750a1abda748fa7a0e5b606438"
+  },
+  "discovery": {
+    "shared_fields": 71,
+    "compared_JSON_values": 4433,
+    "manifest_sha256": "0382c76b10d2e4034bdf879a478028ab92eec17661f4966539e24e5cb8f3fc64",
+    "exact_match": true
+  },
+  "ctest": {
+    "distinct_effective_groups": 29,
+    "effective": {
+      "llm_cost_ledger": {
+        "run": "core-v1",
+        "result": "passed"
+      },
+      "llm_local_collector": {
+        "run": "core-v1",
+        "result": "passed"
+      },
+      "ctest_report_validation": {
+        "run": "core-v1",
+        "result": "passed"
+      },
+      "discovery": {
+        "run": "core-v1",
+        "result": "passed"
+      },
+      "language_pack_contract": {
+        "run": "affected-v2",
+        "result": "passed"
+      },
+      "task_frontend_native": {
+        "run": "core-v1",
+        "result": "passed"
+      },
+      "reference_tasks_development": {
+        "run": "core-v1",
+        "result": "passed"
+      },
+      "frontend_diagnostics_native": {
+        "run": "core-v1",
+        "result": "passed"
+      },
+      "value_owner_runtime": {
+        "run": "core-v1",
+        "result": "passed"
+      },
+      "value_retirement_runtime": {
+        "run": "core-v1",
+        "result": "passed"
+      },
+      "managed_references_frontend_reference": {
+        "run": "core-v1",
+        "result": "passed"
+      },
+      "managed_reference_native_context": {
+        "run": "core-v1",
+        "result": "passed"
+      },
+      "bytes_runtime_native": {
+        "run": "core-v1",
+        "result": "passed"
+      },
+      "float_runtime_native": {
+        "run": "core-v1",
+        "result": "passed"
+      },
+      "typed_source_frontend_reference": {
+        "run": "core-v1",
+        "result": "passed"
+      },
+      "test_tiers": {
+        "run": "core-v1",
+        "result": "passed"
+      },
+      "diagnostic_catalogue": {
+        "run": "core-v1",
+        "result": "passed"
+      },
+      "typescript_reference_tasks_development": {
+        "run": "affected-v1",
+        "result": "passed"
+      },
+      "persistent_ui": {
+        "run": "affected-v2",
+        "result": "passed"
+      },
+      "managed_heap_typescript": {
+        "run": "affected-v1",
+        "result": "passed"
+      },
+      "references030_cli": {
+        "run": "affected-v1",
+        "result": "passed"
+      },
+      "managed_references_typescript": {
+        "run": "affected-v1",
+        "result": "passed"
+      },
+      "managed_reference_modules_typescript": {
+        "run": "affected-v1",
+        "result": "passed"
+      },
+      "web": {
+        "run": "affected-v1",
+        "result": "passed"
+      },
+      "web_commands": {
+        "run": "affected-v1",
+        "result": "passed"
+      },
+      "web_workers": {
+        "run": "affected-v1",
+        "result": "passed"
+      },
+      "docs_index": {
+        "run": "affected-v2",
+        "result": "passed"
+      },
+      "managed_reference_value_exports": {
+        "run": "affected-v2",
+        "result": "passed"
+      },
+      "managed_reference_module_value_exports": {
+        "run": "affected-v2",
+        "result": "passed"
+      }
+    },
+    "core": {
+      "schema": "nex.ctest-verification/1",
+      "ok": true,
+      "ctest_exit_code": 0,
+      "selected_groups": [
+        "bytes_runtime_native",
+        "ctest_report_validation",
+        "diagnostic_catalogue",
+        "discovery",
+        "float_runtime_native",
+        "frontend_diagnostics_native",
+        "language_pack_contract",
+        "llm_cost_ledger",
+        "llm_local_collector",
+        "managed_reference_native_context",
+        "managed_references_frontend_reference",
+        "reference_tasks_development",
+        "task_frontend_native",
+        "test_tiers",
+        "typed_source_frontend_reference",
+        "value_owner_runtime",
+        "value_retirement_runtime"
+      ],
+      "required_fixture_groups": [],
+      "expected_groups": [
+        "bytes_runtime_native",
+        "ctest_report_validation",
+        "diagnostic_catalogue",
+        "discovery",
+        "float_runtime_native",
+        "frontend_diagnostics_native",
+        "language_pack_contract",
+        "llm_cost_ledger",
+        "llm_local_collector",
+        "managed_reference_native_context",
+        "managed_references_frontend_reference",
+        "reference_tasks_development",
+        "task_frontend_native",
+        "test_tiers",
+        "typed_source_frontend_reference",
+        "value_owner_runtime",
+        "value_retirement_runtime"
+      ],
+      "observed_groups": [
+        "llm_cost_ledger",
+        "llm_local_collector",
+        "ctest_report_validation",
+        "discovery",
+        "language_pack_contract",
+        "task_frontend_native",
+        "reference_tasks_development",
+        "frontend_diagnostics_native",
+        "value_owner_runtime",
+        "value_retirement_runtime",
+        "managed_references_frontend_reference",
+        "managed_reference_native_context",
+        "bytes_runtime_native",
+        "float_runtime_native",
+        "typed_source_frontend_reference",
+        "test_tiers",
+        "diagnostic_catalogue"
+      ],
+      "results": {
+        "passed": [
+          "llm_cost_ledger",
+          "llm_local_collector",
+          "ctest_report_validation",
+          "discovery",
+          "language_pack_contract",
+          "task_frontend_native",
+          "reference_tasks_development",
+          "frontend_diagnostics_native",
+          "value_owner_runtime",
+          "value_retirement_runtime",
+          "managed_references_frontend_reference",
+          "managed_reference_native_context",
+          "bytes_runtime_native",
+          "float_runtime_native",
+          "typed_source_frontend_reference",
+          "test_tiers",
+          "diagnostic_catalogue"
+        ],
+        "failed": [],
+        "skipped": []
+      },
+      "registry_sha256": "32e24c99ebd3d23635d1807122b4a21e9571af5e4d6c99773c5b1fb622669e96",
+      "junit_sha256": "6789151cac9a6554ab551748a5f18e8b2bf2b320ef4f3eb6e59e738e78e444ee"
+    },
+    "affected_initial": {
+      "schema": "nex.ctest-verification/1",
+      "ok": false,
+      "ctest_exit_code": 8,
+      "selected_groups": [
+        "docs_index",
+        "managed_heap_typescript",
+        "managed_reference_modules_typescript",
+        "managed_references_typescript",
+        "persistent_ui",
+        "references030_cli",
+        "typescript_reference_tasks_development",
+        "web",
+        "web_commands",
+        "web_workers"
+      ],
+      "required_fixture_groups": [],
+      "expected_groups": [
+        "docs_index",
+        "managed_heap_typescript",
+        "managed_reference_modules_typescript",
+        "managed_references_typescript",
+        "persistent_ui",
+        "references030_cli",
+        "typescript_reference_tasks_development",
+        "web",
+        "web_commands",
+        "web_workers"
+      ],
+      "observed_groups": [
+        "typescript_reference_tasks_development",
+        "persistent_ui",
+        "managed_heap_typescript",
+        "references030_cli",
+        "managed_references_typescript",
+        "managed_reference_modules_typescript",
+        "web",
+        "web_commands",
+        "web_workers",
+        "docs_index"
+      ],
+      "results": {
+        "passed": [
+          "typescript_reference_tasks_development",
+          "persistent_ui",
+          "managed_heap_typescript",
+          "references030_cli",
+          "managed_references_typescript",
+          "managed_reference_modules_typescript",
+          "web",
+          "web_commands",
+          "web_workers"
+        ],
+        "failed": [
+          "docs_index"
+        ],
+        "skipped": []
+      },
+      "registry_sha256": "32e24c99ebd3d23635d1807122b4a21e9571af5e4d6c99773c5b1fb622669e96",
+      "junit_sha256": "2dbe70158f4d1da80b899f0938e7e77cd82f7fb2ccdaf5918f4500ac8de35edb"
+    },
+    "affected_final": {
+      "schema": "nex.ctest-verification/1",
+      "ok": true,
+      "ctest_exit_code": 0,
+      "selected_groups": [
+        "docs_index",
+        "language_pack_contract",
+        "managed_reference_module_value_exports",
+        "managed_reference_value_exports",
+        "persistent_ui"
+      ],
+      "required_fixture_groups": [],
+      "expected_groups": [
+        "docs_index",
+        "language_pack_contract",
+        "managed_reference_module_value_exports",
+        "managed_reference_value_exports",
+        "persistent_ui"
+      ],
+      "observed_groups": [
+        "language_pack_contract",
+        "persistent_ui",
+        "managed_reference_value_exports",
+        "managed_reference_module_value_exports",
+        "docs_index"
+      ],
+      "results": {
+        "passed": [
+          "language_pack_contract",
+          "persistent_ui",
+          "managed_reference_value_exports",
+          "managed_reference_module_value_exports",
+          "docs_index"
+        ],
+        "failed": [],
+        "skipped": []
+      },
+      "registry_sha256": "32e24c99ebd3d23635d1807122b4a21e9571af5e4d6c99773c5b1fb622669e96",
+      "junit_sha256": "392fb26b9fb5b450ea43fb1dafee165c9b28db39f4257dd5e463853263d37324"
+    },
+    "dedicated_logs": {
+      "core-v1/ctest.log": "a20dc95eb7a1c6472fc09dcb723f9ec85144ea3fad3c127aaa2eb0a652f856c6",
+      "affected-v1.log": "670d3d93298af32cc53da95b270b106d4d502a813113f98bc7e4d7aca2e518dd",
+      "affected-v2.log": "64afa799eea9f9deaa2435b4ae285cb0d7f4010b5d15550ab1ae667b180b5f85"
+    },
+    "full_source_regression": false
+  },
+  "feature": {
+    "schema": "nex.persistent-ui/1",
+    "ok": true,
+    "compiler_sha256": "4a6f27665472b5541948d8c56dc56f36e80dbf0b3374323b2a7ac848a17e5648",
+    "source_language": "0.30",
+    "harness_sha256": "34c6d567d4ea5c2625ccc0ac6c092ce4050ad5be405a05b96ffe5225a9fe2044",
+    "controller_harness_sha256": "8acac772f3193e81251448fe5d9a528aa436b511f250c73a16f5eda2d1d98596",
+    "programs": [
+      {
+        "name": "example",
+        "revision": "b5575c22782ae85b64101671f487c62962a02179670ea091ac96f94599c5869b",
+        "source_sha256": "dd06d619fee0257bacf2988893af1bde0a9d3a16efc17120dd7eadc910a43588",
+        "map_sha256": "a0caf42a96fc79fa5b0ec738072ad60ff999413ab8118ca5deb7b065dfc8d420",
+        "metadata_sha256": "f0e838611fc607cfcc245d83e2601f403d7290534606a40e81a3639a45be4e1c",
+        "schema": "nex.typescript-application/1",
+        "strict_types": true,
+        "runtime_hashes": {
+          "nex-runtime.ts": "88db42c861d0aeec44cfe9f4b0cc7bd38ba5de95b29f6dbe6d142dd5b8c00fd2",
+          "nex-managed-runtime.ts": "83190c2cf123b90128251bcc165a326a5097a8f11c941cc2ffcc3e7cb12edb57",
+          "nex-bytes.ts": "f2d020fd01cb6fef744037cffeeea4852330c8f48525c64a1a36211bebb1068d",
+          "nex-managed-context.ts": "caa3d488583e05796374cb5871f7b2f3f67d2281f302e0e448dad6da95cdf174",
+          "nex-managed-task-runtime.ts": "bfdbf62fc8bd4d9b5ef8842139bbeba1d627200b5339094f86ee0d368350efa0",
+          "nex-source-exception-runtime.ts": "c73ec0e2609914331cdb54417f4f555312948bd1f877ff55ca587524d329f19b",
+          "nex-task-runtime.ts": "53c04df0d55a742faf59a1672b5e8d8d53241a8756c101b332b346321416a837",
+          "nex-managed-application.ts": "d151aebd51ce8c140ae0edc40abb81b109718060aae3fd8b8e381c3791f6374b",
+          "nex-managed-heap.ts": "21e44b8f6197c0023d1fffd894f78ecb4c847db84b2889a03cbb00af8a7f5316"
+        }
+      },
+      {
+        "name": "network",
+        "revision": "e7a1527ddaec79d1016455aa38dd40d3b9d7f546b31dc15ebaf8ee8dd410d9ff",
+        "source_sha256": "d867abddb6ff3d4c8ec8b6d58d40f239adf73ca52922c5ee9b3478039dcd5911",
+        "map_sha256": "aaa980105ee15fadd792fdfe1222ce7f40bd1e3a2452df556ff04314adc50cfc",
+        "metadata_sha256": "3fe093fe6a7772ea4a3b799c0512f14fbfb40dcea2157589288d6498d8899670",
+        "schema": "nex.typescript-application/1",
+        "strict_types": true,
+        "runtime_hashes": {
+          "nex-runtime.ts": "88db42c861d0aeec44cfe9f4b0cc7bd38ba5de95b29f6dbe6d142dd5b8c00fd2",
+          "nex-managed-runtime.ts": "83190c2cf123b90128251bcc165a326a5097a8f11c941cc2ffcc3e7cb12edb57",
+          "nex-bytes.ts": "f2d020fd01cb6fef744037cffeeea4852330c8f48525c64a1a36211bebb1068d",
+          "nex-managed-context.ts": "caa3d488583e05796374cb5871f7b2f3f67d2281f302e0e448dad6da95cdf174",
+          "nex-managed-task-runtime.ts": "bfdbf62fc8bd4d9b5ef8842139bbeba1d627200b5339094f86ee0d368350efa0",
+          "nex-source-exception-runtime.ts": "c73ec0e2609914331cdb54417f4f555312948bd1f877ff55ca587524d329f19b",
+          "nex-task-runtime.ts": "53c04df0d55a742faf59a1672b5e8d8d53241a8756c101b332b346321416a837",
+          "nex-managed-application.ts": "d151aebd51ce8c140ae0edc40abb81b109718060aae3fd8b8e381c3791f6374b",
+          "nex-managed-heap.ts": "21e44b8f6197c0023d1fffd894f78ecb4c847db84b2889a03cbb00af8a7f5316"
+        }
+      },
+      {
+        "name": "state-only",
+        "revision": "9df8c203156af4caac64a89ef06a4ea8b7c3dd8eea2040d628bb493ba0a1dadb",
+        "source_sha256": "bf596ae732afde7ae842b9f7209d7fe23cac46a14ff09661c49b34aa84f11a93",
+        "map_sha256": "f05f6c1519184031dee4fd8379211168b374709c789d523dea6da5175bf93b77",
+        "metadata_sha256": "e94dc891fa9d7e014a6fff15cebc08bc7ed3ed3ca1c809dcaea8b83dc0c070a8",
+        "schema": "nex.typescript-application/1",
+        "strict_types": true,
+        "runtime_hashes": {
+          "nex-runtime.ts": "88db42c861d0aeec44cfe9f4b0cc7bd38ba5de95b29f6dbe6d142dd5b8c00fd2",
+          "nex-managed-runtime.ts": "83190c2cf123b90128251bcc165a326a5097a8f11c941cc2ffcc3e7cb12edb57",
+          "nex-bytes.ts": "f2d020fd01cb6fef744037cffeeea4852330c8f48525c64a1a36211bebb1068d",
+          "nex-managed-context.ts": "caa3d488583e05796374cb5871f7b2f3f67d2281f302e0e448dad6da95cdf174",
+          "nex-managed-task-runtime.ts": "bfdbf62fc8bd4d9b5ef8842139bbeba1d627200b5339094f86ee0d368350efa0",
+          "nex-source-exception-runtime.ts": "c73ec0e2609914331cdb54417f4f555312948bd1f877ff55ca587524d329f19b",
+          "nex-task-runtime.ts": "53c04df0d55a742faf59a1672b5e8d8d53241a8756c101b332b346321416a837",
+          "nex-managed-application.ts": "d151aebd51ce8c140ae0edc40abb81b109718060aae3fd8b8e381c3791f6374b",
+          "nex-managed-heap.ts": "21e44b8f6197c0023d1fffd894f78ecb4c847db84b2889a03cbb00af8a7f5316"
+        }
+      },
+      {
+        "name": "task-only",
+        "revision": "d9fa9b7029c1569b3b9769ce9f495d458d90035742c5a0da515c566ceed73733",
+        "source_sha256": "f4b137252750b5c276c4ca157020ec37add338c885360f8cd3edb75a9bb1d2c3",
+        "map_sha256": "c8d2909da0c4e7ee5cb89d003dfadcfaf51cddfc6bd190672c620ccb1481f9bd",
+        "metadata_sha256": "71abbf005048bc466a9cae1c73b1567dab4ed17d5b3a813d0f9b3598c4d7253b",
+        "schema": "nex.typescript-application/1",
+        "strict_types": true,
+        "runtime_hashes": {
+          "nex-runtime.ts": "88db42c861d0aeec44cfe9f4b0cc7bd38ba5de95b29f6dbe6d142dd5b8c00fd2",
+          "nex-managed-runtime.ts": "83190c2cf123b90128251bcc165a326a5097a8f11c941cc2ffcc3e7cb12edb57",
+          "nex-bytes.ts": "f2d020fd01cb6fef744037cffeeea4852330c8f48525c64a1a36211bebb1068d",
+          "nex-managed-context.ts": "caa3d488583e05796374cb5871f7b2f3f67d2281f302e0e448dad6da95cdf174",
+          "nex-managed-task-runtime.ts": "bfdbf62fc8bd4d9b5ef8842139bbeba1d627200b5339094f86ee0d368350efa0",
+          "nex-source-exception-runtime.ts": "c73ec0e2609914331cdb54417f4f555312948bd1f877ff55ca587524d329f19b",
+          "nex-task-runtime.ts": "53c04df0d55a742faf59a1672b5e8d8d53241a8756c101b332b346321416a837",
+          "nex-managed-application.ts": "d151aebd51ce8c140ae0edc40abb81b109718060aae3fd8b8e381c3791f6374b",
+          "nex-managed-heap.ts": "21e44b8f6197c0023d1fffd894f78ecb4c847db84b2889a03cbb00af8a7f5316"
+        }
+      },
+      {
+        "name": "pure",
+        "revision": "4119f62e892e162f24a717e6bbd2c50cbe5dbaf4b992f9209930ed99f40fcb15",
+        "source_sha256": "06d8e6b1667df0ab6812a409a6a106233d418268670dbe2173b7d747060c6c7e",
+        "map_sha256": "7890505f33ced002754e366d4e2fa9320991d8659f185ef0ce48347088a2bc10",
+        "metadata_sha256": "9a5b37fee40ae9abc77c17837266f772cc76bdb112c574487d7d946a6f5025d9",
+        "schema": "nex.typescript-map/2",
+        "strict_types": true,
+        "runtime_hashes": {
+          "nex-runtime.ts": "88db42c861d0aeec44cfe9f4b0cc7bd38ba5de95b29f6dbe6d142dd5b8c00fd2",
+          "nex-bytes.ts": "f2d020fd01cb6fef744037cffeeea4852330c8f48525c64a1a36211bebb1068d",
+          "nex-source-exception-runtime.ts": "c73ec0e2609914331cdb54417f4f555312948bd1f877ff55ca587524d329f19b",
+          "nex-task-runtime.ts": "53c04df0d55a742faf59a1672b5e8d8d53241a8756c101b332b346321416a837"
+        }
+      },
+      {
+        "name": "captured-state",
+        "revision": "4c679ba9ba6a7caf849e3a43e112ee8c50fe2379a5a9c0bd4a4d01e4ffe30cb7",
+        "source_sha256": "79dc84d05d684db47e9b749b0b6e6fccb59fd1e77fe55bf9931619f5db89c2b3",
+        "map_sha256": "d381a08202a76478ad7e6ff206b812bdd406aff102f202eb1f27aa9979ec2fff",
+        "metadata_sha256": "ee541bea1aef4eb9685cfa411012bcef54da8fa2ccf64f7e50143378744aa866",
+        "schema": "nex.typescript-application/1",
+        "strict_types": true,
+        "runtime_hashes": {
+          "nex-runtime.ts": "88db42c861d0aeec44cfe9f4b0cc7bd38ba5de95b29f6dbe6d142dd5b8c00fd2",
+          "nex-managed-runtime.ts": "83190c2cf123b90128251bcc165a326a5097a8f11c941cc2ffcc3e7cb12edb57",
+          "nex-bytes.ts": "f2d020fd01cb6fef744037cffeeea4852330c8f48525c64a1a36211bebb1068d",
+          "nex-managed-context.ts": "caa3d488583e05796374cb5871f7b2f3f67d2281f302e0e448dad6da95cdf174",
+          "nex-managed-task-runtime.ts": "bfdbf62fc8bd4d9b5ef8842139bbeba1d627200b5339094f86ee0d368350efa0",
+          "nex-source-exception-runtime.ts": "c73ec0e2609914331cdb54417f4f555312948bd1f877ff55ca587524d329f19b",
+          "nex-task-runtime.ts": "53c04df0d55a742faf59a1672b5e8d8d53241a8756c101b332b346321416a837",
+          "nex-managed-application.ts": "d151aebd51ce8c140ae0edc40abb81b109718060aae3fd8b8e381c3791f6374b",
+          "nex-managed-heap.ts": "21e44b8f6197c0023d1fffd894f78ecb4c847db84b2889a03cbb00af8a7f5316"
+        }
+      }
+    ],
+    "rejections": [
+      {
+        "name": "parallel",
+        "language": "0.30",
+        "code": "E_CELL_CONCURRENCY",
+        "passed": true
+      },
+      {
+        "name": "server-title",
+        "language": "0.30",
+        "code": "E_WEB_SIGNATURE",
+        "passed": true
+      },
+      {
+        "name": "source-io",
+        "language": "0.30",
+        "code": "E_WEB_SIGNATURE",
+        "passed": true
+      },
+      {
+        "name": "worker-state",
+        "language": "0.30",
+        "code": "E_WEB_SIGNATURE",
+        "passed": true
+      },
+      {
+        "name": "task-state",
+        "language": "0.30",
+        "code": "E_TASK_LIFETIME",
+        "passed": true
+      },
+      {
+        "name": "retained-0.28",
+        "language": "0.28",
+        "code": "E_TASK_UNIMPLEMENTED",
+        "passed": true
+      },
+      {
+        "name": "retained-0.29",
+        "language": "0.29",
+        "code": "E_TASK_UNIMPLEMENTED",
+        "passed": true
+      }
+    ],
+    "portable_SDK": false,
+    "controller": {
+      "ok": true,
+      "cases": 13,
+      "results": [
+        {
+          "name": "persistent-identity-snapshots-serial-events",
+          "updates": 147,
+          "heap": {
+            "cells": 2,
+            "nodes": 3,
+            "edges": 2,
+            "collections": 294
+          },
+          "passed": true
+        },
+        {
+          "name": "independent-heaps-and-explicit-close",
+          "passed": true
+        },
+        {
+          "name": "close-before-initialization",
+          "passed": true
+        },
+        {
+          "name": "cancel-active-source-update",
+          "passed": true
+        },
+        {
+          "name": "external-application-cancellation",
+          "passed": true
+        },
+        {
+          "name": "deadline-owned-cleanup",
+          "passed": true
+        },
+        {
+          "name": "budget-owned-cleanup",
+          "passed": true
+        },
+        {
+          "name": "host-completion-failure-owned-cleanup",
+          "passed": true
+        },
+        {
+          "name": "uncaught-cell-packet-and-new-context",
+          "passed": true
+        },
+        {
+          "name": "bounded-pending-event-queue",
+          "passed": true
+        },
+        {
+          "name": "opaque-state-host-boundary",
+          "passed": true
+        },
+        {
+          "name": "queued-input-and-published-view-snapshots",
+          "passed": true
+        },
+        {
+          "name": "invalid-host-options",
+          "passed": true
+        }
+      ]
+    },
+    "network": {
+      "ok": true,
+      "async_initial_title_view": true,
+      "stateful_commands": true,
+      "typed_response": true,
+      "closed": true
+    }
+  },
+  "feature_report_sha256": "1158e0a12dd493d0455a145c83479b55dbe6d0609140b931cbadc14b7bccf292",
+  "browser": {
+    "manual_actual_Chrome": true,
+    "runner": "Playwright CLI skill; cached public CLI, not an assertion about the locked Playwright browser matrix",
+    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
+    "production": {
+      "build_key": "c801f3f2905a933435ecb5abe201d9ecd4802c2bfef48fe7bfde9f92542ea2fe",
+      "cached": false,
+      "directory": "/Users/sae/projects/NEX/build/persistent-ui-v1/production-project/.nex/build/c801f3f2905a933435ecb5abe201d9ecd4802c2bfef48fe7bfde9f92542ea2fe/web",
+      "dist": "/Users/sae/projects/NEX/build/persistent-ui-v1/production-project/.nex/build/c801f3f2905a933435ecb5abe201d9ecd4802c2bfef48fe7bfde9f92542ea2fe/web/dist",
+      "node": "v22.22.3\n",
+      "npm": "10.9.8\n",
+      "ok": true,
+      "profile": "release",
+      "revision": "c75192420de624c72623b3b9c7b30d19efdffbce2344670851f9f9ba3ebccc4d",
+      "schema": "nex.web-build/1"
+    },
+    "production_map_sha256": "ca98a835d468bfebc044cdbc0be92c95218f3c3f10726bc817e1b7bb3529205d",
+    "production_metadata_sha256": "3e338801b4305a07f6913ec5e5e7dd909d131245ab5fae655bdfe40e1739de3c",
+    "dist_sha256": {
+      "THIRD_PARTY_NOTICES.txt": "a274c9eda972cced27204e9065a09b529b0e7b84f01e0e2153ab2a7f77e6b433",
+      "assets/index-CaNkoEgt.css": "0dd3a5d138e41887bc14152ed5a6a688ac42e1c64e842e9f55357e5227534628",
+      "assets/index-ClIhopOD.js": "625ac4fbe562ee48fde0cc8da928cabed65cb36d9a363abd05af0be2beba41c0",
+      "assets/index-ClIhopOD.js.map": "3bad8ea3ee373821ea30c2bada5ed14e853cbcbbe60492015f5d9e713539ae97",
+      "assets/worker-entry-CXUish77.js": "923e9d2b93fd2d9f1d2b9fe3c97a85a8e4f9f72fb118b3acc8ce3526fb0e7c02",
+      "assets/worker-entry-CXUish77.js.map": "b2c6c87a48cd233f998a907c48737c7cd99e33417e2c70267cbe266b20ce95e8",
+      "index.html": "107810c4e5c954f255d4b47932f2def4c5108e0b533577ef6d258bacdaa7612b"
+    },
+    "observations": [
+      "initial counter41",
+      "task changes41 to42",
+      "caught typed error changes42 to43",
+      "Unicode edit persists",
+      "dedicated module Worker returns42",
+      "old snapshot remains41",
+      "uncaught cell-bearing Fault displays original source site"
+    ],
+    "ordinary_console_errors": 0,
+    "expected_fatal_React_error": true,
+    "server_fixture_favicon_status": 204,
+    "snapshot_stdout_sha256": {
+      "browser-final-fatal-snapshot.stdout": "90ebab3b5441afb1760cd567d9ab5b57211acfc82bb579b675c0afcae22bd50f",
+      "browser-final-edit.stdout": "931727a6a80f286176e898cf50db75a7041ec93b69a730447520cf946ee31a92",
+      "browser-final-worker.stdout": "6eb98a0a34d47c940f0a276aa2e8746d64932cf626a8697f29eb9bd2730f7b28",
+      "browser-final-fatal.stdout": "6de22d315c5e79c764ba284b07a1a842aeac218cb91583327db76aca0e08f8f1",
+      "browser-final-screenshot.stdout": "c0d9627b9385bd6649b50412e72d3888104f85cf10cecd7303ca6357ae70c338",
+      "browser-final-version.stdout": "2df52902f88c68fa2d5f33cdd15d604de894f45a35d9fddc7cb54aa8da5e51a8",
+      "browser-final-worker-snapshot.stdout": "f411218605b7a2b68faba9efebc799c369d46a49d07c27418547854a33512e5e",
+      "browser-final-typed.stdout": "a699de4f76949231213f6c45f1bbaf41ef2cfdc4ce8b15829cecb8c67b33c12e",
+      "browser-final-edit-snapshot.stdout": "b56683966d4d361bd50665ea359646bc45071607928f520ba3dd9652584cee1e",
+      "browser-final-close.stdout": "fa0d01ee163214841dd6994837a13774c70bb5a74ee82b6de50d487c9c6f334c",
+      "browser-final-open.stdout": "d2a7105602fcd288190b9eab49d874d52369df29085ab7634d1237ec52ecacb5",
+      "browser-final-add.stdout": "6a980c99f077102383bd12fe04dcd87c51bf780e468d50fbe528888eb0f22be2"
+    },
+    "screenshot_sha256": "415ae1787a9d28a089dd5c8480ce96e3c60b38bf43704abd0b8ee07a5874dc46",
+    "browser_and_temporary_server_closed": true,
+    "Firefox_WebKit_mobile_matrix": false
+  },
+  "moved_normal_installation": {
+    "ok": true,
+    "compiler_sha256": "4a6f27665472b5541948d8c56dc56f36e80dbf0b3374323b2a7ac848a17e5648",
+    "commands": 7,
+    "strict_types": true,
+    "controller_cases": 13,
+    "matching_installed_helpers": true,
+    "automatic_resource_discovery": true,
+    "normal_CMake_install": true,
+    "portable_SDK": false,
+    "host_dependencies_remain": true
+  },
+  "original_observations": [
+    {
+      "file": "build/persistent-ui-v1/tsc-runtime-v1.stdout",
+      "sha256": "f8a664f1a95fb1e3d925a615d4da1378449509266c45bcc5bfafec898ef0bd4d",
+      "description": "Initial TypeScript control-flow narrowing rejected state checks across await; fixed with an explicit lifecycle predicate."
+    },
+    {
+      "file": "build/persistent-ui-v1/web-build-v1.stdout",
+      "sha256": "b89b81bf48c8942eec161963e4138894f7f19a9359a5118f2c50d7b9039d2e51",
+      "description": "Initial offline npm cache lacked the exact locked Vite package; populated from the public registry, then final production build passed offline."
+    },
+    {
+      "file": "build/persistent-ui-v1/development-tests-v1.stderr",
+      "sha256": "a3d4aa9edec88432c9cfa46a151a86d8e93aa52827d4469143232db435ad175d",
+      "description": "Fixture initially compared NEX BLAKE3 manifest hashes with SHA256; corrected the fixture and retained distinct identity domains."
+    },
+    {
+      "file": "build/persistent-ui-v1/development-tests-v2.stderr",
+      "sha256": "f7d754cee04cdf85c5765caa433a9208ed61ef4e325c480206497a7bd74448ad",
+      "description": "Fixture spread lost the event nominal symbol; corrected the typed mutable event used to verify admission snapshots."
+    },
+    {
+      "file": "build/persistent-ui-v1/qualification-v1.stderr",
+      "sha256": "e662660c228fedd8388fd7b37dbd2d701667f8aaf58f17aa578ce92bd077ef19",
+      "description": "The negative parallel_map fixture initially omitted its required third argument; corrected arity and isolated realm/effect fixtures to reach the intended adapter gates."
+    },
+    {
+      "file": "build/persistent-ui-v1/affected-v1.stdout",
+      "sha256": "d8c0faba52b22a1e68ffd06da5ccccacdf2968d886bc73dfc93c6c780e7517e7",
+      "description": "docs_index failed because current-status regeneration followed index generation; regenerated in dependency order. No compiler check was disabled."
+    }
+  ],
+  "scope": "Persistent030 browser source/application state and focused regression; not whole-project or portable-SDK acceptance.",
+  "pending": [
+    "native persistent application and task-provider lifetimes",
+    "parallel and Worker reference transfer",
+    "logical reference task debugging/profiling",
+    "full matching source/platform/portable SDK delivery",
+    "remaining ordinary libraries and original PLAN"
+  ],
+  "published_SDK_0_246_1_unchanged": true,
+  "whole_goal_complete": false
+}

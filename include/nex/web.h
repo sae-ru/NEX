@@ -9,13 +9,15 @@ llvm::json::Value previewWebApp(const std::string &directory,const std::vector<s
 struct WebModule {
   std::string source;
   llvm::json::Value mapping;
-  // Resumable exports return task.Step<T>; invoke them through task.call/run.
+  // Resumable source functions use task.Step<T>; public030 host exports and
+  // application controllers own the scheduler and expose Promise results.
   // Pure modules retain their ordinary synchronous function signatures.
   bool asynchronous=false;
   // Source-error helper requested by public025 and retained private emitters.
   // The historical member name is retained for existing C++ callers.
   bool privateSourceExceptions=false;
-  // Dedicated unarchived managed candidate; ordinary emitters never select it.
+  // Explicit boxed managed values and roots; selected by private candidates,
+  // ordinary030 value/task exports and persistent browser applications.
   bool managedReferences=false;
 };
 // Only the reachable client/shared closure is emitted. Export names are caller supplied.

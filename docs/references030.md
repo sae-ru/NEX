@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.271.0; language 0.30"
+applies_to: "toolchain 0.272.0; language 0.30"
 owner: repository
 ---
 
@@ -92,8 +92,9 @@ TypeScript async wire-value exports use public map4; synchronous exports keep
 map3. Snapshot/history/archive identities are unchanged.
 
 `parallel_map` in a reference graph still receives `E_CELL_CONCURRENCY`.
-Task-provider images, logical task reference debugging/profiling, persistent UI
-state and worker reference transfer remain open. Sequential code-only native
+[Persistent browser UI state](persistent-ui.md) now retains one application
+heap across serialized events. Task-provider images, logical task reference
+debugging/profiling and worker reference transfer remain open. Sequential code-only native
 libraries retain their enclosing [host/application context](reference-library-abi.md).
 Runtime-embedding reference libraries and Wasm references retain explicit
 `E_CELL_TARGET` boundaries. Reference-free entry behavior is preserved.
@@ -152,8 +153,8 @@ are retained; this is not a full SDK/platform release receipt.
 Ordinary030 CLI authoring, static components, task capture/replay and API source
 projection have focused development acceptance. Complete debugger/profile,
 full source regression and SDK/platform qualification remain separate gates.
-Live cell payload inspection is not qualified. Persistent UI state needs a
-longer-lived owned context; per-call exports do not implement it. Nullable
+Live cell payload inspection is not qualified. The separate persistent browser
+adapter owns its longer-lived context; per-call exports keep separate heaps. Nullable
 object layouts, class/interface dispatch, mutable arrays, memory visibility,
 Java numerics/exception hierarchies and Python dynamic protocols/big integers
 remain in [migration readiness](migration-readiness.md). Converters remain

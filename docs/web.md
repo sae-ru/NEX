@@ -1,3 +1,16 @@
+# Persistent030 UI — development0.272.0
+
+Checked030 UI entries with reachable cells or tasks now select an application
+owner that retains opaque State across serialized invocations. `state`, `task`
+and `throw` effects are accepted at UI/command entries. Copied immutable
+views/commands go to the renderer; HTTP/Worker responses return as queued wire
+events. Structured source tasks join before view publication. The generated
+React adapter closes the owner and runners on failure/unmount. Read the
+[persistent application contract](persistent-ui.md) and
+[example](../examples/persistent-ui/README.md). Pure immutable UI and retained
+028/029 keep their existing adapters. Source host IO, reference Worker transfer
+and native persistent provider contexts remain pending.
+
 # Ordinary030 reference tasks — development0.271.0
 
 Ordinary TypeScript emission supports checked030 references together with tasks.
@@ -136,7 +149,7 @@ See [result propagation](error-propagation.md); full integration gates remain.
 
 # NEX browser backend and application contract
 
-The compiler generates TypeScript from the checked NEX graph. The application adapter renders immutable `std/web.nex` view values using React; Vite builds HTML/CSS/JavaScript. LLVM remains the native backend. Browser code does not embed the interpreter, compiler or an LLM. Toolchain 0.6.0 introduced browser HTTP commands; 0.7.0/language 0.5 adds checked endpoint declarations, generated helpers and response validation before event delivery (`docs/api.md`). Task-driven UI integration, asynchronous task I/O and SSR remain unfinished. The experimental scalar [Wasm compute adapter](wasm.md) is separate from this TypeScript application backend.
+The compiler generates TypeScript from the checked NEX graph. The application adapter renders immutable `std/web.nex` view values using React; Vite builds HTML/CSS/JavaScript. LLVM remains the native backend. Browser code does not embed the interpreter, compiler or an LLM. Toolchain 0.6.0 introduced browser HTTP commands; 0.7.0/language 0.5 adds checked endpoint declarations, generated helpers and response validation before event delivery (`docs/api.md`). Source asynchronous task I/O and SSR remain unfinished;030 task-driven UI uses the persistent adapter described above. The experimental scalar [Wasm compute adapter](wasm.md) is separate from this TypeScript application backend.
 
 ## Build and run
 
@@ -207,6 +220,9 @@ client fn view(state: State) -> web::View {
   ]);
 }
 ```
+
+For pure immutable applications, the following synchronous contract applies.
+Source030 entries with cells/tasks use [the persistent contract](persistent-ui.md).
 
 `initial()` returns any non-unit state type. `update(State, std::web::Event) -> State`, `view(State) -> std::web::View`, and `title() -> str` must have exactly these signatures, empty declared effects, and a `shared` or `client` realm. They need not be public. Test functions cannot be application entries. The compiler checks the standard web types' layouts before generating the adapter; a mismatched overridden library is rejected. State/view generation and updates are synchronous and pure. The adapter owns browser event handling, rendering and the optional request commands described below.
 

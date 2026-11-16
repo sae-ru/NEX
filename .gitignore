@@ -18,3 +18,7 @@ __pycache__/
 
 # Local stand handoff with connection details; keep out of Git.
 /STANDS-DEEPSEEK.local.md
+
+/output/playwright/
+
+/.playwright-cli/
