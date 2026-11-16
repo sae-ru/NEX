@@ -54,6 +54,12 @@ later development runs retain their own observed conclusions.
 The subsequent [0.266 development run](evidence/core-ci-0.266.0-2026-11-16.json)
 passed both Linux and macOS at `6a90e9cd`. That result precedes the scoped-example
 repair; its own commit receives a separate core run.
+That [scoped-example run](evidence/core-ci-scoped-example-0.266.0-2026-11-16.json)
+was cancelled in both hosted jobs during build/helper execution. The macOS
+CTest step was skipped; the cancelled Linux helper has no complete accepted
+CTest result here. The API responses do not establish the cancellation cause.
+Local repair evidence remains separate; this run is not recorded as green and
+was not automatically rerun.
 
 ## Dependencies and provenance
 

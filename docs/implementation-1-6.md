@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.266.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.267.0"
 owner: repository
 ---
 
@@ -26,6 +26,34 @@ retain their exact source/platform scopes and do not qualify later changes.
 The old implementation worktree has no commits absent from current main.
 
 ## Executable backlog
+
+User direction, 2026-11-16: prioritize a compact, predictable language for LLM
+application development, rich ordinary libraries and gradual project migration.
+The immediate sequence is:
+
+1. Complete reference/object state across structured tasks, cancellation and
+   persistent application/UI contexts, with matching backend behavior.
+2. Complete practical library gaps, including efficient hash containers,
+   queues/heaps and adapters needed by an actual application.
+3. Improve bounded LLM discovery, examples and diagnostics using observed
+   failures; measure the complete cost of accepted work on the current compiler.
+4. Qualify one committed source cohort through SDK installation, relocation,
+   archive restoration and matching macOS/Linux/Windows development tools.
+5. Exercise a coherent application with a server, browser, SQLite, files and a
+   background task; then manually port a bounded part of a real Java project
+   before implementing converters.
+
+This orders the work; it does not mark the original PLAN complete or discard
+its remaining requirements. Full Java/Python runtime emulation, reflection and
+metaclass compatibility are later, project-driven requirements. Exact source
+behavior remains mandatory for each advertised migrated subset.
+
+Toolchain0.267 adds a separate internal [IEEE numeric kernel](ieee-numeric.md)
+for binary32/binary64 bits, primitive arithmetic/comparisons and Java casts.
+It preserves signed zero and special values while ordinary NEX f64 stays finite.
+The fixed31,748-observation JDK/mathematical corpus qualifies its stated runtime
+scope. Source types, all backend/wire/debugger/ABI bindings, explicit versioned
+migration and complete SDK/platform qualification remain open.
 
 Toolchain0.266 adds an explicit [Java long domain](java-long.md), including
 wrapping64 arithmetic, bits/shifts, narrowing/sign extension and typed division

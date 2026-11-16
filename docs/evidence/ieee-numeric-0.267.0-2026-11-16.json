@@ -1,0 +1,1206 @@
+{
+  "schema": "nex.ieee-numeric-evidence/1",
+  "toolchain": "0.267.0",
+  "base_commit": "80b0c87d009937ef09124763442dc7390ba69686",
+  "observed_at": "2026-11-16T16:42:06.216120+00:00",
+  "source_language_changed": false,
+  "compiler_fallback": "0.28",
+  "project_languages": [
+    "0.28",
+    "0.29",
+    "0.30"
+  ],
+  "task_ABI": 7,
+  "public_C_ABI": 1,
+  "public_source_support": false,
+  "source_files_sha256": {
+    "VERSION": "5839365570cf506bc9b5f9f19297806f86a71b6f43db4711e627a1e9fe27c77c",
+    "README.md": "1c280436ed7cd05c5cd39dc737c1a0155899f30ee06ffe3d547da1352e5d618e",
+    "README.ru.md": "898977d67fff0df96beb138d1b247e2848985047eadb3b9f0edd0542f2619c52",
+    "PLAN.md": "0129d3506af9cfd132366b4b6c0186022be7ab258c899b13b2d288fd20b04234",
+    "STATUS.md": "817653361a8782c9d320398bff7e46863e21f8783433f34947a80c661814047e",
+    "cmake/Install.cmake": "dda1984fde6de92d6abbc43edfa77e57ff0804d25189beb9592d6b092ef6199c",
+    "cmake/Tests.cmake": "e73be66d79ac0f49b9a7064fe95601729db878abacf1f78a223f5a6fc4bf428c",
+    "cmake/test-tiers.json": "ba223501800163807830c7570837ac611b025f3444fed4191bc11670b7718d13",
+    "docs/INDEX.md": "47b06f512a2fb112bdd32feb1ecc363d7f83800ba7599943a67a378137d31195",
+    "docs/STATUS.current.md": "811d753e2ab3fcc2d996aafd1616245370aabc68b9a37e42d5855aad457d051b",
+    "docs/ci.md": "671fc6d4d47d784c035dd3546c148ff91d426a47834a530da29b61251fb53db2",
+    "docs/grammar.ebnf": "8e8be99088b31f7f288f3c94215a0c76a37aacab2c8c31d93dab9785f46c7fb5",
+    "docs/language.md": "a7e382ca3ca01c14bcea353865c28693da275af523be16a1b36b4af71aff3928",
+    "docs/testing.md": "b9417b099f66ff54e4a49fe31c8e662022a4bb144b5e5dfd999a7ce717b5a10f",
+    "docs/implementation-1-6.md": "29bc5f26e3b509bebd48f770301b034b9d8d3fbc0c2ad8b3a0e6a3dd3b0e52bb",
+    "docs/migration-readiness.md": "7e95bcf0e4bfe91d84505e6b24fb4e4c307410f9bb49603b66d4b2d1d0e9045f",
+    "docs/ieee-numeric.md": "3433d875894afab5836b8069684faafde2c803fc9f0b022ab6a3853f00d85636",
+    "llm/SYSTEM_PROMPT.md": "a7e2e0c6305650a3a070f50605e760383f6b1bb4b7bb739a2e28165297ecfadb",
+    "llm/language-pack.json": "36067c961d2026b4b239199259efdbf3a3dafe2e321b844e84461d14d96dc372",
+    "src/language.cpp": "57d5211641d1cd6c57c87e6b5662963d74fda6fa1a65266396479b72e67538e9",
+    "runtime/nex_ieee.h": "6f36c7d2bd9add2671da9d76175cb8262cf4e5bb1d657c841464faef2da42490",
+    "tests/discovery.py": "ca2e625e3f7169c77c583c33272de37bd165b33b05d8848dc0498d7771e18c87",
+    "tests/float_runtime.cpp": "7cebd5d96a94e6f7ee260b9641339d6eca6a86b871cba96bf897f05e3d4a8643",
+    "tests/ieee_numeric.cpp": "e9d5e33c91a378e6582e61ca61a8cc1dbee5d4c86e997e92df2771d3b904b036",
+    "tests/ieee_numeric.py": "3098eee94dd2439c35700b67756a7334004e11d855526b0a154a8eaa5d464fb6",
+    "tests/ieee_numeric_cases.py": "6699b06ab36d010e407348c71e2b4dd56a8662834db2c1ff855ecf28d8df6e22",
+    "tests/ieee_numeric_build.py": "424d595e26027b9c59c0e2dd63b44839173f6d5f603b71c4d5ab96bad276686d",
+    "tests/fixtures/java-ieee/Oracle.java": "50dd4280757d76fcf2e28ef78a8d04fbccfa9351d3f220584e32ce1ed6b45f3a",
+    "tests/fixtures/java-ieee/observe.py": "5eaba53e18008425726c73912095272152233a61e590fa9809521eb6d8aab7aa",
+    "tests/fixtures/java-ieee/oracle.json": "fc26ab77c16d1d1ea1dec49634f02bd25e23007a44d377b958c9d59423558ff7",
+    "docs/evidence/core-ci-scoped-example-0.266.0-2026-11-16.json": "f222ef351e20fac5c003b5ac5d82ea70c842115121167c9ff6ab545c2b604e8c",
+    "llm/QUICK_REFERENCE.md": "eab5a045cd2cffd68b92ebb1d8510b29fd2212231715c08f06e422510e499269",
+    "llm/README.md": "2b05b3f3e56d412b05e6b130536cf25ed2b8f220cd7710123a42d16385be9bda"
+  },
+  "compiler_discovery": {
+    "ok": true,
+    "shared_fields": [
+      "browser_workers",
+      "bytes_construction",
+      "cli_interface",
+      "compute",
+      "device",
+      "diagnostic_catalogue",
+      "dns_provider",
+      "effect_parameters",
+      "features_scope",
+      "foreign_trap_reporting",
+      "generic_features",
+      "gpu_codegen",
+      "http_client_provider",
+      "http_response_streams",
+      "http_storage_transactions",
+      "ieee_numeric_kernel",
+      "language_pack_contract",
+      "list_construction",
+      "llm_cost",
+      "llm_entry",
+      "managed_references",
+      "model",
+      "native_application_lifetime",
+      "native_core",
+      "native_debug_image_binding",
+      "native_debug_pages",
+      "native_debug_session",
+      "native_entry_abi",
+      "native_runtime_search",
+      "native_tool_arguments",
+      "opencl_codegen",
+      "patch_entities",
+      "project_capture_layout",
+      "project_languages",
+      "resource_executor",
+      "resource_regions",
+      "result_propagation",
+      "runtime_contracts",
+      "runtime_diagnostic_messages",
+      "scoped_discovery",
+      "source_concurrency",
+      "source_contracts",
+      "source_contracts_development",
+      "source_exception_prototype",
+      "source_exceptions",
+      "source_formatting",
+      "source_resources",
+      "standard_library",
+      "structured_tasks_runtime",
+      "task_debugging",
+      "task_execution_limits",
+      "task_external_completion",
+      "task_file_reads",
+      "task_file_streams",
+      "task_file_streams_host",
+      "task_file_streams_prototype",
+      "task_file_writes",
+      "task_file_writes_host",
+      "task_file_writes_prototype",
+      "task_foreign_prototype",
+      "task_network_transport",
+      "task_profile_collector",
+      "task_profiling",
+      "task_provider_debugging",
+      "task_provider_profiling",
+      "task_providers",
+      "task_shared_providers",
+      "task_value_retirement",
+      "tcp_provider",
+      "text_construction",
+      "wasm_features"
+    ],
+    "shared_field_count": 71,
+    "compared_JSON_values": 4280,
+    "errors": [],
+    "schema": "nex.language-pack-validation/1",
+    "compiler_sha256": "e1350f8352de87268fe116f0220565296ff90cc39b4edd23aa6df4744b2c8486",
+    "manifest_sha256": "36067c961d2026b4b239199259efdbf3a3dafe2e321b844e84461d14d96dc372",
+    "language": "0.28",
+    "toolchain": "0.267.0",
+    "compiler_build": "4f1749899b41b8bb8550a3d2dd8102056e8f88cce946ea26351de36500f4f327",
+    "descriptor_hash": "1413342b07af72adfbd33e8718a4e682a4721bd0d1157098ed6380ad067c1882"
+  },
+  "installed_discovery": {
+    "compiler_build": "4f1749899b41b8bb8550a3d2dd8102056e8f88cce946ea26351de36500f4f327",
+    "descriptor_hash": "1413342b07af72adfbd33e8718a4e682a4721bd0d1157098ed6380ad067c1882",
+    "field": "ieee_numeric_kernel",
+    "kind": "field",
+    "language": "0.28",
+    "schema": "nex.discovery/1",
+    "toolchain": "0.267.0",
+    "value": {
+      "Java_integral_casts": true,
+      "NaN": "raw bit admission preserves payload; arithmetic/conversion results use canonical quiet NaN",
+      "caller_environment": "saved and restored; ordinary finite f64 unchanged",
+      "formats": [
+        "binary32",
+        "binary64"
+      ],
+      "guide": "docs/ieee-numeric.md",
+      "header": "runtime/nex_ieee.h",
+      "infinities": true,
+      "introduced_toolchain": "0.267.0",
+      "pending": [
+        "source types and checked operations",
+        "reference/native/TypeScript integration",
+        "wire/debugger/ABI contracts",
+        "versioned migration",
+        "SDK/platform qualification"
+      ],
+      "public_source_enabled": false,
+      "rounding": "nearest ties-to-even, gradual underflow, one rounding per operation",
+      "signed_zero": true,
+      "status": "internal_runtime_kernel",
+      "test": "tests/ieee_numeric.py"
+    }
+  },
+  "actual_JDK_observation": {
+    "schema": "nex.java-ieee-oracle/1",
+    "JDK": "openjdk version \"21.0.12.1\" 2026-08-18 LTS\nOpenJDK Runtime Environment Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS)\nOpenJDK 64-Bit Server VM Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS, mixed mode, sharing)",
+    "java_sha256": "50dd4280757d76fcf2e28ef78a8d04fbccfa9351d3f220584e32ce1ed6b45f3a",
+    "generator_sha256": "6699b06ab36d010e407348c71e2b4dd56a8662834db2c1ff855ecf28d8df6e22",
+    "input_sha256": "2701003a716ae28e2b5aa8f48517197bd4076e9722d437ca5d358588633224e7",
+    "stdout_sha256": "5469b2c08b7076c3e0c6addd1575ab4cd7cd9e920e0127a9812a368398637eaa",
+    "case_count": 31748,
+    "exact_rational_model_agrees": true
+  },
+  "JDK_commands": [
+    {
+      "argv": [
+        "/Users/sae/projects/NEX/build/deps/mobile/jdk21/jdk-21.0.12.1+1/Contents/Home/bin/java",
+        "-version"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "/Users/sae/projects/NEX/build/deps/mobile/jdk21/jdk-21.0.12.1+1/Contents/Home/bin/javac",
+        "-d",
+        "/Users/sae/projects/NEX/build/ieee-numeric-v1/jdk-observation-v3",
+        "/Users/sae/projects/NEX/tests/fixtures/java-ieee/Oracle.java"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "/Users/sae/projects/NEX/build/deps/mobile/jdk21/jdk-21.0.12.1+1/Contents/Home/bin/java",
+        "-cp",
+        "/Users/sae/projects/NEX/build/ieee-numeric-v1/jdk-observation-v3",
+        "Oracle"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "golden_fixture_sha256": "fc26ab77c16d1d1ea1dec49634f02bd25e23007a44d377b958c9d59423558ff7",
+  "all_target_build": {
+    "exit_code": 0,
+    "log_sha256": "0af255ff75a29326ff72a8edae4a2d7c71045bfb4d9fe3fdf7791e092afaf401",
+    "width_conversion": "integer narrowing/widening; no out-of-range floating cast"
+  },
+  "core": {
+    "ok": true,
+    "groups": [
+      "llm_cost_ledger",
+      "llm_local_collector",
+      "ctest_report_validation",
+      "discovery",
+      "language_pack_contract",
+      "task_frontend_native",
+      "frontend_diagnostics_native",
+      "value_owner_runtime",
+      "value_retirement_runtime",
+      "managed_references_frontend_reference",
+      "managed_reference_native_context",
+      "bytes_runtime_native",
+      "float_runtime_native",
+      "typed_source_frontend_reference",
+      "test_tiers",
+      "diagnostic_catalogue"
+    ],
+    "seconds": 27.862,
+    "report_sha256": "fc4d28c4f3a001550c38af0d08f31eaaafb4fab91419745aed2f1b1d08a117d3",
+    "ctest": {
+      "schema": "nex.ctest-verification/1",
+      "ok": true,
+      "ctest_exit_code": 0,
+      "selected_groups": [
+        "bytes_runtime_native",
+        "ctest_report_validation",
+        "diagnostic_catalogue",
+        "discovery",
+        "float_runtime_native",
+        "frontend_diagnostics_native",
+        "language_pack_contract",
+        "llm_cost_ledger",
+        "llm_local_collector",
+        "managed_reference_native_context",
+        "managed_references_frontend_reference",
+        "task_frontend_native",
+        "test_tiers",
+        "typed_source_frontend_reference",
+        "value_owner_runtime",
+        "value_retirement_runtime"
+      ],
+      "required_fixture_groups": [],
+      "expected_groups": [
+        "bytes_runtime_native",
+        "ctest_report_validation",
+        "diagnostic_catalogue",
+        "discovery",
+        "float_runtime_native",
+        "frontend_diagnostics_native",
+        "language_pack_contract",
+        "llm_cost_ledger",
+        "llm_local_collector",
+        "managed_reference_native_context",
+        "managed_references_frontend_reference",
+        "task_frontend_native",
+        "test_tiers",
+        "typed_source_frontend_reference",
+        "value_owner_runtime",
+        "value_retirement_runtime"
+      ],
+      "observed_groups": [
+        "llm_cost_ledger",
+        "llm_local_collector",
+        "ctest_report_validation",
+        "discovery",
+        "language_pack_contract",
+        "task_frontend_native",
+        "frontend_diagnostics_native",
+        "value_owner_runtime",
+        "value_retirement_runtime",
+        "managed_references_frontend_reference",
+        "managed_reference_native_context",
+        "bytes_runtime_native",
+        "float_runtime_native",
+        "typed_source_frontend_reference",
+        "test_tiers",
+        "diagnostic_catalogue"
+      ],
+      "results": {
+        "passed": [
+          "llm_cost_ledger",
+          "llm_local_collector",
+          "ctest_report_validation",
+          "discovery",
+          "language_pack_contract",
+          "task_frontend_native",
+          "frontend_diagnostics_native",
+          "value_owner_runtime",
+          "value_retirement_runtime",
+          "managed_references_frontend_reference",
+          "managed_reference_native_context",
+          "bytes_runtime_native",
+          "float_runtime_native",
+          "typed_source_frontend_reference",
+          "test_tiers",
+          "diagnostic_catalogue"
+        ],
+        "failed": [],
+        "skipped": []
+      },
+      "registry_sha256": "c9d3eaede07580f61ed2bd76d5ac810fb4ca8e417228875d1978db948f189661",
+      "junit_sha256": "1de0f7b34f651b9325df88abe687e6b07de1b68cee5c5bed8eef071e8d936aa5"
+    }
+  },
+  "affected": {
+    "ok": true,
+    "groups": [
+      "ieee_numeric_runtime",
+      "float_runtime",
+      "numbers"
+    ],
+    "junit_sha256": "43e04990e235030b231982ca7db3b37b3665b9044d9ed49e5fc6793a82e785fc",
+    "log_sha256": "3730277a8aae9d889083b5a3fdd8fb854414a59a091bb44232848306e7cc2630"
+  },
+  "independent_installed_kernel_profiles": [
+    {
+      "platform": "macos-arm64",
+      "emulated": false,
+      "raw_report_sha256": "d7f8100b6aff2e47ac115dc302a9db8de9e57a66d7828e1964092d7c677f17b7",
+      "result": {
+        "schema": "nex.ieee-kernel-build/1",
+        "ok": true,
+        "resources": "/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK moved \ud83e\udde0/share/nex",
+        "platform": "macOS-27.2.1-arm64-arm-64bit-Mach-O",
+        "machine": "arm64",
+        "commands": [
+          {
+            "argv": [
+              "/opt/homebrew/opt/llvm@22/bin/clang++",
+              "--version"
+            ],
+            "cwd": "/Users/sae/projects/NEX/build/ieee-numeric-v1/installed-kernel-width",
+            "exit_code": 0,
+            "seconds": 0.02870737499324605,
+            "stdout_sha256": "53faf21161e1adc5e5ab450c491040333b8e64fe01e9268cea1bed677871f83b",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "argv": [
+              "/opt/homebrew/opt/llvm@22/bin/clang++",
+              "-std=c++20",
+              "-O0",
+              "-ffp-contract=off",
+              "-frounding-math",
+              "-pthread",
+              "-I/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK moved \ud83e\udde0/share/nex/runtime",
+              "/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK moved \ud83e\udde0/share/nex/tests/ieee_numeric.cpp",
+              "-o",
+              "/Users/sae/projects/NEX/build/ieee-numeric-v1/installed-kernel-width/kernel-0-debug"
+            ],
+            "cwd": "/Users/sae/projects/NEX/build/ieee-numeric-v1/installed-kernel-width",
+            "exit_code": 0,
+            "seconds": 1.0844488330185413,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "argv": [
+              "/Users/sae/.hermes/tools/python-3.14.9+20261021-darwin-arm64/bin/python3.14",
+              "-B",
+              "/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK moved \ud83e\udde0/share/nex/tests/ieee_numeric.py",
+              "/Users/sae/projects/NEX/build/ieee-numeric-v1/installed-kernel-width/kernel-0-debug",
+              "--fixtures",
+              "/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK moved \ud83e\udde0/share/nex/tests/fixtures/java-ieee"
+            ],
+            "cwd": "/Users/sae/projects/NEX/build/ieee-numeric-v1/installed-kernel-width",
+            "exit_code": 0,
+            "seconds": 0.9412333340151235,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "0dced64f3bbf0526b8d8e339b5d62ee9c39440a4e20c0c00fa1d84b03502ef67"
+          },
+          {
+            "argv": [
+              "/opt/homebrew/opt/llvm@22/bin/clang++",
+              "-std=c++20",
+              "-O2",
+              "-ffp-contract=off",
+              "-frounding-math",
+              "-pthread",
+              "-I/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK moved \ud83e\udde0/share/nex/runtime",
+              "/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK moved \ud83e\udde0/share/nex/tests/ieee_numeric.cpp",
+              "-o",
+              "/Users/sae/projects/NEX/build/ieee-numeric-v1/installed-kernel-width/kernel-0-release"
+            ],
+            "cwd": "/Users/sae/projects/NEX/build/ieee-numeric-v1/installed-kernel-width",
+            "exit_code": 0,
+            "seconds": 1.5741211250133347,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "argv": [
+              "/Users/sae/.hermes/tools/python-3.14.9+20261021-darwin-arm64/bin/python3.14",
+              "-B",
+              "/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK moved \ud83e\udde0/share/nex/tests/ieee_numeric.py",
+              "/Users/sae/projects/NEX/build/ieee-numeric-v1/installed-kernel-width/kernel-0-release",
+              "--fixtures",
+              "/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK moved \ud83e\udde0/share/nex/tests/fixtures/java-ieee"
+            ],
+            "cwd": "/Users/sae/projects/NEX/build/ieee-numeric-v1/installed-kernel-width",
+            "exit_code": 0,
+            "seconds": 0.7170580830133986,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "3ad41236edbc54cd1552e5b7333e817a73e9f7ff2472de67b1a56ff540ecbe44"
+          }
+        ],
+        "compilers": [
+          {
+            "path": "/opt/homebrew/opt/llvm@22/bin/clang++",
+            "version": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm@22/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm@22/22.1.8/etc/clang/arm64-apple-darwin27.cfg\n"
+          }
+        ],
+        "kernel_only": true,
+        "portable_SDK": false,
+        "public_source_support": false,
+        "input_sha256": {
+          "runtime/nex_ieee.h": "6f36c7d2bd9add2671da9d76175cb8262cf4e5bb1d657c841464faef2da42490",
+          "runtime/nex_float.h": "0f69f4425ffeba7af5bddacdf2b829bc4f497b71c204583d8f156a87dfd6f86a",
+          "runtime/nex_error.h": "fdc92bd215fd7e836390997ac8f565347dc41dd09a0377483f19b7f89ed20c05",
+          "tests/ieee_numeric.cpp": "e9d5e33c91a378e6582e61ca61a8cc1dbee5d4c86e997e92df2771d3b904b036",
+          "tests/ieee_numeric.py": "3098eee94dd2439c35700b67756a7334004e11d855526b0a154a8eaa5d464fb6",
+          "tests/ieee_numeric_cases.py": "6699b06ab36d010e407348c71e2b4dd56a8662834db2c1ff855ecf28d8df6e22",
+          "tests/fixtures/java-ieee/Oracle.java": "50dd4280757d76fcf2e28ef78a8d04fbccfa9351d3f220584e32ce1ed6b45f3a",
+          "tests/fixtures/java-ieee/oracle.json": "fc26ab77c16d1d1ea1dec49634f02bd25e23007a44d377b958c9d59423558ff7"
+        },
+        "cases_per_build": 31748,
+        "compiled_profiles": [
+          "debug",
+          "release"
+        ],
+        "caller_environment_checked": true,
+        "exact_model_and_JDK_fixture_agree": true
+      },
+      "executables_sha256": {
+        "kernel-0-debug": "4076fab5a84f5a557527b9b4e6936ff88c40ea05d27f5d50b7b0ba45b6adae1a",
+        "kernel-0-release": "90e9695e94f47b62924007179f907d5be17299efd6878e3cf20ed63d3e030926"
+      }
+    },
+    {
+      "platform": "linux-arm64",
+      "emulated": false,
+      "raw_report_sha256": "e48a9ad3f16fa9a336835083f7138b465518dd34a1820ce1c92a3d28b8f96043",
+      "result": {
+        "schema": "nex.ieee-kernel-build/1",
+        "ok": true,
+        "resources": "/sdk/share/nex",
+        "platform": "Linux-7.0.14-linuxkit-aarch64-with-glibc2.39",
+        "machine": "aarch64",
+        "commands": [
+          {
+            "argv": [
+              "/usr/lib/llvm-22/bin/clang++",
+              "--version"
+            ],
+            "cwd": "/out/evidence",
+            "exit_code": 0,
+            "seconds": 0.035038667000000245,
+            "stdout_sha256": "6b575071564cc271cf75280152f5386d138e0192cdd7a850ffcfb4cad518227e",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "argv": [
+              "/usr/lib/llvm-22/bin/clang++",
+              "-std=c++20",
+              "-O0",
+              "-ffp-contract=off",
+              "-frounding-math",
+              "-pthread",
+              "-I/sdk/share/nex/runtime",
+              "/sdk/share/nex/tests/ieee_numeric.cpp",
+              "-o",
+              "/out/evidence/kernel-0-debug"
+            ],
+            "cwd": "/out/evidence",
+            "exit_code": 0,
+            "seconds": 1.0773909999999995,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "argv": [
+              "/usr/bin/python3",
+              "-B",
+              "/sdk/share/nex/tests/ieee_numeric.py",
+              "/out/evidence/kernel-0-debug",
+              "--fixtures",
+              "/sdk/share/nex/tests/fixtures/java-ieee"
+            ],
+            "cwd": "/out/evidence",
+            "exit_code": 0,
+            "seconds": 0.416332916,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "d6fb3621b9525ec85c4b5e77e8a3ef690dd5856fc9e3527809b90168bccfeec7"
+          },
+          {
+            "argv": [
+              "/usr/lib/llvm-22/bin/clang++",
+              "-std=c++20",
+              "-O2",
+              "-ffp-contract=off",
+              "-frounding-math",
+              "-pthread",
+              "-I/sdk/share/nex/runtime",
+              "/sdk/share/nex/tests/ieee_numeric.cpp",
+              "-o",
+              "/out/evidence/kernel-0-release"
+            ],
+            "cwd": "/out/evidence",
+            "exit_code": 0,
+            "seconds": 1.4639619590000006,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "argv": [
+              "/usr/bin/python3",
+              "-B",
+              "/sdk/share/nex/tests/ieee_numeric.py",
+              "/out/evidence/kernel-0-release",
+              "--fixtures",
+              "/sdk/share/nex/tests/fixtures/java-ieee"
+            ],
+            "cwd": "/out/evidence",
+            "exit_code": 0,
+            "seconds": 0.2743364169999998,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "3b75752a9c7dfa3d40ca255cb0e522765b26dcb1cd2767c4a6908027335b4c6f"
+          },
+          {
+            "argv": [
+              "/usr/bin/g++",
+              "--version"
+            ],
+            "cwd": "/out/evidence",
+            "exit_code": 0,
+            "seconds": 0.0015723750000002923,
+            "stdout_sha256": "59d1cbef41d4ae78d5063d525b7aa13d18dc0493ea00537efc19b2ee398cb5a8",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "argv": [
+              "/usr/bin/g++",
+              "-std=c++20",
+              "-O0",
+              "-ffp-contract=off",
+              "-frounding-math",
+              "-pthread",
+              "-I/sdk/share/nex/runtime",
+              "/sdk/share/nex/tests/ieee_numeric.cpp",
+              "-o",
+              "/out/evidence/kernel-1-debug"
+            ],
+            "cwd": "/out/evidence",
+            "exit_code": 0,
+            "seconds": 1.0127726249999993,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "argv": [
+              "/usr/bin/python3",
+              "-B",
+              "/sdk/share/nex/tests/ieee_numeric.py",
+              "/out/evidence/kernel-1-debug",
+              "--fixtures",
+              "/sdk/share/nex/tests/fixtures/java-ieee"
+            ],
+            "cwd": "/out/evidence",
+            "exit_code": 0,
+            "seconds": 0.4093874579999994,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "164e12c0b6a170919c9f230595d7197dab20f65c9cd5af679ce1f6203c4f1bf7"
+          },
+          {
+            "argv": [
+              "/usr/bin/g++",
+              "-std=c++20",
+              "-O2",
+              "-ffp-contract=off",
+              "-frounding-math",
+              "-pthread",
+              "-I/sdk/share/nex/runtime",
+              "/sdk/share/nex/tests/ieee_numeric.cpp",
+              "-o",
+              "/out/evidence/kernel-1-release"
+            ],
+            "cwd": "/out/evidence",
+            "exit_code": 0,
+            "seconds": 1.6864764179999998,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "argv": [
+              "/usr/bin/python3",
+              "-B",
+              "/sdk/share/nex/tests/ieee_numeric.py",
+              "/out/evidence/kernel-1-release",
+              "--fixtures",
+              "/sdk/share/nex/tests/fixtures/java-ieee"
+            ],
+            "cwd": "/out/evidence",
+            "exit_code": 0,
+            "seconds": 0.2741687079999995,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "f4a8af92db48ae86acaa6e25c6adeef63f2b4c4dfbf74d1f2e5cd055db66813e"
+          }
+        ],
+        "compilers": [
+          {
+            "path": "/usr/lib/llvm-22/bin/clang++",
+            "version": "Ubuntu clang version 22.1.8 (++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80)\nTarget: aarch64-unknown-linux-gnu\nThread model: posix\nInstalledDir: /usr/lib/llvm-22/bin\n"
+          },
+          {
+            "path": "/usr/bin/g++",
+            "version": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0\nCopyright (C) 2023 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n"
+          }
+        ],
+        "kernel_only": true,
+        "portable_SDK": false,
+        "public_source_support": false,
+        "input_sha256": {
+          "runtime/nex_ieee.h": "6f36c7d2bd9add2671da9d76175cb8262cf4e5bb1d657c841464faef2da42490",
+          "runtime/nex_float.h": "0f69f4425ffeba7af5bddacdf2b829bc4f497b71c204583d8f156a87dfd6f86a",
+          "runtime/nex_error.h": "fdc92bd215fd7e836390997ac8f565347dc41dd09a0377483f19b7f89ed20c05",
+          "tests/ieee_numeric.cpp": "e9d5e33c91a378e6582e61ca61a8cc1dbee5d4c86e997e92df2771d3b904b036",
+          "tests/ieee_numeric.py": "3098eee94dd2439c35700b67756a7334004e11d855526b0a154a8eaa5d464fb6",
+          "tests/ieee_numeric_cases.py": "6699b06ab36d010e407348c71e2b4dd56a8662834db2c1ff855ecf28d8df6e22",
+          "tests/fixtures/java-ieee/Oracle.java": "50dd4280757d76fcf2e28ef78a8d04fbccfa9351d3f220584e32ce1ed6b45f3a",
+          "tests/fixtures/java-ieee/oracle.json": "fc26ab77c16d1d1ea1dec49634f02bd25e23007a44d377b958c9d59423558ff7"
+        },
+        "cases_per_build": 31748,
+        "compiled_profiles": [
+          "debug",
+          "release"
+        ],
+        "caller_environment_checked": true,
+        "exact_model_and_JDK_fixture_agree": true
+      },
+      "executables_sha256": {
+        "kernel-1-release": "effa4de4469024462ca1de2ac2a8b3d796e6ad341344753c9f61995ff149f0c9",
+        "kernel-0-debug": "d80ffdeec2cadd0c3a77682890059f4c6533b54eb53e7fe00114e03e156c8e37",
+        "kernel-0-release": "0a27a3952623a74641d907fa6f09aea246c4fd1e8c08725dfdb979b29a47227d",
+        "kernel-1-debug": "2acb50a07e6282b635f55e7101427de5df51a5f446beae586c0c6718d447f493"
+      },
+      "container": {
+        "image": "sha256:34a98f1aad00ad2e71e3c77db7aac6fa1cc8e539acd5e2d9251ace2a306a8f82",
+        "arch": "arm64",
+        "exit_code": 0,
+        "network": "none",
+        "image_pull": "never",
+        "source_mount": "installed resources, read-only",
+        "kernel_only": true,
+        "emulated": false
+      },
+      "docker_command": [
+        "docker",
+        "run",
+        "--rm",
+        "--pull=never",
+        "--platform=linux/arm64",
+        "--network=none",
+        "--read-only",
+        "--tmpfs=/tmp:rw,size=256m",
+        "--user",
+        "503:20",
+        "--mount",
+        "type=bind,src=/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK moved \ud83e\udde0,dst=/sdk,readonly",
+        "--mount",
+        "type=bind,src=/Users/sae/projects/NEX/build/ieee-numeric-v1/linux-arm64-width,dst=/out",
+        "sha256:34a98f1aad00ad2e71e3c77db7aac6fa1cc8e539acd5e2d9251ace2a306a8f82",
+        "python3",
+        "-B",
+        "/sdk/share/nex/tests/ieee_numeric_build.py",
+        "--compiler",
+        "/usr/lib/llvm-22/bin/clang++",
+        "--compiler",
+        "/usr/bin/g++",
+        "--output",
+        "/out/evidence"
+      ]
+    },
+    {
+      "platform": "linux-amd64",
+      "emulated": true,
+      "raw_report_sha256": "81a45a27858182f445ea855c9192c1d2f5c01b5892fb380f0bcbfce8fcac85ad",
+      "result": {
+        "schema": "nex.ieee-kernel-build/1",
+        "ok": true,
+        "resources": "/sdk/share/nex",
+        "platform": "Linux-7.0.14-linuxkit-x86_64-with-glibc2.39",
+        "machine": "x86_64",
+        "commands": [
+          {
+            "argv": [
+              "/usr/lib/llvm-22/bin/clang++",
+              "--version"
+            ],
+            "cwd": "/out/evidence",
+            "exit_code": 0,
+            "seconds": 0.1634523760000004,
+            "stdout_sha256": "d6d146c61f5ba14a74f0cb00885d4068a7f1b41c88880f93d7c65187efb625ea",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "argv": [
+              "/usr/lib/llvm-22/bin/clang++",
+              "-std=c++20",
+              "-O0",
+              "-ffp-contract=off",
+              "-frounding-math",
+              "-pthread",
+              "-I/sdk/share/nex/runtime",
+              "/sdk/share/nex/tests/ieee_numeric.cpp",
+              "-o",
+              "/out/evidence/kernel-0-debug"
+            ],
+            "cwd": "/out/evidence",
+            "exit_code": 0,
+            "seconds": 2.767446668,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "argv": [
+              "/usr/bin/python3",
+              "-B",
+              "/sdk/share/nex/tests/ieee_numeric.py",
+              "/out/evidence/kernel-0-debug",
+              "--fixtures",
+              "/sdk/share/nex/tests/fixtures/java-ieee"
+            ],
+            "cwd": "/out/evidence",
+            "exit_code": 0,
+            "seconds": 0.7942413749999995,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "b759cca8026b92865a507f934263e78cb7737f5bd0242f029c917e2c8827ef93"
+          },
+          {
+            "argv": [
+              "/usr/lib/llvm-22/bin/clang++",
+              "-std=c++20",
+              "-O2",
+              "-ffp-contract=off",
+              "-frounding-math",
+              "-pthread",
+              "-I/sdk/share/nex/runtime",
+              "/sdk/share/nex/tests/ieee_numeric.cpp",
+              "-o",
+              "/out/evidence/kernel-0-release"
+            ],
+            "cwd": "/out/evidence",
+            "exit_code": 0,
+            "seconds": 4.043582294,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "argv": [
+              "/usr/bin/python3",
+              "-B",
+              "/sdk/share/nex/tests/ieee_numeric.py",
+              "/out/evidence/kernel-0-release",
+              "--fixtures",
+              "/sdk/share/nex/tests/fixtures/java-ieee"
+            ],
+            "cwd": "/out/evidence",
+            "exit_code": 0,
+            "seconds": 0.5707006670000005,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "dccac16ecd545e2ba4515d344c185088778226e5e997bbcb72e099f378eb0e4e"
+          },
+          {
+            "argv": [
+              "/usr/bin/g++",
+              "--version"
+            ],
+            "cwd": "/out/evidence",
+            "exit_code": 0,
+            "seconds": 0.01706049999999948,
+            "stdout_sha256": "59d1cbef41d4ae78d5063d525b7aa13d18dc0493ea00537efc19b2ee398cb5a8",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "argv": [
+              "/usr/bin/g++",
+              "-std=c++20",
+              "-O0",
+              "-ffp-contract=off",
+              "-frounding-math",
+              "-pthread",
+              "-I/sdk/share/nex/runtime",
+              "/sdk/share/nex/tests/ieee_numeric.cpp",
+              "-o",
+              "/out/evidence/kernel-1-debug"
+            ],
+            "cwd": "/out/evidence",
+            "exit_code": 0,
+            "seconds": 1.9632161260000007,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "argv": [
+              "/usr/bin/python3",
+              "-B",
+              "/sdk/share/nex/tests/ieee_numeric.py",
+              "/out/evidence/kernel-1-debug",
+              "--fixtures",
+              "/sdk/share/nex/tests/fixtures/java-ieee"
+            ],
+            "cwd": "/out/evidence",
+            "exit_code": 0,
+            "seconds": 0.8379608340000004,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "1c6908d8918ef6ae21f221390c88b24106abbd51cf6d19d4d4ebde9bd5be30eb"
+          },
+          {
+            "argv": [
+              "/usr/bin/g++",
+              "-std=c++20",
+              "-O2",
+              "-ffp-contract=off",
+              "-frounding-math",
+              "-pthread",
+              "-I/sdk/share/nex/runtime",
+              "/sdk/share/nex/tests/ieee_numeric.cpp",
+              "-o",
+              "/out/evidence/kernel-1-release"
+            ],
+            "cwd": "/out/evidence",
+            "exit_code": 0,
+            "seconds": 3.1390294600000015,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "argv": [
+              "/usr/bin/python3",
+              "-B",
+              "/sdk/share/nex/tests/ieee_numeric.py",
+              "/out/evidence/kernel-1-release",
+              "--fixtures",
+              "/sdk/share/nex/tests/fixtures/java-ieee"
+            ],
+            "cwd": "/out/evidence",
+            "exit_code": 0,
+            "seconds": 0.5861320420000027,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "f560afface2759724fabdadccfe4c12d67fb4f61ff36e9347bb9ebfb1f964421"
+          }
+        ],
+        "compilers": [
+          {
+            "path": "/usr/lib/llvm-22/bin/clang++",
+            "version": "Ubuntu clang version 22.1.8 (++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80)\nTarget: x86_64-pc-linux-gnu\nThread model: posix\nInstalledDir: /usr/lib/llvm-22/bin\n"
+          },
+          {
+            "path": "/usr/bin/g++",
+            "version": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0\nCopyright (C) 2023 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n"
+          }
+        ],
+        "kernel_only": true,
+        "portable_SDK": false,
+        "public_source_support": false,
+        "input_sha256": {
+          "runtime/nex_ieee.h": "6f36c7d2bd9add2671da9d76175cb8262cf4e5bb1d657c841464faef2da42490",
+          "runtime/nex_float.h": "0f69f4425ffeba7af5bddacdf2b829bc4f497b71c204583d8f156a87dfd6f86a",
+          "runtime/nex_error.h": "fdc92bd215fd7e836390997ac8f565347dc41dd09a0377483f19b7f89ed20c05",
+          "tests/ieee_numeric.cpp": "e9d5e33c91a378e6582e61ca61a8cc1dbee5d4c86e997e92df2771d3b904b036",
+          "tests/ieee_numeric.py": "3098eee94dd2439c35700b67756a7334004e11d855526b0a154a8eaa5d464fb6",
+          "tests/ieee_numeric_cases.py": "6699b06ab36d010e407348c71e2b4dd56a8662834db2c1ff855ecf28d8df6e22",
+          "tests/fixtures/java-ieee/Oracle.java": "50dd4280757d76fcf2e28ef78a8d04fbccfa9351d3f220584e32ce1ed6b45f3a",
+          "tests/fixtures/java-ieee/oracle.json": "fc26ab77c16d1d1ea1dec49634f02bd25e23007a44d377b958c9d59423558ff7"
+        },
+        "cases_per_build": 31748,
+        "compiled_profiles": [
+          "debug",
+          "release"
+        ],
+        "caller_environment_checked": true,
+        "exact_model_and_JDK_fixture_agree": true
+      },
+      "executables_sha256": {
+        "kernel-1-release": "41574ef086b9f502541df9e62e0ce9470ca578d79ec91bfa1e7d4ec023beb672",
+        "kernel-0-debug": "4e9fec4af908b2dcced879d11626fb995c14f01e69dd4dd403530bb3a235f97f",
+        "kernel-0-release": "5297f023bb81637471c041fcaab2e5276c45f20fa94e6c77e511d0ca1a51d08f",
+        "kernel-1-debug": "ed0f02121274b60d54ea87009491109ea43bdbd2aaf23f6a0949ec318a2b0083"
+      },
+      "container": {
+        "image": "sha256:b8bc0c6cbf81440a5fa0646815409974ca2993d552347a56ff72aa75bae58be8",
+        "arch": "amd64",
+        "exit_code": 0,
+        "network": "none",
+        "image_pull": "never",
+        "source_mount": "installed resources, read-only",
+        "kernel_only": true,
+        "emulated": true
+      },
+      "docker_command": [
+        "docker",
+        "run",
+        "--rm",
+        "--pull=never",
+        "--platform=linux/amd64",
+        "--network=none",
+        "--read-only",
+        "--tmpfs=/tmp:rw,size=256m",
+        "--user",
+        "503:20",
+        "--mount",
+        "type=bind,src=/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK moved \ud83e\udde0,dst=/sdk,readonly",
+        "--mount",
+        "type=bind,src=/Users/sae/projects/NEX/build/ieee-numeric-v1/linux-amd64-width,dst=/out",
+        "sha256:b8bc0c6cbf81440a5fa0646815409974ca2993d552347a56ff72aa75bae58be8",
+        "python3",
+        "-B",
+        "/sdk/share/nex/tests/ieee_numeric_build.py",
+        "--compiler",
+        "/usr/lib/llvm-22/bin/clang++",
+        "--compiler",
+        "/usr/bin/g++",
+        "--output",
+        "/out/evidence"
+      ]
+    }
+  ],
+  "compiler_profiles": 10,
+  "observations_per_profile": 31748,
+  "normal_installation": {
+    "relocated": true,
+    "path": "/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK relocated \ud83e\udde0",
+    "compiler_sha256": "e1350f8352de87268fe116f0220565296ff90cc39b4edd23aa6df4744b2c8486",
+    "discovery_launch_directory": "/private/tmp",
+    "host_dependencies_retained": true,
+    "portable_SDK": false,
+    "initial_kernel_profile_prefix": "/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK moved \ud83e\udde0",
+    "after_relocation": {
+      "schema": "nex.normal-installation-relocation/1",
+      "ok": true,
+      "old_prefix": "/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK moved \ud83e\udde0",
+      "new_prefix": "/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK relocated \ud83e\udde0",
+      "compiler_sha256": "e1350f8352de87268fe116f0220565296ff90cc39b4edd23aa6df4744b2c8486",
+      "ambient_resource_directory_unset": true,
+      "portable_SDK": false,
+      "commands": [
+        {
+          "argv": [
+            "/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK relocated \ud83e\udde0/bin/nex",
+            "doctor",
+            "--json"
+          ],
+          "cwd": "/private/tmp",
+          "exit_code": 0,
+          "stdout_sha256": "83ba9c725b82653464a773f10d02e3367f841fb0431ff8625f8718a8b15151a7",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "argv": [
+            "/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK relocated \ud83e\udde0/bin/nex",
+            "describe",
+            "--field",
+            "ieee_numeric_kernel",
+            "--json"
+          ],
+          "cwd": "/private/tmp",
+          "exit_code": 0,
+          "stdout_sha256": "adade7e004921ba721026abc53cb8c7251bf4e843bbbe836907d181cce698b88",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "argv": [
+            "/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK relocated \ud83e\udde0/bin/nex",
+            "guide",
+            "--kind",
+            "quick",
+            "--json"
+          ],
+          "cwd": "/private/tmp",
+          "exit_code": 0,
+          "stdout_sha256": "d0aa048b4b21fcdf0ec27963d5f55de76e00c33c52cc31c258cbd65ce9359332",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "argv": [
+            "/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK relocated \ud83e\udde0/bin/nex",
+            "init",
+            "/Users/sae/projects/NEX/build/ieee-numeric-v1/relocation-smoke-v2/app",
+            "--json"
+          ],
+          "cwd": "/private/tmp",
+          "exit_code": 0,
+          "stdout_sha256": "fd10070aa08e3cd3c4e6185f9115779d060d0b94a22cbd7689fc9a20279b7d71",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "argv": [
+            "/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK relocated \ud83e\udde0/bin/nex",
+            "check",
+            "--json"
+          ],
+          "cwd": "/Users/sae/projects/NEX/build/ieee-numeric-v1/relocation-smoke-v2/app",
+          "exit_code": 0,
+          "stdout_sha256": "7745440c17e65d2d4387598073549e7f3e75532ff117df8383bbfb26c612a920",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "argv": [
+            "/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK relocated \ud83e\udde0/bin/nex",
+            "eval",
+            "--json"
+          ],
+          "cwd": "/Users/sae/projects/NEX/build/ieee-numeric-v1/relocation-smoke-v2/app",
+          "exit_code": 0,
+          "stdout_sha256": "f9f71eb50ad055eb34ae2462deb3fd3fcb499a49066d66fe0281c0b9bb2e8dd2",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "argv": [
+            "/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK relocated \ud83e\udde0/bin/nex",
+            "run",
+            "--profile",
+            "release",
+            "--json"
+          ],
+          "cwd": "/Users/sae/projects/NEX/build/ieee-numeric-v1/relocation-smoke-v2/app",
+          "exit_code": 0,
+          "stdout_sha256": "4878ab362547d6c567fa6563e35b68c1649b189291a2869a4bd65a070aacb23e",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "argv": [
+            "/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK relocated \ud83e\udde0/bin/nex",
+            "test",
+            "--json"
+          ],
+          "cwd": "/Users/sae/projects/NEX/build/ieee-numeric-v1/relocation-smoke-v2/app",
+          "exit_code": 0,
+          "stdout_sha256": "3e281a51bd325a2235472f0c8e85ba2cb7999b18d3e8e8d73c6130269a16b433",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "doctor": {
+        "cpu": "apple-m4",
+        "host": "arm64-apple-darwin27.2.0",
+        "language": "0.28",
+        "llvm": "22.1.8",
+        "native_archiver": "/opt/homebrew/Cellar/llvm@22/22.1.8/bin/llvm-ar",
+        "native_compiler": "/opt/homebrew/Cellar/llvm@22/22.1.8/bin/clang++",
+        "native_debug_packager": "/opt/homebrew/Cellar/llvm@22/22.1.8/bin/dsymutil",
+        "native_linker": "",
+        "native_openssl_crypto": "/opt/homebrew/Cellar/openssl@3/3.6.3/lib/libcrypto.3.dylib",
+        "native_openssl_include": "/opt/homebrew/Cellar/openssl@3/3.6.3/include",
+        "native_openssl_ssl": "/opt/homebrew/Cellar/openssl@3/3.6.3/lib/libssl.3.dylib",
+        "native_sqlite_include": "/opt/local/include",
+        "native_sqlite_library": "/opt/local/lib/libsqlite3.3.53.1.dylib",
+        "native_sysroot": "",
+        "native_windows_notices": "",
+        "native_windows_runtime": "",
+        "runtime": "/Users/sae/projects/NEX/build/ieee-numeric-v1/SDK relocated \ud83e\udde0/share/nex/runtime/runtime.cpp",
+        "runtime_available": true,
+        "schema": "nex.doctor/1",
+        "sdk_manifest": "",
+        "verifier": "Z3",
+        "verifier_version": "5.3.1.0 ac9156f97cb44e56472e1c841f7a2beb1e976b24",
+        "version": "0.267.0",
+        "wasm_compiler": "/opt/homebrew/Cellar/llvm@22/22.1.8/bin/clang++",
+        "wasm_linker": "/Users/sae/projects/NEX/build/deps/lld-wasm-22.1.8-macos/wasm-ld"
+      },
+      "source_language": "0.30",
+      "quick_guide_succeeded": true,
+      "reference_native_stdout": "55\n",
+      "root_graph_untouched": true,
+      "source_and_host_dependencies_retained": true,
+      "full_SDK_workflow": false
+    },
+    "relocation_report_sha256": "a0c01ee59f057af12d41fb17fad1c2b3588d7f6f0e5bd148294ba95229e0df36"
+  },
+  "retained_development_failures": {
+    "initial_Python_harness_import": {
+      "cause": "existing tests/numbers.py shadowed stdlib numbers imported by fractions; oracle model now excludes the local test directory during stdlib import",
+      "stderr_sha256": "0094a137d84408b827f63ef269760800297451b79094056f14e8bd866d2ca7e7"
+    },
+    "initial_install_helper_launch": {
+      "cause": "generated installation script predated the new helper; the normal build regenerated it before installation and qualification",
+      "stderr_sha256": "b3ca17d05b0348e8be07519ea1e396523e8371305c9a0ab352542b4a56766390"
+    }
+  },
+  "scope": {
+    "kernel": "explicit binary32/binary64 C++ bit/value domains",
+    "ordinary_NEX_f64": "finite and zero-normalized, unchanged; affected source/TS/runtime checks passed",
+    "new_source_types": false,
+    "reference_native_TypeScript_IEEE_execution": false,
+    "wire_debugger_ABI_IEEE_binding": false,
+    "versioned_migration_needed_for_future_source_types": true,
+    "full_updated_CTest": false,
+    "full_updated_SDK_workflow": false,
+    "portable_SDK": false,
+    "physical_Linux_stands": false,
+    "public_SDK_0_246_1_unchanged": true,
+    "original_PLAN_complete": false,
+    "converters_implemented": false
+  },
+  "numeric_development_base_commit": "b6173e5e30fea5a3060464ec7788df0c37c59ef5",
+  "upstream_integration": {
+    "commit": "80b0c87d009937ef09124763442dc7390ba69686",
+    "changed_files": [
+      ".agents/plugins/marketplace.json",
+      "README.md",
+      "README.ru.md",
+      "docs/evidence/codex-plugin-0.1.0-2026-11-16.json",
+      "llm/README.md",
+      "plugins/nex/LICENSE",
+      "plugins/nex/PUBLISHING.md",
+      "plugins/nex/README.md",
+      "plugins/nex/README.ru.md",
+      "plugins/nex/assets/icon-dark.svg",
+      "plugins/nex/assets/icon.svg",
+      "plugins/nex/plugin.json",
+      "plugins/nex/skills/nex-programming/LICENSE",
+      "plugins/nex/skills/nex-programming/SKILL.md",
+      "plugins/nex/skills/nex-programming/agents/openai.yaml",
+      "plugins/nex/skills/nex-programming/assets/hello.nex",
+      "plugins/nex/skills/nex-programming/references/sdk-setup.md",
+      "plugins/nex/skills/nex-programming/references/workflows.md",
+      "plugins/releases/nex-developer-tools-0.1.0.inventory.json",
+      "plugins/releases/nex-developer-tools-0.1.0.sha256",
+      "plugins/releases/nex-developer-tools-0.1.0.zip",
+      "tools/package_codex_plugin.py"
+    ],
+    "production_CPP_or_version_changed": false,
+    "local_numeric_inputs_match_all_installed_profile_pins": true,
+    "plugin_release_zip_sha256": "24fbacfcd3884db20a546653ea5b2e1e7c20b7678fe7cfcb9edf1ee1f1ff1879"
+  },
+  "prior_kernel_prototype": {
+    "receipt_sha256": "eaa360447aabffa8799e4a2c13c5476fca73712000d313538022324cf025f198",
+    "observations_per_profile": 25718,
+    "scope": "superseded development result retained locally; final receipt uses integer width conversion and expanded boundary corpus"
+  },
+  "quick_guide_fix": {
+    "before_bytes": 6392,
+    "after_bytes": 6095,
+    "reader_maximum": 6144,
+    "original_diagnostic": {
+      "code": "E_RESOURCE",
+      "column": 1,
+      "file": "",
+      "line": 1,
+      "message": "quick reference requires a regular non-symlink file of at most 6144 bytes",
+      "ok": false,
+      "schema": "nex.diagnostic/1",
+      "stdout": ""
+    },
+    "original_relocation_report_sha256": "abb338a3a731592fdf4a08f04f4e676f081254e1def14b97636b262af4de97df",
+    "original_failed_stdout_sha256": "139ab985588b15755928b0fce4679fcef2b187b762240d05d7a0e5e7d2c07424",
+    "sha256": "eab5a045cd2cffd68b92ebb1d8510b29fd2212231715c08f06e422510e499269",
+    "core_guard": "discovery.test_quick_guide_loads_within_the_advertised_byte_limit",
+    "affected_groups": [
+      "discovery",
+      "llm_quick_reference"
+    ],
+    "junit_sha256": "72e3fac6882c2be7625251dc37cf5d22fcb833bc812cc8bfb71e4fd20fc58933",
+    "log_sha256": "dc61a2547215d8527ed59b332f1ecf0fff7c0a4ec81f74868d56bd0873e6cd78",
+    "NEX_compiler_bytes_changed_by_guide_fix": false,
+    "native_reference_strict_TypeScript_sample_agreement": true
+  },
+  "distinct_CTest_groups": [
+    "bytes_runtime_native",
+    "ctest_report_validation",
+    "diagnostic_catalogue",
+    "discovery",
+    "float_runtime",
+    "float_runtime_native",
+    "frontend_diagnostics_native",
+    "ieee_numeric_runtime",
+    "language_pack_contract",
+    "llm_cost_ledger",
+    "llm_local_collector",
+    "llm_quick_reference",
+    "managed_reference_native_context",
+    "managed_references_frontend_reference",
+    "numbers",
+    "task_frontend_native",
+    "test_tiers",
+    "typed_source_frontend_reference",
+    "value_owner_runtime",
+    "value_retirement_runtime"
+  ],
+  "distinct_CTest_group_count": 20
+}

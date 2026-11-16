@@ -37,6 +37,12 @@ installed SDK's `foreign-boundary` phase retain their execution checks. The
 [focused repair receipt](evidence/sdk-scoped-example-0.266.0-2026-11-16.json)
 records the real installed C11 module/C++20 example and NEX model agreement.
 
+The existing core `discovery` group also loads the actual quick guide and checks
+its advertised byte limit. This catches a packaged reference growing beyond the
+CLI reader's6144-byte contract. The extended `llm_quick_reference` group retains
+the actual sample's native/reference/strict-TypeScript agreement; no model-token
+saving is inferred from a shorter sheet.
+
 Toolchain 0.251 also includes the application-context lifecycle probe, making
 the current core 14 groups. Native generated-code/executable agreement remains
 an additional compiler/platform check.
@@ -84,6 +90,14 @@ private reference interpreter; native/TypeScript reference execution and a
 matching complete SDK remain pending.
 
 ## Select a broader scope
+
+Toolchain0.267 adds `ieee_numeric_runtime` outside core. Its fixed JDK fixture
+and independent exact-rational model compare31,748 observations with the actual
+binary32/binary64 C++ probe. Caller rounding/status, subnormals, FTZ and thread
+environment checks run separately in that group. Core builds this probe and
+executes a small coexistence check through `float_runtime_native`, retaining
+16 core groups. These are [internal-kernel checks](ieee-numeric.md), not source
+IEEE support or full SDK acceptance.
 
 ```sh
 ctest --test-dir build --show-only=json-v1 > /new/registry.json

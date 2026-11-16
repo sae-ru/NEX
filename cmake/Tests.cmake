@@ -696,6 +696,13 @@ add_executable(nex_float_runtime_probe tests/float_runtime.cpp runtime/runtime.c
 target_include_directories(nex_float_runtime_probe PRIVATE runtime)
 target_link_libraries(nex_float_runtime_probe PRIVATE Threads::Threads)
 add_test(NAME float_runtime_native COMMAND nex_float_runtime_probe --self-test)
+add_executable(nex_ieee_numeric_probe tests/ieee_numeric.cpp)
+target_include_directories(nex_ieee_numeric_probe PRIVATE runtime)
+target_compile_options(nex_ieee_numeric_probe PRIVATE -Wall -Wextra -Wpedantic -ffp-contract=off -frounding-math)
+target_link_libraries(nex_ieee_numeric_probe PRIVATE Threads::Threads)
+add_test(NAME ieee_numeric_runtime COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/ieee_numeric.py $<TARGET_FILE:nex_ieee_numeric_probe>)
+set_tests_properties(ieee_numeric_runtime PROPERTIES TIMEOUT 120)
 add_test(NAME integration COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration.py $<TARGET_FILE:nex>)
 add_test(NAME modules COMMAND ${Python3_EXECUTABLE}
@@ -1656,7 +1663,7 @@ endif()
 add_custom_target(nex_core_tests DEPENDS nex nex_frontend_diagnostics_probe
   nex_float_runtime_probe nex_bytes_runtime_probe nex_task_frontend_probe nex_typed_source_probe
   nex_managed_references_probe nex_managed_reference_native_probe nex_value_retirement_probe
-  nex_value_owner_probe nex_value_owner_module nex_scoped_host_example)
+  nex_value_owner_probe nex_value_owner_module nex_scoped_host_example nex_ieee_numeric_probe)
 add_test(NAME test_tiers COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_tiers.py --build ${CMAKE_CURRENT_BINARY_DIR}
   --ctest ${CMAKE_CTEST_COMMAND} --cmake ${CMAKE_COMMAND})

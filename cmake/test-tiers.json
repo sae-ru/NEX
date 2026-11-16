@@ -69,6 +69,7 @@
     "files_runtime_native": ["extended", "platform"],
     "float_runtime": ["extended", "browser", "platform"],
     "float_runtime_native": ["core"],
+    "ieee_numeric_runtime": ["extended", "platform"],
     "foreign_packaging": ["extended", "browser", "platform", "sdk", "scale"],
     "foreign_scope_native": ["extended", "platform"],
     "frontend_diagnostics": ["extended", "browser", "scale"],

@@ -1,5 +1,10 @@
 # NEX language specification 0.28
 
+Toolchain0.267's internal [IEEE numeric kernel](ieee-numeric.md) adds no source
+type, operator, literal or grammar production. Source f64 remains the finite,
+zero-normalized domain specified below. Discover `ieee_numeric_kernel` for its
+explicitly pending source/backend/wire/debugger/ABI/migration integration.
+
 Toolchain0.265 adds ordinary project selection of [language0.30](references030.md),
 including the [reference grammar](references030.ebnf), `cell<T>` and `state`.
 `nex init` now records0.30; explicit0.28/0.29 and the unconfigured compiler

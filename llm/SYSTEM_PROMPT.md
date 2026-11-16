@@ -8,6 +8,9 @@ new `nex init` projects select0.30. Installed or retained SDKs may advertise
 earlier versions. Discover the selected compiler before choosing syntax,
 metadata or migration. Compiled applications do not require an LLM.
 
+Internal kernels marked `public_source_enabled:false` do not enable source
+types or syntax.
+
 Use typed source errors only when source_exceptions.typed_payloads is true.
 Language0.27 and later have throw(value), ordered catch(error:T) with optional guards,
 legacy throw(code,message)/catch(code,message), lexical rethrow and finally.

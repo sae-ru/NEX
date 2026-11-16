@@ -1,0 +1,176 @@
+{
+  "schema": "nex.hosted-core-result/1",
+  "toolchain": "0.266.0",
+  "source_commit": "b6173e5e30fea5a3060464ec7788df0c37c59ef5",
+  "run_id": 43901274314,
+  "url": "https://github.com/sae-ru/NEX/actions/runs/43901274314",
+  "status": "completed",
+  "conclusion": "cancelled",
+  "observed_at": "2026-11-16T16:18:46.602872+00:00",
+  "authority": "GitHub Actions REST run and jobs responses",
+  "cancellation_cause": "not established by these API responses",
+  "completed_core_acceptance": false,
+  "jobs": [
+    {
+      "id": 133418222639,
+      "name": "macos-core",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "started_at": "2026-11-16T15:53:08Z",
+      "completed_at": "2026-11-16T15:55:15Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-16T15:53:08Z",
+          "completed_at": "2026-11-16T15:53:10Z"
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-16T15:53:10Z",
+          "completed_at": "2026-11-16T15:53:15Z"
+        },
+        {
+          "name": "Prepare native dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-16T15:53:15Z",
+          "completed_at": "2026-11-16T15:53:44Z"
+        },
+        {
+          "name": "Configure selected Debug profile",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-16T15:53:44Z",
+          "completed_at": "2026-11-16T15:53:54Z"
+        },
+        {
+          "name": "Build core compiler and probes",
+          "status": "completed",
+          "conclusion": "cancelled",
+          "number": 5,
+          "started_at": "2026-11-16T15:53:54Z",
+          "completed_at": "2026-11-16T15:55:06Z"
+        },
+        {
+          "name": "Check core and retain complete CTest evidence",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 6,
+          "started_at": "2026-11-16T15:55:06Z",
+          "completed_at": "2026-11-16T15:55:06Z"
+        },
+        {
+          "name": "Retain results including failures",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-11-16T15:55:06Z",
+          "completed_at": "2026-11-16T15:55:10Z"
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14,
+          "started_at": "2026-11-16T15:55:10Z",
+          "completed_at": "2026-11-16T15:55:11Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15,
+          "started_at": "2026-11-16T15:55:11Z",
+          "completed_at": "2026-11-16T15:55:13Z"
+        }
+      ]
+    },
+    {
+      "id": 133418223382,
+      "name": "linux-core",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "started_at": "2026-11-16T15:53:08Z",
+      "completed_at": "2026-11-16T15:55:08Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-16T15:53:08Z",
+          "completed_at": "2026-11-16T15:53:10Z"
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-16T15:53:10Z",
+          "completed_at": "2026-11-16T15:53:15Z"
+        },
+        {
+          "name": "Cache pinned public debugger packages",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-16T15:53:15Z",
+          "completed_at": "2026-11-16T15:53:17Z"
+        },
+        {
+          "name": "Build pinned toolchain and execute core offline",
+          "status": "completed",
+          "conclusion": "cancelled",
+          "number": 4,
+          "started_at": "2026-11-16T15:53:17Z",
+          "completed_at": "2026-11-16T15:55:06Z"
+        },
+        {
+          "name": "Retain results including failures",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-16T15:55:06Z",
+          "completed_at": "2026-11-16T15:55:07Z"
+        },
+        {
+          "name": "Post Cache pinned public debugger packages",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 9,
+          "started_at": "2026-11-16T15:55:07Z",
+          "completed_at": "2026-11-16T15:55:07Z"
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-11-16T15:55:07Z",
+          "completed_at": "2026-11-16T15:55:07Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-11-16T15:55:07Z",
+          "completed_at": "2026-11-16T15:55:07Z"
+        }
+      ]
+    }
+  ],
+  "raw_response_sha256": {
+    "preceding-ci-run.json": "127e2ab4319def969ccfe813a013dd04e58c0598327ef3fc515d308e8660a82a",
+    "preceding-ci-jobs.json": "3f4c9f45e54201ae09cd83454bfbcfba8f8a3a79fb68a080697b52b1114d9847"
+  },
+  "scope": "cancelled during build/helper execution; no complete hosted CTest acceptance is claimed; no automatic rerun requested"
+}

@@ -48,6 +48,21 @@ class Discovery(harness.ToolchainCase):
         self.assertIs(self.cli('describe', '--field', 'source_concurrency.source_operations')['value'], True)
         self.assertIs(self.cli('describe', '--field', 'source_concurrency.browser_workers')['value'], False)
 
+    def test_IEEE_kernel_does_not_advertise_source_support(self):
+        field = self.cli('describe', '--field', 'ieee_numeric_kernel')['value']
+        self.assertEqual(field['status'], 'internal_runtime_kernel')
+        self.assertIs(field['public_source_enabled'], False)
+        self.assertEqual(field['formats'], ['binary32', 'binary64'])
+        self.assertIn('source types and checked operations', field['pending'])
+
+    def test_quick_guide_loads_within_the_advertised_byte_limit(self):
+        guide = self.cli('guide', '--kind', 'quick')
+        cap = self.cli('describe', '--field', 'llm_entry')['value']
+        self.assertGreater(len(guide['text'].encode()), 0)
+        self.assertLessEqual(len(guide['text'].encode()), cap['guide_utf8_bytes_max'])
+        self.assertIn('slice(text,start,count)', guide['text'])
+        self.assertFalse((self.root / '.nex').exists())
+
     def test_invalid_paths_and_mixed_options_do_not_fall_back_to_full(self):
         paths = ['', '.', '..', '.types', 'types.', 'types..item', 'types.0',
                  'types.child', 'absent', 'scoped_discovery.absent', 'types[*]',

@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.266.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.267.0"
 owner: repository
 ---
 
@@ -11,6 +11,14 @@ before implementing converters. Java has priority, followed by Python. Converter
 implementation is deferred. This is part of item 2 of the
 [implementation sequence](implementation-1-6.md); unrelated library expansion
 does not take priority over these prerequisites.
+
+The 2026-11-16 direction prioritizes a compact practical core, ordinary libraries
+and a usable SDK before exhaustive source-language emulation. The matrix below
+retains the full compatibility backlog; it is not a requirement to implement
+every Java/Python facility before writing a new NEX application. A selected
+migration must preserve the behavior it uses, through checked NEX operations,
+explicit compatibility code or a declared transitional adapter. Unknown behavior
+must remain visibly unsupported.
 
 ## Audited baseline
 
@@ -91,7 +99,7 @@ version/history migration remain open; see [value exports](managed-reference-val
 | Required behavior | Existing foundation | Missing language/runtime result |
 |---|---|---|
 | Java `int`/`long`, casts, bits and shifts | Checked i64 and explicit nominal Java32/Java64 domains with wrapping/cast/bit/shift behavior | Primitive widths/specialized lowering, remaining Java numeric conversions and their SDK/platform qualification |
-| Java `float`/`double` | Finite f64; zero normalization | Binary32, IEEE special values, signed zero, casts and specified rounding in an explicit domain |
+| Java `float`/`double` | Finite f64; separate internal binary32/binary64 kernel with IEEE special values, signed zero, primitive operations and Java integral casts | Source types/literal rules, checked binding, all backend/wire/debugger/ABI paths, versioned migration and SDK/platform qualification |
 | Java object references and identity | Immutable values, owned resources; ordinary030 sequential cells, static components and HTTP request contexts | Nullability/class layouts, reference task integration and full SDK/platform qualification |
 | Java classes and interfaces | Records, enums, generics, coherent static traits | Constructors/class initialization, virtual/interface dispatch, subtyping and runtime type tests; generic erasure/boxing rules |
 | Exceptions | Nominal typed throw/catch, filters, finally, task propagation | Exception subtyping/identity, causes/suppression/stack data and source-specific abrupt-completion rules |
@@ -140,6 +148,12 @@ This closes project selection, not the Java/Python object models or a new
 portable SDK release.
 
 ## Python-specific preparation
+
+Toolchain0.267 adds the internal [IEEE numeric kernel](ieee-numeric.md).
+Its explicit binary32/binary64 operations, comparisons and Java casts are a
+runtime foundation. No source type/operator, wire representation or language
+version is introduced. Python's division/errors and integer/object protocols
+retain their separate requirements; IEEE arithmetic alone does not supply them.
 
 Toolchain0.266 adds the [Java long value domain](java-long.md): wrapping64
 arithmetic, masked shifts, signed division/remainders and integral conversions.

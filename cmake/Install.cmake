@@ -15,6 +15,8 @@ install(FILES tests/sqlite_fixture.py tests/host_fixture.py tests/host_test.h te
 install(FILES tests/fixtures/java-int32/Oracle.java tests/fixtures/java-int32/oracle.json DESTINATION share/nex/tests/fixtures/java-int32)
 install(FILES tests/fixtures/java-long/Oracle.java tests/fixtures/java-long/oracle.json DESTINATION share/nex/tests/fixtures/java-long)
 install(FILES tests/java_long.py tests/java_long_cases.py tests/support.py tests/standard_library.py DESTINATION share/nex/tests)
+install(FILES tests/ieee_numeric.cpp tests/ieee_numeric.py tests/ieee_numeric_cases.py tests/ieee_numeric_build.py DESTINATION share/nex/tests)
+install(DIRECTORY tests/fixtures/java-ieee DESTINATION share/nex/tests/fixtures PATTERN __pycache__ EXCLUDE)
 install(FILES tests/cells.cpp tests/managed_cell_resources.cpp tests/managed_references.cpp DESTINATION share/nex/tests)
 install(FILES tests/value_owner.cpp tests/value_owner_module.cpp tests/value_retirement.cpp tests/value_retirement.py DESTINATION share/nex/tests)
 install(FILES tests/managed_reference_native.cpp tests/managed_reference_native.py DESTINATION share/nex/tests)

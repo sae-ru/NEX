@@ -1,5 +1,6 @@
 #include "nex_host.h"
 #include "nex_json.h"
+#include "nex_ieee.h"
 #include "third_party/json.hpp"
 #include <iostream>
 #include <thread>
@@ -82,6 +83,14 @@ void environmentCheck(int rounding){
   require(trapped,"floating zero division did not trap");checkEnvironment();
 }
 void selfCheck(){
+  // The explicit migration kernel must coexist with ordinary finite f64.
+  // The full kernel matrix is a separate extended group, with a real JDK oracle.
+  using nexrt::ieee::Binary32;using nexrt::ieee::Binary64;
+  auto zero=Binary64::fromBits(0),one=Binary64::fromJavaInt(1);
+  require(Binary64::arithmetic(one,zero,'/').isInfinite(),"explicit IEEE zero division differs");
+  require(Binary64::arithmetic(zero,zero,'/').isNaN(),"explicit IEEE NaN differs");
+  require(Binary64::arithmetic(zero.negate(),one,'*').rawBits()==Binary64::sign,"explicit IEEE lost signed zero");
+  require(Binary32::fromJavaLong((INT64_C(1)<<54)+(INT64_C(1)<<30)+1).rawBits()==0x5a800001,"explicit IEEE long-to-float double-rounded");
   {
     nexrt::RequestScope scope;
     for(int rounding:{FE_TONEAREST,FE_DOWNWARD,FE_UPWARD,FE_TOWARDZERO})environmentCheck(rounding);

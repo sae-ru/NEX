@@ -1,15 +1,12 @@
 # NEX 0.28: bounded source reference
 
-First query `nex describe --kind index --json`. Preserve the project's declared
-language and graph history. This sheet describes0.28; the specification/grammar
-and the selected compiler decide support. Retrieve it once, then request a
-feature guide only for a concrete uncertainty. For a rejection, use the code,
-message and byte location; `nex explain CODE --json` gives bounded builtin advice.
-
-New projects in toolchain0.265 select0.30. This sheet's baseline examples remain
-valid there; query `project_languages` and retrieve the `references` guide for
-cell/state syntax. Existing projects and the compiler fallback retain0.28/0.29
-as selected. Migrating a graph requires the explicit guarded migration command.
+Query `nex describe --kind index --json`. Preserve the project's language and
+graph history. This sheet describes the0.28 baseline, also valid in0.30, which
+new projects select. Query `project_languages`; use the `references` guide for
+cell/state syntax. Existing versions require explicit guarded migration.
+Read this sheet once; retrieve feature guides for concrete uncertainties.
+Use each rejection's code, message and byte location; `nex explain CODE --json`
+gives bounded builtin advice. The selected compiler/specification decide support.
 
 ## Syntax to copy
 
@@ -39,14 +36,13 @@ fn main()->unit !{io} {
 - If `list_construction` is advertised, use `list(3,fn(i:i64)->i64{return i*i;})` or
   `list(values,transform)` for sequential bulk construction; callbacks retain
   their effects. See `nex guide --kind list-build`.
-- If `text_construction` is advertised, `str(count,fn(i:i64)->str{...})`,
-  `str(values,transform)`, filtered and state/next/emit forms build text
-  sequentially; one-argument `str(value)` still formats. See
+- If `text_construction` is advertised, `str(count,make)` and
+  `str(values,transform)` build text sequentially; `str(value)` formats. See
   `nex guide --kind text-construction`.
-- If `bytes_construction` is advertised, `bytes(count,fn(i:i64)->i64{...})`,
-  `bytes(values,transform)`, filtered and state/next/emit forms build bytes
-  linearly; one-argument `bytes(list<i64>)` remains `result<bytes>`, and an
-  octet outside 0..255 traps `E_RANGE`. See `nex guide --kind bytes-construction`.
+- If `bytes_construction` is advertised, `bytes(count,make)` and
+  `bytes(values,transform)` build bytes linearly. `bytes(list<i64>)` returns
+  `result<bytes>`; callbacks emitting outside0..255 trap `E_RANGE`.
+  See `nex guide --kind bytes-construction`.
 - Strings are strict UTF-8. `len(text)`, `text[index]` and
   `slice(text,start,count)` use Unicode scalars; the third slice argument is a
   **count**, not an end index. Scalars are not grapheme clusters. Bytes preserve

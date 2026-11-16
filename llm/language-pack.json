@@ -34,6 +34,7 @@
       "http_client_provider",
       "http_response_streams",
       "http_storage_transactions",
+      "ieee_numeric_kernel",
       "language_pack_contract",
       "list_construction",
       "llm_cost",
@@ -624,7 +625,8 @@
     "managed_reference_resources": "docs/managed-reference-resources.md",
     "managed_reference_owned_payloads": "docs/managed-reference-owned-payloads.md",
     "standard_java_long_source": "lib/java_long.nex",
-    "java_long": "docs/java-long.md"
+    "java_long": "docs/java-long.md",
+    "ieee_numeric_kernel": "docs/ieee-numeric.md"
   },
   "document_access": "nex guide --kind format|text-construction|bytes-construction|source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -5529,5 +5531,30 @@
       "SDK_delivery_accepted": false,
       "full_platform_acceptance": false
     }
+  },
+  "ieee_numeric_kernel": {
+    "introduced_toolchain": "0.267.0",
+    "status": "internal_runtime_kernel",
+    "public_source_enabled": false,
+    "guide": "docs/ieee-numeric.md",
+    "header": "runtime/nex_ieee.h",
+    "test": "tests/ieee_numeric.py",
+    "formats": [
+      "binary32",
+      "binary64"
+    ],
+    "rounding": "nearest ties-to-even, gradual underflow, one rounding per operation",
+    "NaN": "raw bit admission preserves payload; arithmetic/conversion results use canonical quiet NaN",
+    "signed_zero": true,
+    "infinities": true,
+    "Java_integral_casts": true,
+    "caller_environment": "saved and restored; ordinary finite f64 unchanged",
+    "pending": [
+      "source types and checked operations",
+      "reference/native/TypeScript integration",
+      "wire/debugger/ABI contracts",
+      "versioned migration",
+      "SDK/platform qualification"
+    ]
   }
 }

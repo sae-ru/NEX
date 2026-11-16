@@ -1,3 +1,36 @@
+# Internal IEEE numeric kernel — development0.267.0
+
+Separate binary32/binary64 C++ value domains provide raw bits, NaNs/infinities,
+signed zero, gradual underflow, primitive arithmetic/comparisons and Java
+integral casts. Direct long-to-binary32 conversion avoids double rounding.
+Every floating operation restores the caller's environment. Ordinary NEX
+checked integers and finite, zero-normalized f64 are unchanged.
+Read the [kernel contract](docs/ieee-numeric.md).
+
+The [focused receipt](docs/evidence/ieee-numeric-0.267.0-2026-11-16.json)
+records31,748 actual JDK21 observations agreeing with an independent exact-rational
+model and the C++ kernel;16 core and3 affected CTest groups pass.
+Installed resources pass ten O0/O2 compiler profiles on macOS ARM64 Clang,
+Linux ARM64 Clang/GCC and emulated Linux x86-64 Clang/GCC. The descriptor and
+language pack agree, explicitly reporting `public_source_enabled:false`.
+
+Relocation also exposed an oversized quick guide:6392 bytes exceeded the CLI's
+6144-byte bound. Its6095-byte repair, a core discovery guard and focused quick
+reference/native/TypeScript checks pass. The final moved normal installation
+passes eight CLI smoke commands with automatic resource discovery. The combined
+focused acceptance covers20 distinct CTest groups; it is not a full SDK run.
+
+Source types, all backend/wire/debugger/ABI bindings, explicit versioned migration
+and full source/platform/portable SDK qualification remain open. Public SDK0.246.1
+stays immutable. The preceding [scoped-example CI](docs/evidence/core-ci-scoped-example-0.266.0-2026-11-16.json)
+was cancelled during build/helper execution and has no complete accepted core
+result. Its cancellation cause is not established by the API evidence.
+
+The [practical sequence](docs/implementation-1-6.md#executable-backlog) now
+prioritizes object/task/application state, ordinary libraries, usable LLM input,
+SDK delivery and a coherent application before exhaustive Java/Python emulation.
+This ordering preserves the full original PLAN and its remaining requirements.
+
 # Installed scoped-host example repair — development0.266.0
 
 The [nightly Linux run](https://github.com/sae-ru/NEX/actions/runs/43859732440)

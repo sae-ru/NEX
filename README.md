@@ -55,7 +55,7 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.266.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.267.0 / language 0.28 / task ABI 7**, in development.
 The compiler fallback remains0.28. `nex.json` selects0.28,0.29 or0.30 per project;
 new `nex init` projects select0.30. Language0.29 adds partial type lambdas and
 higher-order kinds;0.30 adds typed cells and the `state` effect. Retained projects
@@ -64,6 +64,7 @@ preserve their selected version and require explicit migration to change it.
 Recent source adds persistent AVL [ordered map/set](docs/ordered-containers.md),
 explicit [Java int](docs/java-integers.md) / [long](docs/java-long.md) domains
 and resource-owning cells. These numerical APIs preserve ordinary checked arithmetic.
+The [internal IEEE kernel](docs/ieee-numeric.md) has no source types yet.
 [Ordinary030 projects](docs/references030.md) use canonical reference graphs,
 guarded migration and normal CLI authoring, static components, API projection
 and captured-task replay. See the [cell example](examples/references/README.md).
