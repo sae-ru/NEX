@@ -235,8 +235,8 @@ Type resolveType(Program &p,Type type,Span span,unsigned depth){
     argumentKind(p,type,span);return type;
   }
   if(type.element){type.element=std::make_shared<Type>(resolveType(p,*type.element,span,depth+1));if(*type.element==Type::Unit&&type.kind!=Type::Function&&type.kind!=Type::Task)throw Error("E_TYPE","aggregate payload cannot have type unit",span);}
-  if(type.kind==Type::Cell&&(!type.element||containsNonTaskResource(p,*type.element)||containsTaskAuthority(p,*type.element)))
-    throw Error("E_CELL_VALUE","cell payload cannot contain owned file, external or task capabilities",span);
+  if(type.kind==Type::Cell&&(!type.element||containsTaskAuthority(p,*type.element)))
+    throw Error("E_CELL_VALUE","cell payload cannot contain task capabilities",span);
   for(auto &argument:type.arguments)argument=resolveType(p,argument,span,depth+1);
   if(type.kind==Type::Function){
     if(type.arguments.size()>1024||typeName(type).size()>4096)throw Error("E_FUNCTION_LIMIT","callable signature exceeds its parameter/name budget",span);

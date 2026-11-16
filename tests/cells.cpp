@@ -7,6 +7,7 @@
 #include <thread>
 
 using namespace nexrt;
+unsigned testManagedCellResources();
 static void require(bool condition,const char *message){if(!condition)throw std::runtime_error(message);}
 template<class F>static void rejects(const char *code,F action){
   try{action();}catch(const DataError &error){require(error.code==code,"wrong managed heap error");return;}
@@ -21,6 +22,7 @@ static Value list(std::vector<Value> values){auto data=Data::make(Data::List);da
 
 int main(){try{
   const auto baseline=liveObjects.load();unsigned cases=0;
+  cases+=testManagedCellResources();
   {
     for(auto kind:{Data::Cell,Data::File,Data::External,Data::Bytes,Data::TaskScope,Data::Task,Data::Channel}){
       rejects("E_RUNTIME",[&]{(void)nexrt::makeValueOwner<Data>(kind);});

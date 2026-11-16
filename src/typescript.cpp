@@ -70,7 +70,7 @@ class Generator {
   std::string site(E e){const auto &s=e->span;return "["+quote(s.file)+", "+std::to_string(s.line)+", "+std::to_string(s.column)+", "+quote(sites.at(e.get()))+"]";}
   std::string site(S statement){const auto &s=statement->span;return "["+quote(s.file)+", "+std::to_string(s.line)+", "+std::to_string(s.column)+", "+quote(sites.at(statement.get()))+"]";}
   void needed(const Type &t){
-    if(containsExternalResource(p,t))throw Error("E_REALM","external resource authority cannot enter a browser module");
+    if(containsExternalResource(p,t)||(managedMode&&containsNonTaskResource(p,t)))throw Error("E_REALM","resource authority cannot enter a browser module");
     if(t.element)needed(*t.element);if(t.kind==Type::Function)for(const auto &argument:t.arguments)needed(argument);
     if(t.kind==Type::Record&&structures.insert(t.name).second)for(auto field:p.structure(t.name).members())needed(field->type);
   }

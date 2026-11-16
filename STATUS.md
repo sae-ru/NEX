@@ -1,3 +1,24 @@
+# Private resource-owning reference graphs — development0.260.0
+
+Private cells now retain genuine file/external owners, nested aggregates and
+closure captures under the existing resource authority. Snapshots keep original
+aliases, visible cycles release their owners, and revocation/explicit close
+remain effective. Operations pin heap state and reject destructor reentry;
+callback-ended heaps defer teardown and cannot publish another cell.
+
+Thirty kernel scenarios,16 core and12 affected groups pass. Twenty-two manual
+source programs agree across88 O0/O2 application/request comparisons, each run
+through a matching image and independent executable (176 machine runs). A moved
+normal installation rebuilds the30-case kernel without LLVM runtime dependencies,
+plus five focused source programs/20 comparisons, and passes public0.29 CLI smoke.
+[Exact results and bounds](docs/evidence/managed-reference-owned-payloads-0.260.0-2026-11-16.json).
+[Preceding0.259 hosted core](docs/evidence/core-ci-0.259.0-2026-11-16.json) passed
+Mac/Linux after the bounded DNS-preparation repair. Public references/history
+migration, complete module/component/HTTP/task integration, source finalizers,
+opaque native callback cycles, class/Java/Python semantics and full compiler/
+platform/portable SDK acceptance remain open. Public0.28/0.29 and SDK0.246.1 stay
+version-specific; this is private0.30-refs-prototype.
+
 # Private reference/resource coexistence — development0.259.0
 
 Sequential private server fs/ffi functions now compose with cells in ordinary

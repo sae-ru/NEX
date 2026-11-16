@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.259.0; private 0.30-refs-prototype candidate"
+applies_to: "toolchain 0.260.0; private 0.30-refs-prototype candidate"
 owner: repository
 ---
 
@@ -70,9 +70,10 @@ valid across ordinary source function returns within the same execution context.
 
 The candidate supports cells inside immutable records/lists/results/enums,
 parametric functions and the unary `cell` constructor in higher-kinded generic
-arguments. Explicit owned file/external/task payload types are rejected; generic
-substitution rechecks these restrictions. The runtime also checks actual nested
-payloads/captures. Cycles may pass through cells. Existing immutable containers
+arguments. Genuine file/external owners and nested captures retain their
+independent authority under the [owned-payload contract](managed-reference-owned-payloads.md).
+Task payload types are rejected; generic substitution rechecks this restriction.
+The runtime also checks actual nested payloads/captures. Cycles may pass through cells. Existing immutable containers
 are never converted into shared mutable values.
 
 Typed source throws/catches can retain cell identity within the context,
@@ -117,13 +118,15 @@ DLL/reference host ABIs remain pending.
 
 Toolchain0.258 also provides a [private native request host](managed-reference-requests.md)
 with separate per-request ownership and repeated source calls. It adds no source
-effect, HTTP adapter or ordinary project selection and keeps the stage restrictions
-above, including owned payload/task rejection.
+effect, HTTP adapter or ordinary project selection and keeps the task/transfer
+restrictions above.
 
 Toolchain0.259 adds sequential server [file/foreign resource coexistence](managed-reference-resources.md)
 in reference/native application and request contexts. An explicit host file scope
 is respected. Owned values may coexist with cells in ordinary local/call/error
-paths; they remain forbidden as cell payloads, including hidden owned captures.
+paths. Toolchain0.260 extends them to cell payloads and captures with genuine-owner
+validation, cycle cleanup and callback reentry/ended-owner guards. It adds no
+source finalizer or public reference version.
 
 ## Context ownership and bounds
 

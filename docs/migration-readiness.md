@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.259.0"
+applies_to: "language 0.28; toolchain 0.260.0"
 owner: repository
 ---
 
@@ -77,6 +77,11 @@ their existing owned file/external resources in local/call/typed-error paths.
 An enclosing explicit reference-host file capability is respected. Owned values
 remain forbidden inside cells, including actual captured values. This does not
 qualify database/task/HTTP adapters or Java/Python resource finalization semantics.
+
+Toolchain0.260 adds genuine owned resource payloads/captures to private cells,
+snapshot-preserving resource aliases and collection of visible cell/resource
+cycles. It guards native cleanup reentry and callback-ended heap owners. Source
+finalizers, opaque callback cycles and public migration remain separate contracts.
 
 | Required behavior | Existing foundation | Missing language/runtime result |
 |---|---|---|

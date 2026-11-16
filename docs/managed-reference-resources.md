@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.259.0; private 0.30-refs-prototype candidate"
+applies_to: "toolchain 0.260.0; private 0.30-refs-prototype candidate"
 owner: repository
 ---
 
@@ -18,8 +18,9 @@ A source function may read bytes/text from a file into a cell, use a file or
 foreign owner while updating a cell, or throw/catch a typed packet holding both.
 Ordinary closures may capture these owners and cells in the same context. Existing
 file cursor sharing, explicit close, Result failures, typed-error cleanup and
-fatal skip-finally rules remain in force. Cell collection never becomes the
-owner or finalizer of a file/external capability.
+fatal skip-finally rules remain in force. Cell collection releases only its
+managed wrapper ownership; resource authority and physical settlement remain
+independent.
 
 For example, this is input to the private development parser:
 
@@ -35,11 +36,11 @@ server fn main() -> i64 !{fs,state} {
 }
 ```
 
-`cell<file>`, cell payloads containing opaque resources and equivalent concrete
-generic substitutions remain rejected. The heap also rejects actual owned
-values hidden in a closure's capture vector. A function type alone cannot
-describe the ownership of all its captures; this runtime admission check remains
-necessary. Closing a source owner does not make its wrapper a legal cell payload.
+Toolchain0.260 permits `cell<file>`, genuine opaque resources, nested aggregates
+and closure captures under the [owned-payload contract](managed-reference-owned-payloads.md).
+The heap validates actual wrappers, including values hidden in captures. Task
+capabilities and fabricated/debug-only owners remain rejected. Explicit close
+and snapshot/resource identity retain their existing rules.
 
 The existing FFI transfers only its supported typed call values. A `cell<T>` is
 not a direct C ABI value. No new persistent C handle, invocation of source
@@ -71,8 +72,8 @@ request. A completed write stays completed if a later operation fails.
 The private TypeScript emitter still rejects reachable server functions and
 resource authority. Unreachable server code is excluded from emitted clients.
 Browser cells remain limited to the supported shared/client value domain.
-Database execution, task/parallel reference transfer, resource payloads inside
-cells, class dispatch, public graph migration and matching full compiler/platform/
+Database execution, task/parallel reference transfer, source finalizers,
+class dispatch, public graph migration and matching full compiler/platform/
 portable-SDK qualification remain separate requirements.
 
 ## Verification
@@ -84,6 +85,6 @@ independently linked consumers. It observes retained snapshots, error packets,
 Result/finally/fatal exits, actual closed files, external destructor counts and
 zero live source values after context teardown. No converter is used.
 
-[Focused qualification](evidence/managed-reference-resources-0.259.0-2026-11-16.json)
-records the exact source/tools, 15 programs and 60 native comparisons, retained
+[The preceding0.259 qualification](evidence/managed-reference-resources-0.259.0-2026-11-16.json)
+records its exact source/tools, 15 programs and 60 native comparisons, retained
 backend groups, moved installed-resource checks, initial failures and limitations.

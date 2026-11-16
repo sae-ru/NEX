@@ -28,11 +28,12 @@ int main(int argc,char **argv){try{
     auto server=checked("server fn main()->unit{}");rejects("E_REALM",[&]{emitManagedReferencesPrototypeTypeScript(server);});
     auto files=checked("server fn main()->unit!{fs,state}{let value:cell<str>=cell_new(unwrap(file_read_text(\"input\")));}");rejects("E_REALM",[&]{emitManagedReferencesPrototypeTypeScript(files);});
     auto foreign=checked("server fn main()->unit!{ffi,state}{let value:cell<i64>=cell_new(1);}");rejects("E_REALM",[&]{emitManagedReferencesPrototypeTypeScript(foreign);});
+    rejects("E_REALM",[&]{checked("fn main()->unit!{state}{let value:cell<list<file>>=cell_new<list<file>>([]);}");});
     auto bounded=checked("server fn hidden()->str!{fs}{return unwrap(file_read_text(\"UNREACHABLE_SERVER_TEXT\"));}fn main()->unit{}");
     auto module=emitManagedReferencesPrototypeTypeScript(bounded);
     if(module.source.find("UNREACHABLE_SERVER_TEXT")!=std::string::npos||module.mapping.getAsObject()->getArray("functions")->size()!=1)
       throw std::runtime_error("managed client included unreachable server code");
-    std::cout<<"{\"ok\":true,\"rejected\":10,\"reachable_only\":true}\n";return 0;
+    std::cout<<"{\"ok\":true,\"rejected\":11,\"reachable_only\":true}\n";return 0;
   }
   const bool bundled=argc>1&&std::string(argv[1])=="bundle-emit";
   if(argc!=7||(!bundled&&std::string(argv[1])!="emit"))throw std::runtime_error("expected [bundle-]emit input directory cells nodes edges, or gates");

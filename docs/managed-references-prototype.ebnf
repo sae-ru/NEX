@@ -3,13 +3,15 @@
    Not an ordinary CLI source version; no archival or migration contract.
    Single-unit parsing rejects imports; toolchain0.257's transient module bundle
    uses the ordinary import production and shared binder. No endpoints,
-   task/parallel execution or owned payload capabilities. *)
+   task/parallel execution or source finalizers. *)
 (* Toolchain0.256 scopes declaration-local generic binders and trait Self before
    checking. 0.29 partial type lambdas/higher-order kinds retain their grammar;
    trait method argument lists are bound before specialization. No new token. *)
 (* Toolchain0.259 also accepts the existing server resource/external declarations
    and sequential fs/ffi effects alongside state. Their public grammar is reused;
-   owned payloads in cells, db, tasks, endpoints and parallel execution stay out. *)
+   db, tasks, endpoints and parallel execution stay out. *)
+(* Toolchain0.260 permits genuine file/external cell payloads and captures.
+   Existing resource type/realm/effect grammar is reused; no new production. *)
 private_cell_type = "cell", "<", type, ">" ;
 private_cell_constructor = "cell" ; (* Unary higher-kinded type argument. *)
 private_effect = "state" ;

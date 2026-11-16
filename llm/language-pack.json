@@ -615,7 +615,8 @@
     "managed_reference_native": "docs/managed-reference-native-prototype.md",
     "managed_reference_modules": "docs/managed-reference-modules.md",
     "managed_reference_requests": "docs/managed-reference-requests.md",
-    "managed_reference_resources": "docs/managed-reference-resources.md"
+    "managed_reference_resources": "docs/managed-reference-resources.md",
+    "managed_reference_owned_payloads": "docs/managed-reference-owned-payloads.md"
   },
   "document_access": "nex guide --kind format|text-construction|bytes-construction|source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -5211,7 +5212,7 @@
     "limit_accounting": "registered cells, all adopted data nodes, and all Value payload slots; includes retired payloads until collection; not a byte-memory bound",
     "mutation": "thread-affine; foreign heap and thread operations rejected",
     "native_source_enabled": false,
-    "owned_capability_payloads": false,
+    "owned_capability_payloads": true,
     "parallel_transfer": false,
     "payloads": [
       "i64",
@@ -5224,14 +5225,16 @@
       "result",
       "enum",
       "closure",
-      "same-heap cell"
+      "same-heap cell",
+      "genuine file owner",
+      "genuine external owner"
     ],
     "pending": [
       "public reference types and state effect",
       "versioned public grammar and explicit history-preserving migration",
       "public backend integration and whole-source acceptance",
       "public entry integration, reference-valued host results and separate component/DLL context ownership",
-      "owned capability payload lifetimes inside cells",
+      "source finalizers and opaque native callback-cycle contracts",
       "cross-thread sharing, monitors and atomics",
       "source debugger/profile integration",
       "weak references and finalization semantics",
@@ -5346,7 +5349,7 @@
         "realms": "existing server-only resource rules",
         "reference_host": "uses an enclosing explicit FileScope/ForeignScope; standalone file environment remains available",
         "native_host": "application or matching-runtime request; source handles and owned resources unwind before heap close",
-        "cell_payloads": "owned file/external/task values remain rejected, including actual closure captures",
+        "cell_payloads": "genuine file/external owners and captures retain existing authority; task capabilities remain rejected",
         "browser": "reachable server/resource functions rejected; unreachable server units excluded",
         "guide": "docs/managed-reference-resources.md",
         "test": "tests/managed_reference_resources.py",
@@ -5382,6 +5385,21 @@
       "synchronous_root_retirement": true,
       "weak_acquisition": "cannot acquire queued or destroying data",
       "std_shared_ptr_binary_interchange": false
+    },
+    "owned_payloads": {
+      "introduced_toolchain": "0.260.0",
+      "guide": "docs/managed-reference-owned-payloads.md",
+      "test": "tests/managed_cell_resources.cpp",
+      "source_test": "tests/managed_reference_resources.py",
+      "ownership": "registry retains genuine resource wrappers; immutable snapshots retain their original aliases",
+      "authority": "existing independent file/foreign/request domains and explicit close; retention never renews authority",
+      "collection": "resource wrappers are leaf data nodes; reclaim unreachable visible cell/closure cycles; last actual resource owner settles physical cleanup",
+      "cleanup": "operation pins heap state; callback reentry is rejected; close during collection invalidates then defers registry teardown",
+      "limits": "resource quotas remain independent; garbage collection is not prompt finalization or a hard pause bound",
+      "opaque_cycles": "native objects are not traced; host-held source values count as external roots",
+      "source_finalizers": false,
+      "task_payloads": false,
+      "browser_resource_payloads": false
     }
   }
 }

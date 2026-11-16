@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.259.0"
+applies_to: "language 0.28; toolchain 0.260.0"
 owner: repository
 ---
 
@@ -52,6 +52,11 @@ returns remain open; see [the request contract](managed-reference-requests.md).
 The0.259 private candidate also accepts sequential server fs/ffi calls alongside
 cells. Ordinary locals, closures and error packets retain existing owned-resource
 cleanup; cells still reject owned payloads. See [resource coexistence](managed-reference-resources.md).
+
+The0.260 private heap/checker accepts genuine owned payloads in cells, with
+independent resource authority, retained snapshots, visible cycle cleanup and
+callback reentry/closed-owner guards. [Owned-payload semantics](managed-reference-owned-payloads.md)
+keep source finalizers, opaque host cycles and public migration explicit.
 
 | Item | Implemented baseline | Remaining result | Acceptance |
 |---|---|---|---|

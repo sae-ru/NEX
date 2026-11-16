@@ -1,6 +1,6 @@
 # NEX language specification 0.28
 
-Toolchain0.259 adds private [reference/resource coexistence](managed-reference-resources.md)
+Toolchain0.260 adds private [resource-owning reference graphs](managed-reference-owned-payloads.md)
 without promoting a public reference type or changing language0.28/0.29.
 
 This specification describes language0.28 independently of any LLM provider.

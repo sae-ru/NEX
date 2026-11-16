@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.259.0; private 0.30-refs-prototype candidate"
+applies_to: "toolchain 0.260.0; private 0.30-refs-prototype candidate"
 owner: repository
 ---
 

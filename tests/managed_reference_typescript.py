@@ -27,7 +27,7 @@ def run(command,folder,name):
     if p.returncode:raise RuntimeError(str(command)+'\n'+p.stdout+'\n'+p.stderr)
     return p
 gates=json.loads(run([args.probe.resolve(),'gates'],out,'gates').stdout)
-assert gates=={'ok':True,'rejected':10,'reachable_only':True}
+assert gates=={'ok':True,'rejected':11,'reachable_only':True}
 runtime_names=['nex-runtime.ts','nex-bytes.ts','nex-managed-heap.ts','nex-managed-context.ts','nex-managed-runtime.ts']
 runtime_hashes={name:sha(root/'web'/name)for name in runtime_names}
 report={'schema':'nex.managed-reference-typescript-agreement/1','ok':False,'private_language':'0.30-refs-prototype',

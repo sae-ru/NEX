@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.259.0; no public source-language extension"
+applies_to: "toolchain 0.260.0; no public source-language extension"
 owner: repository
 ---
 
@@ -38,6 +38,11 @@ in the private interpreter/native application/request paths. Files and external
 owners keep their existing independent lifetimes; accepting them as cell payloads
 still requires a separate contract.
 
+Toolchain0.260 implements that [owned-payload contract](managed-reference-owned-payloads.md):
+genuine file/external wrappers become leaf nodes, retain independent authority,
+and retire through the existing complete-type destructors. Cleanup callbacks
+cannot reenter an operation; an ended heap cannot publish a new cell.
+
 ## Current ownership contract
 
 [`runtime/nex_cells.h`](../runtime/nex_cells.h) defines `nexrt::CellHeap`.
@@ -55,9 +60,9 @@ and slicing cannot manufacture a valid cell.
 
 Supported payload graphs contain ordinary i64/bool/finite-f64 values, strings,
 bytes, lists, records, results, enums, closures and cells of this heap. Closures
-can retain cells through their immutable capture vector. Owned files, external
-resources, task scopes, tasks and channels are rejected pending a lifetime and
-finalization design. Parallel and task snapshot boundaries also reject cells;
+can retain cells through their immutable capture vector. Genuine files and
+external owners are supported as leaf nodes without tracing native object memory.
+Task scopes, tasks and channels are rejected. Parallel and task snapshot boundaries also reject cells;
 this is not a shared-memory concurrency implementation.
 
 ## Collection and deep teardown
@@ -127,7 +132,7 @@ source field update is not a promised final object representation.
 
 Errors use private `DataError` codes: `E_CELL_TYPE`, `E_CELL_HEAP`,
 `E_CELL_THREAD`, `E_CELL_CLOSED`, `E_CELL_VALUE`, `E_CELL_GRAPH` and
-`E_CELL_LIMIT`. They are not yet source catchable exceptions or public FFI
+`E_CELL_LIMIT`, plus `E_CELL_REENTRY` for cleanup/operation reentry. They are not yet source catchable exceptions or public FFI
 error contracts. C++ allocation failure remains a host exception.
 
 ## Verification scope
@@ -165,8 +170,8 @@ Keep the matching evidence and earlier SDK receipts separate.
    returned references, source errors, callbacks, modules and native-library
    entry lifetimes; a per-function heap would invalidate returned aliases.
 5. Extend debugger/profile representation, resource accounting, ABI/wire
-   rejection and installed language-pack discovery. Define owned-capability
-   interaction before accepting resources inside reference graphs.
+   rejection and installed language-pack discovery. Qualify owned-capability
+   interaction at every public entry/module boundary before promotion.
 6. Qualify synchronization/visibility before cross-task/thread sharing. Class
    dispatch, initialization, mutable arrays, exception hierarchies, Python
    dynamic protocols and big integers remain separate prerequisites in

@@ -1,0 +1,4263 @@
+{
+  "schema": "nex.managed-reference-owned-payload-qualification/1",
+  "date": "2026-11-16",
+  "toolchain": "0.260.0",
+  "base_commit": "19be4456085f17ef87e2fef32d2ea18dd1561e10",
+  "default_language": "0.28",
+  "opt_in_language": "0.29",
+  "private_language": "0.30-refs-prototype",
+  "task_abi": 7,
+  "public_source_enabled": false,
+  "published_portable_sdk": "0.246.1",
+  "portable_sdk_replaced": false,
+  "compiler_sha256": "bf93cf5c9b672942bfc20d0496e1476479b91352c1adff74cda14b8280c6e913",
+  "compiler_build": "691013089d2980fd4fd574f2d9e451eac227fe9e07eea52bc0bf0f249796da36",
+  "descriptor_hash": "997d517dcb394164bd49f7b972ea6d2282da839d8c27e8746b67d9a0d36869c3",
+  "source_sha256": {
+    "VERSION": "cfba54bdf81800ca34979dbe8989376d7366893592ef59c0ca1722827c65b32a",
+    "runtime/nex_cells.cpp": "f009588f1f83dc8b8e5028f98cda518d4aa2c684afe1521ce41906bb7ccdb291",
+    "runtime/nex_cells.h": "8aff8c57bd6ee1b41e1cb8b19ed0b0ea5a3f4b51d2804eec3d72f0d9f5bf9f00",
+    "src/generics.cpp": "3dde735edf600433458dadb98feac44839a869078dab255d910631b57ddb36ff",
+    "src/typescript.cpp": "9f099f5bb29d8d0447612e3483d81056acfcbe13936dd0564e90cf804efe83d6",
+    "src/managed_references.cpp": "d03fce2901b7dc5a375ec43d290ac58d9dc90b18dfc6418aa65484be87fb60ce",
+    "tests/cells.cpp": "2eae57c367f7096ea7b136912b835a193cc1a3b88deeb8058f2dcd926e32c686",
+    "tests/managed_cell_resources.cpp": "56496315c0aaea5a528d4df63c4863aef0d47e9c18df1069f53229ec9f2cadc2",
+    "tests/managed_reference_resource_cases.py": "a6685b2ce6fbe54abfa17ad0907490c63ef3884ab7e67bfb219ac55585f56bea",
+    "tests/managed_reference_resources.py": "c006ef72978298cc88aea4add47721502fcdf31bc523965a5264d007aed0f07c",
+    "tests/managed_reference_resource_host.h": "1884f93dd526e4ab5cfab19a41fdda1474434fa8816bef6fae1e27a85a7ba7f5",
+    "tests/managed_reference_resources.cpp": "8952b6843dd6cdaf6dba9b71e305b278658bad0b685804bc3d703d0a7bdf0746",
+    "tests/managed_references.cpp": "cba3a4e30b54690601da4ff337e4f92a6ec204abf9ac2547e5689a22df2cbb64",
+    "tests/managed_reference_modules.cpp": "744a97b25bcf204906318fee81dd6a4715bdc142e4851d1bf60d1cc8804abc18",
+    "tests/managed_reference_typescript.cpp": "18295875156b53698071682b7641fa93086dc80829934a4497737cc1b89bcd00",
+    "tests/managed_reference_typescript.py": "0fac15775d29066f064365636f1b4fe60d39c5f7dfeeadb2eefde0b710d4cd5d",
+    "cmake/Tests.cmake": "5bc814ff7a1949d0934214b8fb655d17325b1e0a7368e78427b16158ea36f09e",
+    "cmake/Install.cmake": "1ddcd51fe7af0039c3e032dc9c436793523a98f52f7e39df305f70d94688dc2f",
+    "llm/language-pack.json": "9fd3c94491cfdc01b458fc43952c580bef9fdfee04331211b25e4e291a1698b7",
+    "docs/managed-references-prototype.ebnf": "ea07a9b7d934c83bd54a01ad33eb7447ad0f738561961b024205a1114c9c4dde",
+    "docs/managed-reference-owned-payloads.md": "d1df460cf24b06b565cc93e3328a356ccbd4e4c075aef4b80e446d7171a6ec01"
+  },
+  "implemented": [
+    "Private typed cells accept genuine file/external owners in payloads, aggregates and closure captures. Resource realms/effects, identity, explicit close, authority revocation and task-transfer rejection remain intact.",
+    "Resource wrappers are registered leaf data nodes. Visible cell/closure cycles release their owned wrappers; snapshots and independent resource aliases keep original identities and do not renew authority.",
+    "Heap operations pin their state, reject cleanup reentry, defer registry teardown after callback close/delete, and recheck availability before publishing after automatic collection.",
+    "Private browser emission rejects resource-bearing cells; existing shared/client source and logical heap accounting remain consistent. No public source grammar, C/task ABI or graph version changes."
+  ],
+  "validation": {
+    "build": {
+      "path": "build/managed-owned-v1/build-final.log",
+      "sha256": "f1c292f898e85b6789118a734b1e3561ded6a59ce686ec3011028819a264e86a",
+      "command": "cmake --build build -j 4",
+      "passed": true
+    },
+    "core": {
+      "path": "build/managed-owned-v1/core.xml",
+      "sha256": "b801fddb2eb977cce9e2a104de0ce2551d3e02692dc792b2365f1564d324045b",
+      "groups": 16,
+      "passed": 16,
+      "tests": [
+        {
+          "name": "llm_cost_ledger",
+          "seconds": 0.251411,
+          "output": "..................\n----------------------------------------------------------------------\nRan 18 tests in 0.215s\n\nOK\n",
+          "passed": true
+        },
+        {
+          "name": "llm_local_collector",
+          "seconds": 0.160132,
+          "output": "test_actual_action_loop_keeps_bad_answers_repairs_and_review_boundary (__main__.Collection.test_actual_action_loop_keeps_bad_answers_repairs_and_review_boundary) ... ok\ntest_bounded_nex_docs_discovery_and_source_text_only (__main__.Collection.test_bounded_nex_docs_discovery_and_source_text_only) ... ok\ntest_broker_denies_host_paths_receipts_and_stale_partial_edits (__main__.Collection.test_broker_denies_host_paths_receipts_and_stale_partial_edits) ... ok\ntest_doc_search_is_literal_bounded_and_returns_scalar_offsets (__main__.Collection.test_doc_search_is_literal_bounded_and_returns_scalar_offsets) ... ok\ntest_embedded_template_parser_skips_arrays_and_rejects_missing_template (__main__.Collection.test_embedded_template_parser_skips_arrays_and_rejects_missing_template) ... ok\ntest_existing_loaded_user_model_stops_before_any_owned_load (__main__.Collection.test_existing_loaded_user_model_stops_before_any_owned_load) ... ok\ntest_fresh_local_source_review_is_counted_and_can_reject_behavioral_success (__main__.Coll...\n[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]\n",
+          "passed": true
+        },
+        {
+          "name": "ctest_report_validation",
+          "seconds": 0.20831,
+          "output": "............\n----------------------------------------------------------------------\nRan 12 tests in 0.173s\n\nOK\n",
+          "passed": true
+        },
+        {
+          "name": "discovery",
+          "seconds": 10.8423,
+          "output": "..........\n----------------------------------------------------------------------\nRan 10 tests in 10.809s\n\nOK\n",
+          "passed": true
+        },
+        {
+          "name": "language_pack_contract",
+          "seconds": 0.377585,
+          "output": "test_ambiguous_json_is_rejected (__main__.LanguagePack.test_ambiguous_json_is_rejected) ... ok\ntest_every_declared_shared_field_is_required_and_exact (__main__.LanguagePack.test_every_declared_shared_field_is_required_and_exact) ... ok\ntest_legacy_summary_is_marked_without_removing_its_values (__main__.LanguagePack.test_legacy_summary_is_marked_without_removing_its_values) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.345s\n\nOK\n",
+          "passed": true
+        },
+        {
+          "name": "task_frontend_native",
+          "seconds": 0.576874,
+          "output": "{\"ok\":true,\"cases\":54,\"public_source_tasks\":true,\"private018_guards\":true}\n",
+          "passed": true
+        },
+        {
+          "name": "frontend_diagnostics_native",
+          "seconds": 0.562607,
+          "output": "{\n  \"cases\": 33,\n  \"ok\": true\n}\n",
+          "passed": true
+        },
+        {
+          "name": "value_owner_runtime",
+          "seconds": 0.0625297,
+          "output": "PASS strong weak conversion and adjusted base\nPASS constructor unwind\nPASS weak controls pin storage through actual destruction\nPASS queued weak state and synchronous nested retirement\nPASS weak lock races last strong release\nPASS concurrent alias ladder on bounded stacks\nPASS hidden-module graph retirement across images\n{\"ok\":true,\"cases\":7,\"depth\":65536,\"stack_bytes\":262144,\"sizeof_value\":32,\"sizeof_data\":112,\"sizeof_control\":24,\"live_value_delta\":0}\n",
+          "passed": true
+        },
+        {
+          "name": "value_retirement_runtime",
+          "seconds": 0.86358,
+          "output": "PASS ordinary\nPASS closed_snapshot\nPASS shared_tail\nPASS duplicate_edges\nPASS wide_branches\nPASS host_destructor\nPASS owned_file\nPASS unwind\nPASS concurrent\n",
+          "passed": true
+        },
+        {
+          "name": "managed_references_frontend_reference",
+          "seconds": 0.0794839,
+          "output": "{\"ok\":true,\"accepted_scenarios\":20,\"rejected_scenarios\":44,\"public_source_enabled\":false,\"live_value_delta\":0}\n",
+          "passed": true
+        },
+        {
+          "name": "managed_reference_native_context",
+          "seconds": 0.0346391,
+          "output": "{\"ok\":true,\"destroyed\":1,\"teardown_reentry_denied\":true,\"request_scenarios\":14,\"request_entry_gates\":5}\n",
+          "passed": true
+        },
+        {
+          "name": "bytes_runtime_native",
+          "seconds": 0.00237908,
+          "output": "8 immutable byte runtime cases passed\n",
+          "passed": true
+        },
+        {
+          "name": "float_runtime_native",
+          "seconds": 0.00714046,
+          "output": "{\"ok\":true}\n",
+          "passed": true
+        },
+        {
+          "name": "typed_source_frontend_reference",
+          "seconds": 0.704418,
+          "output": "{\"ok\":true,\"cases\":59,\"public_language\":\"0.28\",\"tested_retained_language\":\"0.27\",\"source027_archivable\":true}\n",
+          "passed": true
+        },
+        {
+          "name": "test_tiers",
+          "seconds": 0.146733,
+          "output": "test_actual_core_filter_has_exact_declared_groups_and_no_fixture_injection (__main__.Tiers.test_actual_core_filter_has_exact_declared_groups_and_no_fixture_injection) ... ok\ntest_ambiguous_policy_and_mixed_core_labels_reject (__main__.Tiers.test_ambiguous_policy_and_mixed_core_labels_reject) ... ok\ntest_configure_rejects_a_new_unclassified_test (__main__.Tiers.test_configure_rejects_a_new_unclassified_test) ... ok\ntest_unclassified_unlabelled_disabled_and_browser_core_commands_reject (__main__.Tiers.test_unclassified_unlabelled_disabled_and_browser_core_commands_reject) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.112s\n\nOK\n",
+          "passed": true
+        },
+        {
+          "name": "diagnostic_catalogue",
+          "seconds": 10.4167,
+          "output": "test_all_indexed_codes_have_bounded_identity_bound_guidance (__main__.Catalogue.test_all_indexed_codes_have_bounded_identity_bound_guidance) ... ok\ntest_catalogue_operates_without_project_resources_or_python_and_preserves_graph (__main__.Catalogue.test_catalogue_operates_without_project_resources_or_python_and_preserves_graph) ... ok\ntest_every_illustrative_pair_is_rejected_and_corrected_by_the_actual_checker (__main__.Catalogue.test_every_illustrative_pair_is_rejected_and_corrected_by_the_actual_checker) ... ok\ntest_unknown_codes_and_irrelevant_options_do_not_load_a_project (__main__.Catalogue.test_unknown_codes_and_irrelevant_options_do_not_load_a_project) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 10.384s\n\nOK\n",
+          "passed": true
+        }
+      ],
+      "log": {
+        "path": "build/managed-owned-v1/core.log",
+        "sha256": "db198d4acbd6076f33f62a6e77f6c0b635af2d237655b20dd9cafe77c7c2b7c1"
+      }
+    },
+    "affected": {
+      "path": "build/managed-owned-v1/affected.xml",
+      "sha256": "3fbee7eb92be85d25b38f63defc16c09b3a259a1145a112047d83b61aa36fcc7",
+      "groups": 12,
+      "passed": 12,
+      "tests": [
+        {
+          "name": "foreign_scope_native",
+          "seconds": 6.11488,
+          "output": "PASS host configuration is explicit relative and non-executing\nPASS relative grants follow the actual configuration parent through symlinks\nPASS absent and shadowing scopes do not gain environment authority\nPASS non-LIFO destruction cannot restore an ended scope\nPASS scope nesting is bounded and ended contexts are pruned without calls\nPASS host JSON rejects unknown duplicate malformed and excessive fields\nPASS configuration files must be bounded regular files without final symlinks\nPASS invalid binding metadata is rejected before native initialization\nPASS metadata and argument bounds apply before allocation or polling\nPASS bounded metadata cache permits warm entries after exhaustion\nPASS metadata byte and call budgets are enforced\nPASS call snapshots survive destruction of caller values metadata and poll\nPASS destroying the selected scope in a poll prevents initialization\nPASS scope destruction inside C keeps code mapped until unwind\nPASS request authority is captured before the first user poll\nPASS cached m...\n[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]\n",
+          "passed": true
+        },
+        {
+          "name": "resource_values_native",
+          "seconds": 0.0198228,
+          "output": "PASS owned file subtype preserves base layout and profile size\nPASS separate managed wrappers alias one resource identity\nPASS aggregate result and closure captures retain file owner\nPASS file values are rejected at every JSON nesting boundary\nPASS joined domains bind independent quotas and revoke from either side\nPASS diagnostic file identities cannot authorize native IO\nPASS native streaming ABI read write append seek flush and close\nPASS native stream errors are recoverable results\nPASS HTTP request ABI denies implicit environment grants\nPASS request exit revokes escaped values while host grant survives\nPASS cross-thread cancellation revokes escaped file before request exit\nPASS post-read cancellation releases operation lease\nPASS budget trap revokes file values without early descriptor reuse\nPASS canceled native open unwinds pending reservation and descriptor\nPASS deadline trap revokes an already-bound host file\nPASS one request quota spans multiple explicit capabilities\nPASS native byte argument remains ...\n[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]\n",
+          "passed": true
+        },
+        {
+          "name": "resources_runtime_native",
+          "seconds": 0.0322688,
+          "output": "PASS aliases close once with stable identities\nPASS lease pins physical quota after logical close\nPASS dropping last owner closes payload\nPASS escaped leases cannot bypass ancestor revocation\nPASS child quota and parent quota both apply\nPASS domain destruction and move replacement revoke\nPASS factory failure rolls back physical reservations\nPASS revocation racing factory publication closes exactly once\nPASS factory can destroy its domain wrapper\nPASS retained access cannot extend domain authority\nPASS retained access enforces joined quotas and survives wrapper deletion\nPASS payload cleanup re-enters domain without locks\nPASS registry pruning races last-owner destruction\nPASS bounded hierarchy and invalid quotas\nPASS streamed bytes, aliases, cursor, EOF and seek\nPASS truncation, bounded writes, append, flush and private creation\nPASS mode permissions and closed zero-length operations\nPASS stream argument and per-call byte limits\nPASS large files can be consumed in bounded chunks\nPASS stream path and nonregular...\n[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]\n",
+          "passed": true
+        },
+        {
+          "name": "managed_heap_typescript",
+          "seconds": 1.72065,
+          "output": "{\"ok\": true, \"comparisons\": 14, \"steps\": 485, \"root_checks\": 11, \"report\": \"/Users/sae/projects/NEX/build/managed-heap-typescript-0.260.0-acceptance/report.json\"}\n",
+          "passed": true
+        },
+        {
+          "name": "managed_references_typescript",
+          "seconds": 12.2841,
+          "output": "{\"ok\": true, \"comparisons\": 44, \"report\": \"/Users/sae/projects/NEX/build/managed-reference-typescript-0.260.0-acceptance/report.json\"}\n",
+          "passed": true
+        },
+        {
+          "name": "managed_references_native",
+          "seconds": 112.706,
+          "output": "{\"ok\": true, \"comparisons\": 84, \"report\": \"/Users/sae/projects/NEX/build/managed-reference-native-0.260.0-acceptance/report.json\"}\n",
+          "passed": true
+        },
+        {
+          "name": "managed_reference_modules_native",
+          "seconds": 34.0855,
+          "output": "{\"ok\": true, \"comparisons\": 20, \"report\": \"/Users/sae/projects/NEX/build/managed-reference-modules-native-0.260.0-acceptance/report.json\"}\n",
+          "passed": true
+        },
+        {
+          "name": "managed_reference_requests_native",
+          "seconds": 50.8634,
+          "output": "{\"ok\": true, \"comparisons\": 22, \"report\": \"/Users/sae/projects/NEX/build/managed-reference-requests-native-0.260.0-acceptance/report.json\"}\n",
+          "passed": true
+        },
+        {
+          "name": "managed_reference_modules_typescript",
+          "seconds": 2.59563,
+          "output": "{\"ok\": true, \"comparisons\": 10, \"report\": \"/Users/sae/projects/NEX/build/managed-reference-modules-typescript-0.260.0-acceptance/report.json\"}\n",
+          "passed": true
+        },
+        {
+          "name": "files_runtime_native",
+          "seconds": 0.116812,
+          "output": "PASS Unicode and embedded NUL\nPASS read-only capability\nPASS missing file and parent\nPASS path rejection\nPASS symlinked leaf and parent\nPASS invalid UTF-8\nPASS exact byte limit and oversized files\nPASS non-regular files do not block\nPASS private replacement mode\nPASS cancellation before commit preserves destination\nPASS concurrent writes are complete replacements\nPASS repeated success and failure close descriptors\nPASS opened root remains pinned after rename\nfilesystem adapter: 13 cases passed\n",
+          "passed": true
+        },
+        {
+          "name": "source_exception_lifetime_compatibility",
+          "seconds": 2.56403,
+          "output": "{\"ok\": true, \"source_programs\": 66, \"report\": \"/private/var/folders/hg/b7ggtzxs1pd_5jwc99gprqwh0000gq/T/nex-exception-lifetimes-ihsifa9q/report.json\"}\n",
+          "passed": true
+        },
+        {
+          "name": "docs_index",
+          "seconds": 0.0825459,
+          "output": "{\n  \"schema\": \"nex.documentation-index/1\",\n  \"toolchain\": \"0.260.0\",\n  \"language\": \"0.28\",\n  \"documents\": 196,\n  \"index\": \"docs/INDEX.md\",\n  \"errors\": [],\n  \"links_checked\": 1430,\n  \"missing_links\": [],\n  \"current_status_ok\": true,\n  \"ok\": true\n}\n",
+          "passed": true
+        }
+      ],
+      "log": {
+        "path": "build/managed-owned-v1/affected.log",
+        "sha256": "3749317045d17987aa151faf0f64e572e47510a32b512cee57e699f7f3c5415b"
+      }
+    },
+    "kernel": {
+      "path": "build/managed-owned-v1/kernel.xml",
+      "sha256": "9a10c92b7c4402a20b9f669cc3c756b736a3123065b01b0942f68b12d565fc39",
+      "groups": 3,
+      "passed": 3,
+      "tests": [
+        {
+          "name": "managed_cells_runtime",
+          "seconds": 1.5203,
+          "output": "{\"ok\":true,\"cases\":30,\"source_type_enabled\":false,\"live_value_delta\":0}\n",
+          "passed": true
+        },
+        {
+          "name": "managed_references_frontend_reference",
+          "seconds": 0.0747637,
+          "output": "{\"ok\":true,\"accepted_scenarios\":20,\"rejected_scenarios\":44,\"public_source_enabled\":false,\"live_value_delta\":0}\n",
+          "passed": true
+        },
+        {
+          "name": "managed_reference_modules_frontend",
+          "seconds": 0.0325792,
+          "output": "{\"accepted\":1,\"live_value_delta\":0,\"ok\":true,\"public_source_enabled\":false,\"rejected\":21}\n",
+          "passed": true
+        }
+      ],
+      "log": {
+        "path": "build/managed-owned-v1/kernel.log",
+        "sha256": "9d4e61d6547597f3f7365b3cc5b5a1982160e6ec103d3b515b7808c6c47f66c7"
+      }
+    },
+    "owned_kernel_scenarios": 11,
+    "total_kernel_scenarios": 30,
+    "source_resource_matrix": {
+      "path": "build/managed-reference-resources-0.260.0-acceptance/report.json",
+      "sha256": "3c00c1af50d2fc64e4304df32a92fcf68fedd0f309310e8c8556651c37807259",
+      "result": {
+        "schema": "nex.managed-reference-resource-agreement/1",
+        "ok": true,
+        "public_source_enabled": false,
+        "private_language": "0.30-refs-prototype",
+        "probe_sha256": "bc0ff64e7250a97da6c5171e2a8446c1793a714592def303ae196958b03a7bc7",
+        "compiler_sha256": "68bb87f784f09da01b7aea0f70952fb23f606242cdc4f6ff3cc26c372af0706f",
+        "runtime_source_tree_sha256": "0f96bd323045436f6a06a1318e5b91d7a8cb6a817f8a4fce3f7d7a0efaf42be5",
+        "selected_cases": [
+          "file-snapshot",
+          "file-closure",
+          "file-source-loop",
+          "file-typed-error",
+          "file-result-finally",
+          "file-fatal",
+          "file-hidden-owned-cell",
+          "resource-state",
+          "resource-source-loop",
+          "resource-typed-error",
+          "resource-result-data",
+          "resource-fatal",
+          "resource-hidden-owned-cell",
+          "mixed-file-resource",
+          "mixed-uncaught-typed",
+          "file-cell-snapshots",
+          "file-cell-cycle",
+          "resource-cell-cycle",
+          "mixed-owned-cell",
+          "owned-cell-typed-error",
+          "owned-cell-uncaught",
+          "owned-cell-fatal"
+        ],
+        "source_programs": 22,
+        "native_comparisons": 88,
+        "machine_runs": 176,
+        "source_sha256": {
+          "managed_reference_resources.py": "c006ef72978298cc88aea4add47721502fcdf31bc523965a5264d007aed0f07c",
+          "managed_reference_resource_cases.py": "a6685b2ce6fbe54abfa17ad0907490c63ef3884ab7e67bfb219ac55585f56bea",
+          "managed_reference_resources.cpp": "8952b6843dd6cdaf6dba9b71e305b278658bad0b685804bc3d703d0a7bdf0746",
+          "managed_reference_resource_host.h": "1884f93dd526e4ab5cfab19a41fdda1474434fa8816bef6fae1e27a85a7ba7f5",
+          "source_exception_host.py": "dcc1012a60f45b7447227439f8c0d2d1dae8b9196dba82d2a3e36c2e03e6250d",
+          "host_file_observers.h": "f9b516ab9f7c3aca98d73e2fd3e6e5a898976a5ad2ec898cbeef769761c02d8b"
+        },
+        "runtime_objects": {
+          "0": {
+            "runtime.cpp.o": "40c9f8ef0b0045a6bebf522b00cf9ad987397f4650a7340de885d114325041d0",
+            "nex_cells.cpp.o": "71bc51143e0b7ce73c4a35598c2eddfa3e4456571a8641ce7da4bfdc39aa9fc1",
+            "nex_cell_host.cpp.o": "af51099a0b5a69150f03cf174fcf180b5de89664edda85357a92ba1cabc3ab9e",
+            "nex_files.cpp.o": "09872204ed1e3124571abcf9e6891d0666404a225a0479cfaa97cd61e04de2b0",
+            "files_runtime.cpp.o": "c274c8265f71e22869b85998d912865c01f65bb0c87b00232829363d83c20e34",
+            "foreign_runtime.cpp.o": "c3e0be96bb5596993b5b9300ba1f23d5e4477c4045ef74ff180b5796acaa28a8",
+            "nex_foreign.cpp.o": "0b08ebe69259b378562f68e2d4097d0081fa03001f253f195600a6d4232eb866",
+            "nex_ffi_loader.cpp.o": "8ed3d340851375e7c5f67ec7a2a7ce065822a9fb4fed644ec5cf70dad5523ba5",
+            "nex_ffi.cpp.o": "30d1684c1038443bf9e890c77dd657c22b530830abc00752adb4bb83878b7b33",
+            "nex_ffi_types.cpp.o": "2157dcff59c95d6721e25e41cdde62c2a5226e7c2f85c7459b1830491dcc473b",
+            "nex_ffi_resources.cpp.o": "56b391cc6aa3b8cafcd4d8891330cc08c2924e28b7937cb26cf12d356b311cca",
+            "nex_external_resource.cpp.o": "73595ebeb23d36f448b4f2e012d229de8e707bdf1cdee315a7997bb1301b5598",
+            "nex_resource_region.cpp.o": "2b32fe152286da963fd05a2c736555740c623401617298ceed54673f4bb2835a",
+            "nex_resource_executor.cpp.o": "d5e60b7fa9dcfca841062858212ed894a2c48c641be4a11c8b4f6714e809264d",
+            "nex_json.cpp.o": "d27646de7ca7d3daca0ee2ab34e973478b2aabe06b8d3e5ac48bd284b0c68c2f",
+            "wire_runtime.cpp.o": "882803a1b4dc1006872536a306162e4c266b0e56f3c1bf98c6a73982f7c8f86b"
+          },
+          "2": {
+            "runtime.cpp.o": "0f1a407def58b1863a1ce2171a9c55839f1d6c63c101205d40a6a1c4121b1da6",
+            "nex_cells.cpp.o": "276fdbe3893d02a1c1db779afd62fa7eac217706b14e34b0678da377e5c619fe",
+            "nex_cell_host.cpp.o": "90990a7f7ce771c842206e013f9b35710be538c3924e260b49830faf1aadb098",
+            "nex_files.cpp.o": "32bc81945feeba68eeeeab0482bb3e8d67ea39b83e13740e41fbb44f94e32163",
+            "files_runtime.cpp.o": "d0d31b7fb0257465aad42363906442bdf1e62d48d1639bbe2a74214b34ee1cb9",
+            "foreign_runtime.cpp.o": "ed7356a09771b801644859a5f2442c8a4f15f466ad0637555547622b28543fcc",
+            "nex_foreign.cpp.o": "b0353dc896b6776a1fa8ce0df3eaf87e2e7365c5b32240e063e92d3780caa394",
+            "nex_ffi_loader.cpp.o": "83daf6ea69aacf944c0472e0d0edffee21cea2607288e8b9d88bb52a78b1827b",
+            "nex_ffi.cpp.o": "0ac18112ad2f9a715bb46330a144022ed51374cbb12f395ea922d0fc5ae11b8a",
+            "nex_ffi_types.cpp.o": "5a9a64e8a328460fd6ae1bb14f680388eac4a6ba90874bbe2d200a770e767a89",
+            "nex_ffi_resources.cpp.o": "8c58cf851535502545c4167834d6a85133c3bbe31d06a20987f7889a3140cabd",
+            "nex_external_resource.cpp.o": "704b3f783ca4e3737a63ae74ee9c83e1bef839d86587d7efac37fc26ecca8bde",
+            "nex_resource_region.cpp.o": "08615c57dd290aea13c04bb78fb5dc0d05a308c11538db6f9ce50fdf503b095b",
+            "nex_resource_executor.cpp.o": "d9a58e2e17d8c772d3c151dbce273a8b47f68e97fcda98e9388f3e907c6e8d69",
+            "nex_json.cpp.o": "f7a745e6e7377fd9d688a8cab3bdaa6c9cd67b8ca948cb5a17fa0caa9fc031af",
+            "wire_runtime.cpp.o": "7489ba0d3ab64740a08295ad1c9077f83bf44a1cba42f015c7f8dd2cd0b94831"
+          }
+        }
+      },
+      "programs": [
+        {
+          "name": "file-snapshot",
+          "source_sha256": "c1771a91d31d8a716f06d5e68c666bff4be52fac746897f59358461d75047540",
+          "reference": {
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "return",
+            "live_delta": 0,
+            "output": "",
+            "remaining_cells": 0,
+            "remaining_nodes": 0,
+            "value": 42
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "114c3edbbab5c34d98eb0ed46a0c94f80bf425441dc0c068253afaa38a36a466",
+              "llvm_sha256": "a776c462d88df8140eb648cf7f5e9b5f6597d6438bab4fb996cc2655cedc0b60",
+              "image_sha256": "fc02357979852a3013834433da7531c7cb2d77e952bfa3d6b77fc54042f949bb",
+              "executable_sha256": "9b70e763ed99ee7e61fe5f844563e4fd62baf7f00125e7584b3c0f7058132a19",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "512a4c331a304eccb894e1cb603763575bf0da6d68993ff48f81a327e9f20cad",
+              "llvm_sha256": "a091e874486f563a59742467f01bcf01b02cff7324bb906fb6b2f11725448549",
+              "image_sha256": "bebb70e492e455cf633960a68206df4ca279da03c486cc0646886670b4974978",
+              "executable_sha256": "0e7057721e378e4e9647d5daf4dffca7674ed98a698d3d19e758047d3a9a46c2",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "dd3fa2b743f17d746d6b3ae1e3c8a23474983dc90c7813e9d03f088306d60011",
+              "llvm_sha256": "c9cc2d719305948ef6d18085d4e0a329dcccf3b197c898147ab8372c1e36b033",
+              "image_sha256": "2b0ccde7e65f29df9a4d1fb408d81ab0bd0bb336be9b733662fd02cedaa3f53f",
+              "executable_sha256": "962682f8dbb52e351741bae4fe3f2c0a5625cb7fee0afda58b2b58e23d9346ab",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "ccc8d9ffae99f691bd65ad0631f80e17abf062ca86bee37af1d005ad6c4f9058",
+              "llvm_sha256": "127dacf127a05bf9ab315262738ae9e5046ec7157ae8bd9de3fbd10d73693e77",
+              "image_sha256": "e45cd740665130af52de185fe32d41ac54ab433c11e8fa4ddc0e782beddee2fe",
+              "executable_sha256": "5a59741eb3f612eb63af5fb9a1ef23a24582aae98e707e94417db8784d38e502",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "file-closure",
+          "source_sha256": "6d73f9f8dbe08a160f727022da4a89e4a68a1e2d902c3d8e9def77dd2d09aab3",
+          "reference": {
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "return",
+            "live_delta": 0,
+            "output": "",
+            "remaining_cells": 0,
+            "remaining_nodes": 0,
+            "value": 42
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "5fab877407044fe40c01eea82af0e2ed012b5b84a50d86ae7ed3335a9f8e5794",
+              "llvm_sha256": "6c56273f4b5b7222ed6c968168647ab4c1b770ba4b317b4871e485bc3f4fef26",
+              "image_sha256": "d39d93582c3d9664ad4dc61c15a9b134ac2749c1ec1b25851faf98838adf6f4f",
+              "executable_sha256": "4dd3eabbd53f527032c69c15d2739d617272d96da290d5c7e33ddcaeebb81b75",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "a43ce63da87ad847c64191169c25f3f176883e7a3c861994d168a126316abb3d",
+              "llvm_sha256": "3b3a0764d8bcc6ca1dc7ad34f90caa4ed15565d0321c32b498976e4d958731c0",
+              "image_sha256": "ac8c961703fa748881bf98369708fb965ac6524446f5b08bbb857446e1089850",
+              "executable_sha256": "b5deb34280619fa2de44f221b976a46e24ac81030416dedd8bb1eb246e940cb4",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "3c4d4017182f801f62d9bb5458d4b7af678828410e3764953ac81239e6c72d0f",
+              "llvm_sha256": "f848cd3bbfdfac63da393ccc123375fb1cbf9b58d06b92fe87aff57c3a655d30",
+              "image_sha256": "6a000ccab3b17b052d3a9dd7fc52d0ba3e8ee60772c44b67330a14b3f58279fc",
+              "executable_sha256": "07a6c2dc16e06a38ae81f5b73b52dd32e6bc9ae35ee677dfc95aace97fc08482",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "c6ddad966697c436de1704d41ae746b0f96e8f9865958709116a8659275a2390",
+              "llvm_sha256": "d3b7fbc4d95b7aa18b498cb163a3df0f045f4aa2332a1e05ac93d36dc2ebc80e",
+              "image_sha256": "11056fcff090fb79baf59c8f81d659be5e4c3217c2c28b465d3f1bffa30f1cd3",
+              "executable_sha256": "a34120985ccd2a94e09e3522ff889c7a4cd65c21d63550db20f612f796844028",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "file-source-loop",
+          "source_sha256": "21d024098c1a1374389f53b7bd3b563c486e444ad1b3e1da762d6f6c0cb0ddd9",
+          "reference": {
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "return",
+            "live_delta": 0,
+            "output": "",
+            "remaining_cells": 0,
+            "remaining_nodes": 0,
+            "value": 42
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "947cae8b9bfcad956087e3eb881ce4c8b8f05c969d74067ff16bdf921a3b513a",
+              "llvm_sha256": "b0e3c4edeb2820078b78c71a31b677158adba8381b6f91ca01357f74c02d16b9",
+              "image_sha256": "06c396a538c5ca2c212a3de4a7a84d4a34a281771642b46d9197f2b94da04927",
+              "executable_sha256": "fc65373df98dc264c92ca353396834e55a85961fb1107f3b678ff00f0cc36dd9",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "cdfff6442ffe4fb1f8e94104bc896add0712dc62013343ce9444d993da87b594",
+              "llvm_sha256": "a21304665c8776ab829e696069ea44cb7304710223ef61355047ae36b8028064",
+              "image_sha256": "e0c6d04fa5133840d4c5c1e6c95a47cd9ffe78bfd61d8744c97baf18f8da5b54",
+              "executable_sha256": "103dfadb0711faf51468cee9f6cbd0ff529414fbdc12226b8847508939d952ae",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "24205df329dfcf3912ed71efde9fa16aa931f61b663dff4304baeafb2d3dce1d",
+              "llvm_sha256": "9ed7d7fcfb789c4feba2eb923878c1e746747ed9e6f70aba2acc3b946239864b",
+              "image_sha256": "67d69f89d1d184031f62c2ea5a7754125c6c45fc5ae76a5f571a30bc5c298f37",
+              "executable_sha256": "df9f593dc5776a31fadd109be77166fd806c039a3f44da62300ee6e269af382a",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "cec93e117a6a564a49ba010fed50c501a431405fd5a26f338a1c242eea266f28",
+              "llvm_sha256": "6d23f8b9bf30c8e67b0b7b36f20cc1d0dcfcadf7c24947ac9a37b49e75d8888d",
+              "image_sha256": "83a8e9434e79999ed8e4bc81e50db6ba314324d0d80202c11e9e2e6c97d853c8",
+              "executable_sha256": "5c12f544a624153cdaafb6976ddb80cfff1bfba1d783704934912abd464ebc8a",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "file-typed-error",
+          "source_sha256": "8b0d1746b053e8865ba534d484faf2de0d708fec106508c7f97d91b5c4b8c899",
+          "reference": {
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "return",
+            "live_delta": 0,
+            "output": "",
+            "remaining_cells": 0,
+            "remaining_nodes": 0,
+            "value": 42
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "e96f54e15fd0d0a9b75c809aacdab1dcb9d566dffbd85e3d735d3cd0e5efe348",
+              "llvm_sha256": "7e49bbfeeb3c4f617ba46b5860519c0bae1a722828bbe1f6bc7aa9698d2c75bb",
+              "image_sha256": "c4e966826b36095d55c450c43858faff1e70716821203b229d5b5b55767ccbb0",
+              "executable_sha256": "c3bdb95e29b04cc385779b74ca306380f735f2d4ff37abd7a474085dcd3a0c45",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "ff5ac1496b61cb36a9229475f3df6919f7388c66ac8e9c85b8bec8ee3002b8a7",
+              "llvm_sha256": "05afff059e32e1c3493cff8c0354def26fb1d0779330ad28c9b8adbd60d36d05",
+              "image_sha256": "70b23ed4e8453e9d5c80a2ba351b3d8e4c1c65ddf6420434243a4bceb71ebf9d",
+              "executable_sha256": "9208d1d40591beb3d6274f65d08372b94ea3bf2c0987f1f30491185b4e9d08da",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "97bc32fd78a64e144cdaf284470cef8100f0600db61add262a8669dbe4fe9cfd",
+              "llvm_sha256": "130e7444da6e7ffd4b5493d9f5e18a73f7ce0b6587f982dc7c11d648291b831b",
+              "image_sha256": "8d9126f1cfdb53bd73754679bd735fdb3843fcd5bc834c6c68f36e30f5e35969",
+              "executable_sha256": "5bc7c1a6b79b5345423633a8862615138328ea8c6608432d51a2894444bffe2a",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "1a99e7ef2428ac6951b970cd4439840f69b5d14487c621073d2a9003d70bce4a",
+              "llvm_sha256": "2a93b4acb60b39cdc5a64a84639e5c4c7efb1fa52cd75f08f7c589074f0bb19a",
+              "image_sha256": "dc1bb5661c4a8064d9ead7e5934941f617b5e93ad63406813f36b68724527d28",
+              "executable_sha256": "29a04954a429f8b6dadcfa6068e2493a87824b9453a36d2d6b727eb55386634b",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "file-result-finally",
+          "source_sha256": "da689626390852e3343381f71050c1d13cf5a00a255b159cde3f0a47758b6074",
+          "reference": {
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "return",
+            "live_delta": 0,
+            "output": "",
+            "remaining_cells": 0,
+            "remaining_nodes": 0,
+            "value": 42
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "c28dbff2175dee0367e4ac6877588941bc2ce9a7e459b12a7b4ff8b913b40d75",
+              "llvm_sha256": "ee34c7df6703a18cf4636e7c0abdfc7f220273f34f08fac38c3b4942b580eec1",
+              "image_sha256": "5b8cd9014496c09351d682f368230601fa0ea7bf75772028cd6883977bd9b583",
+              "executable_sha256": "2dc82b9db4eaa484bae45036e974fe8ee612afe3a7ef9480228b9a0511d63724",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "f11d2a8ba4dd72b478ca79e5eb307b21a80ded033159c2f6489c47fb8846640b",
+              "llvm_sha256": "f530c665cd9cc4ded440a76b3c5b2a347ed528bcf9af3debc105857be43d85eb",
+              "image_sha256": "e8d72c9507e2ea3065463a94c37e8ee176ac2f8119598d5715873ceb77d2dc26",
+              "executable_sha256": "069b3c8d53cbb7e0bb371e34180849fa9c6b5a7356f0feb1930f18b53f4d937d",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "95f1fd254d78bbb1b9ace7d7b0efd615526ebfc9b07165095e51ed36a9443caa",
+              "llvm_sha256": "ae5a271adfa54d0c691f00266a44f5b9bbf0fde70ee53ee2d0e4390af5b1f192",
+              "image_sha256": "4aa2c072b7e29d018ac894dd700fd286ab895e038e3053257bba40265c257ce6",
+              "executable_sha256": "9ba4a1f3a18b6b49564b89b9a5ff5f312a63d50117ab10dbb35aadbe0d4d440e",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "30b8e2869c0259a43d9e6c3a152aad650d4c93a46236b02f49d484eb702fa88f",
+              "llvm_sha256": "062433913fa37510a134a5589596337e6a923761c5e9117fd522370c02e2b1b5",
+              "image_sha256": "f0beab0c008ffc0ef34dce9c73aab4f730e27ab69d1f9ed443f8610ba27a0ea7",
+              "executable_sha256": "718277384eb0bdc6616dc1e52473eebb68c3067a739e881a73df41df609f3c0c",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "file-fatal",
+          "source_sha256": "2deb41626c25e0ff08b413d9dd79453b822516f5b8a49909aeca3a66db039659",
+          "reference": {
+            "code": "E_ASSERT",
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "trap",
+            "line": 2,
+            "live_delta": 0,
+            "message": "assertion failed",
+            "output": ""
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": "E_ASSERT",
+              "mlir_sha256": "593f8676f5f3f5e9168533451037baedf35c09119678b954361316182a811008",
+              "llvm_sha256": "a7311c5827ae758a4c32c9cd3db2d5a179a5a90c57e0e40b99b719039ec7e343",
+              "image_sha256": "974e480da03806c39e9cd01278f52cfe4f7c1a3c652ab4c9fa60ccb8e2f3ee67",
+              "executable_sha256": "86aee974ba8008b3d30670ad3e38f31d88fca585a511308771f009193d41a65e",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": "E_ASSERT",
+              "mlir_sha256": "c977f8759701d704bbcdc8a8ab2259127d9f737fc9643f6702b17f6216800200",
+              "llvm_sha256": "df95abf410c6e9b50b7fec2d15e2b575f3eee79ab284dbc90c6125455c520c1f",
+              "image_sha256": "85175aac84fa3f1f075c2ef937e227666f49a47946cca3c7adb7bc84d625a494",
+              "executable_sha256": "91cc09b1d5d8164070befff85987b251942db6aca6e6815f70146c889dbb3108",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 0,
+                    "failed": true,
+                    "code": "E_ASSERT",
+                    "result": 0,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 0,
+                    "failed": true,
+                    "code": "E_ASSERT",
+                    "result": 0,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": "E_ASSERT",
+              "mlir_sha256": "77467250c3aded0929635cbed3e397f98b404d3cf82340cd0bc4751738c4f38f",
+              "llvm_sha256": "b2b36f2bf97944e3c9711f48e83b036c8ea4508327d0fccd244adc63ab280de6",
+              "image_sha256": "7b07c2a67c50c39354ea0f7bc9965afde184c97d5d0309db12aec7111ed31eac",
+              "executable_sha256": "681fd0656c8c2686ce0a9169cd2decc8eebecb4d9f74664d34ad3547b7ccbf24",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": "E_ASSERT",
+              "mlir_sha256": "e3b6f0ab09eeb2c86cbc7c6d8c0f79e376437dd8c1820c4fd2250be6799f370e",
+              "llvm_sha256": "ec0f38fa3544b0c63e8101652061d7d9fe20c348ed22af34fafa9ab7b06501db",
+              "image_sha256": "26c65f7003ee1faf631c91cc8ab030e2c07d14a85ccf3f04fdf4a6b59f4a2458",
+              "executable_sha256": "15f2151ac400c144c711f3172c5b5912c98d936fc4138f485ebdbe30a0d9f38f",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 0,
+                    "failed": true,
+                    "code": "E_ASSERT",
+                    "result": 0,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 0,
+                    "failed": true,
+                    "code": "E_ASSERT",
+                    "result": 0,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "file-hidden-owned-cell",
+          "source_sha256": "dc7eb7a2da47b784b656c0a1e312d4473f0650776ac3f2cf9dd1b47c741fb23d",
+          "reference": {
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "return",
+            "live_delta": 0,
+            "output": "",
+            "remaining_cells": 0,
+            "remaining_nodes": 0,
+            "value": 42
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "5cd4bb88546e16b2ea84c968eb9d5916819f87db0468ead48c991e6c0e0fc64c",
+              "llvm_sha256": "d3d2c0a38004e11bd6428396d7177f28ac211981909e9c8cb5b376bedf37298b",
+              "image_sha256": "317fe75501678286d285e9f6ff9608ff0b3a1c6e25739f21cacd52a7f6a9d88c",
+              "executable_sha256": "51c23e6ed6d25ac76aaf9b8744f160fcf09332c062e28b702c7238f9e6d0d7cb",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "f6d5d87834e6d22525e6dea7d672d33a1f991f4828f1e9995740b02153aeda9c",
+              "llvm_sha256": "e9ea292e12a4a25e3adc1bf6fb894d59577116764a35c7d51aad75e243ca80b7",
+              "image_sha256": "337a9cd0930b26ebd74bef05597429f77a14fa2ce35d6ac1b1702f556737ac3b",
+              "executable_sha256": "28ac8fdfc71a78bc6f098f05581977de10c88749e7a22710356bffa71ce68c5e",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "8c4e092cab68e64adc9315b12f736c6d6349422f83917ee5b49c94495a4fc9ef",
+              "llvm_sha256": "80d055b028708251ce58ccac50b1c2a1b0d56d61b3a885dbde37dc3238a2918f",
+              "image_sha256": "75d1078c3221ba343f957ea67fc874aeb6c5a2300fb343c01f75a944e4b1e17c",
+              "executable_sha256": "1878d9c44d69770803381b1378404b6d5ab01ce4bf6b1c9727efadf129075143",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "4eafa60fe9453758cca0324533159a021b2d605cb14ca37cf14a8c666d09f737",
+              "llvm_sha256": "52cf4a07c36827179ba64b19a032443b161d44b962f8832f35fc69ab3b0e1249",
+              "image_sha256": "9ee2f523caebd043f93d77dfd8bdabeaed433672093c6ad5dda89688ce0d4825",
+              "executable_sha256": "88db123f3118595fcf7329682c537f6c7e6285f0ae84043b8dc04138928d5fb5",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "resource-state",
+          "source_sha256": "a4673550ace70a802fffc2155db09139d04959b09c9a7da461e532adba514d4a",
+          "reference": {
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "return",
+            "live_delta": 0,
+            "output": "",
+            "remaining_cells": 0,
+            "remaining_nodes": 0,
+            "value": 42
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "69f35b2fa7bc37cbec61c38a2b87100cb2dd6b1bfbdd59cdd8f987725a8ef037",
+              "llvm_sha256": "c5a57b434d36692e081bb4229a21eec812bb0119534d606316a6649fbc5a3a5e",
+              "image_sha256": "2df6c1157033d3d233ea0415519591e92820adc0ccc7ed76e9b4c8c874f01045",
+              "executable_sha256": "16bb7293833ee52bab521137af3243f13e038022087f096e609c78dbff06ed38",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 1,
+                "destroyed": 1
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "8097398e0cfb4b53ad49bcc100425e7f9338a647c54e5c1cba2a6202a7933e05",
+              "llvm_sha256": "d06c3010680097f9747daf9db2022c1d44e89d461dae4467f734f6c37eca188b",
+              "image_sha256": "943f299040fb9f1f9d8a67a157eb529d3cbbd6e9808dda1655578128d06fef51",
+              "executable_sha256": "cec3c8fbe62c0b4e6aa3a428bcea80a79a086fe2cb8fbc1ad14d26d26fcb46ed",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 4,
+                "destroyed": 4,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "20411504a1eb017941839bcfa3c658d5d74a379a846c29de23386466125a0dab",
+              "llvm_sha256": "2f9c1318545a0636e90f3e88aed58d0d6c0632fb8b6ad514c876b76f774a172e",
+              "image_sha256": "fad4205b278aaf3a218e16fd8b848c634c9285c95514363c893927204347b0f3",
+              "executable_sha256": "1d9e0bac270303390bb6f647cb756d553e0ad10b16929a416395f905e612a224",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 1,
+                "destroyed": 1
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "25146f95472fc8d1af4ecfce83c3dcbd5df1484ca79719a331a9345817e7028e",
+              "llvm_sha256": "3158b0d9ea2ff3ebbe8639a6dfd2f757d58bce31a2a5cb44db180c13b9ae8e55",
+              "image_sha256": "c1760499d9ea19ffca82cd3c922e08f11f2117ff3be1ab156c3eb1b54ccf8af2",
+              "executable_sha256": "27df1a28db674e57a265ff95ec1608bea9df80962099b393ecf8f8ee31461530",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 4,
+                "destroyed": 4,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "resource-source-loop",
+          "source_sha256": "24a3b4f3d309e54126166f863b7e7d9423ed6e52822c8c44f55301bfa7336f77",
+          "reference": {
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "return",
+            "live_delta": 0,
+            "output": "",
+            "remaining_cells": 0,
+            "remaining_nodes": 0,
+            "value": 42
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "99e7bd207ccf8e2bacca23d7f5cb5221ff699a9c6fbc4c59ca827b93189f8be7",
+              "llvm_sha256": "419384faeb0605ae5eac5e4e61fe7728d30d0107c4662a4ac8b1a82799c7b1cd",
+              "image_sha256": "77662d05c97a0c1f535aaaa4d5624626beb53ffbea42976c7e92522caf367f24",
+              "executable_sha256": "5c736093009a037a6d784aab28df03dd439fad823d53d35b9e28d68ec0786336",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 80,
+                "destroyed": 80
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "a04ffc1465ebaea02cded8e88e6038060756a77caf1ec2513caf7583b052291b",
+              "llvm_sha256": "a0fd2c5e99771a045717420a895d96cc7535e43eedc8bc5e01edce71d28d966f",
+              "image_sha256": "7921ce4481d49541649148e53fafa203a0e257b5831f70fb87a514c25c1ff2fe",
+              "executable_sha256": "a29a39f41d94c3d9e08401180ff38b6be7d5d6a6fcc9dee8c373f1390ffa6dec",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 320,
+                "destroyed": 320,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "988fc542d51e3f78c325daf671dde8a978b21bf84e273e5535d2c119164a6aff",
+              "llvm_sha256": "bd6658a8dff01297f2b48971386e7f13edd0b476494c16d49beb79ff3485bb0a",
+              "image_sha256": "965f48489849ae93598ad8955cf03123d00bbbf35df4d309d8b4379b32c3c593",
+              "executable_sha256": "67a0213c50f7887a6db034f901514f117c7a64a5d1d88ba4b9c4b4fb38e1f603",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 80,
+                "destroyed": 80
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "0e5be6680b421e2886ebe49f246296985f1597a09d8861d468329d7e2e712fed",
+              "llvm_sha256": "eb2cbc2a259b31c07617dbf9bfc0de2cf0c1036ba6b10774cb6276f4e5ee5b88",
+              "image_sha256": "e908d8139f093833bc0fa9b1e1dec99880ecbc851a2fc7b8ccf277c582e7fb4b",
+              "executable_sha256": "e404a589bb22ad4b869667f0e793f87bb8445271d821e717ab2e5aa79a705930",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 320,
+                "destroyed": 320,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "resource-typed-error",
+          "source_sha256": "074fe398bf685c35e5afc3be65350eba7a3fab8c6dd91e38825fb6b86cfcb4f0",
+          "reference": {
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "return",
+            "live_delta": 0,
+            "output": "",
+            "remaining_cells": 0,
+            "remaining_nodes": 0,
+            "value": 42
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "dde6c9c8cf7e1341b74e9fe91452611ddbd6c071583e0e3da70fd8aa80ebb79f",
+              "llvm_sha256": "eb06ea303c8f55138cdac441fc6d3df33d19eab6b928f6f4cdc87c93654440e2",
+              "image_sha256": "313eba90cc07e43a570138c34c84ad0ca507ed125f99807b8dfaf06522d4f6a3",
+              "executable_sha256": "8989cab141af86357be96a45a8a1d42a5ec3e19b8bf4d5276196a3a498cb5c60",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 1,
+                "destroyed": 1
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "38494178b7c711e95b4cd1d5034f622f855fceedac8f60f93c048ad65d56ad67",
+              "llvm_sha256": "1dcbcc308c4de98ff77db3986cbc12dc78b1a365b4dc8ba5f08d404f21e8fe34",
+              "image_sha256": "a0abaab4283ed0068b91904e56234c0d069d3f371e05cfb6e7b5130d69024e61",
+              "executable_sha256": "8a003a2c36406046fd8395ba4d082fec4dadf70184c59f6997de360c9a0b3715",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 4,
+                "destroyed": 4,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "41910554e398fd2aa2d91a14509a1540880cadc1c2082d60e0935ed5f7f09c66",
+              "llvm_sha256": "a096cffcb26a995e8e9460723ce465a11a8b2cdb5ae13e70984db0e33ea528f8",
+              "image_sha256": "c609d507aff58693c1caadebc45e1d3286b5f9d895a5254572bd5bbf298ff1a4",
+              "executable_sha256": "21249016f2fde93994d899752a1bb1962be5eff050b192b3dc93e7299284abd7",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 1,
+                "destroyed": 1
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "da816da4303a93443aae40b37aa16438cd09f0703c4c882b11c6043a4ce53806",
+              "llvm_sha256": "61c682a164f72fb0077fa5f410e9db90185c8322d91559faf5d8c6da5adcd200",
+              "image_sha256": "1e80e9be2f9c438e3873d8bc8d0cd327418b9a7856d62021e0abe268a8469969",
+              "executable_sha256": "10c29ec64fc1d92f3ff6f324b1ce416a1fd78a08c4b6bbdede65afc9eededeee",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 4,
+                "destroyed": 4,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "resource-result-data",
+          "source_sha256": "7d563c66646cf57cfde965254e81aa1a34b6683c7b223f1e44efd2fc476e9adb",
+          "reference": {
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "return",
+            "live_delta": 0,
+            "output": "",
+            "remaining_cells": 0,
+            "remaining_nodes": 0,
+            "value": 42
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "1ba713753fe96ee405e30860fb5b92aff6ce3fee39418f7bd9ca0cd230ecc388",
+              "llvm_sha256": "3d4ebf33977de3af32498a6e32f2445d90d04e9355674755888cb161cc2c1cdd",
+              "image_sha256": "9c30da306fde4794d03439c304a10f0e8cc8416f40803ae207b8c620d4ac3d63",
+              "executable_sha256": "6bb9717ed675fbe3da354fac6e8df7e8f5255b585e4b7eb789af3d25e45cf528",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "daefb0c0d3e3cceaca3a25f730f6d80dddac54e0343c0299334dae5780e83388",
+              "llvm_sha256": "c3be1a042e0b8ed0d7debad12dcda4c939e076cd08dda12c866c9bb05935ff4b",
+              "image_sha256": "d924b62ed3ae098938a339e5d2c33e0b7f6851d97e4ba60a3639d340521a5275",
+              "executable_sha256": "a83eadc07c19152dcbec322016007d89732f92dcce8a21bda50c173eb890a41a",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "3e880b10c43358d86438188a8b3a6614551c69b66b41f65fd04dd7565c7ac38d",
+              "llvm_sha256": "8c22c1daee104507065c2b44bb7103135d78dfd46f721f88176591a49ce61a50",
+              "image_sha256": "02647917e533ae2a4244b47b403588fc0938dfd185f43f0c4ea41d6a24144566",
+              "executable_sha256": "914964f4455e1b4c47bc4e72a976936edf70ca1773c9168ac0afe2cb6e90cddc",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "327c2e2c2e768b878f12684fe5674d5fd3cc6a2bedc1760a4462241cab666017",
+              "llvm_sha256": "55b05e9366136b0bb3d4cfb13b03c8b475e7f01dae7a010ac49387193e975b08",
+              "image_sha256": "43f663611484a4077388c7d42d481f8c95daad04bcef74a3f57d99dd9d366648",
+              "executable_sha256": "7bbfcb33e8ec5feac469ae2e6ab34f599f945a7a721effc0a344ff2c9ef56fe3",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "resource-fatal",
+          "source_sha256": "ad97f0271f01bf77d4ed605c61d17fba59a663df7d62cfb2da3d2c0467dd9925",
+          "reference": {
+            "code": "E_FFI_TYPE",
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "trap",
+            "line": 7,
+            "live_delta": 0,
+            "message": "foreign result requires i64",
+            "output": ""
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": "E_FFI_TYPE",
+              "mlir_sha256": "d2716a4a94dbacf6d0b2f336dcdcccccefdc1a446b69a2b937a544cb4b28ac28",
+              "llvm_sha256": "49fc2954b021078bba59741af413f9c1f8a046a32a99e5f8ddcf656f8c740ea8",
+              "image_sha256": "7cdbcf9a3495308622dd77762685f488e93148bf792749f8f91138f987b3603e",
+              "executable_sha256": "7acd617ded5cc28e643c19ecc7aacded9e460ec9e18ef3f8e97138d1ad395439",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 1,
+                "destroyed": 1
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": "E_FFI_TYPE",
+              "mlir_sha256": "c1f31730ef4a441b56c71d84025b6478a0dc3672b1c3a3911ecc59aa863c9416",
+              "llvm_sha256": "1d4c4c9a6e3d7d838f7a0843a6690a6061ee9056ef816a1a1919cc05f783bd72",
+              "image_sha256": "922dba93cbc5e04d361f4acbc9f5f52b486b118cc4fe5ebda6480425593c70e1",
+              "executable_sha256": "f5d5e6c0b079e88a37795619fccd91429876a5b7cd78cf62d7c7f145f2d33e9f",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 2,
+                "destroyed": 2,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 0,
+                    "failed": true,
+                    "code": "E_FFI_TYPE",
+                    "result": 0,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 0,
+                    "failed": true,
+                    "code": "E_FFI_TYPE",
+                    "result": 0,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": "E_FFI_TYPE",
+              "mlir_sha256": "fd45e77243df066871328e702244b4a6d0f7db66c51acc781abe73c24cfc0181",
+              "llvm_sha256": "51f6a6e5c0f6800cd3c1cf64f107da448201e8e7c72c5ae190864e9ea83b5333",
+              "image_sha256": "6852168b6d9b4ccde994c2e06cb14281c3a48f0701499a88dd943e8f83cce885",
+              "executable_sha256": "918b2e7248496e580a7a8f7423880fa8b9acdd74618aadf667ac53c434bcff1e",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 1,
+                "destroyed": 1
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": "E_FFI_TYPE",
+              "mlir_sha256": "e6fd8911c4e851a7c5a4f45240b574a23d4ebdaefe4bdb56b6e98156f7246099",
+              "llvm_sha256": "c695038ec189125a4f68e3eb83dd785d83c04048b4ef1b9b4089eebe6ce344e8",
+              "image_sha256": "6ff967e43ca937a8fce5e2d1aef6eaf2240454481b78940e4baf40a244d87dfa",
+              "executable_sha256": "a0c719cc909b902731ded5ec0523146794d197f3f111a623be92dbdcf8665af8",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 2,
+                "destroyed": 2,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 0,
+                    "failed": true,
+                    "code": "E_FFI_TYPE",
+                    "result": 0,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 0,
+                    "failed": true,
+                    "code": "E_FFI_TYPE",
+                    "result": 0,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "resource-hidden-owned-cell",
+          "source_sha256": "e6a29f32035782b07bb5d6e34289750f876ce5f072f35563ab83d514917e8171",
+          "reference": {
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "return",
+            "live_delta": 0,
+            "output": "",
+            "remaining_cells": 0,
+            "remaining_nodes": 0,
+            "value": 42
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "df9f80216cad6343e530e21dfe358eededee60b29db88e18874cdd9a892a8d19",
+              "llvm_sha256": "1ff09ae445c90613810670fc456ba96e7c3d98bd059023936dd0a42ceb19864c",
+              "image_sha256": "99316547f06802db86aa082555d613a035610835a5bbb19609658faac8b54543",
+              "executable_sha256": "cd1baff262e917693953973d5be7fcc9f9fa656a8cd097417b1dc904a698a449",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 1,
+                "destroyed": 1
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "904e3f93cace39105d412b07e929667ce396768a383bb6fc994cb79e12f15656",
+              "llvm_sha256": "b3b954184600949b7da6c26236c93eebc447f8d26c2e6ffe9d7d825570d3e11c",
+              "image_sha256": "abc8fc4f6401d9070d1b0758883a9c1ab189333c821bd634e1faee6b099080d9",
+              "executable_sha256": "9b4bc1362499bec381a4222c8a5c23fead88460e05292965e5bf443ec3132f61",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 4,
+                "destroyed": 4,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "042d60853a6802ba5274cbfa2be64e107f8f62dcaf79a8e7754f380345293de2",
+              "llvm_sha256": "1edb2ae5627fabb05e210fcc0b234b474af0fb9f8b34183a2824e99def8d46a3",
+              "image_sha256": "acdaa9b933c22c2d21eb1cef386b5b9f3ec023256306cec3d4131ed283326e43",
+              "executable_sha256": "9d0564818dd479bfc4ada6121b9307af380057fcb9723585a58bdcaab1430be0",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 1,
+                "destroyed": 1
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "7e7f56f6a4e4a0c9756a14fa8a9521227e0eaa2925dc960e096af32a284b62e8",
+              "llvm_sha256": "83ea79c59a14b284744d2ac6ec92c04c4f38f0c331ea4793ae66d27f28a2cb68",
+              "image_sha256": "cad079ba104750de19f19e72d77c01559c2f827aa2b9e96a4bcb8eb90cd4e2dd",
+              "executable_sha256": "588e7bb86893d3e9bf0f2613dc6a49cf1f8211cf61f628f679d4ab4df4f33b4e",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 4,
+                "destroyed": 4,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "mixed-file-resource",
+          "source_sha256": "079abb0229d4ec07e7c28ecb8bc9f80cdafdf0ded82c051a0bd403bf353043e4",
+          "reference": {
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "return",
+            "live_delta": 0,
+            "output": "",
+            "remaining_cells": 0,
+            "remaining_nodes": 0,
+            "value": 42
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "2b9476aad92dbb8fdfd33487472a6c42e409d43b719c10a843bebb8254c41d3f",
+              "llvm_sha256": "0747c851963a5e026ff887a40c50275f5892519895700d52ea4ea0d494923d99",
+              "image_sha256": "0362309bd2af4d64a04dba382df8e775cbb7c0b2bdd3f8716c42550ea3cef347",
+              "executable_sha256": "2f1ce3552a503f6600f785d529da3404646c4765ddcf20f3aa20d27c0d4ae370",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 1,
+                "destroyed": 1
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "b79a412a3082ab7084ce8b177f00e0363419c06b4014fd3e627a4605793d1a55",
+              "llvm_sha256": "97326f94f9ffc4231fe6a751b55da4ede1fb3c7e204d91bc37e9589c9a5e9134",
+              "image_sha256": "7653f06e26ebf1512d665dd72dbd6f8ca679aa324a0c934114f94f1cc752f24d",
+              "executable_sha256": "fde20f9282a9b0377f9631776e2d557cb22243810237e65d46078672ab8e4ebf",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 4,
+                "destroyed": 4,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "3b45cfb4d73370551d3dc1580c9d4c658807be94faf7078734b368ad84e6ed58",
+              "llvm_sha256": "0d001e575b41ecca38685298ecdfd26810b1b6e0c14578c7a9a6c33948545da5",
+              "image_sha256": "10b806e3c9bb838d174c2dc64de228509e0bf90ab112a81e0db3b88830837d1d",
+              "executable_sha256": "2e500356afa8c1d8c987147b503e34dcd82f1a7e27555e276815376e05247c59",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 1,
+                "destroyed": 1
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "d6dfdb491e82b315db3c336d60fe574623f46e42f0be6ac8927bac5412d4b947",
+              "llvm_sha256": "99210f71e2d5c4245f22b7871cb6ead82d1353a813ae0c68a173d3475794349f",
+              "image_sha256": "ca9bc20338844caf2dc8334d389820fe227ddc978e03349c74a18a9fc958ffc1",
+              "executable_sha256": "f673939fc334eaad196cacafd8ac931afc0f04245587615245450ec2c0400e03",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 4,
+                "destroyed": 4,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "mixed-uncaught-typed",
+          "source_sha256": "bbaacb5acae204d643ca31df8202626b0322dd84dda671f0f5c80ef0dbca68eb",
+          "reference": {
+            "code": "E_SOURCE_EXCEPTION",
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "trap",
+            "line": 8,
+            "live_delta": 0,
+            "message": "Packet: typed source error",
+            "output": ""
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": "E_SOURCE_EXCEPTION",
+              "mlir_sha256": "9d5bc2682e9350acd99875f80c13db176b19e01907fe81c04813f43f6429d261",
+              "llvm_sha256": "c281f1a03204b540b29925c56dd2810154e3366bb27fd0ad8b869db635d27ada",
+              "image_sha256": "221fbc7e0702c341c7f509f2190adcf9bd238a05af9b1a381f08ea5584ec5a9f",
+              "executable_sha256": "b14c92e6387cc8cc34f1f02e37abc196603107a641d984f04e05b755eb87ebd6",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 1,
+                "destroyed": 1
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": "E_SOURCE_EXCEPTION",
+              "mlir_sha256": "d41220481dea1cdcc3fe6b05d8585294056f59078630c90636428f763a41a52f",
+              "llvm_sha256": "bc376cb86f707232390531d5fcc5562f161d45a0d155ac790901f0659961c370",
+              "image_sha256": "4fe526e3c755efe33f4757038ef9bd3552529ac4aa858ae0b3b8a5b9e735ae11",
+              "executable_sha256": "87a188c8a6f73676f23696c0c2f87a12f110ed2203b112ca38813e0b8d5314cb",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 2,
+                "destroyed": 2,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 1,
+                    "failed": true,
+                    "code": "E_SOURCE_EXCEPTION",
+                    "result": 0,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 1,
+                    "failed": true,
+                    "code": "E_SOURCE_EXCEPTION",
+                    "result": 0,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": "E_SOURCE_EXCEPTION",
+              "mlir_sha256": "2ed0b8ec64a099f677b789de07903059bdc10caa462cdb7fadfd4b203b9c2ebd",
+              "llvm_sha256": "5a8e128f8b25c967bec4d7ad29ebc2622971a8c71f2dcdbefc3db0a9f6e9726c",
+              "image_sha256": "dc57eb9c77bed39cb4127e7b8445f2a8f28cd7db94c72e3c77b6b82b28f05002",
+              "executable_sha256": "4f6f69b91f94e7428aaff00e1285c127dadedd879f79a65174c0d7cb7ec84116",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 1,
+                "destroyed": 1
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": "E_SOURCE_EXCEPTION",
+              "mlir_sha256": "6a0ad01964d12dbe91d6400b163dfaa0b9124c4eaf1d058d14ab93c7e1f638d3",
+              "llvm_sha256": "71b7e661d9b3732cee8a48c59d89edc133caece61c14b1c8cfcff193414317a3",
+              "image_sha256": "aaa3dd9d22a92d69eb565ff95126732719a46c54f064e685f3dbdd8d7283196b",
+              "executable_sha256": "2ee534b39cbcf8b6177cac9e0cdde65454b7a76d6cc00a7a8bc755345d3f0419",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 2,
+                "destroyed": 2,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 1,
+                    "failed": true,
+                    "code": "E_SOURCE_EXCEPTION",
+                    "result": 0,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 1,
+                    "failed": true,
+                    "code": "E_SOURCE_EXCEPTION",
+                    "result": 0,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "file-cell-snapshots",
+          "source_sha256": "1f3a5b21636763548671b8a2ce80c6b1a43eb1f3e92dd48b69d2980c39ca3bc9",
+          "reference": {
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "return",
+            "live_delta": 0,
+            "output": "",
+            "remaining_cells": 0,
+            "remaining_nodes": 0,
+            "value": 42
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "3728bfc7259e0328f9f2ed7407a36712c2cb641552e97718208b2bd5ebda446f",
+              "llvm_sha256": "26183412a7bd7d0700f0c5bf9f19d66dce4bdd341f03ca22f8dda714247d107c",
+              "image_sha256": "794c22d142642cccbb25fbd47e5264d2b24857816611ae5e34e0d82f0b509485",
+              "executable_sha256": "b49893c9fcbf8462eb6deaa8f3ff5f64cef2338c2539192befba72ce07900b18",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "f6b377bf6de4af59e90a15f4e05c2e75ab5823da3d3fac509af456215c8b7d5c",
+              "llvm_sha256": "052633add6b32a4dcbed1d4f32ce56e2b94de108157cf606504d99927658ca0d",
+              "image_sha256": "8c49078286b13a9ad28c298cbd186d39a10b3c795f3902f01dc45445c573b8a2",
+              "executable_sha256": "39065329c007f38c5dbccc7e96f15e37c376ca812d883e7c4dde8d80643af659",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "45c455127139ac19d41c56a2b7670bca1b4e96d25d2accc14c1df5837de7944f",
+              "llvm_sha256": "04baaf61d6cd484ff610fccc281e6be5a4b2fc68619a86b2d9e97f5610145c74",
+              "image_sha256": "84722fb5835d4f9d187b7c3ff2083da11f5b4a54ffdc409377889b32a9d351b6",
+              "executable_sha256": "baaa4cae79b7448e5a20f563651857cb7d71464b2e1981d37f65797acbd679da",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "2445c70de439a80c50fec770ef5a42afe22699c3c90faa015f0defb9940291aa",
+              "llvm_sha256": "43b5ca48b6f8ab944ecd2743c958b2ca97b34b783959becbffd8696ae821024c",
+              "image_sha256": "7726d62ce427b2cc7da2e31aaac5cd85db59041add63feb0b5f7cad1c31af0b9",
+              "executable_sha256": "5a352a032680a51e19763dba62906918b7ae446ab9d47ec4f6740bafbf360845",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "file-cell-cycle",
+          "source_sha256": "82615a029b455a2d6c2e250ce8a4dec779855fa9aa26b1597b4f7c4015ab52c8",
+          "reference": {
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "return",
+            "live_delta": 0,
+            "output": "",
+            "remaining_cells": 0,
+            "remaining_nodes": 0,
+            "value": 42
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "b3d22661bf60694c5994b06d6589b5b7b4500a1af47017f48ba91588ad859183",
+              "llvm_sha256": "97df2e3c44b41c42423dd7b939989e806fe738b924798d8d05eba9f9aa139ec4",
+              "image_sha256": "40f06c37f7c4c1c85c9ac1b08ce2d7cd1472193ef835f4cc58b17a68f35b9338",
+              "executable_sha256": "d7310dd100f9f35d57f77c8ee606583231138b607cc5084ea08a87a640c0f4ac",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "a00ec1d9ecd3b46261893f50d56649deb5a656de47a1ad892f32126ae4cc4ca4",
+              "llvm_sha256": "31fcef5413517df998912c1d39ab731d66e30d678292e5d3ec15c5574251ab8c",
+              "image_sha256": "c3302f79277a48c6d83f9ab160eaaabb930600968fd5ae558b1e0879315c099f",
+              "executable_sha256": "3c51dfbd89e1de9a1f3eeed1cddd440684f7e406150c16a1a976bf3c71b44dc4",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "3597d80286275a6dcf62c879326e59f233b43d7c98c470cff4576014758c367d",
+              "llvm_sha256": "02ad9d342b61864349d0b907e5f946103195399bec6a8f307a1fa8075709d376",
+              "image_sha256": "706783734871771cd26ceea5c039d17c7d5bbed917c7788a4615fd110bb2d7b5",
+              "executable_sha256": "9bfc3dfc945d42772d295bc866a7f4dbc2d5bb8b65d5b898a1a4dba70668d9af",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "ce2551910ee91fb90878fbed6bfe7dd8c8e95bbbca614b2b44e7af1bc0cdaf8e",
+              "llvm_sha256": "3465c6e24968c506a13260aded3ae341f7bb3a6cfbacd3ca53615c09de16095f",
+              "image_sha256": "81e9c2d78b3216baebac8f4de527d4c9aea919a162d806a2d23bc3ec6727def6",
+              "executable_sha256": "eca41ae49e7c0ea0d540760920ab7bcea8413c0a384c2656532060e994227a38",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 0,
+                "destroyed": 0,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "resource-cell-cycle",
+          "source_sha256": "f5d37c4328f1c9ca3470d4f9eb85917ffa262896c9f10dcdbe59288a34d0667d",
+          "reference": {
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "return",
+            "live_delta": 0,
+            "output": "",
+            "remaining_cells": 0,
+            "remaining_nodes": 0,
+            "value": 42
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "d6c84792ed2dacae281ec3c53f6a3a676ed077dec4da945fafb39524a98e8f68",
+              "llvm_sha256": "fbcb4228dcc3e603d8e6c136198475b514867b791e9784c6754ac1e6de5bb81b",
+              "image_sha256": "8eefb7a5b052f2addb9ce20355a1501b0baeafb5a96944a13d4a82bf749c7f7a",
+              "executable_sha256": "020314e82bffd6fecced301aa97754e89cc7e7c5485d9f7857411681a072ceb3",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 80,
+                "destroyed": 80
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "4cb24fb432dc4cc2400c82b5c3bf91a4984ea7f0e00a5721be940856d81422f8",
+              "llvm_sha256": "f7c9e1656e56cc418486c6a8dbabd4502a1d33d5db4b575d73e308d8a47b5bda",
+              "image_sha256": "4be6105217e954facb404663c80a22b5393791bf155b9c0fff301277f034de99",
+              "executable_sha256": "ebe08ac9d0fba57afd16b8f7f58ee9cd59acee83dd3810e5fbd69df00dc51c65",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 320,
+                "destroyed": 320,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "95a001e20965b38a36dd12bd17b8d398a2099e19a285f7d0732043e4557cc1c3",
+              "llvm_sha256": "8ee62255b11664c745e4d6a9c25d03d1b6e27b79e033500837e9f0b526d67747",
+              "image_sha256": "7f5a4e7a059c9f77c96a5aa263cbbb8e307946f4cb04d640d9b9081f3b8a2aae",
+              "executable_sha256": "aeb9fbdf8fb5a4f68833644dde83b75f9c2b0d0bcd364e145f17de30677abf37",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 80,
+                "destroyed": 80
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "c9a5f3df9ee4d4461ee2ffe291d49bf374d50f96a6dbe20d1093f12d4016d1ec",
+              "llvm_sha256": "8d280024ac4de2d98522c258e0a6d5e0072034e49f05e73dac4ac9490de54931",
+              "image_sha256": "04ae0796ae3bdfc0c206b388d51594e2a821b7eed0983383533a84c104894b64",
+              "executable_sha256": "56f82298af94ecb636d39bc220c16593f118a2cbd29a5f98f2cb888434966806",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 320,
+                "destroyed": 320,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "mixed-owned-cell",
+          "source_sha256": "1b954c66132457960a0f83b179672c0699ebadaae574ddc60ba064b078c54bf3",
+          "reference": {
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "return",
+            "live_delta": 0,
+            "output": "",
+            "remaining_cells": 0,
+            "remaining_nodes": 0,
+            "value": 42
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "e30e41d0a16afa15bb3bd0ee7ba7e04fe2ad933f9301add49e1c1d644f5a7ac5",
+              "llvm_sha256": "62cb5b203783e98a392a627ec81e0a0dd6ed271615e0800b07e5b3e52d371663",
+              "image_sha256": "37dfe6b627738a3dc7162da622a4d8a246af820d85f54344334b73a35a4702a7",
+              "executable_sha256": "17a51ee4a2d126248d770593d2c664f1dfeb319822c79958b2a5d0c5832785b4",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 2,
+                "destroyed": 2
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "9ac22b3ff3254e6286a86fb77e05595104890f38a75eaccba096b0dc00774e37",
+              "llvm_sha256": "900945cb5924446ff312ece9b7379abe53717d144ee763e20e07012e3047a0e3",
+              "image_sha256": "4e80db9e2041b5439728a435715ce24b4669b79d7e7f226aad6049cd3056da99",
+              "executable_sha256": "5b85ac0a50358a77dc215c4b5a8cf3fea014bed0424b61b5d35821d2193d64bd",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 8,
+                "destroyed": 8,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "bffb0d7434204defd07d157bdcfbb13a2ebfabe757ea9eaa850a9c1862e90770",
+              "llvm_sha256": "6536d44a01cc7f7e70985a2401eb3b755e7dfa6cd47ae72da8f03bae31187eb2",
+              "image_sha256": "4b1d3ea6b4b4ceed15d29b4bdbe6d9f083b1064b64ae7f8b918b00118b7b6ee9",
+              "executable_sha256": "dd8ba722b1ce7b2eba7201b6e0104c379cc8a7155d784bcb64b1882182055bd3",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 2,
+                "destroyed": 2
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "82347d599371d771096522592c59fc68b19a2ec654f9ee9cabf84cc12d7beabc",
+              "llvm_sha256": "4108b497228e5da907052c302d1103e2fc61b6a94fd71eb49056e1cfe83355e9",
+              "image_sha256": "fba80a768f1561415a00506888287b13730075c5ac88ccbff47c35061453cc62",
+              "executable_sha256": "90167353f226ae944c727973a9db4b217e275294ff29e1d312c81565e85ad1ed",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 8,
+                "destroyed": 8,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "owned-cell-typed-error",
+          "source_sha256": "91edf5e4f466c9bbb1de42edc51bab678abb40f779d313dde61ae9f0a245f7e4",
+          "reference": {
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "return",
+            "live_delta": 0,
+            "output": "",
+            "remaining_cells": 0,
+            "remaining_nodes": 0,
+            "value": 42
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "ae1e8dfc5e9304bee96e7c2bc5fb73adb2fe6c9452e394d603ceb27393067dfa",
+              "llvm_sha256": "62c9e1f5847051eb337044032f6d28bced289b7bec021bac8ac09c3a0efc6267",
+              "image_sha256": "7745734e5d66bc26d9d877e60d0cd3507fb720c0f38125eaafa4ef8ce13138bb",
+              "executable_sha256": "f3aa478b68fb2d0e7821b78f94e407f474e7e5d865058630e089b79f65c8f941",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 1,
+                "destroyed": 1
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "6f5074574eac5ca8d0d0031b1309c87dc4243b10d26a2c75b14de4d3f6cce850",
+              "llvm_sha256": "fc5029a9c0f88918f403fbe4863f75a58c290ab4a13b2610b82789e3588c568f",
+              "image_sha256": "4614f867f10adb779c2c333b585a7ec315fe42dd73fbae62d3807595e810ff5f",
+              "executable_sha256": "aae297831105cfd3efa4b6608a0a9553776021cd27a99920e1ed2162f8e356b6",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 4,
+                "destroyed": 4,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": null,
+              "mlir_sha256": "3f1cbeba3ac7d676586244bc67a3b20fa599599f964fffb5ec2e9c10efb2feb0",
+              "llvm_sha256": "e358dcadbd1c7d8173e79676a86e0274a35ec235c146c70bb8c28e4756cfcc58",
+              "image_sha256": "12db85f08a114ae7e0d3faa89adc6c9cd61f8feeebb13356c2c2d777e4c0b8d7",
+              "executable_sha256": "49aef96e099673b779899111f6708dab3f13645cd23e2f6ec51d662cc8183d22",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 1,
+                "destroyed": 1
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": null,
+              "mlir_sha256": "9913b21ef4ddc77f64ee298ffc78332e15ab75e98674d06b6bde3b5f4d3c25b2",
+              "llvm_sha256": "2ec34cca6f442016ac9378f5e509d6219ceca5ed44d04e41deea137d5de1f16a",
+              "image_sha256": "f488534c83785646434f9258aa388f9f25c54ff1be12a0453718600d92063ed1",
+              "executable_sha256": "0de3f7c1f34f23b0d65737b0b380c745811cf56e285b2c6b4c27fdba74b99b99",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 4,
+                "destroyed": 4,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 2,
+                    "failed": false,
+                    "code": "",
+                    "result": 42,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "owned-cell-uncaught",
+          "source_sha256": "260b6ded8034216fd974a18c9ef9248cb1279f17026e832ead1f94cfabb6c002",
+          "reference": {
+            "code": "E_SOURCE_EXCEPTION",
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "trap",
+            "line": 8,
+            "live_delta": 0,
+            "message": "cell<Session>: typed source error",
+            "output": ""
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": "E_SOURCE_EXCEPTION",
+              "mlir_sha256": "2f6d94c015b0e487cc0e4b227932627188bd064497b621085142f453dffaa6a1",
+              "llvm_sha256": "cdb89f6c4c1135d1f7adb6b5c95163f1f33fa5059dfd114f1b34b4d0012b8f72",
+              "image_sha256": "de22312440c07d77f114c82ae0efbfbda259f184f155812f39a350a883cb8576",
+              "executable_sha256": "aadd6c5b8affc11e29211dadf97e5a60c7abab859c9130c1f27ee3d2448a30d5",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 1,
+                "destroyed": 1
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": "E_SOURCE_EXCEPTION",
+              "mlir_sha256": "b0e3874b8cb9b2bd595a8f87345279871d1ba3d114fbaac8890df7cf26bbac23",
+              "llvm_sha256": "a30b34d0987379b796f9914cdc3c9c95ab3a7c5a291eb5cbd348aa0d76abc4e2",
+              "image_sha256": "fc59137c8e186dca742ad1bace71cf5f9a3404fa475d5acde26a0fca85886801",
+              "executable_sha256": "363ca892f4bab63ffe5abeb25719c014e55acf83618921cab8c7dc5a4bd8f9ec",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 2,
+                "destroyed": 2,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 1,
+                    "failed": true,
+                    "code": "E_SOURCE_EXCEPTION",
+                    "result": 0,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 1,
+                    "failed": true,
+                    "code": "E_SOURCE_EXCEPTION",
+                    "result": 0,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": "E_SOURCE_EXCEPTION",
+              "mlir_sha256": "79f1746db7617569de7410cb4bb2d97b413e80e2839b733e1e5ca14f92d93f27",
+              "llvm_sha256": "c159962387bc1d58c024a2d6005038ae8bf05ec24c747aff8284df05105516df",
+              "image_sha256": "a4ea8c24ea82314e47add6c19acead11951a8e1b7d98ef257b4b8aaa3d004311",
+              "executable_sha256": "d5b18482afb4f844a466ae4aa0d4ac6851d9e9f0f77dd3158b13fc10f45076b4",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 1,
+                "destroyed": 1
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": "E_SOURCE_EXCEPTION",
+              "mlir_sha256": "30bf5063fdb87b34b68eec0a993ab470c58991ce6f8c68e25f592c3bf5a804ee",
+              "llvm_sha256": "9f9fd826975435781d573d477ec17ce641d6e64c23a8f8e9b79ce2f7282dd219",
+              "image_sha256": "bb7f9b39b9ac16366148d817c6d0ec072849384d00e191ee0725267ab67a3842",
+              "executable_sha256": "404ec1d54f3ef0052215e59c8fc637eecad820419490ec0adc356d8662a039d6",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 2,
+                "destroyed": 2,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 1,
+                    "failed": true,
+                    "code": "E_SOURCE_EXCEPTION",
+                    "result": 0,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 1,
+                    "failed": true,
+                    "code": "E_SOURCE_EXCEPTION",
+                    "result": 0,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "owned-cell-fatal",
+          "source_sha256": "3caffaa230f4c6e2a9cd7942a08b0d16d44cb4abd8e90ee3a576995a39ed5903",
+          "reference": {
+            "code": "E_ASSERT",
+            "external_bytes": 0,
+            "file_delta": 0,
+            "kind": "trap",
+            "line": 8,
+            "live_delta": 0,
+            "message": "assertion failed",
+            "output": ""
+          },
+          "runs": [
+            {
+              "optimization": "O0",
+              "context": "application",
+              "expected_error": "E_ASSERT",
+              "mlir_sha256": "0568e824df515631536d8aa5a5d8e7e9b67d0358f3813573a664f311a1dad9e5",
+              "llvm_sha256": "92742ff3ea700c67742c70c82be45f43bde450de44ac2db618c1fd970c13b76a",
+              "image_sha256": "f381833c0045e82c3fdf87935e9d6ae11ce66256a17cd3c26aae6f32fd176869",
+              "executable_sha256": "0f476b51b889326a9ae5fb9d13569983e4ab5fd362f94107f4eb79024e735635",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 1,
+                "destroyed": 1
+              }
+            },
+            {
+              "optimization": "O0",
+              "context": "request",
+              "expected_error": "E_ASSERT",
+              "mlir_sha256": "92b3321c47a7536d288aedcb60c6fd6d3d48009dea657ce50266bde3dd8b0a9d",
+              "llvm_sha256": "25a92575d28f207988fbca7daae31675c2bfa9fd82b9e676e048bc2c72336b6b",
+              "image_sha256": "70df659dd7c9c5da63fd0c023c9252077578e87bbc7ccc4564d3bcbdf86f8ed1",
+              "executable_sha256": "96d2c37c05bd98d82038b925a01490e56582e88427aa92acde776e699acc2b00",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 2,
+                "destroyed": 2,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 0,
+                    "failed": true,
+                    "code": "E_ASSERT",
+                    "result": 0,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 0,
+                    "failed": true,
+                    "code": "E_ASSERT",
+                    "result": 0,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "application",
+              "expected_error": "E_ASSERT",
+              "mlir_sha256": "115f47f9c079f6843f08d51579df01cfbb55878a6d5e40ca34bada9a310da6e0",
+              "llvm_sha256": "7dae514b7eafc830fb374fb55e4c7a465e5e692a1a82dd1f7650f7d953b7dcf8",
+              "image_sha256": "7e2bb3c9489ea58e2bf6041e4e2e3aeb5a944805222a73f53949fd8f8be3a580",
+              "executable_sha256": "8dfd1bdd1145b1c56157e800bbec8485b59b317abf365f6a9a0f4294a3d4e49c",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 1,
+                "destroyed": 1
+              }
+            },
+            {
+              "optimization": "O2",
+              "context": "request",
+              "expected_error": "E_ASSERT",
+              "mlir_sha256": "21d9014f14e3b4ccd9da0712cd78637b67134df2a04ecf2fca41bd680ec143dd",
+              "llvm_sha256": "a3167b699b881c53d45f5ab35a354b09802b274d158079c0ddb8bd2357cfdca9",
+              "image_sha256": "8facd66f260495a965320410bc2dc22046489513722b08bc68f5b29905118bfc",
+              "executable_sha256": "38b5d59a2bd7c65a77cc4963039e2fa213c749925fdc30fcb07d41f359c128ee",
+              "passed": true,
+              "matching_host_and_independent_executable": true,
+              "observation": {
+                "live_delta": 0,
+                "file_delta": 0,
+                "external_bytes": 0,
+                "created": 2,
+                "destroyed": 2,
+                "requests": [
+                  {
+                    "request": 0,
+                    "calls": 0,
+                    "failed": true,
+                    "code": "E_ASSERT",
+                    "result": 0,
+                    "live_delta": 0
+                  },
+                  {
+                    "request": 1,
+                    "calls": 0,
+                    "failed": true,
+                    "code": "E_ASSERT",
+                    "result": 0,
+                    "live_delta": 0
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "retained_backends": {
+      "application": {
+        "path": "build/managed-reference-native-0.260.0-acceptance/report.json",
+        "sha256": "30d14df2c48103edc265d7b32d70dc42b97ab8d16e798a85930e5ce4b6d26bf4",
+        "cases": 84,
+        "probe_sha256": "bc0ff64e7250a97da6c5171e2a8446c1793a714592def303ae196958b03a7bc7",
+        "public_source_enabled": false
+      },
+      "modules": {
+        "path": "build/managed-reference-modules-native-0.260.0-acceptance/report.json",
+        "sha256": "4c6eec0bcfb48eb8233867178738375dc15d79eeaa7277a8238d81747197599c",
+        "cases": 20,
+        "probe_sha256": "bc0ff64e7250a97da6c5171e2a8446c1793a714592def303ae196958b03a7bc7",
+        "public_source_enabled": false
+      },
+      "requests": {
+        "path": "build/managed-reference-requests-native-0.260.0-acceptance/report.json",
+        "sha256": "c6f9b84544c704b869ce63a1f16c268564e304191647d69299b5d67122289961",
+        "cases": 22,
+        "probe_sha256": "bc0ff64e7250a97da6c5171e2a8446c1793a714592def303ae196958b03a7bc7",
+        "public_source_enabled": false,
+        "controls": [
+          {
+            "optimization": "O0",
+            "control": "budget",
+            "code": "E_LIMIT",
+            "requests": [
+              {
+                "request": 0,
+                "calls": 0,
+                "failed": true,
+                "code": "E_LIMIT",
+                "result": 0,
+                "live_delta": 0
+              },
+              {
+                "request": 1,
+                "calls": 0,
+                "failed": true,
+                "code": "E_LIMIT",
+                "result": 0,
+                "live_delta": 0
+              }
+            ],
+            "passed": true
+          },
+          {
+            "optimization": "O0",
+            "control": "cancel",
+            "code": "E_CANCELLED",
+            "requests": [
+              {
+                "request": 0,
+                "calls": 0,
+                "failed": true,
+                "code": "E_CANCELLED",
+                "result": 0,
+                "live_delta": 0
+              },
+              {
+                "request": 1,
+                "calls": 0,
+                "failed": true,
+                "code": "E_CANCELLED",
+                "result": 0,
+                "live_delta": 0
+              }
+            ],
+            "passed": true
+          },
+          {
+            "optimization": "O0",
+            "control": "deadline",
+            "code": "E_TIMEOUT",
+            "requests": [
+              {
+                "request": 0,
+                "calls": 0,
+                "failed": true,
+                "code": "E_TIMEOUT",
+                "result": 0,
+                "live_delta": 0
+              },
+              {
+                "request": 1,
+                "calls": 0,
+                "failed": true,
+                "code": "E_TIMEOUT",
+                "result": 0,
+                "live_delta": 0
+              }
+            ],
+            "passed": true
+          },
+          {
+            "optimization": "O2",
+            "control": "budget",
+            "code": "E_LIMIT",
+            "requests": [
+              {
+                "request": 0,
+                "calls": 0,
+                "failed": true,
+                "code": "E_LIMIT",
+                "result": 0,
+                "live_delta": 0
+              },
+              {
+                "request": 1,
+                "calls": 0,
+                "failed": true,
+                "code": "E_LIMIT",
+                "result": 0,
+                "live_delta": 0
+              }
+            ],
+            "passed": true
+          },
+          {
+            "optimization": "O2",
+            "control": "cancel",
+            "code": "E_CANCELLED",
+            "requests": [
+              {
+                "request": 0,
+                "calls": 0,
+                "failed": true,
+                "code": "E_CANCELLED",
+                "result": 0,
+                "live_delta": 0
+              },
+              {
+                "request": 1,
+                "calls": 0,
+                "failed": true,
+                "code": "E_CANCELLED",
+                "result": 0,
+                "live_delta": 0
+              }
+            ],
+            "passed": true
+          },
+          {
+            "optimization": "O2",
+            "control": "deadline",
+            "code": "E_TIMEOUT",
+            "requests": [
+              {
+                "request": 0,
+                "calls": 0,
+                "failed": true,
+                "code": "E_TIMEOUT",
+                "result": 0,
+                "live_delta": 0
+              },
+              {
+                "request": 1,
+                "calls": 0,
+                "failed": true,
+                "code": "E_TIMEOUT",
+                "result": 0,
+                "live_delta": 0
+              }
+            ],
+            "passed": true
+          }
+        ]
+      },
+      "typescript": {
+        "path": "build/managed-reference-typescript-0.260.0-acceptance/report.json",
+        "sha256": "206b598a610ad5b16d6cfa247811f5ae4e656d776a3fb6d3ee0ebb0977e032cb",
+        "cases": 44,
+        "probe_sha256": "bbadcb9307cb8ad24961c0572711890121291bac4cfa9f43439d84b374fbba80",
+        "public_source_enabled": false,
+        "gates": {
+          "ok": true,
+          "rejected": 11,
+          "reachable_only": true
+        },
+        "runtime_sources": {
+          "nex-runtime.ts": "88db42c861d0aeec44cfe9f4b0cc7bd38ba5de95b29f6dbe6d142dd5b8c00fd2",
+          "nex-bytes.ts": "f2d020fd01cb6fef744037cffeeea4852330c8f48525c64a1a36211bebb1068d",
+          "nex-managed-heap.ts": "7288cc5a9ce67f637709e6eb68db8d70f4b185de530690afc6c357e57ee6c582",
+          "nex-managed-context.ts": "62d6e0b818b945b6065da38a8c9bbaebee7c7fbde294e307e826482b7ac088e4",
+          "nex-managed-runtime.ts": "d25cfa5a5fb9ce314880ff81adcc60ddbf85404feae97715c64eac874e621447"
+        },
+        "node_sha256": "5d9d3872911e2340a43b707962e68143de8a4e8d54628845c0c4f2de1fb7cd5c",
+        "tsc_sha256": "2219f428a7e55aaf1f7ad85b9b0f0cf5078aeb76ccc9a7c6036c92d48f492ffd"
+      },
+      "typescript_modules": {
+        "path": "build/managed-reference-modules-typescript-0.260.0-acceptance/report.json",
+        "sha256": "cfe8a2ecac61689878a33296e3ef6898d78bf1f760b29320a212c86ab5ed6296",
+        "cases": 10,
+        "probe_sha256": "bbadcb9307cb8ad24961c0572711890121291bac4cfa9f43439d84b374fbba80",
+        "public_source_enabled": false,
+        "gates": {
+          "ok": true,
+          "rejected": 11,
+          "reachable_only": true
+        },
+        "runtime_sources": {
+          "nex-runtime.ts": "88db42c861d0aeec44cfe9f4b0cc7bd38ba5de95b29f6dbe6d142dd5b8c00fd2",
+          "nex-bytes.ts": "f2d020fd01cb6fef744037cffeeea4852330c8f48525c64a1a36211bebb1068d",
+          "nex-managed-heap.ts": "7288cc5a9ce67f637709e6eb68db8d70f4b185de530690afc6c357e57ee6c582",
+          "nex-managed-context.ts": "62d6e0b818b945b6065da38a8c9bbaebee7c7fbde294e307e826482b7ac088e4",
+          "nex-managed-runtime.ts": "d25cfa5a5fb9ce314880ff81adcc60ddbf85404feae97715c64eac874e621447"
+        },
+        "node_sha256": "5d9d3872911e2340a43b707962e68143de8a4e8d54628845c0c4f2de1fb7cd5c",
+        "tsc_sha256": "2219f428a7e55aaf1f7ad85b9b0f0cf5078aeb76ccc9a7c6036c92d48f492ffd"
+      }
+    },
+    "language_pack": {
+      "ok": true,
+      "shared_fields": [
+        "browser_workers",
+        "bytes_construction",
+        "cli_interface",
+        "compute",
+        "device",
+        "diagnostic_catalogue",
+        "dns_provider",
+        "effect_parameters",
+        "features_scope",
+        "foreign_trap_reporting",
+        "generic_features",
+        "gpu_codegen",
+        "http_client_provider",
+        "http_response_streams",
+        "http_storage_transactions",
+        "language_pack_contract",
+        "list_construction",
+        "llm_cost",
+        "llm_entry",
+        "managed_references",
+        "model",
+        "native_application_lifetime",
+        "native_core",
+        "native_debug_image_binding",
+        "native_debug_pages",
+        "native_debug_session",
+        "native_entry_abi",
+        "native_runtime_search",
+        "native_tool_arguments",
+        "opencl_codegen",
+        "patch_entities",
+        "project_capture_layout",
+        "resource_executor",
+        "resource_regions",
+        "result_propagation",
+        "runtime_contracts",
+        "runtime_diagnostic_messages",
+        "scoped_discovery",
+        "source_concurrency",
+        "source_contracts",
+        "source_contracts_development",
+        "source_exception_prototype",
+        "source_exceptions",
+        "source_formatting",
+        "source_resources",
+        "standard_library",
+        "structured_tasks_runtime",
+        "task_debugging",
+        "task_execution_limits",
+        "task_external_completion",
+        "task_file_reads",
+        "task_file_streams",
+        "task_file_streams_host",
+        "task_file_streams_prototype",
+        "task_file_writes",
+        "task_file_writes_host",
+        "task_file_writes_prototype",
+        "task_foreign_prototype",
+        "task_network_transport",
+        "task_profile_collector",
+        "task_profiling",
+        "task_provider_debugging",
+        "task_provider_profiling",
+        "task_providers",
+        "task_shared_providers",
+        "task_value_retirement",
+        "tcp_provider",
+        "text_construction",
+        "wasm_features"
+      ],
+      "shared_field_count": 69,
+      "compared_JSON_values": 4142,
+      "errors": [],
+      "schema": "nex.language-pack-validation/1",
+      "compiler_sha256": "bf93cf5c9b672942bfc20d0496e1476479b91352c1adff74cda14b8280c6e913",
+      "manifest_sha256": "9fd3c94491cfdc01b458fc43952c580bef9fdfee04331211b25e4e291a1698b7",
+      "language": "0.28",
+      "toolchain": "0.260.0",
+      "compiler_build": "691013089d2980fd4fd574f2d9e451eac227fe9e07eea52bc0bf0f249796da36",
+      "descriptor_hash": "997d517dcb394164bd49f7b972ea6d2282da839d8c27e8746b67d9a0d36869c3"
+    },
+    "installed": {
+      "public_and_resources": {
+        "ok": true,
+        "compiler_sha256": "bf93cf5c9b672942bfc20d0496e1476479b91352c1adff74cda14b8280c6e913",
+        "compiler_build": "691013089d2980fd4fd574f2d9e451eac227fe9e07eea52bc0bf0f249796da36",
+        "descriptor_hash": "997d517dcb394164bd49f7b972ea6d2282da839d8c27e8746b67d9a0d36869c3",
+        "runtime": "/Users/sae/projects/NEX/build/managed-owned-v1/SDK moved 🧠/share/nex/runtime/runtime.cpp",
+        "installed_resource_sha256": {
+          "runtime/runtime.cpp": "e59311f5c2a000bb533056750ef7f71c3c5f24fc261fd1b902fcba3aaa7f56d0",
+          "runtime/nex_files.cpp": "c37f6492f5891db8c017e24d74dbc6e63a705ea629c3604273217fbdd63845d4",
+          "runtime/nex_foreign.cpp": "f6354a79a47b42d1a092bcd9aa0274ad4a3e3745e4a2c46dc65f9c46f622ffed",
+          "runtime/nex_host.h": "f293383f8a4dfa226549169065e52cde4471e46e422ff5726afc25ce3d4c7fcb",
+          "runtime/nex_cell_host.cpp": "69e95f8be36c3a9cb4d2ef6db2340264bdd814d324d08ffad2e582da1b930692",
+          "tests/managed_reference_resources.py": "c006ef72978298cc88aea4add47721502fcdf31bc523965a5264d007aed0f07c",
+          "tests/managed_reference_resource_cases.py": "a6685b2ce6fbe54abfa17ad0907490c63ef3884ab7e67bfb219ac55585f56bea",
+          "tests/managed_reference_resources.cpp": "8952b6843dd6cdaf6dba9b71e305b278658bad0b685804bc3d703d0a7bdf0746",
+          "tests/managed_cell_resources.cpp": "56496315c0aaea5a528d4df63c4863aef0d47e9c18df1069f53229ec9f2cadc2",
+          "runtime/nex_cells.cpp": "f009588f1f83dc8b8e5028f98cda518d4aa2c684afe1521ce41906bb7ccdb291",
+          "tests/managed_reference_resource_host.h": "1884f93dd526e4ab5cfab19a41fdda1474434fa8816bef6fae1e27a85a7ba7f5",
+          "tests/source_exception_host.py": "dcc1012a60f45b7447227439f8c0d2d1dae8b9196dba82d2a3e36c2e03e6250d",
+          "tests/host_file_observers.h": "f9b516ab9f7c3aca98d73e2fd3e6e5a898976a5ad2ec898cbeef769761c02d8b",
+          "llm/language-pack.json": "9fd3c94491cfdc01b458fc43952c580bef9fdfee04331211b25e4e291a1698b7"
+        },
+        "public_project_language": "0.29",
+        "public_entry": "src/main.nex",
+        "public_commands": [
+          {
+            "command": [
+              "check",
+              "--json"
+            ],
+            "passed": true
+          },
+          {
+            "command": [
+              "eval",
+              "--json"
+            ],
+            "passed": true
+          },
+          {
+            "command": [
+              "run",
+              "--profile",
+              "release",
+              "--json"
+            ],
+            "passed": true
+          },
+          {
+            "command": [
+              "test",
+              "--json"
+            ],
+            "passed": true
+          }
+        ],
+        "limitation": "normal relocated CMake installation with retained host dependencies; public portable SDK0.246.1 is unchanged"
+      },
+      "independent_kernel": {
+        "ok": true,
+        "result": {
+          "ok": true,
+          "cases": 30,
+          "source_type_enabled": false,
+          "live_value_delta": 0
+        },
+        "command": [
+          "/opt/homebrew/opt/llvm@22/bin/clang++",
+          "-std=c++20",
+          "-O2",
+          "-pthread",
+          "-I",
+          "/Users/sae/projects/NEX/build/managed-owned-v1/SDK moved 🧠/share/nex/runtime",
+          "/Users/sae/projects/NEX/build/managed-owned-v1/SDK moved 🧠/share/nex/tests/cells.cpp",
+          "/Users/sae/projects/NEX/build/managed-owned-v1/SDK moved 🧠/share/nex/tests/managed_cell_resources.cpp",
+          "/Users/sae/projects/NEX/build/managed-owned-v1/SDK moved 🧠/share/nex/runtime/nex_cells.cpp",
+          "/Users/sae/projects/NEX/build/managed-owned-v1/SDK moved 🧠/share/nex/runtime/nex_files.cpp",
+          "/Users/sae/projects/NEX/build/managed-owned-v1/SDK moved 🧠/share/nex/runtime/nex_external_resource.cpp",
+          "/Users/sae/projects/NEX/build/managed-owned-v1/SDK moved 🧠/share/nex/runtime/nex_resource_region.cpp",
+          "/Users/sae/projects/NEX/build/managed-owned-v1/SDK moved 🧠/share/nex/runtime/nex_resource_executor.cpp",
+          "-o",
+          "/Users/sae/projects/NEX/build/managed-owned-v1/installed-kernel"
+        ],
+        "executable_sha256": "2eab19a67d6fc0c9b1f350957771d8c84980a69a38c34365a4790eba48d29856",
+        "input_sha256": {
+          "tests/cells.cpp": "2eae57c367f7096ea7b136912b835a193cc1a3b88deeb8058f2dcd926e32c686",
+          "tests/managed_cell_resources.cpp": "56496315c0aaea5a528d4df63c4863aef0d47e9c18df1069f53229ec9f2cadc2",
+          "runtime/nex_cells.cpp": "f009588f1f83dc8b8e5028f98cda518d4aa2c684afe1521ce41906bb7ccdb291",
+          "runtime/nex_files.cpp": "c37f6492f5891db8c017e24d74dbc6e63a705ea629c3604273217fbdd63845d4",
+          "runtime/nex_external_resource.cpp": "72bdf45f36bca279447b1f48fa4ad56878a925e970177ad0a47f4c0a110592a2",
+          "runtime/nex_resource_region.cpp": "32588dace81f19cf179d14df3d7f86be8bb21b772fd6262bf1ca572625943ba1",
+          "runtime/nex_resource_executor.cpp": "b8cde6d63d934896cf1c16a27061b7fc979e909482936659fd29cba9749f197c"
+        },
+        "libraries": "/Users/sae/projects/NEX/build/managed-owned-v1/installed-kernel:\n\t/usr/lib/libc++.1.dylib (compatibility version 1.0.0, current version 2200.27.0)\n\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1359.0.0)\n"
+      },
+      "source_matrix": {
+        "path": "build/managed-owned-v1/installed-native/report.json",
+        "sha256": "b2ed49db39ac837a4851180cbac374cbbdb266a9d4e13e99a360dab50fa10be7",
+        "result": {
+          "schema": "nex.managed-reference-resource-agreement/1",
+          "ok": true,
+          "public_source_enabled": false,
+          "private_language": "0.30-refs-prototype",
+          "probe_sha256": "bc0ff64e7250a97da6c5171e2a8446c1793a714592def303ae196958b03a7bc7",
+          "compiler_sha256": "68bb87f784f09da01b7aea0f70952fb23f606242cdc4f6ff3cc26c372af0706f",
+          "runtime_source_tree_sha256": "0f96bd323045436f6a06a1318e5b91d7a8cb6a817f8a4fce3f7d7a0efaf42be5",
+          "selected_cases": [
+            "file-cell-snapshots",
+            "resource-cell-cycle",
+            "owned-cell-typed-error",
+            "owned-cell-uncaught",
+            "owned-cell-fatal"
+          ],
+          "source_programs": 5,
+          "native_comparisons": 20,
+          "machine_runs": 40,
+          "source_sha256": {
+            "managed_reference_resources.py": "c006ef72978298cc88aea4add47721502fcdf31bc523965a5264d007aed0f07c",
+            "managed_reference_resource_cases.py": "a6685b2ce6fbe54abfa17ad0907490c63ef3884ab7e67bfb219ac55585f56bea",
+            "managed_reference_resources.cpp": "8952b6843dd6cdaf6dba9b71e305b278658bad0b685804bc3d703d0a7bdf0746",
+            "managed_reference_resource_host.h": "1884f93dd526e4ab5cfab19a41fdda1474434fa8816bef6fae1e27a85a7ba7f5",
+            "source_exception_host.py": "dcc1012a60f45b7447227439f8c0d2d1dae8b9196dba82d2a3e36c2e03e6250d",
+            "host_file_observers.h": "f9b516ab9f7c3aca98d73e2fd3e6e5a898976a5ad2ec898cbeef769761c02d8b"
+          },
+          "runtime_objects": {
+            "0": {
+              "runtime.cpp.o": "40c9f8ef0b0045a6bebf522b00cf9ad987397f4650a7340de885d114325041d0",
+              "nex_cells.cpp.o": "71bc51143e0b7ce73c4a35598c2eddfa3e4456571a8641ce7da4bfdc39aa9fc1",
+              "nex_cell_host.cpp.o": "af51099a0b5a69150f03cf174fcf180b5de89664edda85357a92ba1cabc3ab9e",
+              "nex_files.cpp.o": "09872204ed1e3124571abcf9e6891d0666404a225a0479cfaa97cd61e04de2b0",
+              "files_runtime.cpp.o": "c274c8265f71e22869b85998d912865c01f65bb0c87b00232829363d83c20e34",
+              "foreign_runtime.cpp.o": "c3e0be96bb5596993b5b9300ba1f23d5e4477c4045ef74ff180b5796acaa28a8",
+              "nex_foreign.cpp.o": "0b08ebe69259b378562f68e2d4097d0081fa03001f253f195600a6d4232eb866",
+              "nex_ffi_loader.cpp.o": "8ed3d340851375e7c5f67ec7a2a7ce065822a9fb4fed644ec5cf70dad5523ba5",
+              "nex_ffi.cpp.o": "30d1684c1038443bf9e890c77dd657c22b530830abc00752adb4bb83878b7b33",
+              "nex_ffi_types.cpp.o": "2157dcff59c95d6721e25e41cdde62c2a5226e7c2f85c7459b1830491dcc473b",
+              "nex_ffi_resources.cpp.o": "56b391cc6aa3b8cafcd4d8891330cc08c2924e28b7937cb26cf12d356b311cca",
+              "nex_external_resource.cpp.o": "73595ebeb23d36f448b4f2e012d229de8e707bdf1cdee315a7997bb1301b5598",
+              "nex_resource_region.cpp.o": "2b32fe152286da963fd05a2c736555740c623401617298ceed54673f4bb2835a",
+              "nex_resource_executor.cpp.o": "d5e60b7fa9dcfca841062858212ed894a2c48c641be4a11c8b4f6714e809264d",
+              "nex_json.cpp.o": "d27646de7ca7d3daca0ee2ab34e973478b2aabe06b8d3e5ac48bd284b0c68c2f",
+              "wire_runtime.cpp.o": "882803a1b4dc1006872536a306162e4c266b0e56f3c1bf98c6a73982f7c8f86b"
+            },
+            "2": {
+              "runtime.cpp.o": "0f1a407def58b1863a1ce2171a9c55839f1d6c63c101205d40a6a1c4121b1da6",
+              "nex_cells.cpp.o": "276fdbe3893d02a1c1db779afd62fa7eac217706b14e34b0678da377e5c619fe",
+              "nex_cell_host.cpp.o": "90990a7f7ce771c842206e013f9b35710be538c3924e260b49830faf1aadb098",
+              "nex_files.cpp.o": "32bc81945feeba68eeeeab0482bb3e8d67ea39b83e13740e41fbb44f94e32163",
+              "files_runtime.cpp.o": "d0d31b7fb0257465aad42363906442bdf1e62d48d1639bbe2a74214b34ee1cb9",
+              "foreign_runtime.cpp.o": "ed7356a09771b801644859a5f2442c8a4f15f466ad0637555547622b28543fcc",
+              "nex_foreign.cpp.o": "b0353dc896b6776a1fa8ce0df3eaf87e2e7365c5b32240e063e92d3780caa394",
+              "nex_ffi_loader.cpp.o": "83daf6ea69aacf944c0472e0d0edffee21cea2607288e8b9d88bb52a78b1827b",
+              "nex_ffi.cpp.o": "0ac18112ad2f9a715bb46330a144022ed51374cbb12f395ea922d0fc5ae11b8a",
+              "nex_ffi_types.cpp.o": "5a9a64e8a328460fd6ae1bb14f680388eac4a6ba90874bbe2d200a770e767a89",
+              "nex_ffi_resources.cpp.o": "8c58cf851535502545c4167834d6a85133c3bbe31d06a20987f7889a3140cabd",
+              "nex_external_resource.cpp.o": "704b3f783ca4e3737a63ae74ee9c83e1bef839d86587d7efac37fc26ecca8bde",
+              "nex_resource_region.cpp.o": "08615c57dd290aea13c04bb78fb5dc0d05a308c11538db6f9ce50fdf503b095b",
+              "nex_resource_executor.cpp.o": "d9a58e2e17d8c772d3c151dbce273a8b47f68e97fcda98e9388f3e907c6e8d69",
+              "nex_json.cpp.o": "f7a745e6e7377fd9d688a8cab3bdaa6c9cd67b8ca948cb5a17fa0caa9fc031af",
+              "wire_runtime.cpp.o": "7489ba0d3ab64740a08295ad1c9077f83bf44a1cba42f015c7f8dd2cd0b94831"
+            }
+          }
+        },
+        "programs": [
+          {
+            "name": "file-cell-snapshots",
+            "source_sha256": "1f3a5b21636763548671b8a2ce80c6b1a43eb1f3e92dd48b69d2980c39ca3bc9",
+            "reference": {
+              "external_bytes": 0,
+              "file_delta": 0,
+              "kind": "return",
+              "live_delta": 0,
+              "output": "",
+              "remaining_cells": 0,
+              "remaining_nodes": 0,
+              "value": 42
+            },
+            "runs": [
+              {
+                "optimization": "O0",
+                "context": "application",
+                "expected_error": null,
+                "mlir_sha256": "39717950b6a077ed8ba3cf31ed60608208b41e0851f71b15c8f4844458dcd668",
+                "llvm_sha256": "90bbd9174206b69050d27800281e249ee54ca6467b50aafd68ab0de4cef21e37",
+                "image_sha256": "c7d1ef93686fc0500b8e7e64d8c03f87ae73dd8ce7ff8ff8f87fec323d14f49b",
+                "executable_sha256": "48c2540f5f3340fc5f1596bb43c7ac210acf868b327bf1b05c7f183eb5af99e8",
+                "passed": true,
+                "matching_host_and_independent_executable": true,
+                "observation": {
+                  "live_delta": 0,
+                  "file_delta": 0,
+                  "external_bytes": 0,
+                  "created": 0,
+                  "destroyed": 0
+                }
+              },
+              {
+                "optimization": "O0",
+                "context": "request",
+                "expected_error": null,
+                "mlir_sha256": "b6cb7ef14afe1b0cec57f26d10b63811efa8534f2a93529a7e962039cda42974",
+                "llvm_sha256": "716b1d74f8921ca3b8e92d7e17fd43b81fe786a73b4cbf98f438441d5225eb54",
+                "image_sha256": "b30379f6f1f59a72010d7893b10ad05f76255c2b65512d1b68e04fa1d5e08e75",
+                "executable_sha256": "1c879aedf2b4cd30a157800b42ca52f6d6e70afc96216fe53b0c6ca044d11efc",
+                "passed": true,
+                "matching_host_and_independent_executable": true,
+                "observation": {
+                  "live_delta": 0,
+                  "file_delta": 0,
+                  "external_bytes": 0,
+                  "created": 0,
+                  "destroyed": 0,
+                  "requests": [
+                    {
+                      "request": 0,
+                      "calls": 2,
+                      "failed": false,
+                      "code": "",
+                      "result": 42,
+                      "live_delta": 0
+                    },
+                    {
+                      "request": 1,
+                      "calls": 2,
+                      "failed": false,
+                      "code": "",
+                      "result": 42,
+                      "live_delta": 0
+                    }
+                  ]
+                }
+              },
+              {
+                "optimization": "O2",
+                "context": "application",
+                "expected_error": null,
+                "mlir_sha256": "a57d17ace03ad4e5f46cccee9512317242847a74ef2ecdee1e842f7719392a2d",
+                "llvm_sha256": "2f942e0ae3790352ead0661352b9353cb05a0400ded6f0403255cec7b0174b81",
+                "image_sha256": "6fc354765983cbc564d7b0cb401f02e39dadbcb226d64358627ea09babeed9dc",
+                "executable_sha256": "e1e0413359e81a4a59d796e9cf6e95826d05651a9e6b58ba688710f90f775e97",
+                "passed": true,
+                "matching_host_and_independent_executable": true,
+                "observation": {
+                  "live_delta": 0,
+                  "file_delta": 0,
+                  "external_bytes": 0,
+                  "created": 0,
+                  "destroyed": 0
+                }
+              },
+              {
+                "optimization": "O2",
+                "context": "request",
+                "expected_error": null,
+                "mlir_sha256": "affdf26e36ccd12bbb5aaf90c9ae059b581ad64ab8c308b5c0ee9bc843c0886e",
+                "llvm_sha256": "7f713303e6d16b42c570c3c6cbf1b3ca6fbae373607508e47f24053e19495415",
+                "image_sha256": "4124bf25fed40a012f390b1fac7f27d01fd464039f2bebc4e3f539e1a489522b",
+                "executable_sha256": "18d03ee6323152b08b2b658419c85ea04d0c2704b7412879daf10af2398ec85d",
+                "passed": true,
+                "matching_host_and_independent_executable": true,
+                "observation": {
+                  "live_delta": 0,
+                  "file_delta": 0,
+                  "external_bytes": 0,
+                  "created": 0,
+                  "destroyed": 0,
+                  "requests": [
+                    {
+                      "request": 0,
+                      "calls": 2,
+                      "failed": false,
+                      "code": "",
+                      "result": 42,
+                      "live_delta": 0
+                    },
+                    {
+                      "request": 1,
+                      "calls": 2,
+                      "failed": false,
+                      "code": "",
+                      "result": 42,
+                      "live_delta": 0
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "name": "resource-cell-cycle",
+            "source_sha256": "acf53239e42943e7d61d0414dfd7484b51122e741ec23e725d5cb4ff58194806",
+            "reference": {
+              "external_bytes": 0,
+              "file_delta": 0,
+              "kind": "return",
+              "live_delta": 0,
+              "output": "",
+              "remaining_cells": 0,
+              "remaining_nodes": 0,
+              "value": 42
+            },
+            "runs": [
+              {
+                "optimization": "O0",
+                "context": "application",
+                "expected_error": null,
+                "mlir_sha256": "df12de7d82546f90b05683d4f15ed24c4a1013dd607fe3f1a65ccf0655424e1c",
+                "llvm_sha256": "4d9047e62559b3270aa68640af79ae6723a341571488d97e9a30938bbfe0b0c8",
+                "image_sha256": "9adc0572ec348f71f4a8ca779d62bd86bab478e33fc80660f5ae75bcf0939801",
+                "executable_sha256": "4bbfe27ef3461f6792c9cf8690df29351054752638e97664a38b78c787f2e631",
+                "passed": true,
+                "matching_host_and_independent_executable": true,
+                "observation": {
+                  "live_delta": 0,
+                  "file_delta": 0,
+                  "external_bytes": 0,
+                  "created": 80,
+                  "destroyed": 80
+                }
+              },
+              {
+                "optimization": "O0",
+                "context": "request",
+                "expected_error": null,
+                "mlir_sha256": "7a1dfc819e0ae0b0474691d6d5155aa1089894b34f81d9572e30161802cd9046",
+                "llvm_sha256": "be1728821e8ea093313b0f1b3e181af7556d934a818db9f5b05d0f9326f94273",
+                "image_sha256": "99927134d98c81e82432fd6291eba8d3ade120be39d5cfcb04c97bfe94502ae7",
+                "executable_sha256": "c82190bf1ebc2cc9268c1b5370062f59de9ba74e2f4360d57b58543499d3dd54",
+                "passed": true,
+                "matching_host_and_independent_executable": true,
+                "observation": {
+                  "live_delta": 0,
+                  "file_delta": 0,
+                  "external_bytes": 0,
+                  "created": 320,
+                  "destroyed": 320,
+                  "requests": [
+                    {
+                      "request": 0,
+                      "calls": 2,
+                      "failed": false,
+                      "code": "",
+                      "result": 42,
+                      "live_delta": 0
+                    },
+                    {
+                      "request": 1,
+                      "calls": 2,
+                      "failed": false,
+                      "code": "",
+                      "result": 42,
+                      "live_delta": 0
+                    }
+                  ]
+                }
+              },
+              {
+                "optimization": "O2",
+                "context": "application",
+                "expected_error": null,
+                "mlir_sha256": "e43491b0f77bfee4da7e07faffba313b7119abedaaa7055e0c1d9e87bdeeed23",
+                "llvm_sha256": "15960575f261e391182e7fee694d38aaaa471a82085ca8fac7091939b3b4e3af",
+                "image_sha256": "845865b94eca0fa1b9f0b556112279aaabcdb6a0041b09df0b0181a372160b7d",
+                "executable_sha256": "43369b6c80a52507280da3ac6ba451ab40b425e3edc0201edb151e1cea42ec2d",
+                "passed": true,
+                "matching_host_and_independent_executable": true,
+                "observation": {
+                  "live_delta": 0,
+                  "file_delta": 0,
+                  "external_bytes": 0,
+                  "created": 80,
+                  "destroyed": 80
+                }
+              },
+              {
+                "optimization": "O2",
+                "context": "request",
+                "expected_error": null,
+                "mlir_sha256": "b199c319f4f44aafc49898984a9935b155e83524b80450b79f0552ac26dadf94",
+                "llvm_sha256": "83e980e9ba9b1cf6ef82c9b344225123e05ff03a6ff59c11c7f76bbbe93d8ef3",
+                "image_sha256": "2dcf849fce349a24482b8ba9b4efe00631484fe1164dbd23baf86ba15e422f85",
+                "executable_sha256": "2d5925b99ca2b598d65a6dff73a32fd7ee702c7cc446bb97d8ee2411fdcc9002",
+                "passed": true,
+                "matching_host_and_independent_executable": true,
+                "observation": {
+                  "live_delta": 0,
+                  "file_delta": 0,
+                  "external_bytes": 0,
+                  "created": 320,
+                  "destroyed": 320,
+                  "requests": [
+                    {
+                      "request": 0,
+                      "calls": 2,
+                      "failed": false,
+                      "code": "",
+                      "result": 42,
+                      "live_delta": 0
+                    },
+                    {
+                      "request": 1,
+                      "calls": 2,
+                      "failed": false,
+                      "code": "",
+                      "result": 42,
+                      "live_delta": 0
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "name": "owned-cell-typed-error",
+            "source_sha256": "dd54cc62dea63e5e35ab5503736e80bd4e4297ff69315c59a7ed1264d484b814",
+            "reference": {
+              "external_bytes": 0,
+              "file_delta": 0,
+              "kind": "return",
+              "live_delta": 0,
+              "output": "",
+              "remaining_cells": 0,
+              "remaining_nodes": 0,
+              "value": 42
+            },
+            "runs": [
+              {
+                "optimization": "O0",
+                "context": "application",
+                "expected_error": null,
+                "mlir_sha256": "7de9ccab21bbacadcbb0e416ab234d132a6746a625a715d6764eeb283d1ac119",
+                "llvm_sha256": "bd4e74f193d10164da57b748d9e77c38c77c11e05e65d34540ea96b292c2853b",
+                "image_sha256": "79a166a2296823117330707d266bfb5118e3275cb17358d6d314e43e2e92f1bb",
+                "executable_sha256": "ea8e45149577642421f9239f54116fb1175e130bf6f93aeae8bf33c831bab91c",
+                "passed": true,
+                "matching_host_and_independent_executable": true,
+                "observation": {
+                  "live_delta": 0,
+                  "file_delta": 0,
+                  "external_bytes": 0,
+                  "created": 1,
+                  "destroyed": 1
+                }
+              },
+              {
+                "optimization": "O0",
+                "context": "request",
+                "expected_error": null,
+                "mlir_sha256": "1a19e5f169fe9f5958caf5ae012a00f7ce1a954d1ec3603310f55fd5024f9e4a",
+                "llvm_sha256": "bc0f253059f9854f71d7243816d5f9b95b6fa480dc25b8a865e1e7ecefffe114",
+                "image_sha256": "56e72677d6524d4dc630107428fee0e08dcc81bea04c00cbb40eba4bf2e9b579",
+                "executable_sha256": "13a28019202e3e984e783cc78a0a14727ef206b6a4b7d449bb05abf42fb5ed57",
+                "passed": true,
+                "matching_host_and_independent_executable": true,
+                "observation": {
+                  "live_delta": 0,
+                  "file_delta": 0,
+                  "external_bytes": 0,
+                  "created": 4,
+                  "destroyed": 4,
+                  "requests": [
+                    {
+                      "request": 0,
+                      "calls": 2,
+                      "failed": false,
+                      "code": "",
+                      "result": 42,
+                      "live_delta": 0
+                    },
+                    {
+                      "request": 1,
+                      "calls": 2,
+                      "failed": false,
+                      "code": "",
+                      "result": 42,
+                      "live_delta": 0
+                    }
+                  ]
+                }
+              },
+              {
+                "optimization": "O2",
+                "context": "application",
+                "expected_error": null,
+                "mlir_sha256": "a101d9ca17d011612e8eb33bc83c37137d2c74d6bf5e4cc04bbe93471b9b7b7d",
+                "llvm_sha256": "51833b1fc4093e6620e7853991196280a18460c8ae54309ef88b1ff2b33a4754",
+                "image_sha256": "52a1f0086c2523d58b86d91374644c56db6907b1557bc3dac582c00037aadd89",
+                "executable_sha256": "016e47af0168aac4e6774eaacba85e6e3782abfab27b7ad7ee015eab2f2e40e5",
+                "passed": true,
+                "matching_host_and_independent_executable": true,
+                "observation": {
+                  "live_delta": 0,
+                  "file_delta": 0,
+                  "external_bytes": 0,
+                  "created": 1,
+                  "destroyed": 1
+                }
+              },
+              {
+                "optimization": "O2",
+                "context": "request",
+                "expected_error": null,
+                "mlir_sha256": "0197c6dbb2ee3771407509cfd3e045429a843a985ceaec801176691ae3cc89c5",
+                "llvm_sha256": "48b0f2f548ac5f22a38a50ded7b552aa00d32fb6b50430ff10e9f435db5fecad",
+                "image_sha256": "9ee465bbb0bf12c2ecdb75b3e2050bc9b1468f8a05a91806f164757486ff8163",
+                "executable_sha256": "65dd59438c12e6c13d9bf9cc1cf176acfae90ffac07ed917ee8e12f79bb6ad79",
+                "passed": true,
+                "matching_host_and_independent_executable": true,
+                "observation": {
+                  "live_delta": 0,
+                  "file_delta": 0,
+                  "external_bytes": 0,
+                  "created": 4,
+                  "destroyed": 4,
+                  "requests": [
+                    {
+                      "request": 0,
+                      "calls": 2,
+                      "failed": false,
+                      "code": "",
+                      "result": 42,
+                      "live_delta": 0
+                    },
+                    {
+                      "request": 1,
+                      "calls": 2,
+                      "failed": false,
+                      "code": "",
+                      "result": 42,
+                      "live_delta": 0
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "name": "owned-cell-uncaught",
+            "source_sha256": "4f3fd987c1e166ca39abfd437f25649c4725ad78f5b5195b3be702f6cdb7d720",
+            "reference": {
+              "code": "E_SOURCE_EXCEPTION",
+              "external_bytes": 0,
+              "file_delta": 0,
+              "kind": "trap",
+              "line": 8,
+              "live_delta": 0,
+              "message": "cell<Session>: typed source error",
+              "output": ""
+            },
+            "runs": [
+              {
+                "optimization": "O0",
+                "context": "application",
+                "expected_error": "E_SOURCE_EXCEPTION",
+                "mlir_sha256": "18c078d6160c42940b10dfc965e60616c35ab9d01d91491ec0ef2cc334813b2f",
+                "llvm_sha256": "afb2a02b78cbb954254d92f7c1a74a6f761a118acec9883d7802ac704a670756",
+                "image_sha256": "3d1e9da2f9f10847241974df043b1275fbbd9386bc8e821081a41f1c632017f0",
+                "executable_sha256": "c98fdb4727cba5defb29632afc6bf26775890456bd3caaf3c35f53a6bf004de1",
+                "passed": true,
+                "matching_host_and_independent_executable": true,
+                "observation": {
+                  "live_delta": 0,
+                  "file_delta": 0,
+                  "external_bytes": 0,
+                  "created": 1,
+                  "destroyed": 1
+                }
+              },
+              {
+                "optimization": "O0",
+                "context": "request",
+                "expected_error": "E_SOURCE_EXCEPTION",
+                "mlir_sha256": "bb4c2db7e18ab8046d6b33514c32df6396697fd70c08e341a5734ef1e95fe28d",
+                "llvm_sha256": "e2bc31e87b4d79f8729e1dc2fc5c228f2da4f807ff547fd599a21760327f7fca",
+                "image_sha256": "80e5a516d3b791c4675c15c6a5bc528dbae1a5414e0009161415a7240a913193",
+                "executable_sha256": "29c48acfabb30e50508d9e0fa62bc8c73651182ec20caac7d67ac3a06bca90f6",
+                "passed": true,
+                "matching_host_and_independent_executable": true,
+                "observation": {
+                  "live_delta": 0,
+                  "file_delta": 0,
+                  "external_bytes": 0,
+                  "created": 2,
+                  "destroyed": 2,
+                  "requests": [
+                    {
+                      "request": 0,
+                      "calls": 1,
+                      "failed": true,
+                      "code": "E_SOURCE_EXCEPTION",
+                      "result": 0,
+                      "live_delta": 0
+                    },
+                    {
+                      "request": 1,
+                      "calls": 1,
+                      "failed": true,
+                      "code": "E_SOURCE_EXCEPTION",
+                      "result": 0,
+                      "live_delta": 0
+                    }
+                  ]
+                }
+              },
+              {
+                "optimization": "O2",
+                "context": "application",
+                "expected_error": "E_SOURCE_EXCEPTION",
+                "mlir_sha256": "2510efbd1c889bcf0bef7cb3b4ea0da1a435c26f5a528d60bf34334afa718087",
+                "llvm_sha256": "67b133a0821bc1e5c2513ca54c48c5891d31646052a2c5a0a1cf6dd71e7bb87c",
+                "image_sha256": "d106404611aefd8c9c0980027ad0e0dfba7554c4743d88947ffb7f139e34bad0",
+                "executable_sha256": "2d1ffbfbef9bb3ea81e9774757107e46c4878671ee7891930fcea7bf7e0f9bb6",
+                "passed": true,
+                "matching_host_and_independent_executable": true,
+                "observation": {
+                  "live_delta": 0,
+                  "file_delta": 0,
+                  "external_bytes": 0,
+                  "created": 1,
+                  "destroyed": 1
+                }
+              },
+              {
+                "optimization": "O2",
+                "context": "request",
+                "expected_error": "E_SOURCE_EXCEPTION",
+                "mlir_sha256": "f032d3309db8224321bf6353bf2137f981aa9e7a8498de38706624d1631fcfe5",
+                "llvm_sha256": "e8d53eb1463961ab26f7e3e85fa8c60a043d63c9efd4d98b46c4d61f026ee0ba",
+                "image_sha256": "2e897b6de099ca6f67ebc6977510ff9abfe5c6e6bfd1d44b275b528b6493ee4e",
+                "executable_sha256": "6a9d2997d06a7be0e8b50cde67ae0b0e64057ae95590a9f408bf8843c8489750",
+                "passed": true,
+                "matching_host_and_independent_executable": true,
+                "observation": {
+                  "live_delta": 0,
+                  "file_delta": 0,
+                  "external_bytes": 0,
+                  "created": 2,
+                  "destroyed": 2,
+                  "requests": [
+                    {
+                      "request": 0,
+                      "calls": 1,
+                      "failed": true,
+                      "code": "E_SOURCE_EXCEPTION",
+                      "result": 0,
+                      "live_delta": 0
+                    },
+                    {
+                      "request": 1,
+                      "calls": 1,
+                      "failed": true,
+                      "code": "E_SOURCE_EXCEPTION",
+                      "result": 0,
+                      "live_delta": 0
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "name": "owned-cell-fatal",
+            "source_sha256": "ad634a1a5cc891ee503db44ab337c0a0e0cf4578eff349a60aae4c18232dc732",
+            "reference": {
+              "code": "E_ASSERT",
+              "external_bytes": 0,
+              "file_delta": 0,
+              "kind": "trap",
+              "line": 8,
+              "live_delta": 0,
+              "message": "assertion failed",
+              "output": ""
+            },
+            "runs": [
+              {
+                "optimization": "O0",
+                "context": "application",
+                "expected_error": "E_ASSERT",
+                "mlir_sha256": "71f78df631eabd35d402cf457b5a5d459e30ee67d2d1905603e61d49c4e43cf0",
+                "llvm_sha256": "13481fcf87b1db9ad04700068b812b3a88320e9f9ef915db2cd413b65810da66",
+                "image_sha256": "8e28a0a95e28b34f99de6ede211ce244089f77f48c446a6bc23bfaa09c098634",
+                "executable_sha256": "1f1bed1f3baf43ed41b52d2eb6de9b2939f97852abae5ffed7a493a16d63f9db",
+                "passed": true,
+                "matching_host_and_independent_executable": true,
+                "observation": {
+                  "live_delta": 0,
+                  "file_delta": 0,
+                  "external_bytes": 0,
+                  "created": 1,
+                  "destroyed": 1
+                }
+              },
+              {
+                "optimization": "O0",
+                "context": "request",
+                "expected_error": "E_ASSERT",
+                "mlir_sha256": "f35003f6cc4afd24a9dec31cfffe86d5e460c0e8e78edd7197a704cc721a8f46",
+                "llvm_sha256": "fbf0236293a79afa09cf88276caa945941a4926c06e371f19db428a594735c94",
+                "image_sha256": "f8b6629984029af320432334979eea52d5b2bbb5fc0c3acab0d0fe48ee33f1ca",
+                "executable_sha256": "d5484c7c70e45c9803985ad9695b20d8438020f97e56d3a81ad25d5cf9b9aabc",
+                "passed": true,
+                "matching_host_and_independent_executable": true,
+                "observation": {
+                  "live_delta": 0,
+                  "file_delta": 0,
+                  "external_bytes": 0,
+                  "created": 2,
+                  "destroyed": 2,
+                  "requests": [
+                    {
+                      "request": 0,
+                      "calls": 0,
+                      "failed": true,
+                      "code": "E_ASSERT",
+                      "result": 0,
+                      "live_delta": 0
+                    },
+                    {
+                      "request": 1,
+                      "calls": 0,
+                      "failed": true,
+                      "code": "E_ASSERT",
+                      "result": 0,
+                      "live_delta": 0
+                    }
+                  ]
+                }
+              },
+              {
+                "optimization": "O2",
+                "context": "application",
+                "expected_error": "E_ASSERT",
+                "mlir_sha256": "27d9778c7cd04711001682c812550d998616975989711264e27780349fc09baa",
+                "llvm_sha256": "2acb0f3d07bc5a02a3b6a6e8663e1eff6c9ff879639a9cc43823493e0334838d",
+                "image_sha256": "dec4f575fea7dd69765315f57f85bb0639999fd55f313da52dd6db12526b5b37",
+                "executable_sha256": "50f156dfc8a8547131a345b8f3e0c0ddd0627a3d2535d65b7332a165735073d8",
+                "passed": true,
+                "matching_host_and_independent_executable": true,
+                "observation": {
+                  "live_delta": 0,
+                  "file_delta": 0,
+                  "external_bytes": 0,
+                  "created": 1,
+                  "destroyed": 1
+                }
+              },
+              {
+                "optimization": "O2",
+                "context": "request",
+                "expected_error": "E_ASSERT",
+                "mlir_sha256": "b503f2dba97dfa95163812da57761abf0cd0bb9f1336044c2611e53f33e588ef",
+                "llvm_sha256": "d3de7bf662b7c9e917f604f873ac54fd80d3f78ff7a3b8f0ed7e19b41ba52d82",
+                "image_sha256": "13f382b75558d4e4fc9ec596a57b1b6be9660eecfd7fba0d4d80e0a979ec599e",
+                "executable_sha256": "266f0f882a676151fcdfd3d7bdcc3ef07e2a51aedc3fc6464d9bea23f14cd9e4",
+                "passed": true,
+                "matching_host_and_independent_executable": true,
+                "observation": {
+                  "live_delta": 0,
+                  "file_delta": 0,
+                  "external_bytes": 0,
+                  "created": 2,
+                  "destroyed": 2,
+                  "requests": [
+                    {
+                      "request": 0,
+                      "calls": 0,
+                      "failed": true,
+                      "code": "E_ASSERT",
+                      "result": 0,
+                      "live_delta": 0
+                    },
+                    {
+                      "request": 1,
+                      "calls": 0,
+                      "failed": true,
+                      "code": "E_ASSERT",
+                      "result": 0,
+                      "live_delta": 0
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "install_log": {
+        "path": "build/managed-owned-v1/install.log",
+        "sha256": "861c75b0bde1dd8b6c54b2d84373e997e47840d69623d66613cb85ae76be65a6"
+      },
+      "scope": "Normal CMake installation moved to a Unicode path, using retained host compiler/dependency tools. Its installed runtime/tests rebuild the 30-case standalone kernel and five source cases in both native contexts/optimizations. Compiler-private producers use the matching source-built probe. This is not a new portable archive or public reference SDK; final prose/evidence links followed staging."
+    },
+    "preceding_hosted_core": {
+      "id": 43810225300,
+      "name": "Core development checks",
+      "head_sha": "19be4456085f17ef87e2fef32d2ea18dd1561e10",
+      "html_url": "https://github.com/sae-ru/NEX/actions/runs/43810225300",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-16T05:26:18Z",
+      "updated_at": "2026-11-16T05:29:44Z",
+      "schema": "nex.core-ci-evidence/1",
+      "toolchain": "0.259.0",
+      "core_groups_per_job": 16,
+      "raw_sha256": "ebb36cfd7996cdd96608f48467ebf99a0fe6e15adb425a1ef59a3fa384edab2c",
+      "scope": "Core development checks only; not full source/platform/SDK qualification",
+      "jobs": [
+        {
+          "id": 133110084792,
+          "name": "macos-core",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/sae-ru/NEX/actions/runs/43810225300/job/133110084792",
+          "started_at": "2026-11-16T05:26:32Z",
+          "completed_at": "2026-11-16T05:29:43Z"
+        },
+        {
+          "id": 133110085112,
+          "name": "linux-core",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/sae-ru/NEX/actions/runs/43810225300/job/133110085112",
+          "started_at": "2026-11-16T05:26:33Z",
+          "completed_at": "2026-11-16T05:29:42Z"
+        }
+      ]
+    },
+    "guide_example": {
+      "source_sha256": "b4f1371d360541ce66bfc12c0a52da1f7e7186660195163a01e90fd6a8871e2a",
+      "result": {
+        "external_bytes": 0,
+        "file_delta": 0,
+        "kind": "return",
+        "live_delta": 0,
+        "output": "",
+        "remaining_cells": 0,
+        "remaining_nodes": 0,
+        "value": 42
+      }
+    }
+  },
+  "development_failures": [
+    {
+      "log": {
+        "path": "build/managed-owned-build-initial.log",
+        "sha256": "99a4a8f3b62092807b7239a831e9c6b15aa21a467f3ed714b6e611197037b17a"
+      },
+      "cause": "Kernel fixture initially used ByteBuffer.size() rather than view().size(), and omitted the platform declaration for mkdtemp; fixed test fixture only."
+    },
+    {
+      "log": {
+        "path": "build/managed-owned-build-fixture-fix.log",
+        "sha256": "84dc2cb468ad8fdbc741700084c74ccbca1af053ea171bd44c9a77505b3da1d9"
+      },
+      "cause": "macOS requires unistd.h for the mkdtemp declaration in this fixture; added the same include as the maintained native file fixtures."
+    },
+    {
+      "log": {
+        "path": "build/managed-owned-v1/kernel-initial.log",
+        "sha256": "d00b5cdabfadb5581a4b284a207c4c88d933ef03f664c0e5ec80ca5da8a7b856"
+      },
+      "cause": "External fixture factory initially omitted its required capacity budget; now uses an 8-byte budget and asserts zero remaining capacity after all cases."
+    },
+    {
+      "cause": "The browser-owned-cell gate was already rejected by the source checker realm rule. The gate now records that earlier checker rejection instead of expecting emission to be reached."
+    }
+  ],
+  "limits": [
+    "Private unarchived 0.30-refs-prototype only. No ordinary CLI source selection, public history-preserving migration or converter.",
+    "GC sees source Value/closure edges, not opaque native object memory. Host-retained source values are external roots; arbitrary native callback cycles require explicit ownership/close contracts. No source finalizers or C-to-source callback ABI.",
+    "Resource quotas are independent of heap node/edge limits. Physical cleanup may wait for independent aliases/leases/executors. GC/adoption/native destructors are not preemptive or a hard pause/work bound.",
+    "Heaps remain thread-affine; trusted hosts must quiesce and close on the owner thread. No cross-request/reference-valued host return or task/parallel sharing is introduced.",
+    "Focused owned-source programs are single-unit. Complete imported-resource/component/HTTP/task, source debugger/profile, whole-source/platform/device and matching portable-SDK qualification remain open.",
+    "Public0.28/0.29/SDK0.246.1 retain their recorded scopes. Class/Java/Python semantics and the original PLAN remain incomplete; no security/sanitizer/fuzz campaign was introduced."
+  ]
+}

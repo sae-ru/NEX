@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.259.0; private 0.30-refs-prototype candidate"
+applies_to: "toolchain 0.260.0; private 0.30-refs-prototype candidate"
 owner: repository
 ---
 
@@ -95,7 +95,7 @@ unchanged. npm dependencies, lock and notices are unchanged.
 
 ## Current boundaries and checks
 
-Tasks, parallel execution, owned file/external cell payloads, database effects and
+Tasks, parallel execution, source finalizers, database effects and
 endpoints remain outside this candidate. Cells cannot leave the unit/wire host
 entry. There is no cross-thread memory model, public migration, module/DLL host
 ABI, source debugger/profile integration or matching portable SDK release.

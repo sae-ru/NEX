@@ -17,6 +17,9 @@ struct CellCollection {size_t beforeCells=0,afterCells=0,reclaimedCells=0,reclai
 // affine. close() tears down the context and invalidates outstanding cells.
 // Immutable payload graphs are captured by ownership, not deep copied. Native
 // callers must not mutate Data::values of an adopted immutable payload.
+// Genuine file/external owners retain their independent resource authority.
+// Cleanup callbacks cannot reenter operations; closing an active heap defers
+// registry teardown until that operation unwinds. Close on the owner thread.
 class CellHeap {
   std::shared_ptr<CellHeapState> state;
 public:

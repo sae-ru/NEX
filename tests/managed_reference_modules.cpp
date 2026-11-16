@@ -50,7 +50,7 @@ int main(){try{
   bad("module app;import \"./provider.nex\" as counter;fn main()->unit{}","module counter;fn cell_new()->i64{return 1;}","E_DUPLICATE");
   bad("module app;import \"./provider.nex\" as counter;fn main()->unit{}","module counter;endpoint e(\"GET\",\"/api/e\")=handler;fn handler()->unit{}","E_CELL_STAGE");
   bad("module app;import \"./provider.nex\" as counter;fn main()->unit{}","module counter;server fn work()->unit!{db}{}","E_CELL_STAGE");
-  bad("module app;import \"./provider.nex\" as counter;fn main()->unit{}","module counter;server fn wrap(value:file)->cell<file>!{state}{return cell_new(value);}","E_CELL_VALUE");
+  bad("module app;import \"./provider.nex\" as counter;fn main()->unit{}","module counter;server fn wrap(value:file)->cell<file>{return cell_new(value);}","E_EFFECT");
   bad("module app;import \"./provider.nex\" as counter;fn main()->unit{}","module counter;fn transfer()->unit{parallel_map([1],fn(n:i64)->i64{return n;},1);}","E_CELL_STAGE");
   {
     auto source=input(mainSource,providerSource);(*source.getObject("files"))["unused.nex"]="module unused;fn unused()->unit{}";
