@@ -1,0 +1,20 @@
+module java_long_example;
+import "std/java_long.nex" as longs;
+import "std/java_int.nex" as ints;
+
+fn main() -> unit !{io,throw} {
+  let maximum: longs::Int64 = longs::from_i64(9223372036854775807);
+  let minimum: longs::Int64 = longs::add(maximum, longs::from_i64(1));
+  assert(longs::to_i64(minimum) == -9223372036854775808);
+  assert(longs::to_i64(longs::divide(minimum, longs::from_i64(-1))) == minimum.value);
+  assert(longs::to_i64(longs::multiply(maximum, maximum)) == 1);
+  assert(longs::to_i64(longs::unsigned_shift_right(longs::from_i64(-1), 1)) == maximum.value);
+  assert(ints::to_i64(longs::narrow_int(maximum)) == -1);
+  try { longs::divide(maximum, longs::from_i64(0)); }
+  catch (error: longs::ArithmeticError) { assert(error.operation == "divide"); }
+  finally { print("java-long-ok"); }
+}
+
+test fn exact_long_wrap() -> unit {
+  assert(longs::to_i64(longs::multiply(longs::from_i64(-9223372036854775808), longs::from_i64(-1))) == -9223372036854775808);
+}

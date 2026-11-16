@@ -10,7 +10,7 @@ nightly at03:23 UTC on the default branch. It uses the existing Linux source,
 installed smoke and source-free installed workflow. It runs all configured
 CTest groups without a label filter. It does not run after every patch.
 
-The [current core run](https://github.com/sae-ru/NEX/actions/runs/43717414285) passed on macOS and Linux
+The [0.246.1 core run](https://github.com/sae-ru/NEX/actions/runs/43717414285) passed on macOS and Linux
 for `48464ca7d9a218524485c9745b9629458c30e2bf`. The SDK's exact source `3b008a4e` also passed core CI and
 **344/344 configured Linux source groups**; its raw CTest receipt is retained.
 The [later integrated run](https://github.com/sae-ru/NEX/actions/runs/43693616418) completed its entire compiler,
@@ -37,6 +37,13 @@ CI and new physical GPU/NPU acceptance remain separate work. A green core job
 is development feedback; the matching [SDK release record](sdk.md) records
 source regression and portable archive acceptance separately. The Qwen experiment
 keeps its frozen compiler and inputs.
+
+The [recorded0.265 development run](evidence/core-ci-0.265.0-2026-11-16.json)
+passed Linux. GitHub cancelled macOS after15 minutes without acquiring a hosted
+ARM runner and reported capacity/internal-service errors. Its workflow conclusion
+is failure; the macOS source tests did not start. Local macOS source acceptance
+has its separate receipts. Changing source tests cannot remedy runner acquisition;
+later development runs retain their own observed conclusions.
 
 ## Dependencies and provenance
 

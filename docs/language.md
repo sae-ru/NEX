@@ -34,7 +34,7 @@ source semantics. Future capabilities are in PLAN.md.
 
 Language028 uses checked program format `nex.program/16`. Retained027 keeps
 `nex.program/15` and its parser, revisions, local IDs and graph history. New
-`nex init` projects select `language: "0.29"` explicitly; retained 0.28 projects
+`nex init` projects select `language: "0.30"` explicitly; retained 0.28 projects
 declare `language: "0.28"` in nex.json, and unconfigured projects keep the 0.28
 compiler default. Updating a project's version field
 alone does not migrate an existing graph; use the [explicit migration](source-contract-migration.md).

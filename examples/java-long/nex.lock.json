@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "@std/java_int.nex": {
+      "module": "std::java_int",
+      "source_hash": "e406721decf207828ce4838f314ef3a349bf06a718b488cbf7f71ec3bf69aaa2"
+    },
+    "@std/java_long.nex": {
+      "module": "std::java_long",
+      "source_hash": "09c9b54b784837f233028fbb718a6f34ef0dc4dea2ebda0a0dea99e5b65516a8"
+    }
+  },
+  "language": "0.30",
+  "schema": "nex.lock/1"
+}

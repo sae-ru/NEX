@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.265.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.266.0"
 owner: repository
 ---
 
@@ -26,6 +26,12 @@ retain their exact source/platform scopes and do not qualify later changes.
 The old implementation worktree has no commits absent from current main.
 
 ## Executable backlog
+
+Toolchain0.266 adds an explicit [Java long domain](java-long.md), including
+wrapping64 arithmetic, bits/shifts, narrowing/sign extension and typed division
+errors. The790-vector JDK fixture covers its supported primitive operations;
+machine-type specialization, IEEE values, class/nullability, library compatibility
+and Python protocols remain open. No converter or source grammar is introduced.
 
 Toolchain0.265 adds ordinary030 CLI selection, guarded migration preserving
 the namespace and old rows, static project components, API source projection,

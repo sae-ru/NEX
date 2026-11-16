@@ -96,7 +96,12 @@ apply with its exact expected revision and reviewed conflict candidate. Preserve
 the graph namespace, old source and rows; changing nex.json alone is not migration.
 
 Query `standard_library` before reimplementing text/list/math helpers. If
-advertised, read `nex guide --kind stdlib --json` for exact empty/Unicode, callback
+porting Java integral computations, discover `standard_library.modules.java_int`
+and `java_long`. Their nominal APIs explicitly wrap and require typed throw for
+division errors. Ordinary i64 operators remain checked; do not invent a primitive
+`long` keyword, implicit conversions or general Java/Python runtime compatibility.
+
+When advertised, read `nex guide --kind stdlib --json` for exact empty/Unicode, callback
 and complexity rules. Import `std/list.nex` as `seq`/`lists` (`list` is reserved).
 When `list_construction` is advertised, read `nex guide --kind list-build --json`.
 Use `list(count,make)` for indexed generation, `list(values,transform)` for map,

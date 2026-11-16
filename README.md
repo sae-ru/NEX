@@ -55,14 +55,15 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.265.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.266.0 / language 0.28 / task ABI 7**, in development.
 The compiler fallback remains0.28. `nex.json` selects0.28,0.29 or0.30 per project;
 new `nex init` projects select0.30. Language0.29 adds partial type lambdas and
 higher-order kinds;0.30 adds typed cells and the `state` effect. Retained projects
 preserve their selected version and require explicit migration to change it.
 
 Recent source adds persistent AVL [ordered map/set](docs/ordered-containers.md),
-an explicit [Java int domain](docs/java-integers.md) and resource-owning cells.
+explicit [Java int](docs/java-integers.md) / [long](docs/java-long.md) domains
+and resource-owning cells. These numerical APIs preserve ordinary checked arithmetic.
 [Ordinary030 projects](docs/references030.md) use canonical reference graphs,
 guarded migration and normal CLI authoring, static components, API projection
 and captured-task replay. See the [cell example](examples/references/README.md).
@@ -74,8 +75,8 @@ Ordinary values and retained snapshots now use
 Reference task/parallel transfer, persistent UI state, live cell debugger views,
 machine i32 and other [migration prerequisites](docs/migration-readiness.md)
 remain open. Focused development acceptance is separate from full SDK/platform gates.
-The [0.265 receipt](docs/evidence/references030-cli-0.265.0-2026-11-16.json)
-records source/installation checks and their exact limits.
+[030 CLI](docs/evidence/references030-cli-0.265.0-2026-11-16.json) and
+[long](docs/evidence/java-long-0.266.0-2026-11-16.json) qualification retain exact scopes.
 The [implementation sequence](docs/implementation-1-6.md) tracks remaining work.
 
 The [0.246.1 macOS source regression](docs/evidence/full-ctest-0.246.1-current-2026-11-15.json)

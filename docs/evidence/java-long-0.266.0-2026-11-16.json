@@ -1,0 +1,534 @@
+{
+  "schema": "nex.java-long-evidence/1",
+  "toolchain": "0.266.0",
+  "selected_source_language": "0.30",
+  "compiler_fallback": "0.28",
+  "language_changed": false,
+  "task_ABI": 7,
+  "public_C_ABI": 1,
+  "base_commit": "827e506d7c2e3751fe40b7caaf42e6b2909cee9f",
+  "source_files_sha256": {
+    "CMakeLists.txt": "48757c3ca965ae9c8a1475c0aed24b3b1a58b1ca9cfcff59a46ef1d40c1e98d9",
+    "PLAN.md": "b7e77fd37440677f19b8f67ad04edc87e0ac51f4af9ae3bb5ecde496bbbec6eb",
+    "README.md": "9f1917e7ca80ac646bcec9f6d8e5e83f9202c6d71375975cd29800ab6fd3567e",
+    "README.ru.md": "0faff95761a6688c799b2e1026e44207e1346eea5d19d237245bc91d1ced7441",
+    "STATUS.md": "01228d41e8948b3357717fa72f3c6746a86701dd570720795c63a9ae8542c22d",
+    "VERSION": "1dfe146e002420364765d1c92624964f5fc1f16cc1a27be8db346317c18bc3c4",
+    "cmake/Install.cmake": "84b63b86243d3df71fbdd8c16cc662c81bae695b49f31fd17083c4782f17473c",
+    "cmake/Tests.cmake": "4d0bad6959c29bf80976d9ef637e808ab9a531eaab24a5d306bcf71744a376af",
+    "cmake/test-tiers.json": "105936b822e286434cdc05e74dbe71984b5dc2476a37702b3f2a2ab7d165a2b7",
+    "docs/INDEX.md": "621d46eede2d065da271963599211e1e336ad1ccc69dcf276ab43a2d4a417770",
+    "docs/STATUS.current.md": "a73235ff88d1536a90f98a08197a100b46a6ccbf13d50e04eb9d8f9470d84419",
+    "docs/ci.md": "9c2d4c45e2786594b926d5b3ec6e9b5e9d8694ac3719c67566796febf9182d24",
+    "docs/evidence/core-ci-0.265.0-2026-11-16.json": "b4d72f9161870a36206ea29f8979abe7c69464a55189f0fbd9b8c12bee1ff92a",
+    "docs/implementation-1-6.md": "8d6bd952e9b0aa642be33f432f9f1211a7bc6f56834c6a3f3a0c12d7eb534fce",
+    "docs/java-integers.md": "8df8a00b88f7ebfa69265d356316378d024b9c834d47e33509d91441cf6a8f9f",
+    "docs/java-long.md": "a289774599607ec2503f9f37f818df50c5a8f4e5046375e44d9a89e3df5ab872",
+    "docs/language.md": "e7007946cb33a9ab71f9beac141b50938d6c6fe93ac530f4a09272734a428a92",
+    "docs/migration-readiness.md": "d2cd7849d2c4ca22d9e0f57f2f1271ede3f10ad2cde308b78645533564d40b02",
+    "docs/stdlib.md": "b02453a818909cccc80d84c21a750ac1fdee231d58dfab9382c374f82013d88f",
+    "examples/java-long/README.md": "80ff9a56fc7adc943df09e949b11518c322ed41e1e63a3b03ef7cfcc61ec68d3",
+    "examples/java-long/main.nex": "1c813305ed097b2dd5355b1eb454c824ddfb7023e2b862f95375ffd7535923ed",
+    "examples/java-long/nex.json": "8a0bd135f5f3dc5dadde3d561cbf3cb2b9e2f768ba6386343bc2880acb31993e",
+    "examples/java-long/nex.lock.json": "b0061ea9aacd1621cba3c0352f264ac77428cff6831b4b5ea279e36c492c30bd",
+    "lib/java_long.nex": "9d782a03f2f6e89f49c41e18cc912d638a66a24764c5e055af40a205721d5b6f",
+    "llm/SYSTEM_PROMPT.md": "bfa653cd351cdbe1a39c9420efddfb5ac0ec197895ff878aad38914c30241010",
+    "llm/language-pack.json": "94bc7227a12d85905e3680ba6cfe0f75cb36048320a7f387d4036c54b91186b0",
+    "src/cli_catalogue.cpp": "e90cf112d473a9bacf5c5fa4661c4f4faee0b603b02af3968ef7932002bc8a70",
+    "src/standard_library.cpp": "181ea4237884c1d4bfeefe8a2d61e752cfd8f4dac229aedc9745088b59f50bb1",
+    "tests/fixtures/java-long/Oracle.java": "0a31cb51795f55125474d87bbe2a0fbe3eda1e6d409bc7b279537d342dd354c3",
+    "tests/fixtures/java-long/oracle.json": "5c7d2ca7c2141ff3f866b5d6ac170be6d1e40ab7475caaeb274628434e15da7c",
+    "tests/java_long.py": "a58c344014606c07ffe27bc05ff7030f6050831b5e98366dba9ea90998625317",
+    "tests/java_long_cases.py": "f0ef8e5da24953a926153a948fac4ffdacc131b41e5dfbebae127ba0810d8a68",
+    "tests/standard_library.py": "0eb551674deb2fab3f3f0391474bb1934599faaa13cfb75409acbdff957403ac",
+    "tools/sdk_stdlib.py": "004a5201779e6a5552d1d3d6bc17ba99dc2e376ea6407d87ac4627bf43359ba5"
+  },
+  "compiler_discovery": {
+    "report_sha256": "99454c3ffa67e69142f2275c793305314f0d72461c87d2b4303a814b783f6eb8",
+    "result": {
+      "ok": true,
+      "shared_fields": [
+        "browser_workers",
+        "bytes_construction",
+        "cli_interface",
+        "compute",
+        "device",
+        "diagnostic_catalogue",
+        "dns_provider",
+        "effect_parameters",
+        "features_scope",
+        "foreign_trap_reporting",
+        "generic_features",
+        "gpu_codegen",
+        "http_client_provider",
+        "http_response_streams",
+        "http_storage_transactions",
+        "language_pack_contract",
+        "list_construction",
+        "llm_cost",
+        "llm_entry",
+        "managed_references",
+        "model",
+        "native_application_lifetime",
+        "native_core",
+        "native_debug_image_binding",
+        "native_debug_pages",
+        "native_debug_session",
+        "native_entry_abi",
+        "native_runtime_search",
+        "native_tool_arguments",
+        "opencl_codegen",
+        "patch_entities",
+        "project_capture_layout",
+        "project_languages",
+        "resource_executor",
+        "resource_regions",
+        "result_propagation",
+        "runtime_contracts",
+        "runtime_diagnostic_messages",
+        "scoped_discovery",
+        "source_concurrency",
+        "source_contracts",
+        "source_contracts_development",
+        "source_exception_prototype",
+        "source_exceptions",
+        "source_formatting",
+        "source_resources",
+        "standard_library",
+        "structured_tasks_runtime",
+        "task_debugging",
+        "task_execution_limits",
+        "task_external_completion",
+        "task_file_reads",
+        "task_file_streams",
+        "task_file_streams_host",
+        "task_file_streams_prototype",
+        "task_file_writes",
+        "task_file_writes_host",
+        "task_file_writes_prototype",
+        "task_foreign_prototype",
+        "task_network_transport",
+        "task_profile_collector",
+        "task_profiling",
+        "task_provider_debugging",
+        "task_provider_profiling",
+        "task_providers",
+        "task_shared_providers",
+        "task_value_retirement",
+        "tcp_provider",
+        "text_construction",
+        "wasm_features"
+      ],
+      "shared_field_count": 70,
+      "compared_JSON_values": 4257,
+      "errors": [],
+      "schema": "nex.language-pack-validation/1",
+      "compiler_sha256": "d35f8c5be6fd67e6beba02fd95012b0ce9d8c3bf170c8fe93b19ae7ddb6e47ab",
+      "manifest_sha256": "94bc7227a12d85905e3680ba6cfe0f75cb36048320a7f387d4036c54b91186b0",
+      "language": "0.28",
+      "toolchain": "0.266.0",
+      "compiler_build": "5899bb9745fe527c6afee7ad6209b9886df4cc4670aaab873fe02bc77f0a7a0d",
+      "descriptor_hash": "c347580c42b931a007817ab84ece73ab223e69335de4f24d22e0d5c3f594f91f"
+    }
+  },
+  "documentation": {
+    "report_sha256": "ffbf07e7effcc5b2b066717a0f05203f339da161809aa3556d40844a9019f1a1",
+    "result": {
+      "schema": "nex.documentation-index/1",
+      "toolchain": "0.266.0",
+      "language": "0.28",
+      "project_languages": [
+        "0.28",
+        "0.29",
+        "0.30"
+      ],
+      "documents": 201,
+      "index": "docs/INDEX.md",
+      "errors": [],
+      "links_checked": 1484,
+      "missing_links": [],
+      "current_status_ok": true,
+      "ok": true
+    }
+  },
+  "build": {
+    "command": "cmake --build build -j 4",
+    "exit": 0,
+    "initial_full_build_log_sha256": "86636b3798e76db0e9a4d945067ad96682e37c676c6855028aaf81fcfd4a76a8",
+    "final_configuration_build_log_sha256": "64e03604683eedecef6eff976157b38a075114c906e229db00da6996f9664bf6"
+  },
+  "ctest": {
+    "core": {
+      "report_sha256": "f5694ecf8d40c0e79cfc938cce9f28b86e30c4a0c0a2a04490d5e1e3addf0b24",
+      "attributes": {
+        "name": "(empty)",
+        "tests": "16",
+        "failures": "0",
+        "disabled": "0",
+        "skipped": "0",
+        "hostname": "",
+        "time": "27",
+        "timestamp": "2026-11-16T17:34:45"
+      },
+      "groups": [
+        {
+          "name": "llm_cost_ledger",
+          "seconds": 0.238761,
+          "passed": true
+        },
+        {
+          "name": "llm_local_collector",
+          "seconds": 0.147536,
+          "passed": true
+        },
+        {
+          "name": "ctest_report_validation",
+          "seconds": 0.195887,
+          "passed": true
+        },
+        {
+          "name": "discovery",
+          "seconds": 10.4804,
+          "passed": true
+        },
+        {
+          "name": "language_pack_contract",
+          "seconds": 0.380045,
+          "passed": true
+        },
+        {
+          "name": "task_frontend_native",
+          "seconds": 1.50419,
+          "passed": true
+        },
+        {
+          "name": "frontend_diagnostics_native",
+          "seconds": 0.616891,
+          "passed": true
+        },
+        {
+          "name": "value_owner_runtime",
+          "seconds": 0.0771415,
+          "passed": true
+        },
+        {
+          "name": "value_retirement_runtime",
+          "seconds": 0.989609,
+          "passed": true
+        },
+        {
+          "name": "managed_references_frontend_reference",
+          "seconds": 0.652098,
+          "passed": true
+        },
+        {
+          "name": "managed_reference_native_context",
+          "seconds": 0.7203,
+          "passed": true
+        },
+        {
+          "name": "bytes_runtime_native",
+          "seconds": 0.00866221,
+          "passed": true
+        },
+        {
+          "name": "float_runtime_native",
+          "seconds": 0.0135484,
+          "passed": true
+        },
+        {
+          "name": "typed_source_frontend_reference",
+          "seconds": 0.712238,
+          "passed": true
+        },
+        {
+          "name": "test_tiers",
+          "seconds": 0.141924,
+          "passed": true
+        },
+        {
+          "name": "diagnostic_catalogue",
+          "seconds": 10.1748,
+          "passed": true
+        }
+      ]
+    },
+    "java_long": {
+      "report_sha256": "5e0dc4d9bccdff4bca397969ace3350ad745f2a995a746fb5de0aea029969666",
+      "attributes": {
+        "name": "(empty)",
+        "tests": "1",
+        "failures": "0",
+        "disabled": "0",
+        "skipped": "0",
+        "hostname": "",
+        "time": "27",
+        "timestamp": "2026-11-16T17:31:27"
+      },
+      "groups": [
+        {
+          "name": "java_long",
+          "seconds": 27.7377,
+          "passed": true
+        }
+      ]
+    },
+    "affected": {
+      "report_sha256": "83ea62985b6b722464f0b2f447eb1728392699930b7fd10370454ff8ea849746",
+      "attributes": {
+        "name": "(empty)",
+        "tests": "3",
+        "failures": "0",
+        "disabled": "0",
+        "skipped": "0",
+        "hostname": "",
+        "time": "82",
+        "timestamp": "2026-11-16T17:37:02"
+      },
+      "groups": [
+        {
+          "name": "standard_library",
+          "seconds": 67.6714,
+          "passed": true
+        },
+        {
+          "name": "java_int",
+          "seconds": 14.5632,
+          "passed": true
+        },
+        {
+          "name": "cli_interface",
+          "seconds": 16.8491,
+          "passed": true
+        }
+      ]
+    },
+    "unique_passed_groups": 20,
+    "source_compiler_sha256": "d35f8c5be6fd67e6beba02fd95012b0ce9d8c3bf170c8fe93b19ae7ddb6e47ab"
+  },
+  "JDK_oracle": {
+    "cases": 790,
+    "source_sha256": "0a31cb51795f55125474d87bbe2a0fbe3eda1e6d409bc7b279537d342dd354c3",
+    "fixture_sha256": "5c7d2ca7c2141ff3f866b5d6ac170be6d1e40ab7475caaeb274628434e15da7c",
+    "version": "openjdk 21.0.12.1 2026-08-18 LTS\nOpenJDK Runtime Environment Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS)\nOpenJDK 64-Bit Server VM Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS, mixed mode, sharing)\n",
+    "java_executable_sha256": "9be1d0a740ff6502df1a762145e62860f5de4b7e17658d9cb9498da3acf9d16c",
+    "javac_executable_sha256": "20ce8ae6a5771801267af082a573e02758e5004a25ef3cba71d14fc95897bb2f",
+    "live_observed_in_source_and_installed_tests": true,
+    "independent_unbounded_integer_model_agrees": true
+  },
+  "source_agreement": {
+    "report_sha256": "77df48a8ef5773e5e9b331d0e47fbdf47f777c002a0c48fbbe79b95086a0536a",
+    "result": {
+      "schema": "nex.java-long-agreement/1",
+      "ok": true,
+      "language": "0.30",
+      "compiler_sha256": "d35f8c5be6fd67e6beba02fd95012b0ce9d8c3bf170c8fe93b19ae7ddb6e47ab",
+      "revision": "97b5f90420860c06ec3f7af8e79018706bfea8a5a63a83d438bb27e6f079aca3",
+      "program_sha256": "5339c5cb440136db270aa2bf61771b701468cafb3c9bfffe111685f211e017d8",
+      "cases": 790,
+      "oracle_sha256": "5c7d2ca7c2141ff3f866b5d6ac170be6d1e40ab7475caaeb274628434e15da7c",
+      "reference": {
+        "ok": true,
+        "stdout": "java-long-oracle-ok\n",
+        "steps": 824423,
+        "value": null
+      },
+      "native": {
+        "debug": {
+          "build_key": "43e6f808491d5cb03849a79c1f6b6743f74e1f90920f625effccb731f34f8229",
+          "exit_code": 0,
+          "native_diagnostics": {
+            "diagnostics": [],
+            "ignored": 0,
+            "limit": 32,
+            "omitted": 0,
+            "schema": "nex.native-diagnostics/1",
+            "total": 0
+          },
+          "ok": true,
+          "stderr": "",
+          "stdout": "java-long-oracle-ok\n"
+        },
+        "release": {
+          "build_key": "b38436f1005f77d1c579ed70bdcb4d4faab002a9ce57f0b7f73d5901285a3b01",
+          "exit_code": 0,
+          "native_diagnostics": {
+            "diagnostics": [],
+            "ignored": 0,
+            "limit": 32,
+            "omitted": 0,
+            "schema": "nex.native-diagnostics/1",
+            "total": 0
+          },
+          "ok": true,
+          "stderr": "",
+          "stdout": "java-long-oracle-ok\n"
+        }
+      },
+      "strict_executed_typescript": true,
+      "ordinary_checked_overflow_preserved": true
+    }
+  },
+  "installed_agreement": {
+    "report_sha256": "4e9e68d6df36bebc72ceec86a85f48dbba60d0b370c7da50e190e545a170d541",
+    "result": {
+      "schema": "nex.java-long-agreement/1",
+      "ok": true,
+      "language": "0.30",
+      "compiler_sha256": "d35f8c5be6fd67e6beba02fd95012b0ce9d8c3bf170c8fe93b19ae7ddb6e47ab",
+      "revision": "97b5f90420860c06ec3f7af8e79018706bfea8a5a63a83d438bb27e6f079aca3",
+      "program_sha256": "5339c5cb440136db270aa2bf61771b701468cafb3c9bfffe111685f211e017d8",
+      "cases": 790,
+      "oracle_sha256": "5c7d2ca7c2141ff3f866b5d6ac170be6d1e40ab7475caaeb274628434e15da7c",
+      "reference": {
+        "ok": true,
+        "stdout": "java-long-oracle-ok\n",
+        "steps": 824423,
+        "value": null
+      },
+      "native": {
+        "debug": {
+          "build_key": "d8c91c226bc2b09cc0923de9eb29a4dfa81edf95336ae1c1204098d0a50ecdff",
+          "exit_code": 0,
+          "native_diagnostics": {
+            "diagnostics": [],
+            "ignored": 0,
+            "limit": 32,
+            "omitted": 0,
+            "schema": "nex.native-diagnostics/1",
+            "total": 0
+          },
+          "ok": true,
+          "stderr": "",
+          "stdout": "java-long-oracle-ok\n"
+        },
+        "release": {
+          "build_key": "df95b62368c0d1ada69443e7807562c49008faf43e187bb6e1e787025fe7e011",
+          "exit_code": 0,
+          "native_diagnostics": {
+            "diagnostics": [],
+            "ignored": 0,
+            "limit": 32,
+            "omitted": 0,
+            "schema": "nex.native-diagnostics/1",
+            "total": 0
+          },
+          "ok": true,
+          "stderr": "",
+          "stdout": "java-long-oracle-ok\n"
+        }
+      },
+      "strict_executed_typescript": true,
+      "ordinary_checked_overflow_preserved": true
+    }
+  },
+  "normal_installation": {
+    "report_sha256": "67bf936f7d2a98bd467e854c4fbb225705eb033164a1c623b954c9012f4499c7",
+    "result": {
+      "schema": "nex.java-long-installation/1",
+      "ok": true,
+      "path": "/Users/sae/projects/NEX/build/java-long-0.266-v1/SDK moved 🧠",
+      "compiler_sha256": "d35f8c5be6fd67e6beba02fd95012b0ce9d8c3bf170c8fe93b19ae7ddb6e47ab",
+      "critical_resources": {
+        "lib/java_long.nex": "9d782a03f2f6e89f49c41e18cc912d638a66a24764c5e055af40a205721d5b6f",
+        "lib/java_int.nex": "b747c50707dd8a3da43dc181b75c411effb63728f01b4f2dc4b892944938e7f7",
+        "llm/language-pack.json": "94bc7227a12d85905e3680ba6cfe0f75cb36048320a7f387d4036c54b91186b0",
+        "tests/java_long.py": "a58c344014606c07ffe27bc05ff7030f6050831b5e98366dba9ea90998625317",
+        "tests/java_long_cases.py": "f0ef8e5da24953a926153a948fac4ffdacc131b41e5dfbebae127ba0810d8a68",
+        "tests/fixtures/java-long/Oracle.java": "0a31cb51795f55125474d87bbe2a0fbe3eda1e6d409bc7b279537d342dd354c3",
+        "tests/fixtures/java-long/oracle.json": "5c7d2ca7c2141ff3f866b5d6ac170be6d1e40ab7475caaeb274628434e15da7c",
+        "tools/sdk_stdlib.py": "004a5201779e6a5552d1d3d6bc17ba99dc2e376ea6407d87ac4627bf43359ba5"
+      },
+      "same_source_revision": "97b5f90420860c06ec3f7af8e79018706bfea8a5a63a83d438bb27e6f079aca3",
+      "launched_from": "/private/tmp",
+      "explicit_resource_directory": "/Users/sae/projects/NEX/build/java-long-0.266-v1/SDK moved 🧠/share/nex",
+      "host_dependencies_retained": true,
+      "portable_SDK": false,
+      "installed_tests": 4,
+      "source_and_installed_JDK_vectors": 790,
+      "context_language": "0.30",
+      "archived_export_run": {
+        "build_key": "bc7e3e7396d332f4e6d53c5bd308fd46d6c5d747a1e3f77f813cd53531cd709b",
+        "exit_code": 0,
+        "native_diagnostics": {
+          "diagnostics": [],
+          "ignored": 0,
+          "limit": 32,
+          "omitted": 0,
+          "schema": "nex.native-diagnostics/1",
+          "total": 0
+        },
+        "ok": true,
+        "stderr": "",
+        "stdout": "java-long-ok\n"
+      },
+      "all_standard_modules_checked": 13,
+      "all_standard_module_SHA256": {
+        "lib/text.nex": "e5df668d9fd6bea6bf248eb26a79da892576753622e16382bb74292da1b55d64",
+        "lib/list.nex": "04be7257ced138fc83cb67cb9c220eac8ded09ccdfaa2a71861a02dda3beb63a",
+        "lib/math.nex": "6d073810efde8aabc2823db47f26f4493d431041bff87e25b16be8fadf23630e",
+        "lib/map.nex": "22f69d9a69081b5ccf9642266e74007245fe740c72161d9403d9a7540afaf4c1",
+        "lib/set.nex": "041f1df46cca9862478914154dde4496867998b63e40c9fee1acb725522d5bb9",
+        "lib/queue.nex": "375660dd44765cc99784f03fd7b9a74f82ad32d8f6cfef51cd5ee7f89789b0ed",
+        "lib/stack.nex": "93e068c4844698c0409fed925d0c6ad8ff021edb85f3f392ceb82eba2e225106",
+        "lib/deque.nex": "41ae77cbd0f722e34dcafba8786e8d7b052436ac296d07080e7a41ccb92d8da1",
+        "lib/priority_queue.nex": "9d12846107f282ea9b49d98341efd04ccb809dc16868dda5d05ba8d95dea67ca",
+        "lib/ordered_map.nex": "695126c45d32a5d1877e1d8882af70b9525efd1acf6796c8f4044cf0c83ec473",
+        "lib/ordered_set.nex": "85456b1f28c78f7596778c88cf48dcae31d5a931bfc8d1c3c42001004ce6ed3c",
+        "lib/java_int.nex": "b747c50707dd8a3da43dc181b75c411effb63728f01b4f2dc4b892944938e7f7",
+        "lib/java_long.nex": "9d782a03f2f6e89f49c41e18cc912d638a66a24764c5e055af40a205721d5b6f"
+      },
+      "guide_matches_source": true
+    }
+  },
+  "installed_harness": {
+    "tests": 4,
+    "exit": 0,
+    "log_sha256": "b87830294504fa0fbbd43f52ea9723a2ac01551cb872f22bdebd1632a94cfd4d"
+  },
+  "archive_and_context": {
+    "language": "0.30",
+    "context_sha256": "cb90110d0c3c9e64c8b1e91b95630ac6b2cb8bc01356918219a6382c99f47109",
+    "export_sha256": "40d04d572871d755d11c4eabaf05dbe7c09050283d8996ba2d65dd59a1bba4e9",
+    "retained_lock_sha256": "b0061ea9aacd1621cba3c0352f264ac77428cff6831b4b5ea279e36c492c30bd",
+    "exported_run": {
+      "report_sha256": "fcbf98ed3eadb2c7f0f85d908fd633e2bff3fbf71c0076e9ea9ea5536fea0b3a",
+      "result": {
+        "build_key": "bc7e3e7396d332f4e6d53c5bd308fd46d6c5d747a1e3f77f813cd53531cd709b",
+        "exit_code": 0,
+        "native_diagnostics": {
+          "diagnostics": [],
+          "ignored": 0,
+          "limit": 32,
+          "omitted": 0,
+          "schema": "nex.native-diagnostics/1",
+          "total": 0
+        },
+        "ok": true,
+        "stderr": "",
+        "stdout": "java-long-ok\n"
+      }
+    }
+  },
+  "preceding_hosted_CI": {
+    "receipt": "docs/evidence/core-ci-0.265.0-2026-11-16.json",
+    "run_id": 43881311961,
+    "workflow_conclusion": "failure",
+    "linux_conclusion": "success",
+    "macos_conclusion": "cancelled before runner acquisition; no source execution"
+  },
+  "initial_fixture_failure": {
+    "kind": "environment",
+    "detail": "Initial oracle/program capture used system Python3.9, which lacks zip(strict=True); repeated with supported Python3.14. The initial missing-source diagnostic is retained. JDK outputs were checked against the independent model.",
+    "diagnostic_sha256": "fa4585c39b95205c91c350ebab96f738baff1f30ac890333b5349be18ad419ee"
+  },
+  "bounds": [
+    "nominal source Int64 over existing i64/Int32; not a new primitive machine type or Java boxed Long",
+    "fixed790-case semantic comparisons, not exhaustive proof, project conversion or a performance benchmark",
+    "bitwise helpers scan64 positions; specialized lowering and throughput remain pending",
+    "typed ArithmeticError is distinct from the int module error and does not establish Java exception hierarchy semantics",
+    "normal installation retains host dependencies; public portable SDK0.246.1 stays immutable",
+    "full source/platform/device/portable-SDK qualification and the complete original NEX plan remain open",
+    "IEEE domains, nullability/class dispatch, shared reference task state and Python dynamic/big-integer semantics remain pending; converters remain deferred"
+  ]
+}

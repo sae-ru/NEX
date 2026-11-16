@@ -250,6 +250,7 @@
     "containers": ["extended", "browser", "platform", "sdk"],
     "ordered_containers": ["extended", "browser", "platform", "sdk"],
     "java_int": ["extended", "browser", "platform", "sdk"],
+    "java_long": ["extended", "browser", "platform", "sdk"],
     "managed_cells_runtime": ["extended", "platform"],
     "value_retirement_runtime": ["core"],
     "value_owner_runtime": ["core"],

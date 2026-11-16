@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.265.0"
+applies_to: "language 0.28; toolchain 0.266.0"
 owner: repository
 generated_from: README.md#development-status
 ---
@@ -12,14 +12,15 @@ It reports recorded evidence, not a live observation of devices or remote jobs.
 For syntax and capabilities, query the selected compiler. For detailed history,
 use [STATUS](../STATUS.md); for next work, use [development priorities](development-priorities.md).
 
-Current source: **toolchain 0.265.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.266.0 / language 0.28 / task ABI 7**, in development.
 The compiler fallback remains0.28. `nex.json` selects0.28,0.29 or0.30 per project;
 new `nex init` projects select0.30. Language0.29 adds partial type lambdas and
 higher-order kinds;0.30 adds typed cells and the `state` effect. Retained projects
 preserve their selected version and require explicit migration to change it.
 
 Recent source adds persistent AVL [ordered map/set](ordered-containers.md),
-an explicit [Java int domain](java-integers.md) and resource-owning cells.
+explicit [Java int](java-integers.md) / [long](java-long.md) domains
+and resource-owning cells. These numerical APIs preserve ordinary checked arithmetic.
 [Ordinary030 projects](references030.md) use canonical reference graphs,
 guarded migration and normal CLI authoring, static components, API projection
 and captured-task replay. See the [cell example](../examples/references/README.md).
@@ -31,8 +32,8 @@ Ordinary values and retained snapshots now use
 Reference task/parallel transfer, persistent UI state, live cell debugger views,
 machine i32 and other [migration prerequisites](migration-readiness.md)
 remain open. Focused development acceptance is separate from full SDK/platform gates.
-The [0.265 receipt](evidence/references030-cli-0.265.0-2026-11-16.json)
-records source/installation checks and their exact limits.
+[030 CLI](evidence/references030-cli-0.265.0-2026-11-16.json) and
+[long](evidence/java-long-0.266.0-2026-11-16.json) qualification retain exact scopes.
 The [implementation sequence](implementation-1-6.md) tracks remaining work.
 
 The [0.246.1 macOS source regression](evidence/full-ctest-0.246.1-current-2026-11-15.json)

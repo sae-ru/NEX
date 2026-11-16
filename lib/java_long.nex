@@ -1,0 +1,113 @@
+module std::java_long;
+import "std/java_int.nex" as ints;
+
+// Explicit Java long arithmetic. Ordinary NEX i64 operators remain checked.
+pub struct Int64 { value: i64; }
+pub struct ArithmeticError { operation: str; }
+
+pub fn from_i64(value: i64) -> Int64 { return Int64(value); }
+pub fn to_i64(value: Int64) -> i64 { return value.value; }
+pub fn from_int(value: ints::Int32) -> Int64 { return Int64(ints::to_i64(value)); }
+pub fn narrow_int(value: Int64) -> ints::Int32 { return ints::from_i64(value.value); }
+pub fn narrow_byte(value: Int64) -> ints::Int32 { return ints::narrow_byte(narrow_int(value)); }
+pub fn narrow_short(value: Int64) -> ints::Int32 { return ints::narrow_short(narrow_int(value)); }
+pub fn narrow_char(value: Int64) -> ints::Int32 { return ints::narrow_char(narrow_int(value)); }
+
+pub fn add(left: Int64, right: Int64) -> Int64 {
+  let a: i64 = left.value; let b: i64 = right.value;
+  if b > 0 && a > 9223372036854775807 - b {
+    return Int64(-9223372036854775808 + (a - (9223372036854775807 - b) - 1));
+  }
+  if b < 0 && a < -9223372036854775808 - b {
+    return Int64(9223372036854775807 + (a - (-9223372036854775808 - b) + 1));
+  }
+  return Int64(a + b);
+}
+pub fn negate(value: Int64) -> Int64 {
+  if value.value == -9223372036854775808 { return value; }
+  return Int64(-value.value);
+}
+pub fn subtract(left: Int64, right: Int64) -> Int64 { return add(left, negate(right)); }
+
+fn high_word(value: Int64) -> ints::Int32 {
+  var high: i64 = value.value / 4294967296;
+  if value.value < 0 && value.value % 4294967296 != 0 { high = high - 1; }
+  return ints::from_i64(high);
+}
+fn unsigned_word(value: ints::Int32) -> i64 {
+  let word: i64 = ints::to_i64(value);
+  if word < 0 { return word + 4294967296; }
+  return word;
+}
+fn join_words(high: ints::Int32, low: ints::Int32) -> Int64 {
+  return Int64(ints::to_i64(high) * 4294967296 + unsigned_word(low));
+}
+struct Digits { first: i64; second: i64; third: i64; fourth: i64; }
+fn digits(value: Int64) -> Digits {
+  let low: i64 = unsigned_word(narrow_int(value));
+  let high: i64 = unsigned_word(high_word(value));
+  return Digits(low % 65536, low / 65536, high % 65536, high / 65536);
+}
+pub fn multiply(left: Int64, right: Int64) -> Int64 {
+  let a: Digits = digits(left); let b: Digits = digits(right);
+  // Four base-2^16 columns retain exactly the low64 product bits. Each
+  // intermediate is below2^34, including its carry, and fits checked i64.
+  let first: i64 = a.first * b.first;
+  let second: i64 = a.first * b.second + a.second * b.first + first / 65536;
+  let third: i64 = a.first * b.third + a.second * b.second + a.third * b.first + second / 65536;
+  let fourth: i64 = a.first * b.fourth + a.second * b.third + a.third * b.second + a.fourth * b.first + third / 65536;
+  var top: i64 = fourth % 65536;
+  if top >= 32768 { top = top - 65536; }
+  return Int64(top * 281474976710656 + (third % 65536) * 4294967296 + (second % 65536) * 65536 + first % 65536);
+}
+pub fn divide(left: Int64, right: Int64) -> Int64 !{throw} {
+  if right.value == 0 { throw(ArithmeticError("divide")); }
+  if left.value == -9223372036854775808 && right.value == -1 { return left; }
+  return Int64(left.value / right.value);
+}
+pub fn remainder(left: Int64, right: Int64) -> Int64 !{throw} {
+  if right.value == 0 { throw(ArithmeticError("remainder")); }
+  if left.value == -9223372036854775808 && right.value == -1 { return Int64(0); }
+  return Int64(left.value % right.value);
+}
+pub fn bit_and(left: Int64, right: Int64) -> Int64 {
+  return join_words(ints::bit_and(high_word(left), high_word(right)), ints::bit_and(narrow_int(left), narrow_int(right)));
+}
+pub fn bit_or(left: Int64, right: Int64) -> Int64 {
+  return join_words(ints::bit_or(high_word(left), high_word(right)), ints::bit_or(narrow_int(left), narrow_int(right)));
+}
+pub fn bit_xor(left: Int64, right: Int64) -> Int64 {
+  return join_words(ints::bit_xor(high_word(left), high_word(right)), ints::bit_xor(narrow_int(left), narrow_int(right)));
+}
+pub fn bit_not(value: Int64) -> Int64 { return Int64(-1 - value.value); }
+fn distance(value: i64) -> i64 {
+  var count: i64 = value % 64;
+  if count < 0 { count = count + 64; }
+  return count;
+}
+pub fn shift_left(value: Int64, amount: i64) -> Int64 {
+  let count: i64 = distance(amount);
+  if count == 0 { return value; }
+  let high: ints::Int32 = high_word(value); let low: ints::Int32 = narrow_int(value);
+  if count >= 32 { return join_words(ints::shift_left(low, count - 32), ints::from_i64(0)); }
+  return join_words(ints::bit_or(ints::shift_left(high, count), ints::unsigned_shift_right(low, 32 - count)), ints::shift_left(low, count));
+}
+pub fn shift_right(value: Int64, amount: i64) -> Int64 {
+  let count: i64 = distance(amount);
+  if count == 0 { return value; }
+  let high: ints::Int32 = high_word(value); let low: ints::Int32 = narrow_int(value);
+  if count >= 32 { return join_words(ints::shift_right(high, 31), ints::shift_right(high, count - 32)); }
+  return join_words(ints::shift_right(high, count), ints::bit_or(ints::unsigned_shift_right(low, count), ints::shift_left(high, 32 - count)));
+}
+pub fn unsigned_shift_right(value: Int64, amount: i64) -> Int64 {
+  let count: i64 = distance(amount);
+  if count == 0 { return value; }
+  let high: ints::Int32 = high_word(value); let low: ints::Int32 = narrow_int(value);
+  if count >= 32 { return join_words(ints::from_i64(0), ints::unsigned_shift_right(high, count - 32)); }
+  return join_words(ints::unsigned_shift_right(high, count), ints::bit_or(ints::unsigned_shift_right(low, count), ints::shift_left(high, 32 - count)));
+}
+pub fn compare(left: Int64, right: Int64) -> i64 {
+  if left.value < right.value { return -1; }
+  if left.value > right.value { return 1; }
+  return 0;
+}

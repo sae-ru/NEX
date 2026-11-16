@@ -1,0 +1,40 @@
+{
+  "schema": "nex.hosted-core-result/1",
+  "toolchain": "0.265.0",
+  "source_commit": "827e506d7c2e3751fe40b7caaf42e6b2909cee9f",
+  "run_id": 43881311961,
+  "url": "https://github.com/sae-ru/NEX/actions/runs/43881311961",
+  "status": "completed",
+  "conclusion": "failure",
+  "observed_at": "2026-11-16T14:30:09.639940+00:00",
+  "authority": "visible GitHub workflow summary in in-app browser; anonymous REST polling later hit its rate limit",
+  "jobs": [
+    {
+      "name": "linux-core",
+      "status": "completed",
+      "conclusion": "success",
+      "duration_seconds": 288,
+      "job_id": 133347624040
+    },
+    {
+      "name": "macos-core",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "duration_seconds": 901,
+      "job_id": 133347624372,
+      "runner_acquired": false,
+      "source_tests_executed": false
+    }
+  ],
+  "failure_kind": "hosted runner acquisition and service capacity; not a macOS source-test result",
+  "annotations": [
+    "The macOS hosted job could not acquire a runner after repeated attempts.",
+    "The workflow summary reported an internal service error.",
+    "GitHub warned of capacity constraints for macOS ARM64 runners."
+  ],
+  "linux_artifact": {
+    "name": "linux-core-43881311961-1",
+    "reported_size": "65.4 KB",
+    "sha256": "b85d761630368a7d071dff83182deb1ec816f1bd1d8f25bfa65fbb69e7fba741"
+  }
+}

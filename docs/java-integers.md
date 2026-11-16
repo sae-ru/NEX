@@ -10,7 +10,8 @@ owner: repository
 [language migration readiness](migration-readiness.md). It is an ordinary source
 module using nominal `Int32 { value:i64; }` values. It adds no syntax or converter,
 and does not change ordinary checked NEX arithmetic. Native machine-width i32,
-Java long/float/double and the general Java object/exception model remain pending.
+Java float/double and the general Java object/exception model remain pending.
+Toolchain0.266 separately adds an explicit [Java long domain](java-long.md).
 No Java runtime is required to execute this NEX module.
 
 ```nex

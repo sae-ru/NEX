@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.265.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.266.0"
 owner: repository
 ---
 
@@ -90,7 +90,7 @@ version/history migration remain open; see [value exports](managed-reference-val
 
 | Required behavior | Existing foundation | Missing language/runtime result |
 |---|---|---|
-| Java `int`/`long`, casts, bits and shifts | Checked i64 and an explicit nominal Java32 domain with qualified wrapping/cast/bit/shift behavior | Java long, remaining narrow-width domains/conversions and efficient machine-width native lowering |
+| Java `int`/`long`, casts, bits and shifts | Checked i64 and explicit nominal Java32/Java64 domains with wrapping/cast/bit/shift behavior | Primitive widths/specialized lowering, remaining Java numeric conversions and their SDK/platform qualification |
 | Java `float`/`double` | Finite f64; zero normalization | Binary32, IEEE special values, signed zero, casts and specified rounding in an explicit domain |
 | Java object references and identity | Immutable values, owned resources; ordinary030 sequential cells, static components and HTTP request contexts | Nullability/class layouts, reference task integration and full SDK/platform qualification |
 | Java classes and interfaces | Records, enums, generics, coherent static traits | Constructors/class initialization, virtual/interface dispatch, subtyping and runtime type tests; generic erasure/boxing rules |
@@ -140,6 +140,12 @@ This closes project selection, not the Java/Python object models or a new
 portable SDK release.
 
 ## Python-specific preparation
+
+Toolchain0.266 adds the [Java long value domain](java-long.md): wrapping64
+arithmetic, masked shifts, signed division/remainders and integral conversions.
+It is ordinary source over existing i64/Int32, not a new primitive, Java boxed
+object or complete numeric runtime. IEEE domains and specialized lowering remain
+open. Python's unbounded integers require their own implementation.
 
 Python migration requires more than translating syntax. The current cell
 foundation can express typed identity and shared mutation; it does not provide

@@ -7,6 +7,7 @@ const std::map<std::string,std::string> &cliGuides(){
   static const std::map<std::string,std::string> files={
     {"format","docs/formatting.md"},
     {"stdlib","docs/stdlib.md"},
+    {"java-long","docs/java-long.md"},
     {"quick","llm/QUICK_REFERENCE.md"},
     {"references","docs/references030.md"},
     {"reference-http","docs/reference-http.md"},

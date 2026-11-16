@@ -125,6 +125,12 @@ and typed division errors. Its representation uses checked i64 source arithmetic
 machine i32 and general Java/Python compatibility remain pending. This prepares
 language semantics without implementing a project converter.
 
+Toolchain0.266 adds [`std/java_long.nex`](java-long.md), a nominal signed64
+domain with exact wrapping arithmetic, bits/shifts, narrowing/sign extension
+and typed division errors. Ordinary checked i64 operators remain unchanged.
+The implementation uses bounded source arithmetic, rather than a new primitive
+type; specialized lowering and Java/Python runtime compatibility remain pending.
+
 `std/list.nex` `generate`, `map`, `filter`, `fold`, `any`, `all`, `find_index` and `sort_by` use inferred effect parameter `?E`:
 a callback's effects flow into the named function's result and must be declared
 by the caller. Pure callbacks infer the empty set, so existing calls keep their
@@ -148,7 +154,7 @@ meaning. See [inferred effect parameters](effect-parameters.md).
 
 ## Pins and validation
 
-The compiled descriptor contains SHA256 pins for the three source files. CMake
+The compiled descriptor contains SHA256 pins for every advertised source module. CMake
 refreshes them when a library file changes. `nex lock` still uses its existing
 content-hash dependency format. A pre-existing project with old pins must fail
 until its dependency update is reviewed and `nex lock` is run explicitly. A

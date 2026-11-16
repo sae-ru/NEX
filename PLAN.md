@@ -1,3 +1,31 @@
+# Explicit Java long arithmetic — development0.266.0
+
+The ordinary source module `std/java_long.nex` adds a nominal signed64 domain:
+wrapping arithmetic, bits, masked shifts, division/remainder edges and integral
+narrowing/sign extension. It uses existing checked i64 source operations and
+keeps ordinary NEX arithmetic unchanged. Multiplication has four bounded16-bit
+columns; bit helpers reuse two canonical32 words. No primitive type, Java boxed
+object, exception hierarchy or converter is introduced.
+Read the [long contract](docs/java-long.md) and [example](examples/java-long/README.md).
+
+The fixed790-vector oracle is observed on a real JDK and checked independently
+with unbounded mathematical integers. Source acceptance compares reference,
+native Debug/Release and strict executed TypeScript, including typed division
+errors, integral casts, wire values and retained checked NEX overflow. Matching
+normal-installation and core/affected results are retained in the
+[scoped qualification](docs/evidence/java-long-0.266.0-2026-11-16.json).
+Full compiler/platform/portable-SDK qualification remains separate.
+
+The [preceding0.265 core CI](docs/evidence/core-ci-0.265.0-2026-11-16.json)
+passed Linux. GitHub cancelled macOS before runner acquisition after its capacity/
+service failure; it did not execute the source tests. This is recorded as a
+failed workflow, not a passing Mac result. Public portable SDK0.246.1 is immutable.
+
+Machine-width specialization, IEEE domains, nullability/class dispatch,
+reference task transfer, persistent UI state and Python dynamic/big-integer
+semantics remain required, along with every original PLAN item. Converters stay
+deferred until the language/runtime foundations are ready.
+
 # Ordinary source0.30 projects — development0.265.0
 
 New `nex init` projects now select0.30 explicitly. Ordinary check/eval/run/test,

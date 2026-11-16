@@ -1,7 +1,11 @@
 {
   "schema": "nex.language-pack/1",
   "language_version": "0.28",
-  "project_languages": ["0.28", "0.29", "0.30"],
+  "project_languages": [
+    "0.28",
+    "0.29",
+    "0.30"
+  ],
   "language_pack_contract": {
     "authority": "selected compiled descriptor",
     "command": "python3 tools/llm/language_pack.py --compiler NEX --resources RESOURCES --check",
@@ -618,7 +622,9 @@
     "managed_reference_modules": "docs/managed-reference-modules.md",
     "managed_reference_requests": "docs/managed-reference-requests.md",
     "managed_reference_resources": "docs/managed-reference-resources.md",
-    "managed_reference_owned_payloads": "docs/managed-reference-owned-payloads.md"
+    "managed_reference_owned_payloads": "docs/managed-reference-owned-payloads.md",
+    "standard_java_long_source": "lib/java_long.nex",
+    "java_long": "docs/java-long.md"
   },
   "document_access": "nex guide --kind format|text-construction|bytes-construction|source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -738,7 +744,10 @@
     "ordered_containers_lock": "examples/ordered-containers/nex.lock.json",
     "java_int_project": "examples/java-int/nex.json",
     "java_int_source": "examples/java-int/main.nex",
-    "java_int_lock": "examples/java-int/nex.lock.json"
+    "java_int_lock": "examples/java-int/nex.lock.json",
+    "java_long_project": "examples/java-long/nex.json",
+    "java_long_source": "examples/java-long/main.nex",
+    "java_long_lock": "examples/java-long/nex.lock.json"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -4936,6 +4945,51 @@
         "search": "Two-Way byte search over validated UTF-8; O(n+m) comparisons, constant search state",
         "sha256": "e5df668d9fd6bea6bf248eb26a79da892576753622e16382bb74292da1b55d64",
         "trim_White_Space": "Unicode17.0.0;25 code points"
+      },
+      "java_long": {
+        "import": "std/java_long.nex",
+        "module": "std::java_long",
+        "resource": "lib/java_long.nex",
+        "introduced_toolchain": "0.266.0",
+        "types": [
+          "Int64",
+          "ArithmeticError"
+        ],
+        "functions": [
+          "from_i64",
+          "to_i64",
+          "from_int",
+          "narrow_int",
+          "narrow_byte",
+          "narrow_short",
+          "narrow_char",
+          "add",
+          "negate",
+          "subtract",
+          "multiply",
+          "divide",
+          "remainder",
+          "bit_and",
+          "bit_or",
+          "bit_xor",
+          "bit_not",
+          "shift_left",
+          "shift_right",
+          "unsigned_shift_right",
+          "compare"
+        ],
+        "representation": "nominal Int64{value:i64}; all i64 payloads are canonical; not a new primitive type",
+        "native_primitive_type": false,
+        "arithmetic": "explicit signed 64-bit wraparound; ordinary NEX checked arithmetic unchanged",
+        "shifts": "mask the distance to six low bits, including negative distances; signed or unsigned right shift explicitly selected",
+        "division": "truncate toward zero; MIN/-1 wraps; MIN%-1 is zero; zero divisor throws typed ArithmeticError",
+        "effects": "divide/remainder require throw; all other operations pure",
+        "conversions": "from_int sign-extends canonical Int32; narrow_int/byte/short/char retain the required low bits and return Int32",
+        "cost": "bounded i64 source arithmetic; multiplication has four base-2^16 columns; bitwise helpers scan64 positions; no primitive-operation throughput claim",
+        "guide": "docs/java-long.md",
+        "example": "examples/java-long/nex.json",
+        "mutation": false,
+        "sha256": "9d782a03f2f6e89f49c41e18cc912d638a66a24764c5e055af40a205721d5b6f"
       }
     },
     "pending": [
