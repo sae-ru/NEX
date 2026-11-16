@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.258.0"
+applies_to: "language 0.28; toolchain 0.259.0"
 owner: repository
 ---
 
@@ -71,6 +71,12 @@ Toolchain0.258 adds request-owned heap lifetime and a private native request
 entry for repeated scalar-status/source-error calls. Cancellation, budget and
 deadline checks close source ownership on the request's thread. HTTP/source
 resource integration, task transfer and reference-valued host returns stay open.
+
+Toolchain0.259 composes private references with sequential server fs/ffi calls and
+their existing owned file/external resources in local/call/typed-error paths.
+An enclosing explicit reference-host file capability is respected. Owned values
+remain forbidden inside cells, including actual captured values. This does not
+qualify database/task/HTTP adapters or Java/Python resource finalization semantics.
 
 | Required behavior | Existing foundation | Missing language/runtime result |
 |---|---|---|

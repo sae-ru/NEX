@@ -17,6 +17,9 @@ install(FILES tests/cells.cpp tests/managed_references.cpp DESTINATION share/nex
 install(FILES tests/value_owner.cpp tests/value_owner_module.cpp tests/value_retirement.cpp tests/value_retirement.py DESTINATION share/nex/tests)
 install(FILES tests/managed_reference_native.cpp tests/managed_reference_native.py DESTINATION share/nex/tests)
 install(FILES tests/managed_reference_requests.cpp tests/managed_reference_request_host.h DESTINATION share/nex/tests)
+install(FILES tests/managed_reference_resources.cpp tests/managed_reference_resource_host.h
+  tests/managed_reference_resources.py tests/managed_reference_resource_cases.py
+  tests/source_exception_host.py tests/host_file_observers.h DESTINATION share/nex/tests)
 install(FILES tests/managed_heap_trace.cpp tests/managed_heap_typescript.py tests/managed_heap_driver.ts DESTINATION share/nex/tests)
 install(FILES tests/managed_reference_typescript.cpp tests/managed_reference_typescript.py tests/managed_reference_cases.py DESTINATION share/nex/tests)
 install(FILES tests/managed_reference_modules.cpp tests/managed_reference_module_cases.py DESTINATION share/nex/tests)

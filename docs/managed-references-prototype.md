@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.257.0; private 0.30-refs-prototype candidate"
+applies_to: "toolchain 0.259.0; private 0.30-refs-prototype candidate"
 owner: repository
 ---
 
@@ -101,8 +101,8 @@ strict executed TypeScript, including retained snapshots, explicit collection,
 effect rejection and phantom constructor arguments that must not enter JSON.
 This binding correction changes no public source version or graph format.
 
-There are no tasks, parallel execution, imported projects, endpoints or
-fs/db/ffi execution in this candidate. These are pending integration work,
+There are no tasks, parallel execution, ordinary imported projects, endpoints or
+db execution in this candidate. These are pending integration work,
 not newly removed capabilities of ordinary NEX. The private host entry can
 return unit or an immutable wire value; cells, cell-containing types (including
 phantom arguments) and closures cannot escape through JSON. Source debugging,
@@ -119,6 +119,11 @@ Toolchain0.258 also provides a [private native request host](managed-reference-r
 with separate per-request ownership and repeated source calls. It adds no source
 effect, HTTP adapter or ordinary project selection and keeps the stage restrictions
 above, including owned payload/task rejection.
+
+Toolchain0.259 adds sequential server [file/foreign resource coexistence](managed-reference-resources.md)
+in reference/native application and request contexts. An explicit host file scope
+is respected. Owned values may coexist with cells in ordinary local/call/error
+paths; they remain forbidden as cell payloads, including hidden owned captures.
 
 ## Context ownership and bounds
 

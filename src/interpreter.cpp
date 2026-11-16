@@ -23,7 +23,7 @@ namespace {
 using V=nexrt::Value;
 struct Returned { V value; };
 class Interpreter {
-  nexrt::FileScope files;
+  std::unique_ptr<nexrt::FileScope> files;
   E atomRoot;unsigned outerDepth=0;
   const TaskControlPoll *controlPoll=nullptr;
   const Program &p; uint64_t limit; Evaluation result;
@@ -325,7 +325,15 @@ class Interpreter {
     if(atomRoot&&(f.effects.contains("fs")||f.effects.contains("db")||f.effects.contains("ffi")))
       throw Error("E_TASK_UNIMPLEMENTED","task atoms cannot execute synchronous resource helpers",f.span);
     if(frames.size()+outerDepth>=256)throw Error("E_LIMIT","interpreter call depth limit exceeded",f.span);
-    if(f.foreign)return nexrt::invokeScopedForeign(json(foreignBinding(p,f),false),args,[&]{step(f.span);});
+    if(f.foreign){
+      try{return nexrt::invokeScopedForeign(json(foreignBinding(p,f),false),args,[&]{step(f.span);});}
+      catch(const nexrt::DataError &error){
+        // The private native adapter attributes provider/contract failures to
+        // this external declaration. Keep its reference diagnostic identical.
+        if(cellHeap)throw Error(error.code,error.message,f.span);
+        throw;
+      }
+    }
     frames.emplace_back(1);struct PopFrame {decltype(frames)&stack;~PopFrame(){stack.pop_back();}} pop{frames};
     for(size_t i=0;i<args.size();++i)frames.back().back().values[f.params[i].name]=args[i];
     if(f.closure){if(!environment||environment->object->values.size()!=f.captures.size())throw Error("E_FUNCTION","closure environment does not match checked target",f.span);for(size_t i=0;i<f.captures.size();++i){if(watch)frames.back().back().lazy[f.captures[i].name]=[this,value=*environment,i]{return watch->capture(value,i);};else frames.back().back().values[f.captures[i].name]=environment->object->values[i];}}
@@ -333,7 +341,7 @@ class Interpreter {
     return value;
   }
 public:
-  Interpreter(const Program &p,uint64_t limit,bool atoms=false,const TaskControlPoll *control=nullptr,const nexrt::CellHeapLimits *cellLimits=nullptr):controlPoll(control),p(p),limit(limit),cellHeap(supportsManagedReferences(p)?std::make_unique<nexrt::CellHeap>(cellLimits?*cellLimits:nexrt::CellHeapLimits{}):nullptr){if(!atoms&&p.sourceLanguage!=SourceLanguage::SourceExceptions025Prototype&&!supportsManagedReferences(p)&&(!p.taskPrototype||isPublicTaskLanguage(p)))for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
+  Interpreter(const Program &p,uint64_t limit,bool atoms=false,const TaskControlPoll *control=nullptr,const nexrt::CellHeapLimits *cellLimits=nullptr):files(supportsManagedReferences(p)&&nexrt::inFileScope()?nullptr:std::make_unique<nexrt::FileScope>()),controlPoll(control),p(p),limit(limit),cellHeap(supportsManagedReferences(p)?std::make_unique<nexrt::CellHeap>(cellLimits?*cellLimits:nexrt::CellHeapLimits{}):nullptr){if(!atoms&&p.sourceLanguage!=SourceLanguage::SourceExceptions025Prototype&&!supportsManagedReferences(p)&&(!p.taskPrototype||isPublicTaskLanguage(p)))for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
   TaskAtomResult atom(E expression,const std::map<std::string,V> &values,unsigned depth){
     atomRoot=expression;outerDepth=depth;frames.emplace_back(1);frames.back().back().values=values;
     try{auto value=this->expression(expression);return {std::move(value),result.steps,result.output};}

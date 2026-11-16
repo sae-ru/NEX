@@ -257,6 +257,7 @@
     "managed_reference_modules_frontend": ["extended", "platform"],
     "managed_reference_modules_native": ["extended", "platform"],
     "managed_reference_requests_native": ["extended", "platform"],
+    "managed_reference_resources_native": ["extended", "platform"],
     "managed_reference_modules_typescript": ["extended", "browser", "platform"],
     "managed_references_native": ["extended", "platform"],
     "managed_reference_native_context": ["core"],

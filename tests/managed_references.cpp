@@ -212,13 +212,16 @@ fn main()->unit!{state,io}{let anchor:cell<i64>=cell_new(41);let same:cell<i64>=
     {"fn main()->unit!{state}{let x:cell<i64>=cell_new(1);cell_read<i64>(x);}","E_GENERIC_ARITY"},
     {"fn main()->unit!{state}{cell_new<i64,str>(1);}","E_GENERIC_ARITY"},
     {"server fn read(x:file)->cell<file>!{state}{return cell_new(x);}fn main()->unit{}","E_CELL_VALUE"},
+    {"server resource Owner;server fn hold(value:Owner)->cell<Owner>!{state}{return cell_new(value);}","E_CELL_VALUE"},
+    {"server resource Owner;struct Box<T>{value:T;}server fn hold(value:Box<Owner>)->cell<Box<Owner>>!{state}{return cell_new(value);}","E_CELL_VALUE"},
+    {"server extern fn read(value:cell<i64>)->i64!{ffi}=foreign(\"host\",\"read\",\"0000000000000000000000000000000000000000000000000000000000000000\");","E_FFI_SIGNATURE"},
     {"fn main()->unit!{state}{let x:cell<i64>=cell_new(1);encode_json(x);}","E_GENERIC_BOUND"},
     {"struct Marker<T>{}fn wire(x:Marker<cell<i64>>)->str{return encode_json(x);}fn main()->unit{}","E_GENERIC_BOUND"},
     {"struct Wrap<F<_>>{value:F<i64>;}struct Marker<F<_<_>>,G<_>>{}fn main()->unit{let marker:Marker<Wrap,cell>=Marker<Wrap,cell>();encode_json(marker);}","E_GENERIC_BOUND"},
     {"trait Content{type Item;fn get(value:Self)->Content::Item<Self>!{state};}fn extract<T>(value:cell<T>)->T!{state}{return cell_read(value);}impl cells<T>:Content for cell<T>{type Item=T;get=extract<T>;}fn read<T:Content>(value:T)->Content::Item<T>{return Content<T>::get(value);}fn main()->unit{}","E_EFFECT"},
     {"struct Wrap<F<_>>{value:F<i64>;}fn hold<F<_<_>>,G<_>>(value:F<G>)->F<G>{return value;}fn main()->unit!{state}{let stored:cell<i64>=cell_new(1);hold<cell,cell>(stored);}","E_GENERIC_KIND"},
     {"fn main()->unit{parallel_map([1],fn(x:i64)->i64{return x;},1);}","E_CELL_STAGE"},
-    {"server fn main()->unit!{fs}{}","E_CELL_STAGE"},
+    {"server fn main()->unit!{db}{}","E_CELL_STAGE"},
     {"import \"other.nex\" as other;fn main()->unit{}","E_CELL_STAGE"}
   })bad(source,code);
   auto p=checked("fn main()->unit!{state}{let x:cell<i64>=cell_new(1);cell_write(x,2);}");

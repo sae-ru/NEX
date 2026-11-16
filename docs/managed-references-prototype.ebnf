@@ -7,6 +7,9 @@
 (* Toolchain0.256 scopes declaration-local generic binders and trait Self before
    checking. 0.29 partial type lambdas/higher-order kinds retain their grammar;
    trait method argument lists are bound before specialization. No new token. *)
+(* Toolchain0.259 also accepts the existing server resource/external declarations
+   and sequential fs/ffi effects alongside state. Their public grammar is reused;
+   owned payloads in cells, db, tasks, endpoints and parallel execution stay out. *)
 private_cell_type = "cell", "<", type, ">" ;
 private_cell_constructor = "cell" ; (* Unary higher-kinded type argument. *)
 private_effect = "state" ;

@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.257.0; private 0.30-refs-prototype candidate"
+applies_to: "toolchain 0.259.0; private 0.30-refs-prototype candidate"
 owner: repository
 ---
 
@@ -95,7 +95,7 @@ unchanged. npm dependencies, lock and notices are unchanged.
 
 ## Current boundaries and checks
 
-Tasks, parallel execution, owned file/external payloads, resource effects and
+Tasks, parallel execution, owned file/external cell payloads, database effects and
 endpoints remain outside this candidate. Cells cannot leave the unit/wire host
 entry. There is no cross-thread memory model, public migration, module/DLL host
 ABI, source debugger/profile integration or matching portable SDK release.
@@ -104,6 +104,11 @@ Toolchain0.258's [private native request entry](managed-reference-requests.md)
 can run this same checked module closure in a matching C++ `RequestScope`, with
 one heap across its calls. It does not turn the source modules into independent
 DLL providers or publish a new source/HTTP ABI.
+
+Toolchain0.259 permits sequential server fs/ffi functions in the private checker;
+the [resource coexistence guide](managed-reference-resources.md) records their
+owned-value/context contract and its focused single-unit qualification. Complete
+imported-resource, component and platform qualification remains separate.
 
 `tests/managed_reference_modules.cpp` checks cross-unit state and module/archival
 rejections. The fast existing reference probe also consumes a two-unit bundle.

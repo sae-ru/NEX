@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.258.0"
+applies_to: "language 0.28; toolchain 0.259.0"
 owner: repository
 ---
 
@@ -48,6 +48,10 @@ application. A private generated entry preserves source errors and scalar
 status across repeated calls, with request polling and owner-thread cleanup.
 Public source/HTTP integration, owned payloads, task transfer and DLL/reference
 returns remain open; see [the request contract](managed-reference-requests.md).
+
+The0.259 private candidate also accepts sequential server fs/ffi calls alongside
+cells. Ordinary locals, closures and error packets retain existing owned-resource
+cleanup; cells still reject owned payloads. See [resource coexistence](managed-reference-resources.md).
 
 | Item | Implemented baseline | Remaining result | Acceptance |
 |---|---|---|---|

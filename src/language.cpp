@@ -95,7 +95,7 @@ std::string closestName(const std::string &name,const std::vector<std::string> &
   return count==1&&best<=limit?selected:std::string{};
 }
 const std::set<std::string> &externalResourceBuiltins(){static const std::set<std::string> names={"resource_close","resource_is_open"};return names;}
-bool supportsExternalResources(const Program &p){return supportsSourceExceptionTasks(p)||p.sourceLanguage==SourceLanguage::OwnedResources021||p.sourceLanguage==SourceLanguage::TaskForeign022||p.sourceLanguage==SourceLanguage::TaskWrites023||p.sourceLanguage==SourceLanguage::TaskStreams024;}
+bool supportsExternalResources(const Program &p){return supportsManagedReferences(p)||supportsSourceExceptionTasks(p)||p.sourceLanguage==SourceLanguage::OwnedResources021||p.sourceLanguage==SourceLanguage::TaskForeign022||p.sourceLanguage==SourceLanguage::TaskWrites023||p.sourceLanguage==SourceLanguage::TaskStreams024;}
 const std::set<std::string> &streamFileBuiltins(){
   static const std::set<std::string> names={"file_open_read","file_open_write","file_open_append","file_read","file_write","file_seek","file_size","file_flush","file_close","file_is_open"};return names;
 }
@@ -689,6 +689,7 @@ public:
     p.source=std::move(source);p.path=std::move(path);p.taskPrototype=tasks;
     if(resources)p.sourceLanguage=SourceLanguage::OwnedResources021;
     if(exceptions)p.sourceLanguage=SourceLanguage::SourceExceptions025Prototype;
+    if(cells)p.sourceLanguage=SourceLanguage::ManagedReferencesPrototype;
     try{Lexer lex(p.source,p.path);
       do {tokens.push_back(lex.next());if(maxTokens&&tokens.size()>maxTokens)throw Error("E_DEBUG_LIMIT","expression exceeds its token budget",tokens.back().span);}while(tokens.back().kind!=Token::End);
     }catch(Error &error){annotate(error);throw;}
@@ -824,8 +825,8 @@ class Checker {
   bool allowsEffect(const std::string &effect)const{return f->effects.contains(effect)||(exceptionPrototype()&&effect=="throw"&&exceptionHandlers);}
   static bool effectParameter(const std::string &effect){return effect.size()>1&&effect[0]=='?';}
   void prototypeEffects(const Function &fn)const{
-    if(supportsManagedReferences(p))for(const auto &effect:fn.effects)if(effect!="io"&&effect!="state"&&effect!="throw"&&!effectParameter(effect))
-      throw Error("E_CELL_STAGE","private reference evaluation supports sequential pure/io/state/throw functions",fn.span);
+    if(supportsManagedReferences(p))for(const auto &effect:fn.effects)if(effect!="io"&&effect!="state"&&effect!="throw"&&effect!="fs"&&effect!="ffi"&&!effectParameter(effect))
+      throw Error("E_CELL_STAGE","private reference evaluation supports sequential pure/io/state/throw/fs/ffi functions",fn.span);
     if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)for(const auto &effect:fn.effects)if(effect!="io"&&effect!="throw"&&!(p.taskPrototype&&(effect=="task"||effect=="fs"||effect=="ffi")))
       throw Error("E_EXCEPTION_STAGE","private source exception prototype supports pure/io/throw; task/fs/ffi require its dedicated task parser",fn.span);
   }

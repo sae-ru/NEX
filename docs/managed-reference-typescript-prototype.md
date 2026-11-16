@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.257.0; private 0.30-refs-prototype candidate"
+applies_to: "toolchain 0.259.0; private 0.30-refs-prototype candidate"
 owner: repository
 ---
 
@@ -33,7 +33,10 @@ The API requires the private identity and a fully checked program. The entry
 takes no arguments and returns unit or an immutable wire-capable type. A cell,
 closure or owned authority cannot escape to the host. Realm checks apply to the
 reachable entry closure; unreachable server code is omitted. The private parser
-still excludes imports/endpoints, task/parallel execution and resource effects.
+still excludes single-unit imports, endpoints and task/parallel execution.
+Toolchain0.259 accepts sequential server fs/ffi code for its reference/native
+hosts; the browser emitter rejects reachable server/resource functions and
+excludes unreachable ones.
 Limits must be positive safe JS integers.
 
 The [private module loader](managed-reference-modules.md) in toolchain0.257 also

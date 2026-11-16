@@ -1,3 +1,25 @@
+# Private reference/resource coexistence — development0.259.0
+
+Sequential private server fs/ffi functions now compose with cells in ordinary
+locals, closures and typed source-error packets. The reference engine respects
+an explicit host file scope. Native application/request execution retains owned
+cleanup, Result/finally/fatal rules and matching foreign-declaration diagnostics.
+Cells still reject file/external owners, including actual hidden captures.
+Reachable server/resource code remains excluded from the browser backend.
+
+Sixteen core and11 affected functional groups pass. Fifteen manual programs
+agree in reference and60 O0/O2 application/request comparisons, each with a
+matching-host image and independent executable (120 machine runs). All recorded
+contexts retire source values, file descriptors and external capacity. A moved
+normal installation rebuilds four focused programs/16 comparisons from installed
+runtime/test resources and passes public check/eval/native Release/test.
+[Exact qualification and initial failures](docs/evidence/managed-reference-resources-0.259.0-2026-11-16.json).
+[Preceding0.258 core CI](docs/evidence/core-ci-0.258.0-2026-11-16.json) passed on
+Mac/Linux. This remains private0.30-refs-prototype. Public references/history
+migration, owned cell payloads, complete imported-resource/component/HTTP/task
+integration, Java/Python semantics and full compiler/platform/portable-SDK gates
+remain open. Public languages0.28/0.29 and SDK0.246.1 are unchanged.
+
 # Private native request reference contexts — development0.258.0
 
 The matching-runtime RequestScope now owns its own lazy reference heap, including

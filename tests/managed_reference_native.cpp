@@ -11,6 +11,8 @@
 
 using namespace nex;
 unsigned testManagedReferenceRequests();
+bool managedReferenceResourceCommand(int argc,char **argv,int &status);
+int runManagedReferenceResourceImage(void *entry,bool request,const char *root,const char *catalogue,const char *report);
 namespace {
 unsigned destroyed=0,denied=0;
 void *factory(void *){return new int(42);}
@@ -32,6 +34,7 @@ int64_t contextEntry(int64_t,const char *const*){
 }
 }
 int main(int argc,char **argv){try{
+  int resourceStatus=0;if(managedReferenceResourceCommand(argc,argv,resourceStatus))return resourceStatus;
   if(argc==2&&std::string(argv[1])=="context"){
     auto status=nex_application_run(reinterpret_cast<void*>(contextEntry),0,nullptr);
     if(status||destroyed!=1||denied!=1)throw std::runtime_error("reference context teardown/reentry differs");
@@ -50,7 +53,9 @@ int main(int argc,char **argv){try{
     std::cout<<"{\"ok\":true,\"destroyed\":1,\"teardown_reentry_denied\":true,\"request_scenarios\":"<<requests<<",\"request_entry_gates\":"<<gates<<"}\n";return 0;
   }
   const bool requestRun=(argc==8||argc==11)&&std::string(argv[1])=="request-run";
-  if((argc==3&&std::string(argv[1])=="run")||requestRun){
+  const bool resourceRun=argc==6&&(std::string(argv[1])=="resources-run"||std::string(argv[1])=="resources-request-run");
+  const bool requestImage=requestRun||(resourceRun&&std::string(argv[1])=="resources-request-run");
+  if((argc==3&&std::string(argv[1])=="run")||requestRun||resourceRun){
     const auto baseline=nexrt::liveObjects.load();
     // Pull/export this exact cohort's cell helpers as well as its base runtime.
     if(nexrt::inRequestScope())nex_cell_collect(0);
@@ -59,15 +64,16 @@ int main(int argc,char **argv){try{
     auto library=LoadLibraryW(std::filesystem::absolute(argv[2]).c_str());
     if(!library)throw std::runtime_error("cannot load managed fixture image: "+std::to_string(GetLastError()));
     struct CloseImage{HMODULE value;~CloseImage(){FreeLibrary(value);}} closeImage{library};
-    auto address=GetProcAddress(library,requestRun?"nex_private_reference_request":"main");
+    auto address=GetProcAddress(library,requestImage?"nex_private_reference_request":"main");
     auto entry=reinterpret_cast<int(*)(int,const char *const*)>(address);
     if(!entry)throw std::runtime_error("cannot find managed fixture main: "+std::to_string(GetLastError()));
 #else
     auto library=dlopen(argv[2],RTLD_NOW|RTLD_LOCAL);if(!library)throw std::runtime_error(dlerror());
     struct CloseImage{void *value;~CloseImage(){dlclose(value);}} closeImage{library};
-    auto address=dlsym(library,requestRun?"nex_private_reference_request":"main");
+    auto address=dlsym(library,requestImage?"nex_private_reference_request":"main");
     auto entry=reinterpret_cast<int(*)(int,const char *const*)>(address);if(!entry)throw std::runtime_error(dlerror());
 #endif
+    if(resourceRun)return runManagedReferenceResourceImage(address,requestImage,argv[3],argv[4],argv[5]);
     if(requestRun)return runManagedRequests(reinterpret_cast<ManagedRequestEntry>(address),std::stoul(argv[3]),2,{std::stoull(argv[4]),std::stoull(argv[5]),std::stoull(argv[6])},argv[7],argc==11?std::stoull(argv[8]):4000000,argc==11?std::stoul(argv[9]):0,argc==11?std::stoull(argv[10]):10000);
     auto status=entry(0,nullptr);
     if(nexrt::liveObjects.load()!=baseline)throw std::runtime_error("native reference context left live values");

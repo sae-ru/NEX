@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.258.0; private 0.30-refs-prototype candidate"
+applies_to: "toolchain 0.259.0; private 0.30-refs-prototype candidate"
 owner: repository
 ---
 
@@ -76,8 +76,10 @@ poll is not rolled back. Budget/deadline failures follow the same cleanup path.
 These are cooperative checkpoints. GC/adoption traversal is not preemptive and
 has no separate work meter; this does not establish a hard interruption or
 real-time pause bound. Request step accounting includes its native polls and is
-not an exact AST-step count. General task resumption/state sharing, owned
-capabilities inside cells and source fs/ffi integration remain separate work.
+not an exact AST-step count. General task resumption/state sharing and owned
+capabilities inside cells remain separate work. Toolchain0.259 adds sequential
+[source fs/ffi coexistence](managed-reference-resources.md) with explicit host
+capabilities and the existing request resource bindings.
 
 ## Verification
 

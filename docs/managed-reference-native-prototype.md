@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.258.0; private 0.30-refs-prototype candidate"
+applies_to: "toolchain 0.259.0; private 0.30-refs-prototype candidate"
 owner: repository
 ---
 
@@ -51,6 +51,9 @@ revive during teardown. Failed creation can retry before the context ends.
 A separate [private request entry/context](managed-reference-requests.md) in
 toolchain0.258 shares the checked source closure without an application wrapper;
 its matching C++ host owns request limits, source-error slots and teardown.
+Toolchain0.259 adds sequential [source fs/ffi coexistence](managed-reference-resources.md)
+with the existing independent file/external owners; owned cell payloads remain
+rejected.
 Heap/thread checks and task/parallel rejection remain in force. Public module/DLL context
 ownership, host-returned references, synchronization, debugger/profile views and
 the shared mutable memory model still need their own integration.

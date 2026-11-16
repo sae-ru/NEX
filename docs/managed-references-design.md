@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.258.0; no public source-language extension"
+applies_to: "toolchain 0.259.0; no public source-language extension"
 owner: repository
 ---
 
@@ -32,6 +32,11 @@ and a private generated request entry. Source handles retire before the heap;
 cooperative request cancellation/budget/deadline checks retain their fatal-control
 behavior. Public HTTP adapters, resource payloads, task transfer and reference-
 valued host/module ABIs still need integration.
+
+Toolchain0.259 adds sequential [source fs/ffi coexistence](managed-reference-resources.md)
+in the private interpreter/native application/request paths. Files and external
+owners keep their existing independent lifetimes; accepting them as cell payloads
+still requires a separate contract.
 
 ## Current ownership contract
 
@@ -85,9 +90,9 @@ The private C++ API trusts the existing immutable-value invariant: callers must
 not mutate an adopted ordinary `Data::values` graph, forge a `Data::kind`, or
 acquire an otherwise dead graph through a weak pointer during collection.
 Weak observations in tests detect destruction; weak-reference acquisition,
-resurrection and user finalizers are not a language contract. Native execution
-contexts and libraries have not yet been integrated. The private reference
-interpreter and native candidate each own their sequential execution context;
+resurrection and user finalizers are not a language contract. Separate component
+reference ownership remains pending. The private interpreter and native
+application/request candidates each own their sequential execution context;
 The private [TypeScript source candidate](managed-reference-typescript-prototype.md)
 now implements boxed values, explicit roots and logical collection. Public
 entry/module/host integration and migration remain pending.
