@@ -11,11 +11,12 @@ install(DIRECTORY docs llm runtime examples lib web debug mobile DESTINATION sha
   PATTERN windows-tic-tac-toe/src/gui.nex EXCLUDE
   PATTERN tic-tac-toe/dist EXCLUDE PATTERN tic-tac-toe/src/gui.nex EXCLUDE)
 install(FILES AGENTS.md README.md README.ru.md LICENSE llms.txt STATUS.md PLAN.md THIRD_PARTY.md DESTINATION share/nex)
-install(FILES tests/sqlite_fixture.py tests/host_test.h tests/ffi_marker.h DESTINATION share/nex/tests)
+install(FILES tests/sqlite_fixture.py tests/host_fixture.py tests/host_test.h tests/ffi_marker.h DESTINATION share/nex/tests)
 install(FILES tests/fixtures/java-int32/Oracle.java tests/fixtures/java-int32/oracle.json DESTINATION share/nex/tests/fixtures/java-int32)
 install(FILES tests/cells.cpp tests/managed_references.cpp DESTINATION share/nex/tests)
 install(FILES tests/value_owner.cpp tests/value_owner_module.cpp tests/value_retirement.cpp tests/value_retirement.py DESTINATION share/nex/tests)
 install(FILES tests/managed_reference_native.cpp tests/managed_reference_native.py DESTINATION share/nex/tests)
+install(FILES tests/managed_reference_requests.cpp tests/managed_reference_request_host.h DESTINATION share/nex/tests)
 install(FILES tests/managed_heap_trace.cpp tests/managed_heap_typescript.py tests/managed_heap_driver.ts DESTINATION share/nex/tests)
 install(FILES tests/managed_reference_typescript.cpp tests/managed_reference_typescript.py tests/managed_reference_cases.py DESTINATION share/nex/tests)
 install(FILES tests/managed_reference_modules.cpp tests/managed_reference_module_cases.py DESTINATION share/nex/tests)

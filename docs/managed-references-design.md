@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.257.0; no public source-language extension"
+applies_to: "toolchain 0.258.0; no public source-language extension"
 owner: repository
 ---
 
@@ -26,6 +26,12 @@ Toolchain0.257's [private source modules](managed-reference-modules.md) share on
 execution context across imported files in a generated application. Public
 promotion/migration and separately compiled module/host reference ABIs remain
 open. Private reference/native/TypeScript checks have their own bounded receipts.
+
+Toolchain0.258 adds [request-owned native reference contexts](managed-reference-requests.md)
+and a private generated request entry. Source handles retire before the heap;
+cooperative request cancellation/budget/deadline checks retain their fatal-control
+behavior. Public HTTP adapters, resource payloads, task transfer and reference-
+valued host/module ABIs still need integration.
 
 ## Current ownership contract
 

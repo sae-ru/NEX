@@ -272,6 +272,7 @@ class Emitter {
   Value ownedToken;
   bool exceptionPrototype=false;
   nexrt::CellHeapLimits cellLimits;
+  bool managedRequestEntry=false;
   Value exceptionOutput;
   std::string exceptionScratch;
   std::vector<Value> exceptionOwners,caughtErrors;
@@ -1137,6 +1138,7 @@ class Emitter {
     out<<"  }\n";ownedToken={};
   }
 public:
+  std::string request(const std::string &entry){managedRequestEntry=true;return run(entry,false,true);}
   explicit Emitter(const Program &p,bool optimized=false,bool profiling=false,const OperationIndex *sharedSites=nullptr,bool wasm=false,const NativeEmissionContext *context=nullptr,bool taskDebug=false,bool exceptionPrototype=false,const nexrt::CellHeapLimits *limits=nullptr):p(p),debug(p,optimized),profiling(profiling),wasm(wasm),taskDebug(taskDebug),sites(sharedSites?*sharedSites:ownedSites),context(context),exceptionPrototype(exceptionPrototype||(isPublicSourceExceptionLanguage(p.sourceLanguage)&&!wasm)),cellLimits(limits?*limits:nexrt::CellHeapLimits{}){if(!sharedSites)for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)ownedSites[o.ast]=o.site;}
   std::string run(const std::string &entry,bool testEntry,bool libraryEntry,const std::set<std::string> *selected=nullptr,const std::set<std::string> *closure=nullptr,bool allCallableBridges=false,bool parallelScopes=false,const std::vector<TaskFunctionIR> *tasks=nullptr,const nexrt::TaskExecutionLimits &taskLimits={},const std::map<std::string,NativeTaskExport> *taskImports=nullptr,const std::set<std::string> *taskExports=nullptr,bool taskImageFileReads=false,bool taskInternalSteps=false,const std::string &profileRegistryAccessor={},const std::string &profileComponent={},const std::string &debugRegistryAccessor={},const std::string &debugComponent={},bool taskImageFileWrites=false,bool taskImageFileStreams=false,bool taskImageForeign=false,int64_t forcedExceptionABI=0){
     importedTaskCodes=taskImports;internalTaskSteps=taskInternalSteps;privateTaskModule=sourceExceptionTasksPrototype(p)&&forcedExceptionABI;
@@ -1154,6 +1156,7 @@ public:
     declaration("nex_retain","!llvm.ptr","!llvm.ptr");declaration("nex_release","!llvm.ptr");declaration("nex_runtime_finish","");
     declaration("nex_poll","i64");
     if(supportsManagedReferences(p)){
+      declaration("nex_cell_request_enter","i64");
       declaration("nex_cell_context_limits","i64, i64, i64, i64");
       declaration("nex_cell_new_i64","i64, i64, i64","!llvm.ptr");declaration("nex_cell_new_heap","!llvm.ptr, i64","!llvm.ptr");
       declaration("nex_cell_read_i64","!llvm.ptr, i64, i64","i64");declaration("nex_cell_read_heap","!llvm.ptr, i64","!llvm.ptr");
@@ -1326,6 +1329,16 @@ public:
         call("nex_parallel_return_heap",{{"%parallel_result",Type::Str},{result,output}},Type::Unit,e->span);release({result,output},e->span);
       }else call("nex_parallel_return_i64",{{"%parallel_result",Type::Str},asI64({result,output},e->span),constant(scalarTag(output),Type::I64,e->span)},Type::Unit,e->span);
       line("func.return",e->span);out<<"  }\n";
+    }
+    if(managedRequestEntry){
+      selectFunction(main);debug.scope.clear();
+      out<<"  func.func @nex_private_reference_request(%nex_request_error: !llvm.ptr) -> i64 {\n";
+      writeSlot(null(Type::Str,main.span),"%nex_request_error",main.span);
+      call("nex_cell_request_enter",{constant(main.span.line,Type::I64,main.span)},Type::Unit,main.span);
+      std::vector<Value> arguments;if(main.effects.contains("throw"))arguments.push_back({"%nex_request_error",Type::Str});
+      auto value=call(nativeSymbol(main.name),arguments,main.result,main.span);
+      if(main.result==Type::Unit)value=constant(0,Type::I64,main.span);
+      line("func.return "+value.name+" : i64",main.span);out<<"  }\n";
     }
     debug.scope.clear();if(libraryEntry||(!tasks&&!names.contains(main.name))){out<<globals.str()<<"}\n";return debug.str()+out.str();}
     selectFunction(main);
@@ -1770,6 +1783,14 @@ std::string emitManagedReferencesPrototypeMLIR(const Program &p,const std::strin
   if(main.result!=Type::Unit&&main.result!=Type::I64)throw Error("E_CELL_ENTRY","private native application entry must return unit or an i64 process status",main.span);
   for(auto value:{limits.maximumCells,limits.maximumNodes,limits.maximumEdges})if(!value||value>uint64_t(std::numeric_limits<int64_t>::max()))throw Error("E_CELL_LIMIT","native managed heap limits must be positive i64 values");
   return Emitter(p,optimized,false,nullptr,false,nullptr,false,true,&limits).run(entry,false,false);
+}
+std::string emitManagedReferencesPrototypeRequestMLIR(const Program &p,const std::string &entry,bool optimized){
+  if(!supportsManagedReferences(p))throw Error("E_LANGUAGE_VERSION","private request emission requires its dedicated frontend");
+  for(const auto &function:p.functions)if(!function.checked&&!function.traitSignature)throw Error("E_CELL_STATE","private request emission requires a fully checked program",function.span);
+  const auto &function=p.function(entry);
+  if(!function.params.empty()||!function.captures.empty()||(function.result!=Type::Unit&&function.result!=Type::I64))
+    throw Error("E_CELL_ENTRY","private request entry takes no arguments and returns unit or an i64 status",function.span);
+  return Emitter(p,optimized,false,nullptr,false,nullptr,false,true).request(entry);
 }
 std::string emitWasmMLIR(const Program &p,const std::string &entry,bool optimized){
   if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions have no Wasm lowering");

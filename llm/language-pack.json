@@ -613,7 +613,8 @@
     "managed_references_prototype": "docs/managed-references-prototype.md",
     "managed_references_prototype_grammar": "docs/managed-references-prototype.ebnf",
     "managed_reference_native": "docs/managed-reference-native-prototype.md",
-    "managed_reference_modules": "docs/managed-reference-modules.md"
+    "managed_reference_modules": "docs/managed-reference-modules.md",
+    "managed_reference_requests": "docs/managed-reference-requests.md"
   },
   "document_access": "nex guide --kind format|text-construction|bytes-construction|source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -5228,7 +5229,7 @@
       "public reference types and state effect",
       "versioned public grammar and explicit history-preserving migration",
       "public backend integration and whole-source acceptance",
-      "native entry/module/ABI ownership",
+      "public entry integration, reference-valued host results and separate component/DLL context ownership",
       "owned capability integration",
       "cross-thread sharing, monitors and atomics",
       "source debugger/profile integration",
@@ -5253,7 +5254,7 @@
       "language": "0.30-refs-prototype",
       "migration": false,
       "native": true,
-      "native_context": "one opaque application-owned heap; source handles retire before heap close on every exit",
+      "native_context": "one application- or request-owned heap; source handles retire before heap close on every exit",
       "native_entry": "sequential application: unit or i64 process status; same-runtime generated-code fixture",
       "native_guide": "docs/managed-reference-native-prototype.md",
       "native_introduced_toolchain": "0.251.0",
@@ -5316,6 +5317,22 @@
         "selection": "loadManagedReferencesPrototypeBundle",
         "test": "tests/managed_reference_modules.cpp",
         "typescript_map": "reachable_source_units hashes and copied failure file/line; no source text or public revision"
+      },
+      "native_request": {
+        "callbacks": "factory/destructor reentry rejected across context transitions; an ended creation cannot publish its heap",
+        "cleanup": "request-owner thread after source handles; cancellation is observed cooperatively",
+        "context": "matching-runtime RequestScope owns one lazy heap across calls; requests never inherit the application heap",
+        "entry": "no arguments; unit maps to zero, i64 status retains full width; nonnull caller-owned source-error output slot",
+        "guide": "docs/managed-reference-requests.md",
+        "http_adapter_enabled": false,
+        "introduced_toolchain": "0.258.0",
+        "limits": "host may configure cell/node/edge limits once before first cell use",
+        "polling": "entry and before/after native cell operations; GC traversal is not preemptive or separately metered",
+        "public_source_enabled": false,
+        "reference_values_return_to_host": false,
+        "selection": "emitManagedReferencesPrototypeRequestMLIR",
+        "symbol": "i64 nex_private_reference_request(Handle **source_error_out)",
+        "test": "tests/managed_reference_requests.cpp"
       }
     },
     "public_flag_scope": "ordinary published source languages; private candidate has its own selection",

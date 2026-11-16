@@ -584,7 +584,7 @@ add_executable(nex_managed_reference_modules_probe tests/managed_reference_modul
 target_link_libraries(nex_managed_reference_modules_probe PRIVATE nex_native_backend nex_frontend)
 add_test(NAME managed_reference_modules_frontend COMMAND nex_managed_reference_modules_probe)
 set_tests_properties(managed_reference_modules_frontend PROPERTIES TIMEOUT 120)
-add_executable(nex_managed_reference_native_probe tests/managed_reference_native.cpp runtime/wire_runtime.cpp)
+add_executable(nex_managed_reference_native_probe tests/managed_reference_native.cpp tests/managed_reference_requests.cpp runtime/wire_runtime.cpp)
 target_link_libraries(nex_managed_reference_native_probe PRIVATE nex_native_backend ${CMAKE_DL_LIBS})
 set_target_properties(nex_managed_reference_native_probe PROPERTIES ENABLE_EXPORTS ON)
 add_test(NAME managed_reference_native_context COMMAND nex_managed_reference_native_probe context)
@@ -612,6 +612,11 @@ add_test(NAME managed_reference_modules_native COMMAND ${Python3_EXECUTABLE} -B
   ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX} --modules
   --output ${CMAKE_CURRENT_BINARY_DIR}/managed-reference-modules-native-${PROJECT_VERSION}-acceptance)
 set_tests_properties(managed_reference_modules_native PROPERTIES TIMEOUT 600)
+add_test(NAME managed_reference_requests_native COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/managed_reference_native.py $<TARGET_FILE:nex_managed_reference_native_probe>
+  ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX} --modules --requests
+  --output ${CMAKE_CURRENT_BINARY_DIR}/managed-reference-requests-native-${PROJECT_VERSION}-acceptance)
+set_tests_properties(managed_reference_requests_native PROPERTIES TIMEOUT 600)
 add_test(NAME managed_reference_modules_typescript COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/managed_reference_typescript.py
   $<TARGET_FILE:nex_managed_reference_typescript_probe> $<TARGET_FILE:nex_managed_reference_native_probe> --modules

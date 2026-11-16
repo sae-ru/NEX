@@ -47,15 +47,40 @@ extern "C" __attribute__((weak)) const char *nex_application_identity()noexcept{
 namespace nexrt {
 namespace {
 thread_local RequestScope *currentRequest=nullptr;
+struct ReferenceAttachment;
+thread_local ReferenceAttachment *referenceCallback=nullptr;
+struct ReferenceCallback {
+  ReferenceAttachment *previous=referenceCallback;
+  explicit ReferenceCallback(ReferenceAttachment *owner){referenceCallback=owner;}
+  ~ReferenceCallback(){referenceCallback=previous;}
+};
+struct ReferenceAttachment {
+  enum class Phase {Inactive,Creating,Active,Closed} phase=Phase::Inactive;
+  void *references=nullptr;void *(*createReferences)(void *)=nullptr;void (*destroyReferences)(void *)noexcept=nullptr;
+  void disable()noexcept{phase=Phase::Closed;}
+  void close()noexcept{
+    auto value=references;auto destroy=destroyReferences;references=nullptr;createReferences=nullptr;destroyReferences=nullptr;disable();
+    if(destroy){ReferenceCallback callback(this);destroy(value);}
+  }
+  void *get(void *(*create)(void *),void *argument,void (*destroy)(void *)noexcept,bool exclusive){
+    if(phase==Phase::Closed||phase==Phase::Creating)throw DataError("E_CELL_CONTEXT","managed reference context has ended or is being created");
+    if(!create||!destroy)throw DataError("E_CELL_CONTEXT","managed reference context requires an owned factory");
+    if(references){
+      if(exclusive)throw DataError("E_CELL_CONTEXT","managed reference context is already initialized");
+      if(create!=createReferences||destroy!=destroyReferences)throw DataError("E_CELL_CONTEXT","managed reference context belongs to another factory");
+      return references;
+    }
+    phase=Phase::Creating;ReferenceCallback callback(this);void *value;
+    try{value=create(argument);}catch(...){if(phase==Phase::Creating)phase=Phase::Inactive;throw;}
+    if(phase!=Phase::Creating){if(value)destroy(value);throw DataError("E_CELL_CONTEXT","managed reference context ended during creation");}
+    if(!value){phase=Phase::Inactive;throw DataError("E_CELL_CONTEXT","managed reference context factory returned no owner");}
+    references=value;createReferences=create;destroyReferences=destroy;phase=Phase::Active;return value;
+  }
+};
 struct ApplicationState {
   Handle *head=nullptr;ApplicationState *parent=nullptr;int64_t token=0;
   RequestScope *request=nullptr;ApplicationState *application=nullptr;
-  enum class ReferencePhase {Inactive,Creating,Active,Closed} referencePhase=ReferencePhase::Inactive;
-  void *references=nullptr;void *(*createReferences)(void *)=nullptr;void (*destroyReferences)(void *)noexcept=nullptr;
-  void closeReferences()noexcept{
-    auto value=references;auto destroy=destroyReferences;references=nullptr;createReferences=nullptr;destroyReferences=nullptr;referencePhase=ReferencePhase::Closed;
-    if(destroy)destroy(value);
-  }
+  ReferenceAttachment references;
 };
 thread_local ApplicationState *currentApplication=nullptr;
 struct FunctionOwners {
@@ -82,20 +107,10 @@ void registerRuntimeCleanup(void (*cleanup)() noexcept){
 }
 void cleanupRuntimeResources(){while(!resourceCleanups.empty()){auto cleanup=resourceCleanups.back();resourceCleanups.pop_back();cleanup();}}
 void *managedReferenceContext(void *(*create)(void *),void *argument,void (*destroy)(void *)noexcept,bool exclusive){
-  if(!currentApplication||currentRequest)throw DataError("E_CELL_CONTEXT","managed references require a standalone application context");
-  auto &state=*currentApplication;
-  if(state.referencePhase==ApplicationState::ReferencePhase::Closed||state.referencePhase==ApplicationState::ReferencePhase::Creating)throw DataError("E_CELL_CONTEXT","managed reference context has ended or is being created");
-  if(!create||!destroy)throw DataError("E_CELL_CONTEXT","managed reference context requires an owned factory");
-  if(state.references){
-    if(exclusive)throw DataError("E_CELL_CONTEXT","managed reference context is already initialized");
-    if(create!=state.createReferences||destroy!=state.destroyReferences)throw DataError("E_CELL_CONTEXT","managed reference context belongs to another factory");
-    return state.references;
-  }
-  state.referencePhase=ApplicationState::ReferencePhase::Creating;void *value;
-  try{value=create(argument);}catch(...){if(state.referencePhase==ApplicationState::ReferencePhase::Creating)state.referencePhase=ApplicationState::ReferencePhase::Inactive;throw;}
-  if(state.referencePhase!=ApplicationState::ReferencePhase::Creating){if(value)destroy(value);throw DataError("E_CELL_CONTEXT","managed reference context ended during creation");}
-  if(!value){state.referencePhase=ApplicationState::ReferencePhase::Inactive;throw DataError("E_CELL_CONTEXT","managed reference context factory returned no owner");}
-  state.references=value;state.createReferences=create;state.destroyReferences=destroy;state.referencePhase=ApplicationState::ReferencePhase::Active;return value;
+  if(referenceCallback)throw DataError("E_CELL_CONTEXT","managed reference factory/destructor cannot reenter context acquisition");
+  if(currentRequest)return currentRequest->referenceContext(create,argument,destroy,exclusive);
+  if(!currentApplication)throw DataError("E_CELL_CONTEXT","managed references require an application or request context");
+  return currentApplication->references.get(create,argument,destroy,exclusive);
 }
 struct Handle {
   nexrt::ValueOwner<Data> data;
@@ -156,10 +171,11 @@ struct ApplicationScope {
   ApplicationState *previous=currentApplication;
   ApplicationScope(){currentApplication=&state;}
   ~ApplicationScope(){
+    state.references.disable();
     profileUnwind();
     functionOwners.unwind(functionBaseline);
     while(state.head)delete state.head;
-    state.closeReferences();
+    state.references.close();
     cleanupRuntimeResources();currentApplication=previous;
   }
 };
@@ -178,6 +194,8 @@ struct RequestScope::Impl {
   std::map<const void*,std::unique_ptr<ResourceDomain>,std::less<>> resourceBindings;
   std::shared_ptr<Control> control;
   std::function<bool()> cancellation;
+  ReferenceAttachment references;
+  ApplicationState *application=currentApplication;
   bool worker=false;
   bool preserveParentProfile=false;
   size_t functionBaseline=functionOwners.depth;
@@ -198,10 +216,22 @@ RequestScope::RequestScope(std::shared_ptr<Control> control,const std::atomic<bo
   resource_detail::requestBinder=[](const ResourceDomain &capability){return &currentRequest->bindResources(capability);};
 }
 RequestScope::~RequestScope(){
+  impl->references.disable();
   if(!impl->worker)impl->control->active=false;
   if(!impl->preserveParentProfile)profileUnwind();impl->resources.revoke();functionOwners.unwind(impl->functionBaseline);while(!impl->handles.empty())delete *impl->handles.begin();
+  impl->references.close();
   if(impl->worker)cleanupRuntimeResources();
   currentRequest=nullptr;resource_detail::requestBinder=nullptr;
+}
+void *RequestScope::referenceContext(void *(*create)(void *),void *argument,void (*destroy)(void *)noexcept,bool exclusive){
+  // A factory may synchronously end its request. Pin the implementation, then
+  // let attachment state detect that end without reading a destroyed scope.
+  auto state=impl;
+  if(!state->control->active||state->control->cancelled||state->control->exhausted||
+      (state->workerStop&&state->workerStop->load())||std::chrono::steady_clock::now()>=state->control->deadline)
+    throw DataError("E_CELL_CONTEXT","managed reference request is no longer active");
+  if(state->application!=currentApplication)throw DataError("E_CELL_CONTEXT","use the request entry instead of an application wrapper inside a request");
+  return state->references.get(create,argument,destroy,exclusive);
 }
 void RequestScope::track(Handle *p){impl->handles.insert(p);}
 void RequestScope::untrack(Handle *p){impl->handles.erase(p);}
@@ -984,7 +1014,7 @@ void nex_print_heap_at(Handle *p, const nexrt::NativeSite *nex_site){return impl
 static void impl_nex_runtime_finish(nexrt::SourceLocation location){
   return nexrt::hostOperation(location,[&]() -> void {
     if(nexrt::functionOwners.depth)fail("E_INTERNAL_SCOPE","compiler did not close every function ownership scope",location);
-    if(nexrt::currentApplication)nexrt::currentApplication->closeReferences();
+    if(nexrt::currentApplication)nexrt::currentApplication->references.close();
     nexrt::cleanupRuntimeResources();if(nexrt::liveHandles||nexrt::liveObjects)fail("E_INTERNAL_LEAK","compiler did not release all managed values",location);
   });
 }
@@ -1012,7 +1042,7 @@ static int64_t impl_nex_application_run(void *entry,int64_t argc,const char *con
     catch(NativeSourceException &error){
       // The private reference application has no host payload lifetime ABI.
       // Retire an uncaught packet while its heap/context is still alive.
-      if(scope.state.references)error.payload.reset();
+      if(scope.state.references.references)error.payload.reset();
       throw;
     }
     impl_nex_runtime_finish(location);

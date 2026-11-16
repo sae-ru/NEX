@@ -115,6 +115,11 @@ units in one application context. The single-unit parser above still rejects
 imports; ordinary physical projects, public archival/migration and separate
 DLL/reference host ABIs remain pending.
 
+Toolchain0.258 also provides a [private native request host](managed-reference-requests.md)
+with separate per-request ownership and repeated source calls. It adds no source
+effect, HTTP adapter or ordinary project selection and keeps the stage restrictions
+above, including owned payload/task rejection.
+
 ## Context ownership and bounds
 
 One reference interpreter owns one `CellHeap`, spanning all source calls and

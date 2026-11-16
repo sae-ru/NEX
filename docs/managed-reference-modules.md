@@ -100,6 +100,11 @@ endpoints remain outside this candidate. Cells cannot leave the unit/wire host
 entry. There is no cross-thread memory model, public migration, module/DLL host
 ABI, source debugger/profile integration or matching portable SDK release.
 
+Toolchain0.258's [private native request entry](managed-reference-requests.md)
+can run this same checked module closure in a matching C++ `RequestScope`, with
+one heap across its calls. It does not turn the source modules into independent
+DLL providers or publish a new source/HTTP ABI.
+
 `tests/managed_reference_modules.cpp` checks cross-unit state and module/archival
 rejections. The fast existing reference probe also consumes a two-unit bundle.
 `tests/managed_reference_module_cases.py` supplies the same manual programs to

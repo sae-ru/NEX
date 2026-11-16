@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.257.0"
+applies_to: "language 0.28; toolchain 0.258.0"
 owner: repository
 ---
 
@@ -42,6 +42,12 @@ The0.257 private module loader uses the shared import/visibility/type binder and
 one application heap across source units, with reference/native/TypeScript
 agreement. Separate DLL/host lifetime, public version/history migration and the
 remaining object/numeric/class/concurrency semantics stay open.
+
+The0.258 native request context owns its heap independently of an enclosing
+application. A private generated entry preserves source errors and scalar
+status across repeated calls, with request polling and owner-thread cleanup.
+Public source/HTTP integration, owned payloads, task transfer and DLL/reference
+returns remain open; see [the request contract](managed-reference-requests.md).
 
 | Item | Implemented baseline | Remaining result | Acceptance |
 |---|---|---|---|

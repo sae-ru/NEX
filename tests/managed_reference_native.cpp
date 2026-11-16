@@ -2,6 +2,7 @@
 #include "nex/managed_references.h"
 #include "nex/backend.h"
 #include "nex_cell_host.h"
+#include "managed_reference_request_host.h"
 #ifndef _WIN32
 #include <dlfcn.h>
 #endif
@@ -9,6 +10,7 @@
 #include <iostream>
 
 using namespace nex;
+unsigned testManagedReferenceRequests();
 namespace {
 unsigned destroyed=0,denied=0;
 void *factory(void *){return new int(42);}
@@ -33,9 +35,22 @@ int main(int argc,char **argv){try{
   if(argc==2&&std::string(argv[1])=="context"){
     auto status=nex_application_run(reinterpret_cast<void*>(contextEntry),0,nullptr);
     if(status||destroyed!=1||denied!=1)throw std::runtime_error("reference context teardown/reentry differs");
-    std::cout<<"{\"ok\":true,\"destroyed\":1,\"teardown_reentry_denied\":true}\n";return 0;
+    auto requests=testManagedReferenceRequests();
+    unsigned gates=0;
+    auto rejected=[&](const char *code,auto action){try{action();}catch(const Error &error){if(error.code==code){++gates;return;}throw;}throw std::runtime_error("expected private request entry rejection");};
+    auto ordinary=parse("module old;fn main()->unit{}","old.nex");check(ordinary);
+    rejected("E_LANGUAGE_VERSION",[&]{emitManagedReferencesPrototypeRequestMLIR(ordinary);});
+    auto checked=[](const char *source){auto p=parseManagedReferencesPrototype(source,"request.nex");check(p);return p;};
+    auto parameter=checked("module request;fn main(value:i64)->unit{}");rejected("E_CELL_ENTRY",[&]{emitManagedReferencesPrototypeRequestMLIR(parameter);});
+    auto escaped=checked("module request;fn main()->cell<i64>!{state}{return cell_new(1);}");rejected("E_CELL_ENTRY",[&]{emitManagedReferencesPrototypeRequestMLIR(escaped);});
+    auto client=checked("module request;client fn main()->unit{}");rejected("E_REALM",[&]{emitManagedReferencesPrototypeRequestMLIR(client);});
+    auto entry=checked("module request;fn main()->unit{}");entry.functions[0].checked=false;rejected("E_CELL_STATE",[&]{emitManagedReferencesPrototypeRequestMLIR(entry);});entry.functions[0].checked=true;
+    const auto emitted=emitManagedReferencesPrototypeRequestMLIR(entry);
+    if(emitted.find("func.func @nex_private_reference_request")==std::string::npos||emitted.find("func.func @main(")!=std::string::npos||emitted.find("func.call @nex_runtime_finish")!=std::string::npos)throw std::runtime_error("request entry acquired an application/process lifetime");
+    std::cout<<"{\"ok\":true,\"destroyed\":1,\"teardown_reentry_denied\":true,\"request_scenarios\":"<<requests<<",\"request_entry_gates\":"<<gates<<"}\n";return 0;
   }
-  if(argc==3&&std::string(argv[1])=="run"){
+  const bool requestRun=(argc==8||argc==11)&&std::string(argv[1])=="request-run";
+  if((argc==3&&std::string(argv[1])=="run")||requestRun){
     const auto baseline=nexrt::liveObjects.load();
     // Pull/export this exact cohort's cell helpers as well as its base runtime.
     if(nexrt::inRequestScope())nex_cell_collect(0);
@@ -44,20 +59,24 @@ int main(int argc,char **argv){try{
     auto library=LoadLibraryW(std::filesystem::absolute(argv[2]).c_str());
     if(!library)throw std::runtime_error("cannot load managed fixture image: "+std::to_string(GetLastError()));
     struct CloseImage{HMODULE value;~CloseImage(){FreeLibrary(value);}} closeImage{library};
-    auto entry=reinterpret_cast<int(*)(int,const char *const*)>(GetProcAddress(library,"main"));
+    auto address=GetProcAddress(library,requestRun?"nex_private_reference_request":"main");
+    auto entry=reinterpret_cast<int(*)(int,const char *const*)>(address);
     if(!entry)throw std::runtime_error("cannot find managed fixture main: "+std::to_string(GetLastError()));
 #else
     auto library=dlopen(argv[2],RTLD_NOW|RTLD_LOCAL);if(!library)throw std::runtime_error(dlerror());
     struct CloseImage{void *value;~CloseImage(){dlclose(value);}} closeImage{library};
-    auto entry=reinterpret_cast<int(*)(int,const char *const*)>(dlsym(library,"main"));if(!entry)throw std::runtime_error(dlerror());
+    auto address=dlsym(library,requestRun?"nex_private_reference_request":"main");
+    auto entry=reinterpret_cast<int(*)(int,const char *const*)>(address);if(!entry)throw std::runtime_error(dlerror());
 #endif
+    if(requestRun)return runManagedRequests(reinterpret_cast<ManagedRequestEntry>(address),std::stoul(argv[3]),2,{std::stoull(argv[4]),std::stoull(argv[5]),std::stoull(argv[6])},argv[7],argc==11?std::stoull(argv[8]):4000000,argc==11?std::stoul(argv[9]):0,argc==11?std::stoull(argv[10]):10000);
     auto status=entry(0,nullptr);
     if(nexrt::liveObjects.load()!=baseline)throw std::runtime_error("native reference context left live values");
     nex_runtime_finish();return status;
   }
   const auto mode=argc>1?std::string(argv[1]):std::string{};
-  const bool bundled=mode=="bundle-reference"||mode=="bundle-emit";
-  const bool emit=mode=="emit"||mode=="bundle-emit";
+  const bool requestEmit=mode=="request-emit"||mode=="bundle-request-emit";
+  const bool bundled=mode=="bundle-reference"||mode=="bundle-emit"||mode=="bundle-request-emit";
+  const bool emit=mode=="emit"||mode=="bundle-emit"||requestEmit;
   if(!(((!emit&&(mode=="reference"||mode=="bundle-reference"))&&argc==6)||(emit&&argc==10)))throw std::runtime_error("expected [bundle-]reference input cells nodes edges, or [bundle-]emit input out triple layout optimized cells nodes edges");
   const auto start=emit?7:3;
   nexrt::CellHeapLimits limits{std::stoull(argv[start]),std::stoull(argv[start+1]),std::stoull(argv[start+2])};
@@ -85,7 +104,7 @@ int main(int argc,char **argv){try{
     return 0;
   }
   auto folder=std::filesystem::absolute(argv[3]);std::filesystem::create_directories(folder);
-  auto mlir=emitManagedReferencesPrototypeMLIR(p,"main",std::string(argv[6])=="true",limits);
+  auto mlir=requestEmit?emitManagedReferencesPrototypeRequestMLIR(p,"main",std::string(argv[6])=="true"):emitManagedReferencesPrototypeMLIR(p,"main",std::string(argv[6])=="true",limits);
   writeFile((folder/"program.mlir").string(),mlir);
   writeFile((folder/"program.ll").string(),lowerMLIRToLLVM(mlir,path.string(),argv[4],argv[5]));return 0;
 }catch(const Error &error){std::cerr<<error.code<<": "<<error.message<<" at "<<error.span.line<<":"<<error.span.column<<'\n';}

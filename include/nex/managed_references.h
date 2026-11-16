@@ -22,6 +22,11 @@ ManagedReferenceEvaluation evaluateManagedReferencesPrototype(const Program &pro
     const std::string &entry="main",uint64_t stepLimit=1000000,nexrt::CellHeapLimits limits={});
 std::string emitManagedReferencesPrototypeMLIR(const Program &program,
     const std::string &entry="main",bool optimized=false,nexrt::CellHeapLimits limits={});
+// Matching-runtime request host: i64 nex_private_reference_request(Handle **).
+// The caller owns RequestScope/limits and a nonnull error-output slot. No heap
+// value may escape the request; copied diagnostics remain independent.
+std::string emitManagedReferencesPrototypeRequestMLIR(const Program &program,
+    const std::string &entry="main",bool optimized=false);
 WebModule emitManagedReferencesPrototypeTypeScript(const Program &program,
     const std::string &entry="main",nexrt::CellHeapLimits limits={});
 namespace detail {

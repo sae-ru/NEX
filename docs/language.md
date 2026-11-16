@@ -405,6 +405,8 @@ declaration-local type binders. This is an unarchived C++ development entry;
 ordinary 0.28/0.29 projects retain the immutable source contract above.
 Toolchain0.257 adds [private source modules](managed-reference-modules.md) through
 the shared import binder; it changes no ordinary source version or graph format.
+Toolchain0.258's [private request host](managed-reference-requests.md) changes
+native context lifetime without new public syntax, effects or graph formats.
 
 ### Enums and exhaustive matching
 

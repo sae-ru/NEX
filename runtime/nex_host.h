@@ -56,10 +56,12 @@ void printNativeSourceException(const NativeSourceException &,const char *reques
 class RequestScope {
   friend struct ParallelAccess;
   friend struct TaskAccess;
+  friend void *managedReferenceContext(void *(*)(void *),void *,void (*)(void *)noexcept,bool);
   struct Control;
   struct Impl;std::shared_ptr<Impl> impl;
   RequestScope(std::shared_ptr<Control> control,const std::atomic<bool> *workerStop);
   void checkExecution(int64_t line,bool forceCancellation,bool consumeStep);
+  void *referenceContext(void *(*create)(void *),void *,void (*destroy)(void *)noexcept,bool exclusive);
 public:
   explicit RequestScope(uint64_t budget=1000000,uint64_t timeoutMs=5000);
   ~RequestScope();
@@ -86,11 +88,13 @@ std::optional<std::chrono::steady_clock::time_point> currentRequestDeadline() no
 void pollHostOperation(int64_t line);
 void registerRuntimeCleanup(void (*cleanup)() noexcept);
 void cleanupRuntimeResources();
-// Private application-owned reference attachment. Creation is synchronous;
+// Private application/request-owned reference attachment. Creation is synchronous;
 // its no-throw destructor runs after source handles retire on every exit.
 // Creation cannot reenter; reuse requires the same factory/destructor pair;
 // a closed attachment cannot be revived, including during its destructor.
-// Requests, threads and module/host reference-return ABIs remain separate.
+// Request owners take precedence over their enclosing application and retire
+// their heap after source handles. Task transfer/module reference returns remain
+// separate contracts; native request entries return only scalar status/diagnostics.
 void *managedReferenceContext(void *(*create)(void *),void *argument,
     void (*destroy)(void *)noexcept,bool exclusive=false);
 template<class F> auto hostOperation(SourceLocation line,F operation)->decltype(operation()){

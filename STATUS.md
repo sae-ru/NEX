@@ -1,3 +1,24 @@
+# Private native request reference contexts — development0.258.0
+
+The matching-runtime RequestScope now owns its own lazy reference heap, including
+inside an enclosing application. A private generated unit/i64 entry supports
+repeated calls and typed source-error output in that request. Source handles
+retire before its heap; cancellation, budgets and deadlines unwind on the owner
+thread. Factory/destructor reentry is rejected. Cell operations poll before and
+after work; completed writes are not rolled back and GC has no hard pause bound.
+
+Sixteen core and12 affected groups pass. Fourteen request kernel scenarios and
+five emitter gates pass;22 native O0/O2 comparisons plus6 controls each run a
+matching-host image and independent executable. Retained application/module
+matrices pass84/20 comparisons. A moved normal CMake installation rebuilds the
+22+6 request matrix from its installed runtime and passes ordinary public
+check/eval/native Release/test. [Exact results and limits](docs/evidence/managed-reference-requests-0.258.0-2026-11-16.json).
+[Preceding0.257 core CI](docs/evidence/core-ci-0.257.0-2026-11-16.json) passed on
+Mac/Linux. Public references/history migration, HTTP/source resource integration,
+reference-valued host returns, task transfer, separate component ownership,
+remaining Java/Python semantics and full source/platform/portable-SDK acceptance
+remain open. Public languages0.28/0.29 and published SDK0.246.1 are unchanged.
+
 # Private reference source modules — development0.257.0
 
 A dedicated transient source bundle now uses the shared module loader for imports,

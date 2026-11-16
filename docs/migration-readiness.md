@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.257.0"
+applies_to: "language 0.28; toolchain 0.258.0"
 owner: repository
 ---
 
@@ -66,6 +66,11 @@ Toolchain0.257 adds private source-module binding and execution in one applicati
 context. Imported functions, nominal identities, traits, errors and closures use
 the same heap and existing visibility rules. This does not define separate
 DLL/component/host reference lifetimes or promote a public source version.
+
+Toolchain0.258 adds request-owned heap lifetime and a private native request
+entry for repeated scalar-status/source-error calls. Cancellation, budget and
+deadline checks close source ownership on the request's thread. HTTP/source
+resource integration, task transfer and reference-valued host returns stay open.
 
 | Required behavior | Existing foundation | Missing language/runtime result |
 |---|---|---|
