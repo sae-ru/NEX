@@ -85,7 +85,17 @@ static Handle *executeTaskHttpRequestImpl(const TaskCodeDescriptor &code,Handle 
 #endif
     if(!host)host=std::make_shared<TaskFrameHostContext>();
     HttpTaskInvocation invocation{code,std::move(host)};
-    TaskGroup group(workers,4096,{},bool(operations),sourceErrors);
+    auto ownedGroup=[&]() -> std::unique_ptr<TaskGroup>{
+      if(managedReferenceTaskABI(code.abi)){
+#ifdef NEX_MANAGED_TASKS
+        return std::make_unique<TaskGroup>(managedTaskOwnerExecution(),4096,TaskExternalLimits{},bool(operations),sourceErrors);
+#else
+        throw DataError("E_TASK_STATE","managed HTTP tasks require their matching cell runtime");
+#endif
+      }
+      return std::make_unique<TaskGroup>(workers,4096,TaskExternalLimits{},bool(operations),sourceErrors);
+    }();
+    auto &group=*ownedGroup;
     if(code.requirements&(taskCodeImageForeign|taskCodeImageFileStream))
       group.enableResourceRegions({},true,bool(code.requirements&taskCodeImageFileStream));
     auto root=group.spawnWithContext(httpRequestTask,&invocation,std::move(input),{});
@@ -125,7 +135,7 @@ static int64_t executeTaskApplicationImpl(const TaskCodeDescriptor &code,const T
 #endif
     RequestScope request(limits.steps,limits.timeoutMs);
     auto configured=configuredTaskHost(code);auto context=configured.context;
-    const bool managed=code.abi==taskCodeManagedReferencesDevelopmentABI;
+    const bool managed=managedReferenceTaskABI(code.abi);
     const bool io=code.requirements&(taskCodeImageFileRead|taskCodeImageFileWrite|taskCodeImageForeign|taskCodeImageFileStream);
     auto ownedGroup=[&]() -> std::unique_ptr<TaskGroup>{
       if(managed){

@@ -158,6 +158,13 @@ source/archive/backend APIs. While its `ordinary_CLI` is false, do not select
 0.30 in a normal project or assume a metadata edit migrates its stored graph.
 It does not provide Java/Python object compatibility or override immutable source
 values; discover the actual source type/effect before using a future extension.
+Query `managed_references.source030_development.ordinary_tasks` before combining
+cells with tasks. When advertised, source uses one cooperative heap owner;
+ordinary immutable values remain snapshots and cell identity stays within that
+execution/request. Native reference tasks select ABI8; reference-free providers
+retain ABI7. Async TypeScript wire-value exports use Promise results and map4.
+Do not infer shared-memory parallel cells, task-provider image support, persistent
+UI state or Worker reference transport from this standalone/HTTP capability.
 
 Evaluate expressions once, left to right; preserve lazy boolean branches and
 the selected match arm. Use checked exhaustive patterns, actual generic bounds,

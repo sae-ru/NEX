@@ -1,8 +1,28 @@
 ---
 status: current
-applies_to: "toolchain 0.265.0; language 0.30"
+applies_to: "toolchain 0.271.0; language 0.30"
 owner: repository
 ---
+
+# Ordinary030 tasks in HTTP requests — development0.271.0
+
+Checked030 native debug/release handlers may combine cells, structured tasks,
+source errors and the existing server IO contracts. Each HTTP request retains
+one thread-affine heap; its source continuations run cooperatively on that owner
+thread. Concurrent HTTP requests own independent heaps. Physical IO workers keep
+their raw completion/lease protocol and do not acquire cells.
+
+Reference handlers with tasks select public native ABI8 and an explicit matching
+owner-thread coordinator. Request, output and diagnostic boundaries retain their
+existing immutable wire contracts. Uncaught cell-bearing source errors become
+copied diagnostics before leaving the request context. Build metadata records
+`reference_context.task_transfer:true` for these handlers; sequential handlers
+retain false. This does not enable async database/network calls, persistent
+application state, task-provider images or logical reference task debugging/
+profiling. See [ordinary task qualification](reference-tasks.md).
+
+The preceding sequential implementation and receipts below retain their original
+scope. Current full SDK/platform acceptance remains separate.
 
 # Sequential reference objects in native HTTP requests
 

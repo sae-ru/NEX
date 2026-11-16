@@ -1031,8 +1031,7 @@ class Checker {
     // Source errors travel through the future/drain channel. Spawning a child
     // does not deliver them; wait/with_tasks checks the caller's throw context.
     auto hostEffects=type.effects;if(supportsSourceExceptionTasks(p))hostEffects.erase("throw");
-    // Source030 can type-check stateful callbacks before their execution
-    // adapter is promoted. Ordinary backends retain E_CELL_CONCURRENCY.
+    // Source030 task callbacks require the caller to declare state explicitly.
     if(supportsManagedReferences(p)&&hostEffects.erase("state")&&!allowsEffect("state"))
       throw Error("E_EFFECT","a stateful task callback requires its caller's declared state effect",callback->span);
     const bool fileCallback=supportsTaskFileReads(p)&&type.realm=="server"&&

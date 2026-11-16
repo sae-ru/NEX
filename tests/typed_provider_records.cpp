@@ -60,6 +60,12 @@ int main(){try{
   auto old=llvm::json::Object(*application.getAsObject());old["schema"]=schema;bool failed=false;
   try{(void)parseNativeTaskApplicationStage(llvm::json::Value(std::move(old)));}catch(const Error &e){failed=e.code=="E_TASK_PROVIDER";}require(failed);
  }
- std::cout<<json(llvm::json::Object{{"ok",true},{"checks",checks},{"records",std::move(records)},{"application",std::move(application)}})<<'\n';
+ stage.executionABI=nexrt::taskCodeManagedReferencesABI;
+ auto referenceApplication=nativeTaskApplicationStageJSON(stage);
+ require(referenceApplication.getAsObject()->getString("schema")=="nex.native-task-application/6");
+ require(parseNativeTaskApplicationStage(referenceApplication).executionABI==nexrt::taskCodeManagedReferencesABI);
+ auto relabeled=llvm::json::Object(*referenceApplication.getAsObject());relabeled["schema"]="nex.native-task-application/5";
+ bool rejectedReference=false;try{(void)parseNativeTaskApplicationStage(llvm::json::Value(std::move(relabeled)));}catch(const Error &e){rejectedReference=e.code=="E_TASK_PROVIDER";}require(rejectedReference);
+ std::cout<<json(llvm::json::Object{{"ok",true},{"checks",checks},{"records",std::move(records)},{"application",std::move(application)},{"reference_application",std::move(referenceApplication)}})<<'\n';
  return 0;
 }catch(const std::exception &e){std::cerr<<e.what()<<'\n';return 1;}}

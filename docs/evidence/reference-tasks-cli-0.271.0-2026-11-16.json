@@ -1,0 +1,1149 @@
+{
+  "schema": "nex.reference-tasks-cli-development/1",
+  "ok": true,
+  "toolchain": "0.271.0",
+  "source_language": "0.30",
+  "compiler_fallback": "0.28",
+  "source_version_changed": false,
+  "source_format_changed": false,
+  "public_task_ABIs": {
+    "retained": 7,
+    "owner_thread_references": 8
+  },
+  "private_native_task_ABI_unchanged": "0x4e45585400003001",
+  "public_C_ABI": 1,
+  "public_TypeScript_map": "nex.typescript-map/4",
+  "retained_synchronous_TypeScript_map": "nex.typescript-map/3",
+  "ordinary_CLI_cell_task_enabled": true,
+  "base_commit": "e4e500968c887b65fee9a30d99bb2b6b776d232a",
+  "source_files_sha256": {
+    "PLAN.md": "22ac28403c15016928a7314940f427e2f0c4adb7bb2c664b8ad6bbc671c59db3",
+    "README.md": "c40f1ba3bfc82181b481803eba774773321f05954c2c60206460075f649e61f7",
+    "README.ru.md": "e46923943b6155f941bd7a62d9b32751e2f4f957a78d90a154828fa305afc142",
+    "STATUS.md": "92c8c1afa86d9774884c143220887c95bcd91da8d03357dfe2a3e5b5e41b18fb",
+    "VERSION": "9366082f73960bfaeb72cf2128adbe8d62304bf8afdf6a728d66fa83a0174ebe",
+    "cmake/Install.cmake": "196fe1952ccd8847187da88e62cc0932f5c1e7a49672681100a8635dcecac49b",
+    "cmake/Tests.cmake": "f12ee20a17b310f11a65bf03d169fc315edce7c086f9c66dbd12f6efe1e5aced",
+    "cmake/test-tiers.json": "629bf273dff2a6368cec95f13b653b646b93fd80ac1e421f618b8622eccfb9b6",
+    "docs/INDEX.md": "34616776cbd665e5b0f4f0ea55b4065c6337bc65a19ddf39f9465b0801d246c3",
+    "docs/STATUS.current.md": "6f6fab976b02359b312dffe6f925f88842c79448bfeee2a817d9fd9f26d6b022",
+    "docs/implementation-1-6.md": "fb26138fb775bcb3b4cdfa85db6229bdb9d71ed1cc973b3233274b6fd7818682",
+    "docs/language.md": "cb91d12e49dfc3d3e1552053a85bca1c032b65dcc4cbe31375de4ceeab8a86fb",
+    "docs/migration-readiness.md": "85aa66ee271030e32a2b8c42049e2ef208b23f7172a33e0d4ec5987142190285",
+    "docs/reference-http.md": "2633cc251339b3fe266651ca9b0ce34e44851ca821b3d3041a57e5db022f663c",
+    "docs/reference-tasks.md": "7f9402326335d872d9aef466810b46b1aed1fdbf6b541dfb89e0a309ab0763df",
+    "docs/references030.ebnf": "9f087fc36d0a883ebd97629fe638f2da59334c29212fcead516f8a7292b69af6",
+    "docs/references030.md": "1ab16c60618e07afa06131f8458940776c254ee7007d0ea4c390b70361ec99a8",
+    "docs/web.md": "b22d8fcf28c0ec47474673478efe1c682ef5e639465c890d5e71360a656ec4d8",
+    "examples/references/README.md": "7a27d6e9c7450e977874d9a48ef7d1459ed4194004f9fbc1f3babbee51bbd688",
+    "include/nex/task_reference.h": "9aa405c0bd11fe362173abac611f60b72b02e75417e2943aebe5565a7aa1b89c",
+    "llm/SYSTEM_PROMPT.md": "3dfae93f47b207d2f0acf6b7fb3ec65ba6f24ab445e5aff50a62e0f1bc60cd3e",
+    "llm/language-pack.json": "bf101b3b99d39b0c42f0fc8c0d9944f58822915d5461a03c0764f718afa05487",
+    "runtime/nex_task_application.cpp": "8e8b10b40e0e20a29e327590bc5abf86bb577cd9a305e8fc4abc44c4baf71334",
+    "runtime/nex_task_frame.cpp": "818eb6016dd2ebe4a5c24c0d4ea5e544632c12674fac4a000a8b29f3e6216d04",
+    "runtime/nex_task_protocol.h": "32fbac909bf81da65c1bce6f3ba1e5003c62cad1cc32a832ac21e886ea4da547",
+    "src/backend.cpp": "f897dbd20a78fbb4609b57fc02b672b3ceb6f1e5ade654db5093161e181ad53b",
+    "src/language.cpp": "a77258743a23fe14d67faf10101f9c5dea71af406d9c867ed5344eba16ca4c6e",
+    "src/managed_references.cpp": "fd469c30adb157fe49ae526136da7c585bc202b2079d62ce2747a836b197213f",
+    "src/task_reference.cpp": "1a43f408059428f2266b2c573bfca5285e791a9d940ef1487a8cdb4de178f864",
+    "src/typescript.cpp": "b45c311583e3f2e508d21d8fee72d8a50dd5724678a3aabfcccb6f5f74b48647",
+    "src/web.cpp": "bebe414765a9889de395f66eb65a55b1d40f7f5448774699c6e06ef14acb4fc2",
+    "tests/owner_task_runtime.cpp": "271be35c51898ed06dc02e1f13faccee3dea1eff3d9be6be02156fed347648fe",
+    "tests/reference_http.py": "3eb217a093cd4abd55b05f54fe4cdf2204e5290d25ed52a414792bf1fcddc21d",
+    "tests/reference_tasks.cpp": "acc598171921368b706a61ebfa986ba978b878fcba1ca4743f6e3873b2fbfcc7",
+    "tests/reference_tasks_boundaries.py": "d05f129c2c989fd2af54ad82b20111f20ce2bde9cf404a21839c5da82eb0c110",
+    "tests/references030.py": "9464526e0fd6c1de59137c229c3c21546dbb8b26bdc5e9f11146dc63365e9488",
+    "tests/typed_provider_records.cpp": "9c6aa875987b50afa9da0f95e8a685fb448ae63220e5b98015a8fda8031a408e",
+    "tests/typed_task_protocol.cpp": "55633a7b24639557cfd4dd507ea275fa78b51fbd63b2c9e4a65587006b43f288",
+    "web/nex-managed-context.ts": "469f2093d547e5e49102022cc06acaf820334ed442cbc6dd00e270f3016f7b0f",
+    "web/nex-managed-heap.ts": "21e44b8f6197c0023d1fffd894f78ecb4c847db84b2889a03cbb00af8a7f5316",
+    "web/nex-managed-runtime.ts": "16b23e01b7f8ad444d77bfa017a98f4bf545f2bb5a5bd498b10c316055b838e6",
+    "web/nex-managed-task-runtime.ts": "a96af2d066ec20f9a5ef19a39f04e990a539fc7c89d7086cc0bb40587bc251cb",
+    "tests/reference_tasks_cli.py": "c510f92a5c84baae7b9f2a75ae2333a4e77245f28368bf0e15b94ae711da85b7",
+    "tests/typed_task_protocol.py": "c6f671657e3e9f4476f3b8b597da2b8a36efc185afe03622e78e8a68161615f8",
+    "examples/references/tasks.nex": "eb753458217b13b741057db93ed03ea3edd0aa62598097947cec7a59e65b3d65"
+  },
+  "build": {
+    "command": "cmake --build build -j 4",
+    "exit_code": 0,
+    "production_build_stdout_sha256": "1d7dd023e2e5d8e4db8eed5a708d9cec82d6b34fad4dbfb21ffb7c8ffbc04e3f",
+    "production_build_stderr_sha256": "fabbca85839693a440de05b03e760dddb72d57750a1abda748fa7a0e5b606438",
+    "final_test_build_stdout_sha256": "6b1f8e6118b903616e86130deba5193320dc2e28ea165c873d5c0044e171e8d0",
+    "final_test_build_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "compiler_discovery": {
+    "ok": true,
+    "shared_fields": [
+      "browser_workers",
+      "bytes_construction",
+      "cli_interface",
+      "compute",
+      "device",
+      "diagnostic_catalogue",
+      "dns_provider",
+      "effect_parameters",
+      "features_scope",
+      "foreign_trap_reporting",
+      "generic_features",
+      "gpu_codegen",
+      "http_client_provider",
+      "http_response_streams",
+      "http_storage_transactions",
+      "ieee_numeric_kernel",
+      "language_pack_contract",
+      "list_construction",
+      "llm_cost",
+      "llm_entry",
+      "managed_references",
+      "model",
+      "native_application_lifetime",
+      "native_core",
+      "native_debug_image_binding",
+      "native_debug_pages",
+      "native_debug_session",
+      "native_entry_abi",
+      "native_runtime_search",
+      "native_tool_arguments",
+      "opencl_codegen",
+      "patch_entities",
+      "project_capture_layout",
+      "project_languages",
+      "resource_executor",
+      "resource_regions",
+      "result_propagation",
+      "runtime_contracts",
+      "runtime_diagnostic_messages",
+      "scoped_discovery",
+      "source_concurrency",
+      "source_contracts",
+      "source_contracts_development",
+      "source_exception_prototype",
+      "source_exceptions",
+      "source_formatting",
+      "source_resources",
+      "standard_library",
+      "structured_tasks_runtime",
+      "task_debugging",
+      "task_execution_limits",
+      "task_external_completion",
+      "task_file_reads",
+      "task_file_streams",
+      "task_file_streams_host",
+      "task_file_streams_prototype",
+      "task_file_writes",
+      "task_file_writes_host",
+      "task_file_writes_prototype",
+      "task_foreign_prototype",
+      "task_network_transport",
+      "task_profile_collector",
+      "task_profiling",
+      "task_provider_debugging",
+      "task_provider_profiling",
+      "task_providers",
+      "task_shared_providers",
+      "task_value_retirement",
+      "tcp_provider",
+      "text_construction",
+      "wasm_features"
+    ],
+    "shared_field_count": 71,
+    "compared_JSON_values": 4388,
+    "errors": [],
+    "schema": "nex.language-pack-validation/1",
+    "compiler_sha256": "1d24e2a38195875febd0b4a0a8ce5fcf535a810066eff3419497dbd9ed2e52c6",
+    "manifest_sha256": "bf101b3b99d39b0c42f0fc8c0d9944f58822915d5461a03c0764f718afa05487",
+    "language": "0.28",
+    "toolchain": "0.271.0",
+    "compiler_build": "5b35e2ae4393a55a54033de1412d813ef6fbcf9b08bbbf8b9133a66d0740f060",
+    "descriptor_hash": "915ef173dbd3fd5827ee530434bcc0755cad9250cc588a20f0ff861bf2da5cd4"
+  },
+  "ctest": {
+    "verified_distinct_groups": 33,
+    "current_commands_and_properties_match": true,
+    "effective_report_sha256": "beb2fb234e00eddbcacea40aec54db39bf09c5e37d2aff7ec600220235e48e5e",
+    "final_group_proof": {
+      "llm_cost_ledger": {
+        "result": "passed",
+        "batch": "core"
+      },
+      "llm_local_collector": {
+        "result": "passed",
+        "batch": "core"
+      },
+      "ctest_report_validation": {
+        "result": "passed",
+        "batch": "core"
+      },
+      "discovery": {
+        "result": "passed",
+        "batch": "core"
+      },
+      "language_pack_contract": {
+        "result": "passed",
+        "batch": "core"
+      },
+      "task_frontend_native": {
+        "result": "passed",
+        "batch": "core"
+      },
+      "reference_tasks_development": {
+        "result": "passed",
+        "batch": "core"
+      },
+      "frontend_diagnostics_native": {
+        "result": "passed",
+        "batch": "core"
+      },
+      "value_owner_runtime": {
+        "result": "passed",
+        "batch": "core"
+      },
+      "value_retirement_runtime": {
+        "result": "passed",
+        "batch": "core"
+      },
+      "managed_references_frontend_reference": {
+        "result": "passed",
+        "batch": "core"
+      },
+      "managed_reference_native_context": {
+        "result": "passed",
+        "batch": "core"
+      },
+      "bytes_runtime_native": {
+        "result": "passed",
+        "batch": "core"
+      },
+      "float_runtime_native": {
+        "result": "passed",
+        "batch": "core"
+      },
+      "typed_source_frontend_reference": {
+        "result": "passed",
+        "batch": "core"
+      },
+      "test_tiers": {
+        "result": "passed",
+        "batch": "core"
+      },
+      "diagnostic_catalogue": {
+        "result": "passed",
+        "batch": "core"
+      },
+      "task_typescript_steps": {
+        "result": "passed",
+        "batch": "affected"
+      },
+      "task_typescript_public": {
+        "result": "passed",
+        "batch": "affected"
+      },
+      "typescript_reference_tasks_development": {
+        "result": "passed",
+        "batch": "affected"
+      },
+      "native_reference_tasks_development": {
+        "result": "passed",
+        "batch": "affected"
+      },
+      "reference_tasks_boundaries": {
+        "result": "passed",
+        "batch": "affected"
+      },
+      "managed_heap_typescript": {
+        "result": "passed",
+        "batch": "affected"
+      },
+      "references030_versioned": {
+        "result": "passed",
+        "batch": "affected"
+      },
+      "references030_cli": {
+        "result": "passed",
+        "batch": "affected"
+      },
+      "managed_references_typescript": {
+        "result": "passed",
+        "batch": "affected"
+      },
+      "managed_reference_value_exports": {
+        "result": "passed",
+        "batch": "affected"
+      },
+      "typed_error_provider_records": {
+        "result": "passed",
+        "batch": "affected"
+      },
+      "source_exception_tasks_typescript": {
+        "result": "passed",
+        "batch": "affected"
+      },
+      "typed_source_tasks": {
+        "result": "passed",
+        "batch": "affected"
+      },
+      "reference_tasks_cli": {
+        "result": "passed",
+        "batch": "rechecked"
+      },
+      "reference_http_context": {
+        "result": "passed",
+        "batch": "rechecked"
+      },
+      "typed_task_public_protocol": {
+        "result": "passed",
+        "batch": "protocol-owned-boundary"
+      }
+    },
+    "batch_receipts": [
+      {
+        "label": "core",
+        "receipt_sha256": "06297dbc144da4ad38e9414fd40cb108ca134f3a43a1353d688271646f3421f5",
+        "receipt": {
+          "schema": "nex.ctest-verification/1",
+          "ok": true,
+          "ctest_exit_code": 0,
+          "selected_groups": [
+            "bytes_runtime_native",
+            "ctest_report_validation",
+            "diagnostic_catalogue",
+            "discovery",
+            "float_runtime_native",
+            "frontend_diagnostics_native",
+            "language_pack_contract",
+            "llm_cost_ledger",
+            "llm_local_collector",
+            "managed_reference_native_context",
+            "managed_references_frontend_reference",
+            "reference_tasks_development",
+            "task_frontend_native",
+            "test_tiers",
+            "typed_source_frontend_reference",
+            "value_owner_runtime",
+            "value_retirement_runtime"
+          ],
+          "required_fixture_groups": [],
+          "expected_groups": [
+            "bytes_runtime_native",
+            "ctest_report_validation",
+            "diagnostic_catalogue",
+            "discovery",
+            "float_runtime_native",
+            "frontend_diagnostics_native",
+            "language_pack_contract",
+            "llm_cost_ledger",
+            "llm_local_collector",
+            "managed_reference_native_context",
+            "managed_references_frontend_reference",
+            "reference_tasks_development",
+            "task_frontend_native",
+            "test_tiers",
+            "typed_source_frontend_reference",
+            "value_owner_runtime",
+            "value_retirement_runtime"
+          ],
+          "observed_groups": [
+            "llm_cost_ledger",
+            "llm_local_collector",
+            "ctest_report_validation",
+            "discovery",
+            "language_pack_contract",
+            "task_frontend_native",
+            "reference_tasks_development",
+            "frontend_diagnostics_native",
+            "value_owner_runtime",
+            "value_retirement_runtime",
+            "managed_references_frontend_reference",
+            "managed_reference_native_context",
+            "bytes_runtime_native",
+            "float_runtime_native",
+            "typed_source_frontend_reference",
+            "test_tiers",
+            "diagnostic_catalogue"
+          ],
+          "results": {
+            "passed": [
+              "llm_cost_ledger",
+              "llm_local_collector",
+              "ctest_report_validation",
+              "discovery",
+              "language_pack_contract",
+              "task_frontend_native",
+              "reference_tasks_development",
+              "frontend_diagnostics_native",
+              "value_owner_runtime",
+              "value_retirement_runtime",
+              "managed_references_frontend_reference",
+              "managed_reference_native_context",
+              "bytes_runtime_native",
+              "float_runtime_native",
+              "typed_source_frontend_reference",
+              "test_tiers",
+              "diagnostic_catalogue"
+            ],
+            "failed": [],
+            "skipped": []
+          },
+          "registry_sha256": "92110effbe721346c2da1ba355a202495d096fbc1b755f38b7d9206ba4a80d56",
+          "junit_sha256": "4ebfbcfe2f1d1f69b43dab6aaaabee622e3afd5dcaaeaa58204d14fe8fb1be5e"
+        }
+      },
+      {
+        "label": "affected",
+        "receipt_sha256": "2a49b64f571d32d06f41f89a6d8fcdcf31be774dfad1fcf9b29f19cdf2df4925",
+        "receipt": {
+          "schema": "nex.ctest-verification/1",
+          "ok": false,
+          "ctest_exit_code": 8,
+          "selected_groups": [
+            "managed_heap_typescript",
+            "managed_reference_value_exports",
+            "managed_references_typescript",
+            "native_reference_tasks_development",
+            "reference_http_context",
+            "reference_tasks_boundaries",
+            "reference_tasks_cli",
+            "references030_cli",
+            "references030_versioned",
+            "source_exception_tasks_typescript",
+            "task_typescript_public",
+            "task_typescript_steps",
+            "typed_error_provider_records",
+            "typed_source_tasks",
+            "typed_task_public_protocol",
+            "typescript_reference_tasks_development"
+          ],
+          "required_fixture_groups": [],
+          "expected_groups": [
+            "managed_heap_typescript",
+            "managed_reference_value_exports",
+            "managed_references_typescript",
+            "native_reference_tasks_development",
+            "reference_http_context",
+            "reference_tasks_boundaries",
+            "reference_tasks_cli",
+            "references030_cli",
+            "references030_versioned",
+            "source_exception_tasks_typescript",
+            "task_typescript_public",
+            "task_typescript_steps",
+            "typed_error_provider_records",
+            "typed_source_tasks",
+            "typed_task_public_protocol",
+            "typescript_reference_tasks_development"
+          ],
+          "observed_groups": [
+            "task_typescript_steps",
+            "task_typescript_public",
+            "typescript_reference_tasks_development",
+            "native_reference_tasks_development",
+            "reference_tasks_boundaries",
+            "reference_tasks_cli",
+            "managed_heap_typescript",
+            "references030_versioned",
+            "references030_cli",
+            "reference_http_context",
+            "managed_references_typescript",
+            "managed_reference_value_exports",
+            "typed_task_public_protocol",
+            "typed_error_provider_records",
+            "source_exception_tasks_typescript",
+            "typed_source_tasks"
+          ],
+          "results": {
+            "passed": [
+              "task_typescript_steps",
+              "task_typescript_public",
+              "typescript_reference_tasks_development",
+              "native_reference_tasks_development",
+              "reference_tasks_boundaries",
+              "managed_heap_typescript",
+              "references030_versioned",
+              "references030_cli",
+              "managed_references_typescript",
+              "managed_reference_value_exports",
+              "typed_error_provider_records",
+              "source_exception_tasks_typescript",
+              "typed_source_tasks"
+            ],
+            "failed": [
+              "reference_tasks_cli",
+              "reference_http_context",
+              "typed_task_public_protocol"
+            ],
+            "skipped": []
+          },
+          "registry_sha256": "92110effbe721346c2da1ba355a202495d096fbc1b755f38b7d9206ba4a80d56",
+          "junit_sha256": "27fd98af1db8b5e8a392eb7ab954044fa20ad27b0599e305c7834bde5a04f4a3"
+        }
+      },
+      {
+        "label": "rechecked",
+        "receipt_sha256": "15d9f97ce14838ea24b6c606f8524a719b7b15f9c3afa0256af30de362840817",
+        "receipt": {
+          "schema": "nex.ctest-verification/1",
+          "ok": false,
+          "ctest_exit_code": 8,
+          "selected_groups": [
+            "reference_http_context",
+            "reference_tasks_cli",
+            "typed_task_public_protocol"
+          ],
+          "required_fixture_groups": [],
+          "expected_groups": [
+            "reference_http_context",
+            "reference_tasks_cli",
+            "typed_task_public_protocol"
+          ],
+          "observed_groups": [
+            "reference_tasks_cli",
+            "reference_http_context",
+            "typed_task_public_protocol"
+          ],
+          "results": {
+            "passed": [
+              "reference_tasks_cli",
+              "reference_http_context"
+            ],
+            "failed": [
+              "typed_task_public_protocol"
+            ],
+            "skipped": []
+          },
+          "registry_sha256": "92110effbe721346c2da1ba355a202495d096fbc1b755f38b7d9206ba4a80d56",
+          "junit_sha256": "26fcfcf6c53a156c69544c78308f2f99db1f3ebfeb2152239a4ced89b1d188b0"
+        }
+      },
+      {
+        "label": "protocol-owned-boundary",
+        "receipt_sha256": "6057bf07ff6870104efeb2d6cfb4cc075a4fb2fb225d5b62e54690e0813b4c32",
+        "receipt": {
+          "schema": "nex.ctest-verification/1",
+          "ok": true,
+          "ctest_exit_code": 0,
+          "selected_groups": [
+            "typed_task_public_protocol"
+          ],
+          "required_fixture_groups": [],
+          "expected_groups": [
+            "typed_task_public_protocol"
+          ],
+          "observed_groups": [
+            "typed_task_public_protocol"
+          ],
+          "results": {
+            "passed": [
+              "typed_task_public_protocol"
+            ],
+            "failed": [],
+            "skipped": []
+          },
+          "registry_sha256": "5288597ba91864716828f442dc1e2f030f5215190bd33ef93e90346a8470f8c4",
+          "junit_sha256": "00801cd2a6bec6acc85bc2208f6e14a31886dbc82af9ff2fa8143af99e39a9df"
+        }
+      }
+    ],
+    "full_source_regression": false
+  },
+  "ordinary_CLI_agreement": {
+    "path": "build/nex-reference-tasks-cli-n4jk_7e5/report.json",
+    "sha256": "f876a658a90c3903b8eb8400c0ebd3fa449c5a2d3c4a6b82ba11b225e46da256",
+    "result": {
+      "schema": "nex.reference-tasks-cli/1",
+      "ok": true,
+      "compiler_sha256": "1d24e2a38195875febd0b4a0a8ce5fcf535a810066eff3419497dbd9ed2e52c6",
+      "reference_sha256": "8a54ef172c61f0833f3332313f9168f0948ea73e294092abeb5ef6180001f9a6",
+      "source_language": "0.30",
+      "task_ABI": "0x4e45585400000008",
+      "private_development_ABI_unchanged": "0x4e45585400003001",
+      "cases": [
+        {
+          "file": "case-0.nex",
+          "source_sha256": "d8efe639cd0bcc699809d1e4d5345c4290758182eb18ccb1739e65bec06767e7",
+          "profile": "debug",
+          "revision": "ad01a77650fad30d92dc8cd5b71e98020e024ce8abe62677e3b6c9469fd29797",
+          "binary_sha256": "e35638a1b01481fa086da9ee554df4734a49775070173a87d8c313ceed48b0a0",
+          "metadata_sha256": "0fe9c3cbae64bc0a73b9aaabef6ab9acecacbb65b3ef7061f65e04e7a2fd091e",
+          "genuine_files": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-0.nex",
+          "source_sha256": "d8efe639cd0bcc699809d1e4d5345c4290758182eb18ccb1739e65bec06767e7",
+          "profile": "release",
+          "revision": "ad01a77650fad30d92dc8cd5b71e98020e024ce8abe62677e3b6c9469fd29797",
+          "binary_sha256": "c468e76917dd0abea37c4ed263c9e7d7141cd51637cbf4da9041b596b8b413a6",
+          "metadata_sha256": "c01e17e7040e79d83eee9dcdae6d4d694b044adf03b1019653ad7642f5338949",
+          "genuine_files": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-1.nex",
+          "source_sha256": "4b7fba0fd70de9f94bceafa3bcc05fc70218310f838d75c498fe2bba3fe97be5",
+          "profile": "debug",
+          "revision": "04d0c89da52f0e4b699cd5ac1631086c792f7e3bad16737ebe4c8cf74bb13a16",
+          "binary_sha256": "c1b12c58b3a92d690414554a46d855750586d027ae15ade28129221e209114c9",
+          "metadata_sha256": "a82bc2cdb38390beb0381c7d6760159e659155aa874003378c18ff6db4cc8fb5",
+          "genuine_files": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-1.nex",
+          "source_sha256": "4b7fba0fd70de9f94bceafa3bcc05fc70218310f838d75c498fe2bba3fe97be5",
+          "profile": "release",
+          "revision": "04d0c89da52f0e4b699cd5ac1631086c792f7e3bad16737ebe4c8cf74bb13a16",
+          "binary_sha256": "68c0e09bef4077dcb118137e33155aa0bb988fe388dca87b484b749bbc49637a",
+          "metadata_sha256": "ec8bbb2adf78213a2e5fe3d25fb1d319af672d10308661b1d455a4e399c621e5",
+          "genuine_files": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-2.nex",
+          "source_sha256": "78093a374eca5c3512c50515e1e554296fbca302ab7cedf9a6bfefaa206d6467",
+          "profile": "debug",
+          "revision": "d7d55dc58f5c64b43175e77fab68e7e6d6a16fc9603e9dd2ee656bbeba83c592",
+          "binary_sha256": "10dbd12d876c001dfc52812bc041a2ee0cf8a4d3aa325eb1074c15ee3162989d",
+          "metadata_sha256": "ac3630b27d8eb8beaf2d843c80f77a784e6e634d78adbb544fde667f3c27fd80",
+          "genuine_files": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-2.nex",
+          "source_sha256": "78093a374eca5c3512c50515e1e554296fbca302ab7cedf9a6bfefaa206d6467",
+          "profile": "release",
+          "revision": "d7d55dc58f5c64b43175e77fab68e7e6d6a16fc9603e9dd2ee656bbeba83c592",
+          "binary_sha256": "1db6708b620dd7d4e3146ba4d6f434db19d58ba4ac20a1ae2307f08f45e931f1",
+          "metadata_sha256": "ecdf8ee6f74ffa049cc08a6d9d14db1a1ad47c80c8b83af709abbfe7464eaa91",
+          "genuine_files": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-3.nex",
+          "source_sha256": "1be2d7da931e85638d6503552db446d163bf7988edfc566f351c48bced05c2a5",
+          "profile": "debug",
+          "revision": "1eed0f9e650713468145bd741c6d9169adbdf81ee017b3be46ee9f9c4e7bbcef",
+          "binary_sha256": "43302c7b09b7e98bb183b98b38195ea16c97df2bdab2f45dc9e5e5cd58f9bd76",
+          "metadata_sha256": "fdfd4a7aaa49b780f3ba4f6bed23f1e208962d0f417da418f7c7ee599e6e384f",
+          "genuine_files": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-3.nex",
+          "source_sha256": "1be2d7da931e85638d6503552db446d163bf7988edfc566f351c48bced05c2a5",
+          "profile": "release",
+          "revision": "1eed0f9e650713468145bd741c6d9169adbdf81ee017b3be46ee9f9c4e7bbcef",
+          "binary_sha256": "c5427ceabe90988a1197a81b4aeca62cc61c888c44aedb6be13eeecb511c06aa",
+          "metadata_sha256": "f811607b7c91d8535d3f4e6633509b60b7fde5138010ed473be90998a2ced691",
+          "genuine_files": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-4.nex",
+          "source_sha256": "1847188566708b2d639ba1fd5699a01753b677863874c04902c54ae239d9a3bb",
+          "profile": "debug",
+          "revision": "e71d4f9575c053f8b35bbd188a57fbc70ddee150a50694242eb43f3ff8039d85",
+          "binary_sha256": "a2d0f2e01374122078f46d4ee2681e03a2e68f29f1569054b7a9a2c4fd4f814c",
+          "metadata_sha256": "fef3dd3451c62404bdc1c5ab2a256951de2d41befcea0d3e9a3aef04e4c033e4",
+          "genuine_files": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-4.nex",
+          "source_sha256": "1847188566708b2d639ba1fd5699a01753b677863874c04902c54ae239d9a3bb",
+          "profile": "release",
+          "revision": "e71d4f9575c053f8b35bbd188a57fbc70ddee150a50694242eb43f3ff8039d85",
+          "binary_sha256": "49bee67ad254b8f77dd77c90bacdcd6c35bf648e1fd98c20f28764ba9cd3b36e",
+          "metadata_sha256": "8bf001eea85dab932092fe87fbea8528b8802a313864359f91d91396b0bc7a12",
+          "genuine_files": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-5.nex",
+          "source_sha256": "906af6946683728c578175783a75a39759228d29368c3399f3fa91305e1a3b69",
+          "profile": "debug",
+          "revision": "f27d4210baed6a1a55271d74d1b5aa525b5409086dd0369adab760446cb1c693",
+          "binary_sha256": "a1382ae783f89ac3be602758369fc06e0ccd9f200329dd076108e2c2ee23c696",
+          "metadata_sha256": "b2d5d7844f5c4c367d5a2d61ab07850b56a566d5a5c7401cf9c6e7c5b11b342b",
+          "genuine_files": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-5.nex",
+          "source_sha256": "906af6946683728c578175783a75a39759228d29368c3399f3fa91305e1a3b69",
+          "profile": "release",
+          "revision": "f27d4210baed6a1a55271d74d1b5aa525b5409086dd0369adab760446cb1c693",
+          "binary_sha256": "dee35952aa360390794f47c4c42f1df891d948b17308646db1a37fad63d32ce6",
+          "metadata_sha256": "d06b2c23ece144565494c44367c1b28d8c4ccdf34aa1dda5a5df7a37a2b0120e",
+          "genuine_files": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-6.nex",
+          "source_sha256": "5c5879b86842d99301d1cc6bcea3ca0b21637dbad19505ddf22160b6a4588933",
+          "profile": "debug",
+          "revision": "12776a27a50fa95916ad107c39c3d7c4282936365ab3e1f040ed5df3fe9afda1",
+          "binary_sha256": "e97d7c78fd5c908e63c29da569b1732446c15147208fe11afc7bf3a0b33c2912",
+          "metadata_sha256": "2825dfbc5baa8c1af41b53a1574da966b0fca8cd714459c57da3740597d39928",
+          "genuine_files": false,
+          "error": "E_LIMIT",
+          "passed": true
+        },
+        {
+          "file": "case-6.nex",
+          "source_sha256": "5c5879b86842d99301d1cc6bcea3ca0b21637dbad19505ddf22160b6a4588933",
+          "profile": "release",
+          "revision": "12776a27a50fa95916ad107c39c3d7c4282936365ab3e1f040ed5df3fe9afda1",
+          "binary_sha256": "c4b888c0082d2dfe07f91e228c354638ac7238255e66b90603031430c7d96e1c",
+          "metadata_sha256": "061522d4aa1d80b031a8180f702e92b76d45a20961aeb5b5abcdf287720bd759",
+          "genuine_files": false,
+          "error": "E_LIMIT",
+          "passed": true
+        },
+        {
+          "file": "case-8.nex",
+          "source_sha256": "dce2c5111345c1e7afcf51dbbc1009c3eb47d0096af647514d3352cb6fe25f1b",
+          "profile": "debug",
+          "revision": "c4d015f37879aca633661ef230a87449822580810a895cb54958a517834975c4",
+          "binary_sha256": "ac3742408d178959ace1937bff53ef41b5db48839ffd0a0393e513f4eb18e165",
+          "metadata_sha256": "33cd97af29bb6e751ac0c5fa2e98a5bab89a5b8a2dbba899dd7f8c072a594d81",
+          "genuine_files": false,
+          "error": "E_SOURCE_EXCEPTION",
+          "passed": true
+        },
+        {
+          "file": "case-8.nex",
+          "source_sha256": "dce2c5111345c1e7afcf51dbbc1009c3eb47d0096af647514d3352cb6fe25f1b",
+          "profile": "release",
+          "revision": "c4d015f37879aca633661ef230a87449822580810a895cb54958a517834975c4",
+          "binary_sha256": "b7aac0e183483bf3fa1f43e21f6138a0507292158dd3b093e3536a7d6c32d176",
+          "metadata_sha256": "229392a67c20cc0b071c9057a3a012ee18c54a6b5f2f5e30452053397a037a0e",
+          "genuine_files": false,
+          "error": "E_SOURCE_EXCEPTION",
+          "passed": true
+        },
+        {
+          "file": "case-12.nex",
+          "source_sha256": "1b6e33ba978346cb178451ca7636649c03a6f4d213a880886f8b3e042da68f42",
+          "profile": "debug",
+          "revision": "9a125a0f2a344ec02847f77511ca63fdbfe910f54f17e82e0491bdadb6c57953",
+          "binary_sha256": "a78648bb138fafbe35fb8000a2e254b331a65b7f8a2009f2be432e108e1f95da",
+          "metadata_sha256": "68be085f84206880fccb0dba428cca03ff3b42d67ad3def0fbe7e3dec46322ae",
+          "genuine_files": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-12.nex",
+          "source_sha256": "1b6e33ba978346cb178451ca7636649c03a6f4d213a880886f8b3e042da68f42",
+          "profile": "release",
+          "revision": "9a125a0f2a344ec02847f77511ca63fdbfe910f54f17e82e0491bdadb6c57953",
+          "binary_sha256": "1a3ca5e854d71b89d0df151f3cc3dccebd57ca9b6ca4fd2f7199b8a5c78968a5",
+          "metadata_sha256": "caac99e5f4109774ae720d250f529bf169c8bf9bd3477c27dca7f7f88436c540",
+          "genuine_files": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-17.nex",
+          "source_sha256": "b1eb5386fb87bf3d7509cbf26c685f342a57e0be2e4b57f9d082b52318a6c914",
+          "profile": "debug",
+          "revision": "a432440b5de82a5a4e3ec55c10497bde0b2fe82b7232a05931e60044df1f6403",
+          "binary_sha256": "2551b1b00efcacdde2ed1b03cd5dda2b6ffd04c8959f51d44aa4700919e8ce9d",
+          "metadata_sha256": "0331e3a560e6997c287aaebcf2a1002886fc6981d165caa9dc01e43896091349",
+          "genuine_files": true,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-17.nex",
+          "source_sha256": "b1eb5386fb87bf3d7509cbf26c685f342a57e0be2e4b57f9d082b52318a6c914",
+          "profile": "release",
+          "revision": "a432440b5de82a5a4e3ec55c10497bde0b2fe82b7232a05931e60044df1f6403",
+          "binary_sha256": "d0dfcb3258c8b0697154eaf7bc844c7b8d5796d7f5cb71e6a317234b27ff8a02",
+          "metadata_sha256": "54d64abf6bbe8205eace1b4644539a66d8aa7b352a3c42516176d135234e449e",
+          "genuine_files": true,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-18.nex",
+          "source_sha256": "5cbcfb7868bd02d7e4336c057732c71c5e972fbdecfa70f20875cb74de019a8a",
+          "profile": "debug",
+          "revision": "48c0d916153b9f1fd4593b2bbe23fff91b2ff9f147fbbe908820a97fa59446c4",
+          "binary_sha256": "bd9002168494226b60c94da58b1400bd6ed10d89606a62e7dd355525ec734f14",
+          "metadata_sha256": "cea6b2385978545915732e8981fcd6a19fa0d1e5157762cf96246e3b2c68cbe5",
+          "genuine_files": true,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-18.nex",
+          "source_sha256": "5cbcfb7868bd02d7e4336c057732c71c5e972fbdecfa70f20875cb74de019a8a",
+          "profile": "release",
+          "revision": "48c0d916153b9f1fd4593b2bbe23fff91b2ff9f147fbbe908820a97fa59446c4",
+          "binary_sha256": "73070d440fcaac240148b6dd4e2b088583da74d3f2abe9bcef058679515ab2d3",
+          "metadata_sha256": "e3bee0b16754e5927e391c4662997279d3a7386c2436466f9d17cb5532d1137f",
+          "genuine_files": true,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-19.nex",
+          "source_sha256": "a047eaddc4b0679d7d5faadc54e954b5663fced3e5155f3e4df4eb873559c08c",
+          "profile": "debug",
+          "revision": "aa27f00af22c614db781ae2ae7193bb3e6bf05ff70a0f106ab923f273d054a65",
+          "binary_sha256": "78ae66f05d54e98c51b5eff233ac1bf0cb10f22dd1dc960b915184a749de6e9d",
+          "metadata_sha256": "f6dc255c265d7fa1d187dfae87370eec46dd4e6a73b62b777f13d36794d1bc07",
+          "genuine_files": true,
+          "error": "E_RESOURCE_SCOPE",
+          "passed": true
+        },
+        {
+          "file": "case-19.nex",
+          "source_sha256": "a047eaddc4b0679d7d5faadc54e954b5663fced3e5155f3e4df4eb873559c08c",
+          "profile": "release",
+          "revision": "aa27f00af22c614db781ae2ae7193bb3e6bf05ff70a0f106ab923f273d054a65",
+          "binary_sha256": "b54efa6849f393757441a85c54f168dc55146f7f8f614a8dd7b0a6b7dcfa241e",
+          "metadata_sha256": "baafb4881b322a055fa7d5070fcc8a673089bebd07f557dd02154fd9fe86d1a3",
+          "genuine_files": true,
+          "error": "E_RESOURCE_SCOPE",
+          "passed": true
+        },
+        {
+          "file": "case-20.nex",
+          "source_sha256": "147812cdb2cc36f31f19a49a06dc2f894b9df48a71d73ad041324c512142aa2f",
+          "profile": "debug",
+          "revision": "42b62f39f9c514e69b7501e9eaea573dd29986d0ce8223bad1c581815a07df45",
+          "binary_sha256": "368aa2c4d03a1b9215ba0fd04000061378be166a74275dc8d7bced2ded3a108f",
+          "metadata_sha256": "bf9113963238ff6bbe808fd3a59eccd6da107e7a31c074426435ae47c056d1db",
+          "genuine_files": true,
+          "error": "E_ASSERT",
+          "passed": true
+        },
+        {
+          "file": "case-20.nex",
+          "source_sha256": "147812cdb2cc36f31f19a49a06dc2f894b9df48a71d73ad041324c512142aa2f",
+          "profile": "release",
+          "revision": "42b62f39f9c514e69b7501e9eaea573dd29986d0ce8223bad1c581815a07df45",
+          "binary_sha256": "9a7112d0cfea76f3396a8a0aee295587f1de2a736b41b15f7a72a1b15e95b30b",
+          "metadata_sha256": "f8408e6a50ea724a3a0b35ee0666511362de4622a6a887373e9b61f6f6dc0516",
+          "genuine_files": true,
+          "error": "E_ASSERT",
+          "passed": true
+        }
+      ],
+      "exports": [
+        {
+          "file": "case-0.nex",
+          "revision": "ad01a77650fad30d92dc8cd5b71e98020e024ce8abe62677e3b6c9469fd29797",
+          "kind": "ordinary no-argument entry",
+          "error": null,
+          "strict_types": true,
+          "passed": true
+        },
+        {
+          "file": "case-1.nex",
+          "revision": "04d0c89da52f0e4b699cd5ac1631086c792f7e3bad16737ebe4c8cf74bb13a16",
+          "kind": "ordinary no-argument entry",
+          "error": null,
+          "strict_types": true,
+          "passed": true
+        },
+        {
+          "file": "case-2.nex",
+          "revision": "d7d55dc58f5c64b43175e77fab68e7e6d6a16fc9603e9dd2ee656bbeba83c592",
+          "kind": "ordinary no-argument entry",
+          "error": null,
+          "strict_types": true,
+          "passed": true
+        },
+        {
+          "file": "case-3.nex",
+          "revision": "1eed0f9e650713468145bd741c6d9169adbdf81ee017b3be46ee9f9c4e7bbcef",
+          "kind": "ordinary no-argument entry",
+          "error": null,
+          "strict_types": true,
+          "passed": true
+        },
+        {
+          "file": "case-4.nex",
+          "revision": "e71d4f9575c053f8b35bbd188a57fbc70ddee150a50694242eb43f3ff8039d85",
+          "kind": "ordinary no-argument entry",
+          "error": null,
+          "strict_types": true,
+          "passed": true
+        },
+        {
+          "file": "case-5.nex",
+          "revision": "f27d4210baed6a1a55271d74d1b5aa525b5409086dd0369adab760446cb1c693",
+          "kind": "ordinary no-argument entry",
+          "error": null,
+          "strict_types": true,
+          "passed": true
+        },
+        {
+          "file": "case-6.nex",
+          "revision": "12776a27a50fa95916ad107c39c3d7c4282936365ab3e1f040ed5df3fe9afda1",
+          "kind": "ordinary no-argument entry",
+          "error": "E_LIMIT",
+          "strict_types": true,
+          "passed": true
+        },
+        {
+          "file": "case-8.nex",
+          "revision": "c4d015f37879aca633661ef230a87449822580810a895cb54958a517834975c4",
+          "kind": "ordinary no-argument entry",
+          "error": "E_SOURCE_EXCEPTION",
+          "strict_types": true,
+          "passed": true
+        },
+        {
+          "file": "case-12.nex",
+          "revision": "9a125a0f2a344ec02847f77511ca63fdbfe910f54f17e82e0491bdadb6c57953",
+          "kind": "ordinary no-argument entry",
+          "error": null,
+          "strict_types": true,
+          "passed": true
+        }
+      ],
+      "HTTP": [
+        {
+          "profile": "debug",
+          "independent_requests": 12,
+          "uncaught_source_error": true,
+          "next_request_healthy": true,
+          "binary_sha256": "30ff85378dbf128538253648fd4bf6c307f2b81aef0f8bdaf4ce27b190caa5dc",
+          "passed": true
+        },
+        {
+          "profile": "release",
+          "independent_requests": 12,
+          "uncaught_source_error": true,
+          "next_request_healthy": true,
+          "binary_sha256": "e7483364fb336eabb5070055dc5f58ca0ca2987e5dd892b5baff0606e47248c0",
+          "passed": true
+        }
+      ],
+      "portable_SDK": false,
+      "retained_ABI7_cache": true,
+      "host_values": {
+        "ok": true,
+        "input_snapshot": true,
+        "concurrent_calls": 3,
+        "invalid_input": true,
+        "cancelled": true,
+        "context_closed": true
+      },
+      "source_deleted_replay": true,
+      "native_comparisons": 26,
+      "typescript_comparisons": 9
+    }
+  },
+  "retained_development_paths": {
+    "native": {
+      "path": "build/nex-native-reference-tasks-mz58sy93/report.json",
+      "sha256": "a178b3107ec1f754aab4445e9a86c4925c95c236431199ba06c849ed5d290cb5",
+      "comparisons": 26,
+      "retained_development_entry": true
+    },
+    "typescript": {
+      "path": "build/nex-ts-reference-tasks-ctn4fab5/report.json",
+      "sha256": "d4d1461087ec80c170df65d77b9b1836c56e9ade88154d5d5a6768a57629e035",
+      "comparisons": 18,
+      "retained_development_entry": true
+    }
+  },
+  "protocol_guards": {
+    "ok": true,
+    "checks": 105,
+    "descriptor_abi": 7,
+    "resumed_calls": 4,
+    "compiled_C_entry_runs": 2,
+    "cross_cohort_rejections": 20,
+    "private_entry_rejections": 4,
+    "private_entry_retained_runs": 4,
+    "physical_cleanup": true,
+    "missing_reference_runtime": {
+      "exit_code": 70,
+      "code": "E_TASK_STATE",
+      "stderr_sha256": "3661840a7a854a9a7778dc21b54089f1953e44c8970b0795e30bca5892bb93bb"
+    }
+  },
+  "sequential_HTTP_regression": {
+    "path": "build/reference-http-0.271.0-acceptance/report.json",
+    "sha256": "ce9e7bf3f4377cefe1fb562b8ceb51b23781a861dd53fb2daf28dfcaa0f1ecc0",
+    "ok": true,
+    "requests": 314,
+    "servers": 15
+  },
+  "normal_installation": {
+    "exit_code": 0,
+    "methods": 4,
+    "prefix": "/Users/sae/projects/NEX/build/references030-tasks-cli-v1/normal install moved 🧠",
+    "cwd": "/private/tmp",
+    "portable_SDK": false,
+    "host_dependencies_retained": true,
+    "compiler_sha256": "1d24e2a38195875febd0b4a0a8ce5fcf535a810066eff3419497dbd9ed2e52c6",
+    "critical_resources_sha256": {
+      "llm/language-pack.json": "bf101b3b99d39b0c42f0fc8c0d9944f58822915d5461a03c0764f718afa05487",
+      "llm/SYSTEM_PROMPT.md": "3dfae93f47b207d2f0acf6b7fb3ec65ba6f24ab445e5aff50a62e0f1bc60cd3e",
+      "docs/reference-tasks.md": "7f9402326335d872d9aef466810b46b1aed1fdbf6b541dfb89e0a309ab0763df",
+      "docs/references030.md": "1ab16c60618e07afa06131f8458940776c254ee7007d0ea4c390b70361ec99a8",
+      "docs/reference-http.md": "2633cc251339b3fe266651ca9b0ce34e44851ca821b3d3041a57e5db022f663c",
+      "docs/web.md": "b22d8fcf28c0ec47474673478efe1c682ef5e639465c890d5e71360a656ec4d8",
+      "docs/language.md": "cb91d12e49dfc3d3e1552053a85bca1c032b65dcc4cbe31375de4ceeab8a86fb",
+      "docs/references030.ebnf": "9f087fc36d0a883ebd97629fe638f2da59334c29212fcead516f8a7292b69af6",
+      "examples/references/tasks.nex": "eb753458217b13b741057db93ed03ea3edd0aa62598097947cec7a59e65b3d65",
+      "tests/reference_tasks_cli.py": "c510f92a5c84baae7b9f2a75ae2333a4e77245f28368bf0e15b94ae711da85b7",
+      "tests/reference_tasks_boundaries.py": "d05f129c2c989fd2af54ad82b20111f20ce2bde9cf404a21839c5da82eb0c110",
+      "tests/reference_tasks.cpp": "acc598171921368b706a61ebfa986ba978b878fcba1ca4743f6e3873b2fbfcc7",
+      "tests/owner_task_runtime.cpp": "271be35c51898ed06dc02e1f13faccee3dea1eff3d9be6be02156fed347648fe",
+      "tests/typed_task_protocol.cpp": "55633a7b24639557cfd4dd507ea275fa78b51fbd63b2c9e4a65587006b43f288",
+      "tests/typed_task_protocol.py": "c6f671657e3e9f4476f3b8b597da2b8a36efc185afe03622e78e8a68161615f8",
+      "tests/typed_provider_records.cpp": "9c6aa875987b50afa9da0f95e8a685fb448ae63220e5b98015a8fda8031a408e",
+      "tests/reference_http.py": "3eb217a093cd4abd55b05f54fe4cdf2204e5290d25ed52a414792bf1fcddc21d",
+      "runtime/runtime.cpp": "5c5af50d10b840e4d3fe5979067fe1687e1e841af0e6d116a0a3c574c6d6e14a",
+      "runtime/nex_cell_host.cpp": "82a00433059e0953874654de069b9e04a038fb07ab48920a5d4cce6d9117fe6a",
+      "runtime/nex_cells.cpp": "f009588f1f83dc8b8e5028f98cda518d4aa2c684afe1521ce41906bb7ccdb291",
+      "runtime/nex_task_protocol.h": "32fbac909bf81da65c1bce6f3ba1e5003c62cad1cc32a832ac21e886ea4da547",
+      "runtime/nex_task_application.cpp": "8e8b10b40e0e20a29e327590bc5abf86bb577cd9a305e8fc4abc44c4baf71334",
+      "runtime/nex_task_frame.cpp": "818eb6016dd2ebe4a5c24c0d4ea5e544632c12674fac4a000a8b29f3e6216d04",
+      "web/nex-runtime.ts": "88db42c861d0aeec44cfe9f4b0cc7bd38ba5de95b29f6dbe6d142dd5b8c00fd2",
+      "web/nex-bytes.ts": "f2d020fd01cb6fef744037cffeeea4852330c8f48525c64a1a36211bebb1068d",
+      "web/nex-task-runtime.ts": "53c04df0d55a742faf59a1672b5e8d8d53241a8756c101b332b346321416a837",
+      "web/nex-source-exception-runtime.ts": "c73ec0e2609914331cdb54417f4f555312948bd1f877ff55ca587524d329f19b",
+      "web/nex-managed-heap.ts": "21e44b8f6197c0023d1fffd894f78ecb4c847db84b2889a03cbb00af8a7f5316",
+      "web/nex-managed-context.ts": "469f2093d547e5e49102022cc06acaf820334ed442cbc6dd00e270f3016f7b0f",
+      "web/nex-managed-runtime.ts": "16b23e01b7f8ad444d77bfa017a98f4bf545f2bb5a5bd498b10c316055b838e6",
+      "web/nex-managed-task-runtime.ts": "a96af2d066ec20f9a5ef19a39f04e990a539fc7c89d7086cc0bb40587bc251cb"
+    },
+    "boundary_log_sha256": "ed6a007dd18010b2840a48c571be887689fa3216f94bc3cf904988192448bc54",
+    "source_deleted": false
+  },
+  "relocated_async_test": {
+    "ok": true,
+    "literal_backslash_unicode_newline_path": true,
+    "result": {
+      "ok": true,
+      "tests": [
+        {
+          "name": "reference_tasks::shared_background_counter",
+          "native": false,
+          "ok": true,
+          "task_execution": {
+            "backend": "typescript",
+            "configured": {
+              "steps": 1000000,
+              "timeout_ms": 5000,
+              "workers": 16
+            },
+            "cooperative_deadline": true,
+            "effective": {
+              "steps": 1000000,
+              "timeout_ms": 5000,
+              "workers": 16
+            },
+            "executor_workers": 1,
+            "identical_step_thresholds": false,
+            "step_model": "generator and checkpoint work",
+            "supervisor_timeout_seconds": 30
+          },
+          "web": true
+        }
+      ]
+    },
+    "log_sha256": "ddc5f2e59a8cca26d4a0f70edbfa02a6f6f1a45f40adfdd078a6c849db9b9dc3"
+  },
+  "preceding_hosted_CI": {
+    "schema": "nex.hosted-core-result/1",
+    "toolchain": "0.270.0",
+    "source_commit": "e4e500968c887b65fee9a30d99bb2b6b776d232a",
+    "run_id": 43941624072,
+    "url": "https://github.com/sae-ru/NEX/actions/runs/43941624072",
+    "status": "completed",
+    "conclusion": "success",
+    "observed_at": "2026-11-16 20:07:33 UTC",
+    "authority": "GitHub Actions REST run list and connector jobs",
+    "jobs": [
+      {
+        "id": 133560351259,
+        "name": "macos-core",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 133560351751,
+        "name": "linux-core",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ],
+    "core_groups": 17,
+    "complete_source_regression": false,
+    "portable_SDK": false,
+    "scope": "Preceding TypeScript development commit; does not qualify the ordinary ABI8/map4 cohort."
+  },
+  "initial_failures": [
+    {
+      "scope": "smoke example v1",
+      "result": "shared is a realm keyword; renamed the local binding to received before accepted runs",
+      "log_sha256": "563b4179a4f4084a81630889249d4ed714c8a599604c188508e5c5db71b662d6"
+    },
+    {
+      "scope": "first affected selection preflight",
+      "result": "typed_task_protocol registry name corrected to typed_task_public_protocol; no tests started"
+    },
+    {
+      "scope": "initial CLI corpus comparison",
+      "result": "project loader qualifies nominal source diagnostic names; public interpreter/native/TypeScript now compare the same qualified name",
+      "log_sha256": "338e828d6cb79ef0f5e658ee2c6e378604193b066ea7b93a629a3c200b6e2c9f"
+    },
+    {
+      "scope": "initial HTTP host",
+      "result": {
+        "loopback_bind": false,
+        "errno": 1,
+        "message": "[Errno 1] Operation not permitted"
+      },
+      "resolution": "only loopback-dependent checks rerun with local networking; no stand or external service used"
+    },
+    {
+      "scope": "retained protocol fixture",
+      "result": "ABI8 is now known; unknown-cohort probe moved to ABI9; added ABI7/8/private cross-cohort guards"
+    },
+    {
+      "scope": "missing-runtime application fixture",
+      "result": "executeTaskApplication owns its request scope; nested RequestScope is invalid. Test now validates its fatal process boundary in a child, including exit70 and E_TASK_STATE",
+      "logs_sha256": {
+        "rechecked/stdout": "db90f7cee08d1cc694e0a9b226fffba7787d8e51748516dc279c147b821c63a0",
+        "protocol-final/stdout": "e7230c17a0961e6c45c8fe8af87a40ac96fa1586549c2f30b4577404111ccbdf",
+        "protocol-diagnostic.stderr": "7b3590a0f7eead7d8ed0ce7ae0086b0f353d08578858e672387f3d7945fb0f87"
+      }
+    }
+  ],
+  "bounds": [
+    "cooperative source on one heap owner thread; logical worker limits do not promise parallel mutable execution",
+    "native debug/release standalone and HTTP paths; task-provider libraries and logical reference task debug/profile remain pending",
+    "TypeScript hosts exchange copied immutable wire values; no live reference export, managed host IO or Worker reference transport",
+    "persistent application/UI contexts remain open",
+    "focused macOS source/local installation evidence; matching complete source/platform/portable SDK qualification remains open",
+    "normal installation retains host dependencies; published portable SDK0.246.1 remains immutable",
+    "full language/toolchain PLAN, library gaps, NEX Studio and converters remain unfinished"
+  ],
+  "documentation": {
+    "docs-check.stdout": "8d904200e902e0c8beb759efb8a77100b49833122dc870df83027fde8273244c",
+    "current-status-final.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

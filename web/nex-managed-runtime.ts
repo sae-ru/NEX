@@ -304,16 +304,18 @@ export function importValue<T extends Value>(value: unknown, schema: base.Schema
   const copied = sourceValue(checkedHost(value, schema)) as T;
   execution.root(() => copied); return copied;
 }
+export function exportValue<T extends base.Value | void>(value: Value | void, schema?: base.Schema): T {
+  if (schema === undefined) {
+    if (value !== undefined) throw new base.NexError('E_CELL_HOST', 'unit entry returned a value');
+    return undefined as T;
+  }
+  if (value === undefined) throw new base.NexError('E_CELL_HOST', 'value entry returned unit');
+  return checkedHost(hostValue(value), schema) as T;
+}
 export function invokeValue<T extends base.Value | void>(body: () => Value | void, limits: HeapLimits, schema?: base.Schema): T {
   let result: base.Value | void = undefined;
   const outcome = execution.run(body, limits, value => {
-    if (schema === undefined) {
-      if (value !== undefined) throw new base.NexError('E_CELL_HOST', 'unit entry returned a value');
-    } else {
-      if (value === undefined) throw new base.NexError('E_CELL_HOST', 'value entry returned unit');
-      result = checkedHost(hostValue(value), schema);
-    }
-    return 'null';
+    result = exportValue(value, schema); return 'null';
   }, text => console.log(text));
   if (outcome.kind === 'trap') throw new base.NexError(outcome.code!, outcome.message!, outcome.site);
   return result as T;

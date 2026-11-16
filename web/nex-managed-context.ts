@@ -194,8 +194,8 @@ export class TaskSession {
   readonly lanes = new Map<number, Context>();
   private readonly result: RootFrame;
   private closed = false;
-  constructor(limits: HeapLimits) {
-    this.owner = {heap: new CellHeap(limits), roots: [], scopes: [], flight: new Map(), output: {text: ''}};
+  constructor(limits: HeapLimits, print?: (text: string) => void) {
+    this.owner = {heap: new CellHeap(limits), roots: [], scopes: [], flight: new Map(), output: {text: '', print}};
     this.result = this.owner.heap.frame();
   }
   turn<T>(job: number, body: () => T): T {

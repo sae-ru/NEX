@@ -1,5 +1,5 @@
-// Private managed-reference foundation. Ordinary generated clients do not import
-// this module. Source lowering must register every live binding/operand/packet;
+// Managed-reference foundation for matching checked source lowering.
+// Lowering must register every live binding/operand/packet;
 // JavaScript reachability and nondeterministic host GC are not language roots.
 import {NexError} from './nex-runtime.ts';
 

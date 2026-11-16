@@ -37,11 +37,10 @@ void runs(const std::string &body,const std::string &expected,const fs::path &ro
     require(result.task.executionWorkers==1,"reference task prototype claimed CPU workers");
     require(result.afterClose.cells==0&&result.afterClose.nodes==0,"managed task heap did not close");
     require(revision(p)==identity,"managed task evaluation changed source identity");
+    auto ordinary=evaluate(p);require(ordinary.output==expected,"ordinary managed task output differs");
   }
   require(nexrt::liveObjects.load()==baseline,"managed task execution leaked values");
   require(files()==descriptors,"managed task execution leaked file descriptors");
-  try{(void)evaluate(p);throw std::runtime_error("ordinary execution unexpectedly enabled managed tasks");}
-  catch(const Error &error){require(error.code=="E_CELL_CONCURRENCY","ordinary execution gate changed: "+error.code);}
   if(!corpusDirectory.empty()){
     auto file="case-"+std::to_string(cases)+".nex";
     writeFile((corpusDirectory/file).string(),p.source);

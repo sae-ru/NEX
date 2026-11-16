@@ -1,4 +1,4 @@
-// Private checked030 bridge: boxed values and explicit roots on the existing
+// Matching checked030 bridge: boxed values and explicit roots on the existing
 // cooperative task scheduler. Ordinary task/typed-source APIs stay unchanged.
 import * as task from './nex-task-runtime.ts';
 import * as base from './nex-runtime.ts';
@@ -41,8 +41,9 @@ export function* checkpoint(site?: base.Site): Step<void> { yield* bridge<Step<v
 export function request(operation: string, values: ReadonlyArray<nex.Value>, site?: base.Site): Request {
   return task.request(operation, bridge(values), site);
 }
-export async function run<T extends Item>(body: () => Step<T>, limits: HeapLimits, options: task.Options = {}): Promise<execution.Execution> {
-  const session = new execution.TaskSession(limits);
+async function execute<T extends Item>(body: () => Step<T>, limits: HeapLimits, options: task.Options,
+    render: (value: Item) => string, print?: (text: string) => void): Promise<execution.Execution> {
+  const session = new execution.TaskSession(limits, print);
   const policy: task.ManagedDevelopmentValues = {
     children(value, site) {
       if (value instanceof HeapNode && ['task_scope', 'task', 'channel'].includes(value.kind) &&
@@ -66,5 +67,21 @@ export async function run<T extends Item>(body: () => Step<T>, limits: HeapLimit
     const root = session.turn(0, () => call(body));
     value = bridge(await task.runManagedDevelopment(bridge<task.Call<base.Value | void>>(root), policy, options));
   } catch (caught) { error = caught; failed = true; }
-  return session.finish(value, error, failed, nex.representation);
+  return session.finish(value, error, failed, render);
+}
+
+// Private envelope remains available to the independent development corpus.
+export async function run<T extends Item>(body: () => Step<T>, limits: HeapLimits, options: task.Options = {}): Promise<execution.Execution> {
+  return execute(body, limits, options, nex.representation);
+}
+// Public030 async host boundary: input conversion happens in the generated root
+// scope; copy the checked immutable result before the invocation heap closes.
+export async function invokeValue<T extends base.Value | void>(body: () => Step<Item>, limits: HeapLimits,
+    schema?: base.Schema, options: task.Options = {}): Promise<T> {
+  let result: base.Value | void = undefined;
+  const outcome = await execute(body, limits, options, value => {
+    result = nex.exportValue(value, schema); return 'null';
+  }, text => console.log(text));
+  if (outcome.kind === 'trap') throw new base.NexError(outcome.code!, outcome.message!, outcome.site);
+  return result as T;
 }

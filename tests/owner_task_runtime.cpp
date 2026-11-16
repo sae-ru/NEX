@@ -40,6 +40,10 @@ TaskBody mismatched(TaskGroup &group,Value,Value){
  const TaskCodeDescriptor code{unused,nullptr,nullptr,nullptr,nullptr,taskCodeTypedSourceExceptionABI,0,0,0,4,0};
  return executeTaskFrame(group,NativeTaskFrame(code,{},{}));
 }
+TaskBody ownerDescriptor(TaskGroup &group,Value abi,Value){
+ const TaskCodeDescriptor code{unused,nullptr,nullptr,nullptr,nullptr,abi.scalar,0,0,0,4,taskCodeDeclaredState};
+ return executeTaskFrame(group,NativeTaskFrame(code,{},{}));
+}
 template<class F> void trap(const std::string &code,F action){bool failed=false;try{action();}catch(const Trap &error){require(error.code==code,"wrong native owner error");failed=true;}require(failed,"expected native owner error");}
 }
 int runOwnerTaskRuntime(){try{
@@ -53,7 +57,11 @@ int runOwnerTaskRuntime(){try{
   }require(liveObjects==0,"owner execution leaked source values");++cases;
  }
  {RequestScope request;auto value=readHandle(nex_cell_new_i64(1,0,0));TaskGroup workers(1);
-  trap("E_TASK_VALUE",[&]{workers.spawn(child,value);});workers.finish();++cases;}
+  trap("E_TASK_VALUE",[&]{workers.spawn(child,value);});workers.finish();
+  for(auto abi:{taskCodeManagedReferencesABI,taskCodeManagedReferencesDevelopmentABI}){
+   TaskGroup otherWorkers(1,64,{},false,true);auto ticket=otherWorkers.spawn(ownerDescriptor,Value(abi));
+   trap("E_TASK_STATE",[&]{(void)otherWorkers.join(ticket);});otherWorkers.finish();
+  }++cases;}
  {RequestScope request;TaskGroup group(TaskOwnerExecution{},64,{},false,true);
   auto task=group.spawn(mismatched);trap("E_TASK_STATE",[&]{(void)group.join(task);});group.finish();++cases;}
  {RequestScope request;TaskGroup group(TaskOwnerExecution{});std::atomic<bool> rejected=false;
@@ -66,6 +74,7 @@ int runOwnerTaskRuntime(){try{
   auto value=readHandle(nex_cell_new_i64(0,0,0));TaskGroup group(managedTaskOwnerExecution());
   auto task=group.spawn(endless,value);trap("E_CANCELLED",[&]{(void)group.join(task);});++cases;}
  require(retired==2&&!inRequestScope()&&liveObjects==0,"cancelled owner left context/values");
+ require(cases==7,"owner scenario count differs");
 #ifndef NEX_OWNER_TASK_INLINE
  std::cout<<"{\"ok\":true,\"cases\":"<<cases<<",\"turns\":"<<turns<<"}\n";
 #endif

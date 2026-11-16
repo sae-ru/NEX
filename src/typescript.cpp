@@ -550,7 +550,10 @@ public:
           inputs.push_back(std::move(schema));
         }
         llvm::json::Value result=nullptr;if(function.result!=Type::Unit)result=wireSchema(p,function.result);
-        write("export function "+alias+"("+parameters+"): "+hostValueType(function.result)+" { return nex.invokeValue<"+hostValueType(function.result)+">(() => "+symbol(function.name)+"("+arguments+"), "+limits+(function.result==Type::Unit?"":", "+json(result,false))+"); }\n");
+        if(taskMode){
+          if(!parameters.empty())parameters+=", ";parameters+="options: import('./nex-task-runtime.ts').Options = {}";
+          write("export function "+alias+"("+parameters+"): Promise<"+hostValueType(function.result)+"> { return task.invokeValue<"+hostValueType(function.result)+">(function* (): task.Step<"+type(function.result)+"> { return yield* nex.scopeTask"+taskTypes(type(function.result))+"(function* (): task.Step<"+type(function.result)+"> { return yield* "+symbol(function.name)+"("+arguments+"); }); }, "+limits+", "+(function.result==Type::Unit?"undefined":json(result,false))+", options); }\n");
+        }else write("export function "+alias+"("+parameters+"): "+hostValueType(function.result)+" { return nex.invokeValue<"+hostValueType(function.result)+">(() => "+symbol(function.name)+"("+arguments+"), "+limits+(function.result==Type::Unit?"":", "+json(result,false))+"); }\n");
         hostContracts[alias]=llvm::json::Object{{"symbol",function.name},{"parameters",std::move(inputs)},{"result",std::move(result)}};
       }
       else if(managedMode){
@@ -564,8 +567,8 @@ public:
       {"functions",std::move(included)},{"statements",std::move(mappings)},{"execution","sequential-owned-heap"}};
       if(hostValues){mapping["host_entry_contracts"]=std::move(hostContracts);mapping["host_values"]="immutable snapshots; no live reference escapes; one heap per call";}
       if(taskMode){mapping["schema"]="nex.private-typescript-reference-tasks/1";mapping["execution"]="owner-task-generator";mapping["checked_revision"]=revision(p);mapping["ordinary_CLI"]=false;}
-      if(p.sourceLanguage==SourceLanguage::References030&&!taskMode){
-        mapping["schema"]="nex.typescript-map/3";mapping["revision"]=revision(p);mapping["source_hash"]=hash(json(sourceBundle(p),false));
+      if(p.sourceLanguage==SourceLanguage::References030&&(!taskMode||hostValues)){
+        mapping["schema"]=taskMode?"nex.typescript-map/4":"nex.typescript-map/3";mapping["revision"]=revision(p);mapping["source_hash"]=hash(json(sourceBundle(p),false));
         mapping["public_revision"]=true;mapping["source_version_selected"]=true;
         mapping["public_source_enabled"]=true;
         mapping["ordinary_CLI"]=true;
@@ -593,10 +596,7 @@ WebModule emitTypeScript(const Program &p,const std::map<std::string,std::string
   rejectUnloweredTasks(p,"TypeScript emission");
   std::set<std::string> roots;for(const auto &[alias,name]:entries)roots.insert(name);
   validateManagedReferenceExecution(p,roots);
-  if(p.sourceLanguage==SourceLanguage::References030&&usesManagedReferences(p,roots)){
-    nexrt::CellHeapLimits limits;validateManagedValueEntries(p,entries,limits);
-    return Generator(p,false,false,true,&limits,true).run(entries);
-  }
+  const bool managed=p.sourceLanguage==SourceLanguage::References030&&usesManagedReferences(p,roots);
   bool tasks=false;
   if(isPublicTaskLanguage(p)){
     std::set<std::string> visited;
@@ -607,13 +607,17 @@ WebModule emitTypeScript(const Program &p,const std::map<std::string,std::string
     };
     for(const auto &[alias,name]:entries){(void)alias;visit(p.function(name));}
   }
+  if(managed){
+    nexrt::CellHeapLimits limits;validateManagedValueEntries(p,entries,limits);
+    return Generator(p,tasks,false,true,&limits,true).run(entries);
+  }
   return Generator(p,tasks).run(entries);
 }
 WebModule emitTypeScriptDelivery(const Program &p,const std::map<std::string,std::string> &entries){
   auto module=emitTypeScript(p,entries);
   if(module.managedReferences){
     const auto *mapping=module.mapping.getAsObject();
-    if(p.sourceLanguage!=SourceLanguage::References030||!mapping||mapping->getString("schema")!="nex.typescript-map/3"||mapping->getString("revision")!=revision(p))throw Error("E_CELL_BACKEND","managed delivery requires a checked versioned reference source map");
+    if(p.sourceLanguage!=SourceLanguage::References030||!mapping||mapping->getString("schema")!=(module.asynchronous?"nex.typescript-map/4":"nex.typescript-map/3")||mapping->getString("revision")!=revision(p))throw Error("E_CELL_BACKEND","managed delivery requires a checked versioned reference source map");
     return module;
   }
   if(!isTypedSourceErrorLanguage(p.sourceLanguage))return module;

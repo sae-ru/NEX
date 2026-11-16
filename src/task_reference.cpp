@@ -1,4 +1,5 @@
 #include "nex/task_reference.h"
+#include "nex/managed_references.h"
 #include "nex/task_machine.h"
 #include "nex/task_lifetime.h"
 #include "nex/task_frontend.h"
@@ -1071,6 +1072,19 @@ static TaskReferenceResult evaluateTaskReferenceImpl(bool taskIR,const Program &
   catch(const std::bad_alloc &){throw Error("E_MEMORY","reference host allocation failed",p.function(entry).span);}
 }
 TaskReferenceResult evaluateTaskReference(const Program &p,const std::string &entry,const std::vector<RV> &arguments,uint64_t limit,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *taskLimits,TaskReferenceExternalHost *externalHost,const nexrt::FileReadGrant *fileGrant,const nexrt::FileWriteGrant *writeGrant){
+  if(p.sourceLanguage==SourceLanguage::References030&&usesManagedReferences(p,{entry})){
+    validateManagedReferenceExecution(p,{entry});
+    const auto &function=p.function(entry);
+    for(const auto &f:p.functions)if(!f.checked&&!f.traitSignature)throw Error("E_CELL_STATE","managed task execution requires checked source",f.span);
+    if(!function.params.empty()||!arguments.empty()||!function.captures.empty())throw Error("E_CELL_ENTRY","owned reference-task entry takes no arguments",function.span);
+    if(function.result!=Type::Unit&&!satisfiesConstraint(p,function.result,"wire"))throw Error("E_CELL_ENTRY","owned reference-task result must be unit or an immutable wire value",function.span);
+    nexrt::CellHeap cells;
+    try{return evaluateTaskReferenceImpl(false,p,entry,arguments,limit,std::move(observer),taskLimits,externalHost,fileGrant,writeGrant,&cells);}
+    catch(const SourceException &error){
+      // Preserve the public diagnostic without exporting a closed-heap packet.
+      SourceException copied(error.code,error.message,error.span);copied.output=error.output;throw copied;
+    }
+  }
   return evaluateTaskReferenceImpl(false,p,entry,arguments,limit,std::move(observer),taskLimits,externalHost,fileGrant,writeGrant);
 }
 ManagedTaskReferenceResult evaluateManagedTaskReferencePrototype(const Program &p,const std::string &entry,uint64_t limit,nexrt::CellHeapLimits bounds,const nexrt::TaskExecutionLimits *taskLimits,TaskReferenceObserver observer,TaskReferenceExternalHost *externalHost,const nexrt::FileReadGrant *fileGrant,const nexrt::FileWriteGrant *writeGrant){
@@ -1091,6 +1105,7 @@ ManagedTaskReferenceResult evaluateManagedTaskReferencePrototype(const Program &
 }
 TaskReferenceResult evaluateTaskIRReference(const Program &p,const std::string &entry,const std::vector<RV> &arguments,uint64_t limit,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *taskLimits){
   if(!supportsSourceExceptionTasks(p))throw Error("E_LANGUAGE_VERSION","TaskIR source-error comparison requires checked source-exception tasks");
+  if(usesManagedReferences(p,{entry}))throw Error("E_CELL_CONCURRENCY","TaskIR reference comparison has no owned cell context; use the independent AST reference engine");
   (void)analyzeTaskLifetimes(p,entry);
   return evaluateTaskReferenceImpl(true,p,entry,arguments,limit,std::move(observer),taskLimits,nullptr,nullptr,nullptr);
 }

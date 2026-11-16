@@ -419,6 +419,10 @@ set_tests_properties(reference_tasks_development PROPERTIES TIMEOUT 120)
 add_test(NAME reference_tasks_boundaries COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_tasks_boundaries.py $<TARGET_FILE:nex>)
 set_tests_properties(reference_tasks_boundaries PROPERTIES TIMEOUT 600)
+add_test(NAME reference_tasks_cli COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_tasks_cli.py $<TARGET_FILE:nex>
+  $<TARGET_FILE:nex_reference_tasks_probe> --output-parent ${CMAKE_CURRENT_BINARY_DIR})
+set_tests_properties(reference_tasks_cli PROPERTIES TIMEOUT 1200)
 add_executable(nex_task_reference_limits_probe tests/task_reference_limits.cpp runtime/runtime.cpp)
 target_include_directories(nex_task_reference_limits_probe PRIVATE runtime)
 target_compile_definitions(nex_task_reference_limits_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
@@ -1000,7 +1004,8 @@ add_executable(nex_typed_task_protocol_probe tests/typed_task_protocol.cpp runti
 target_compile_definitions(nex_typed_task_protocol_probe PRIVATE NEX_PROFILE_ENABLED NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
 target_include_directories(nex_typed_task_protocol_probe PRIVATE runtime)
 target_link_libraries(nex_typed_task_protocol_probe PRIVATE Threads::Threads)
-add_test(NAME typed_task_public_protocol COMMAND nex_typed_task_protocol_probe)
+add_test(NAME typed_task_public_protocol COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/typed_task_protocol.py $<TARGET_FILE:nex_typed_task_protocol_probe>)
 set_tests_properties(typed_task_public_protocol PROPERTIES TIMEOUT 60)
 add_executable(nex_typed_provider_records_probe tests/typed_provider_records.cpp)
 target_link_libraries(nex_typed_provider_records_probe PRIVATE nex_native_backend nex_frontend Threads::Threads)

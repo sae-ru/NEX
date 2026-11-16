@@ -30,8 +30,9 @@ TaskReferenceResult evaluateTaskReference(const Program &,const std::string &ent
     const nexrt::FileReadGrant *fileGrant=nullptr,
     const nexrt::FileWriteGrant *writeGrant=nullptr);
 // Private source030 integration: one thread-affine heap across AST task frames,
-// waits, channels and typed errors. Ordinary CLI/native/TypeScript task gates
-// remain unchanged. Entry results must be unit/immutable wire values; no live
+// waits, channels and typed errors. Ordinary030 evaluateTaskReference also owns
+// its heap; this retained API additionally reports heap stats. Results must be
+// unit/immutable wire values; no live
 // cell escapes the owned heap. The heap closes before task-resource teardown.
 struct ManagedTaskReferenceResult {
   TaskReferenceResult task;

@@ -1,5 +1,14 @@
 # NEX language specification 0.28
 
+Toolchain0.271 enables ordinary checked030 owner-thread reference tasks through
+`eval`, native debug/release applications and HTTP handlers, and asynchronous
+TypeScript wire-value entries. Public native task ABI8 and TypeScript map4 are
+distinct from retained ABI7, private030 task descriptors and synchronous map3.
+No source production, source version, canonical format or graph history changes.
+`parallel_map` in a reference execution graph, provider images, logical task
+reference debug/profile and persistent UI contexts remain pending. Read
+[the owned task contract](reference-tasks.md).
+
 Toolchain0.270 adds a private [TypeScript cell/task emitter](reference-tasks.md)
 with explicit per-job roots on one invocation heap. Its asynchronous execution
 retains checked source identity in a private map and does not enable ordinary

@@ -1,4 +1,4 @@
-"""Source030 checking, explicit execution gates and retained backend behavior."""
+"""Source030 owned task execution and retained backend boundaries."""
 import json
 import unittest
 import support as h
@@ -23,7 +23,7 @@ class Boundaries(h.ToolchainCase):
         manifest['language'] = '0.30'
         path.write_text(json.dumps(manifest) + '\n')
 
-    def test_stateful_callbacks_check_but_all_public_backends_retain_the_gate(self):
+    def test_stateful_callbacks_execute_with_an_owned_context(self):
         self.project(CELL_TASK)
         checked = self.cli('check')
         self.assertTrue(checked['ok'])
@@ -34,10 +34,18 @@ class Boundaries(h.ToolchainCase):
         self.assertFalse(field['public_source_enabled'])
         self.assertFalse(field['native'])
         self.assertFalse(field['typescript'])
-        for command in [('eval',), ('build', '--build-directory', str(self.root / 'native')),
-                        ('emit', '--kind', 'typescript')]:
-            with self.subTest(command=command):
-                self.assertEqual(self.cli(*command, ok=False)['code'], 'E_CELL_CONCURRENCY')
+        ordinary = self.cli('describe', '--field',
+                            'managed_references.source030_development.ordinary_tasks')['value']
+        self.assertTrue(ordinary['public_source_enabled'])
+        self.assertEqual(ordinary['native_task_ABI'], '0x4e45585400000008')
+        self.assertTrue(self.cli('eval')['ok'])
+        self.assertEqual(self.cli('run', '--profile', 'release')['exit_code'], 0)
+        emitted = self.cli('emit', '--kind', 'typescript', '--directory', str(self.root/'generated'))
+        self.assertTrue(emitted['ok'])
+        mapping = json.loads((self.root/'generated/nex-map.json').read_text())
+        self.assertEqual(mapping['schema'], 'nex.typescript-map/4')
+        self.assertTrue(mapping['public_revision'])
+        self.assertTrue(mapping['ordinary_CLI'])
 
     def test_stateful_callback_requires_its_callers_state_effect(self):
         self.project('''module effect;

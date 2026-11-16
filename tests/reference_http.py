@@ -84,7 +84,7 @@ negative = {
     'request-type': ('server fn handle(req:str)->http::Response !{state}{return http::text_response(200,str(cell_read(cell_new(42))));}', 'E_HTTP_SIGNATURE'),
     'result-type': ('server fn handle(req:http::Request)->cell<i64> !{state}{return cell_new(42);}', 'E_HTTP_SIGNATURE'),
     'realm': ('fn handle(req:http::Request)->http::Response !{state}{return http::text_response(200,str(cell_read(cell_new(42))));}', 'E_HTTP_SIGNATURE'),
-    'task-context': ('server fn handle(req:http::Request)->http::Response !{state,task}{let value:cell<i64>=cell_new(42);task_yield();return http::text_response(200,str(cell_read(value)));}', 'E_CELL_CONCURRENCY'),
+    'parallel-context': ('server fn handle(req:http::Request)->http::Response !{state,task}{let value:cell<i64>=cell_new(42);let items:list<i64>=parallel_map([1],fn(x:i64)->i64{return x;},1);task_yield();return http::text_response(200,str(cell_read(value)));}', 'E_CELL_CONCURRENCY'),
 }
 for name, (body, code) in negative.items():
     path = out/('reject-'+name+'.json')

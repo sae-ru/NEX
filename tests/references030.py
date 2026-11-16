@@ -118,7 +118,7 @@ finally {console.log=previous;}console.log(JSON.stringify(result));
     report['scalar_device_emission']=json.loads(run([probe,'scalar-devices',device,out/'scalar-devices'],out,'scalar-devices').stdout)
     assert report['scalar_device_emission']['ok']and all((out/'scalar-devices'/n).stat().st_size for n in ['program.metal','program.cu','program.cl','program-wasm.mlir'])
     for name,body,mode,code in [
-        ('mixed-context','fn main()->unit!{state,task,throw}{let value:cell<i64>=cell_new(1);task_yield();}','reference','E_CELL_CONCURRENCY'),
+        ('parallel-context','fn main()->unit!{state,task,throw}{let value:cell<i64>=cell_new(1);let items:list<i64>=parallel_map([1],fn(x:i64)->i64{return x;},1);task_yield();}','reference','E_CELL_CONCURRENCY'),
         ('cell-wasm','fn main()->i64!{state}{return cell_read(cell_new(42));}','wasm','E_CELL_TARGET'),
         ('missing-effect','fn main()->unit{let value:cell<i64>=cell_new(1);}','inspect','E_EFFECT')]:
         path=out/(name+'.nex');path.write_text('module rejected;'+body)

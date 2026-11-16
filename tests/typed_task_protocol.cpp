@@ -51,7 +51,7 @@ int64_t rootStep(void *frame){
 }
 int64_t simpleStep(void *frame){nex_task_frame_return_i64(frame,42,0);return 0;}
 template<class F>void rejected(F action){
-  try{action();}catch(const Trap &e){require(e.code=="E_TASK_STATE","unexpected cohort rejection code");return;}
+  try{action();}catch(const Trap &e){if(e.code!="E_TASK_STATE")throw std::runtime_error("unexpected cohort rejection "+e.code+": "+std::string(trapMessage(e)));return;}
   throw std::runtime_error("incompatible task cohort accepted");
 }
 void empty(){
@@ -70,7 +70,14 @@ extern "C" void nex_profile_free(const void *p){
   std::lock_guard guard(allocationMutex);
   if(allocations.erase(p)!=1)throw std::runtime_error("unknown allocation");
 }
-int main(){try{
+int main(int argc,char **argv){try{
+  if(argc==2&&std::string(argv[1])=="--missing-reference-runtime"){
+    // This fixture deliberately has no NEX_MANAGED_TASKS runtime. The public
+    // application owns its RequestScope; its fatal boundary belongs in a child.
+    TaskCodeDescriptor owned{simpleStep,nullptr,nullptr,nullptr,nullptr,taskCodeManagedReferencesABI,0,0,0,0,taskCodeDeclaredTask|taskCodeDeclaredState};
+    (void)executeTaskApplication(owned,{10000,10000,1},{});
+    throw std::runtime_error("reference application accepted an absent owner runtime");
+  }
   static_assert(sizeof(TaskCodeDescriptor)==88&&offsetof(TaskCodeDescriptor,abi)==40);
   for(auto workers:{1u,4u}){
     TaskCodeDescriptor root{rootStep,nullptr,nullptr,nullptr,nullptr,taskCodeTypedSourceExceptionABI,0,0,0,0,taskCodeDeclaredTask};
@@ -97,7 +104,8 @@ int main(){try{
   }
   for(auto other:{taskCodeABI,taskCodeWriteABI,taskCodeStreamABI,taskCodeSourceExceptionABI,
                  taskCodeExceptionPrototypeABI,taskCodeExceptionHostPrototypeABI,
-                 taskCodeTypedErrorDevelopmentABI,taskCodeTypedAuthorityDevelopmentABI}){
+                 taskCodeTypedErrorDevelopmentABI,taskCodeTypedAuthorityDevelopmentABI,
+                 taskCodeManagedReferencesABI,taskCodeManagedReferencesDevelopmentABI}){
     for(bool reverse:{false,true}){
       RequestScope scope;
       TaskCodeDescriptor parent{simpleStep,nullptr,nullptr,nullptr,nullptr,
@@ -117,9 +125,13 @@ int main(){try{
     rejected([&]{nex_task_frame_source_enter_at(&frame,nullptr);});
     require(bool(frame.pendingSource)&&frame.caughtSource.empty(),"typed helper modified the legacy packet on rejection");
   }empty();
-  for(auto invalid:{INT64_C(0),INT64_C(-1),taskCodeTypedSourceExceptionABI+1}){
+  {
+    TaskCodeDescriptor owned{simpleStep,nullptr,nullptr,nullptr,nullptr,taskCodeManagedReferencesABI,0,0,0,0,taskCodeDeclaredTask|taskCodeDeclaredState};
+    require(validTaskCodeRequirements(owned.abi,owned.requirements),"published owner-thread descriptor rejected");
+  }empty();
+  for(auto invalid:{INT64_C(0),INT64_C(-1),taskCodeManagedReferencesABI+1}){
     require(!validTaskCodeRequirements(invalid,0),"unknown task cohort accepted");
   }
-  std::cout<<"{\"ok\":true,\"checks\":"<<checks<<",\"descriptor_abi\":7,\"resumed_calls\":4,\"compiled_C_entry_runs\":2,\"cross_cohort_rejections\":16,\"private_entry_rejections\":4,\"private_entry_retained_runs\":4,\"physical_cleanup\":true}\n";
+  std::cout<<"{\"ok\":true,\"checks\":"<<checks<<",\"descriptor_abi\":7,\"resumed_calls\":4,\"compiled_C_entry_runs\":2,\"cross_cohort_rejections\":20,\"private_entry_rejections\":4,\"private_entry_retained_runs\":4,\"physical_cleanup\":true}\n";
   return 0;
 }catch(const std::exception &e){std::cerr<<e.what()<<'\n';return 1;}}

@@ -1,3 +1,37 @@
+# Ordinary owner-thread reference tasks — development0.271.0
+
+Ordinary checked030 evaluation, native debug/release applications and HTTP
+handlers now compose cells with structured tasks. One owned heap spans source
+frames, waits, channels, typed errors and cancellation. Source continuations
+execute cooperatively on their owner thread; independent HTTP requests retain
+independent heaps. Physical IO workers keep raw completion/lease data.
+Read [the owned task contract](docs/reference-tasks.md).
+
+Native reference tasks select public ABI8; retained ABI7 and private030
+ABI`0x4e45585400003001` stay unchanged. Application schema6 is distinct from
+retained schema5. Runtime cache identities include owner-task compilation mode.
+Public TypeScript async exports accept/return checked copied immutable wire
+values, own separate heaps and use map4. Synchronous map3 and private development
+maps retain their identities. Source syntax/version, canonical identities,
+graph namespaces, selected project languages and public C ABI1 are unchanged.
+The [task counter example](examples/references/tasks.nex) runs with ordinary CLI
+commands and native/web test adapters.
+
+The [focused receipt](docs/evidence/reference-tasks-cli-0.271.0-2026-11-16.json)
+retains source/compiler identities, exact qualification, original failed test
+assumptions and sandbox observations. The independent AST corpus supplies
+ordinary CLI/native/TypeScript comparisons; extra checks cover copied host
+arguments, concurrent calls, cancellation, retained ABI7 cache reuse, captured
+replay without the source file and actual HTTP requests. A moved normal
+installation remains distinct from a portable SDK release.
+
+Persistent application/UI state, library/task provider lifetimes, logical task
+reference debugging/profiling, parallel reference transfer and complete current
+source/platform/portable SDK qualification remain required. Whole-plan completion
+is not claimed; published portable SDK0.246.1 remains immutable. The preceding
+[hosted0.270 core](docs/evidence/core-ci-0.270.0-2026-11-16.json) passed macOS and
+Linux at its own source cohort.
+
 # TypeScript reference/task continuations — development0.270.0
 
 A private checked030 TypeScript emitter now composes cells with the existing

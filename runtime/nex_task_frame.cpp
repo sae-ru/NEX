@@ -97,7 +97,7 @@ TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserve
   std::shared_ptr<const NativeSourceException> unwinding;
   while(!stack.empty()){
     auto &current=stack.back();int64_t transition;
-    if((current.abi==taskCodeManagedReferencesDevelopmentABI)!=group.ownerThreadExecution())throw DataError("E_TASK_STATE","compiled task reference cohort/owner-thread coordinator differs");
+    if(managedReferenceTaskABI(current.abi)!=group.ownerThreadExecution())throw DataError("E_TASK_STATE","compiled task reference cohort/owner-thread coordinator differs");
     if(sourceExceptionTaskABI(current.abi)!=group.sourceExceptionPrototype())throw DataError("E_TASK_STATE","private source task descriptor/coordinator mode differs");
     try{
     if(unwinding){

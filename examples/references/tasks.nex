@@ -1,0 +1,23 @@
+module reference_tasks;
+struct Counter { count: i64; }
+struct Fault { value: cell<Counter>; }
+fn answer() -> i64 !{state,task,throw} {
+  let value: cell<Counter> = cell_new(Counter(41));
+  let snapshot: Counter = cell_read(value);
+  let received: cell<Counter> = with_tasks(2, fn(scope: task_scope) -> cell<Counter> !{state,task,throw} {
+    let pipe: channel<cell<Counter>> = channel_new<cell<Counter>>(scope, 1);
+    let child: task<unit> = task_spawn(scope, fn() -> unit !{state,task} {
+      task_yield();
+      cell_write(value, Counter(42));
+      assert(task_send(pipe, value));
+    });
+    task_wait(child);
+    cell_collect();
+    return unwrap(task_recv(pipe));
+  });
+  assert(received == value && snapshot.count == 41);
+  try { task_yield(); throw(Fault(received)); }
+  catch (fault: Fault) { cell_collect(); return cell_read(fault.value).count; }
+}
+fn main() -> unit !{state,task,throw,io} { print(answer()); }
+test fn shared_background_counter() -> unit !{state,task,throw} { assert(answer() == 42); }

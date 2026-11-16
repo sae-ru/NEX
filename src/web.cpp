@@ -202,7 +202,7 @@ llvm::json::Value distHashes(const std::filesystem::path &directory){
 }
 ProcessResult runTypeScriptTest(const WebModule &module,const std::string &directory,unsigned timeout,const nexrt::TaskExecutionLimits *limits){
   const auto *managedMap=module.mapping.getAsObject();
-  if(module.managedReferences&&(!managedMap||managedMap->getString("schema")!="nex.typescript-map/3"||!managedMap->getObject("host_entry_contracts")))throw Error("E_CELL_BACKEND","private managed modules use their dedicated main evaluation envelope, not the public entry test adapter");
+  if(module.managedReferences&&(!managedMap||managedMap->getString("schema")!=(module.asynchronous?"nex.typescript-map/4":"nex.typescript-map/3")||!managedMap->getObject("host_entry_contracts")))throw Error("E_CELL_BACKEND","private managed modules use their dedicated main evaluation envelope, not the public entry test adapter");
   namespace fs=std::filesystem;
   if(limits&&!nexrt::validTaskExecutionLimits(*limits))throw Error("E_OPTION","invalid TypeScript task execution limits");
   std::string taskOptions;
@@ -212,7 +212,8 @@ ProcessResult runTypeScriptTest(const WebModule &module,const std::string &direc
   const bool typed=module.mapping.getAsObject()&&isTypedSourceErrorVersion(module.mapping.getAsObject()->getString("language").value_or(""));
   const std::string sourceRunner=typed?"import { sourceErrorContracts } from './program.ts';\nawait task.runTypedSourceErrors(task.call(() => entry()), sourceErrorContracts":
     "import * as sourceException from './nex-source-exception-runtime.ts';\nawait task.runSourceErrors(task.call(() => entry()), error => sourceException.details(error) !== undefined";
-  writeFile((folder/"test.ts").string(),module.asynchronous?
+  const auto managedRunner="import { entry } from './program.ts';\nawait entry("+(taskOptions.empty()?std::string{}:taskOptions.substr(2))+");\n";
+  writeFile((folder/"test.ts").string(),module.managedReferences&&module.asynchronous?managedRunner:module.asynchronous?
     "import { entry } from './program.ts';\nimport * as task from './nex-task-runtime.ts';\n"+std::string(module.privateSourceExceptions?sourceRunner:"await task.run(task.call(() => entry())")+taskOptions+");\n":
     "import { entry } from './program.ts';\nentry();\n");
   ToolDirectory runner(folder);
@@ -220,6 +221,7 @@ ProcessResult runTypeScriptTest(const WebModule &module,const std::string &direc
     fs::copy_file(folder/name,runner.path()/name);
   if(runner.relocated()&&module.managedReferences){
     for(const auto *name:{"nex-managed-heap.ts","nex-managed-context.ts","nex-managed-runtime.ts"})fs::copy_file(folder/name,runner.path()/name);
+    if(module.asynchronous)for(const auto *name:{"nex-managed-task-runtime.ts","nex-task-runtime.ts","nex-source-exception-runtime.ts"})fs::copy_file(folder/name,runner.path()/name);
   }else if(runner.relocated()&&(module.asynchronous||module.privateSourceExceptions))for(const auto *name:{"nex-task-runtime.ts","nex-source-exception-runtime.ts"})fs::copy_file(folder/name,runner.path()/name);
   const char *node=std::getenv("NEX_NODE");
   return capture({node?node:"node","--experimental-strip-types","--no-warnings",(runner.path()/"test.ts").string()},timeout);

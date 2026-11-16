@@ -5441,7 +5441,7 @@
     "source_type_enabled": true,
     "state_effect_enabled": true,
     "status": "source030_cli_development",
-    "task_transfer": false,
+    "task_transfer": true,
     "teardown": "detach mutable edges and release registry in reverse immutable-adoption order; no collector graph workspace allocated at close",
     "test": "tests/cells.cpp",
     "typescript_source_enabled": true,
@@ -5509,7 +5509,7 @@
         "owner": "one thread-affine RequestScope per HTTP request",
         "source_errors": "copy diagnostic; retire live payload within request",
         "response": "ordinary immutable std::http::Response",
-        "task_transfer": false,
+        "task_transfer": true,
         "persistent_UI_context": false
       },
       "native_reference_libraries": {
@@ -5605,7 +5605,46 @@
         "stable_public_ABI": false,
         "SDK_delivery_accepted": false,
         "full_platform_acceptance": false
-      }
+      },
+      "ordinary_tasks": {
+        "introduced_toolchain": "0.271.0",
+        "ordinary_CLI": true,
+        "public_source_enabled": true,
+        "guide": "docs/reference-tasks.md",
+        "test": "tests/reference_tasks_cli.py",
+        "source_language": "0.30",
+        "source_workers": 1,
+        "execution": "cooperative source on the invocation/request owner thread",
+        "heap": "one owned context across task frames, futures, channels and source errors",
+        "reference_interpreter": true,
+        "native_standalone": true,
+        "native_HTTP": true,
+        "native_task_ABI": "0x4e45585400000008",
+        "native_application_schema": "nex.native-task-application/6",
+        "retained_task_ABI7_unchanged": true,
+        "private_development_ABI_unchanged": "0x4e45585400003001",
+        "native_profiles": [
+          "debug",
+          "release"
+        ],
+        "typescript": true,
+        "typescript_map": "nex.typescript-map/4",
+        "typescript_host_values": "checked copied immutable wire arguments/results; independent heap per invocation",
+        "typescript_host_IO": false,
+        "typed_diagnostics": "copied at owned entry boundaries; no live reference packet escapes",
+        "cell_payload_task_capabilities": false,
+        "task_provider_images": false,
+        "logical_debug_profile": false,
+        "parallel_transfer": false,
+        "persistent_UI_context": false,
+        "SDK_delivery_accepted": false,
+        "full_platform_acceptance": false,
+        "native_HTTP_platforms": [
+          "macOS",
+          "Linux"
+        ]
+      },
+      "task_reference_contexts": true
     }
   },
   "ieee_numeric_kernel": {

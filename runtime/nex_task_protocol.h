@@ -14,7 +14,9 @@ inline constexpr int64_t taskCodeStreamABI=INT64_C(0x4e45585400000005);
 inline constexpr int64_t taskCodeSourceExceptionABI=INT64_C(0x4e45585400000006);
 // Public027 retains owned typed packets under a distinct task cohort.
 inline constexpr int64_t taskCodeTypedSourceExceptionABI=INT64_C(0x4e45585400000007);
-inline bool publicSourceExceptionTaskABI(int64_t abi)noexcept{return abi==taskCodeSourceExceptionABI||abi==taskCodeTypedSourceExceptionABI;}
+// Public030 owner-thread references have a new cohort; ABI7 stays immutable.
+inline constexpr int64_t taskCodeManagedReferencesABI=INT64_C(0x4e45585400000008);
+inline bool publicSourceExceptionTaskABI(int64_t abi)noexcept{return abi==taskCodeSourceExceptionABI||abi==taskCodeTypedSourceExceptionABI||abi==taskCodeManagedReferencesABI;}
 // Nonpublic025 experiment, deliberately distinct from published ABI3/4/5.
 inline constexpr int64_t taskCodeExceptionPrototypeABI=INT64_C(0x4e45585400002501);
 inline constexpr int64_t taskCodeExceptionHostPrototypeABI=INT64_C(0x4e45585400002502);
@@ -24,7 +26,8 @@ inline constexpr int64_t taskCodeTypedErrorDevelopmentABI=INT64_C(0x4e4558540000
 inline constexpr int64_t taskCodeTypedAuthorityDevelopmentABI=INT64_C(0x4e45585400002702);
 // Unpublished030 owner-thread reference cohort; published ABI7 stays immutable.
 inline constexpr int64_t taskCodeManagedReferencesDevelopmentABI=INT64_C(0x4e45585400003001);
-inline bool typedSourceTaskABI(int64_t abi)noexcept{return abi==taskCodeTypedSourceExceptionABI||abi==taskCodeTypedErrorDevelopmentABI||abi==taskCodeTypedAuthorityDevelopmentABI||abi==taskCodeManagedReferencesDevelopmentABI;}
+inline bool managedReferenceTaskABI(int64_t abi)noexcept{return abi==taskCodeManagedReferencesABI||abi==taskCodeManagedReferencesDevelopmentABI;}
+inline bool typedSourceTaskABI(int64_t abi)noexcept{return abi==taskCodeTypedSourceExceptionABI||abi==taskCodeTypedErrorDevelopmentABI||abi==taskCodeTypedAuthorityDevelopmentABI||managedReferenceTaskABI(abi);}
 inline bool sourceExceptionTaskABI(int64_t abi)noexcept{return typedSourceTaskABI(abi)||abi==taskCodeSourceExceptionABI||abi==taskCodeExceptionPrototypeABI||abi==taskCodeExceptionHostPrototypeABI;}
 inline constexpr int64_t taskCodeDeclaredThrow=4096;
 inline constexpr int64_t taskCodeDeclaredState=8192;
@@ -37,7 +40,7 @@ inline constexpr int64_t taskCodeFileWrite=256,taskCodeImageFileWrite=512,
   taskCodeWriteRequirementsMask=1023;
 inline bool fileStreamTaskABI(int64_t abi)noexcept{return typedSourceTaskABI(abi)||abi==taskCodeStreamABI||abi==taskCodeSourceExceptionABI||abi==taskCodeExceptionHostPrototypeABI;}
 inline bool validTaskCodeRequirements(int64_t abi,int64_t requirements)noexcept{
-  return abi==taskCodeManagedReferencesDevelopmentABI?(requirements&~(taskCodeStreamRequirementsMask|taskCodeDeclaredThrow|taskCodeDeclaredState))==0:
+  return managedReferenceTaskABI(abi)?(requirements&~(taskCodeStreamRequirementsMask|taskCodeDeclaredThrow|taskCodeDeclaredState))==0:
     (typedSourceTaskABI(abi)||abi==taskCodeSourceExceptionABI||abi==taskCodeExceptionHostPrototypeABI)?(requirements&~(taskCodeStreamRequirementsMask|taskCodeDeclaredThrow))==0:
     abi==taskCodeExceptionPrototypeABI?(requirements&~(taskCodeDeclaredTask|taskCodeServer|taskCodeDeclaredThrow))==0:
     abi==taskCodeABI?(requirements&~taskCodeRequirementsMask)==0:

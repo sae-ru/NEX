@@ -1,16 +1,17 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.270.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.271.0"
 owner: repository
 ---
 
 # Language prerequisites for Java and Python migration
 
-Toolchain0.270 adds private [TypeScript reference-task execution](reference-tasks.md)
-alongside the AST oracle and native owner-thread continuations. Per-job roots
-preserve cells across suspension and cancellation. Ordinary CLI promotion,
-persistent UI state, parallel transfer and complete SDK/platform delivery remain
-open. This is a foundation for application state, not a Java/Python object model.
+Toolchain0.271 enables ordinary [owned reference-task execution](reference-tasks.md)
+in evaluation, native applications/HTTP and TypeScript exports. ABI8/map4 retain
+older cohorts without source/history relabeling. Persistent application/UI state,
+library/task host lifetimes, parallel transfer, debug/profile and complete
+SDK/platform qualification remain open. These execution contexts do not supply
+Java/Python class, reflection or dynamic runtime compatibility.
 
 User direction, 2026-11-15: prepare NEX's language/runtime/library foundations
 before implementing converters. Java has priority, followed by Python. Converter

@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.270.0"
+applies_to: "language 0.28; toolchain 0.271.0"
 owner: repository
 generated_from: README.md#development-status
 ---
@@ -12,7 +12,7 @@ It reports recorded evidence, not a live observation of devices or remote jobs.
 For syntax and capabilities, query the selected compiler. For detailed history,
 use [STATUS](../STATUS.md); for next work, use [development priorities](development-priorities.md).
 
-Current source: **toolchain 0.270.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.271.0 / language 0.28 / task ABIs 7/8**, in development.
 The compiler fallback remains0.28. `nex.json` selects0.28,0.29 or0.30 per project;
 new `nex init` projects select0.30. Language0.29 adds partial type lambdas and
 higher-order kinds;0.30 adds typed cells and the `state` effect. Retained projects
@@ -30,11 +30,11 @@ host/application context across related calls and live handles.
 Native [HTTP requests](reference-http.md) own separate reference contexts.
 Ordinary values and retained snapshots now use
 [iterative deep cleanup](value-retirement.md).
-Ordinary [reference/task](reference-tasks.md) execution, parallel transfer, UI state, live cell views,
-machine i32 and other [migration prerequisites](migration-readiness.md)
-remain open. Focused development acceptance is separate from full SDK/platform gates.
-[030 CLI](evidence/references030-cli-0.265.0-2026-11-16.json) and
-[long](evidence/java-long-0.266.0-2026-11-16.json) qualification retain exact scopes.
+[Reference tasks](reference-tasks.md) now use one owner-thread heap in
+reference/native/TypeScript and native HTTP entries. Persistent UI state,
+parallel transfer, live cell inspection and remaining [migration prerequisites](migration-readiness.md)
+stay open. [Focused acceptance](evidence/reference-tasks-cli-0.271.0-2026-11-16.json)
+is separate from full SDK/platform gates.
 The [implementation sequence](implementation-1-6.md) tracks remaining work.
 
 The [0.246.1 macOS source regression](evidence/full-ctest-0.246.1-current-2026-11-15.json)

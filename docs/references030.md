@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.265.0; language 0.30"
+applies_to: "toolchain 0.271.0; language 0.30"
 owner: repository
 ---
 
@@ -83,16 +83,21 @@ the030 version does not create a new heap for each continuation atom or select
 the boxed representation for reference-free task programs.
 
 Source0.30 task callbacks can declare state when the caller declares it.
-The [private reference-task entry](reference-tasks.md) executes these checked
-programs with one owned cooperative heap; ordinary backends retain their gate.
-Execution closures combining references with task/parallel execution currently
-receive `E_CELL_CONCURRENCY`. No cross-thread transfer or shared mutable memory
-model is inferred. Sequential code-only native libraries share one enclosing
-[host/application context](reference-library-abi.md). Sequential native
-[HTTP requests](reference-http.md) own independent reference contexts and copy
-uncaught source diagnostics before context close. Runtime-embedding reference
-libraries and Wasm references remain explicit `E_CELL_TARGET` boundaries; reference-free entry
-behavior is retained. Device emission can select030's inherited supported
+Ordinary `eval`, native debug/release applications and HTTP handlers, and
+TypeScript exports now use [owned reference-task contexts](reference-tasks.md).
+Source executes cooperatively on its heap owner thread; physical IO completion
+workers do not receive cells. Native reference tasks select public ABI8; retained
+reference-free tasks keep ABI7 and private030 descriptors keep their own cohort.
+TypeScript async wire-value exports use public map4; synchronous exports keep
+map3. Snapshot/history/archive identities are unchanged.
+
+`parallel_map` in a reference graph still receives `E_CELL_CONCURRENCY`.
+Task-provider images, logical task reference debugging/profiling, persistent UI
+state and worker reference transfer remain open. Sequential code-only native
+libraries retain their enclosing [host/application context](reference-library-abi.md).
+Runtime-embedding reference libraries and Wasm references retain explicit
+`E_CELL_TARGET` boundaries. Reference-free entry behavior is preserved.
+Device emission can select030's inherited supported
 scalar operations; that version check is not physical device qualification.
 
 ## Guarded migration

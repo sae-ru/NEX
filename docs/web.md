@@ -1,3 +1,23 @@
+# Ordinary030 reference tasks — development0.271.0
+
+Ordinary TypeScript emission supports checked030 references together with tasks.
+Generated host functions accept checked copied immutable wire arguments and
+return `Promise` results copied before their invocation heap closes. Each call
+has independent per-job roots and scheduler state. Public map4 retains source
+revision, source hash, reachable source units and host entry contracts; map3
+remains synchronous. `nex test --target web` awaits the generated export directly.
+Both normal and relocated test runners retain all matching async managed helpers.
+Read [the owned task contract](reference-tasks.md).
+
+The final optional host `options` argument selects the existing task limits and
+AbortSignal. Inputs are copied during the initial synchronous resume before
+normal host execution yields. Cancellation/fatal/source errors close owned
+state. No browser host IO, reference Worker transfer or persistent UI adapter
+context is enabled here. The synchronous pure UI contract remains in force.
+No npm dependency, lock or bundled notices change; full browser/SDK/platform
+qualification remains separate. The development records below preserve their
+original scopes and private entry identities.
+
 # Source030 private reference tasks — development0.270.0
 
 The source-build `emitManagedReferenceTasksDevelopmentTypeScript` emits checked

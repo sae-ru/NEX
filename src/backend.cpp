@@ -1183,7 +1183,7 @@ public:
     }
     declaration("nex_application_run","!llvm.ptr, i64, !llvm.ptr","i64");
     if(tasks){
-      declaration((sourceExceptionTasksPrototype(p)||(isTypedSourceErrorLanguage(p.sourceLanguage)&&forcedExceptionABI!=nexrt::taskCodeTypedSourceExceptionABI))?"nex_task_source_exception_application_execute_limits":"nex_task_application_execute_limits","!llvm.ptr, i64, !llvm.ptr, i64, i64, i64","i64");
+      declaration((sourceExceptionTasksPrototype(p)||(isTypedSourceErrorLanguage(p.sourceLanguage)&&!nexrt::publicSourceExceptionTaskABI(forcedExceptionABI)))?"nex_task_source_exception_application_execute_limits":"nex_task_application_execute_limits","!llvm.ptr, i64, !llvm.ptr, i64, i64, i64","i64");
       if(profiling){declaration("nex_task_profile_prepare","!llvm.ptr, i64");if(!profileRegistryAccessor.empty())declaration("nex_task_profile_prepare_application_v1","");}
     }
     if(wasm){declaration("nex_wasm_enter","i64");declaration("nex_wasm_leave","");}
@@ -1231,7 +1231,7 @@ public:
         for(const auto &slot:ir.slots)kinds.push_back(slot.type.heap()?3:scalarTag(slot.type));
         const auto &source=p.function(ir.name);int64_t requirements=0;
         if(source.effects.contains("task"))requirements|=nexrt::taskCodeDeclaredTask;
-        if(exceptionABI==nexrt::taskCodeManagedReferencesDevelopmentABI&&source.effects.contains("state"))requirements|=nexrt::taskCodeDeclaredState;
+        if(nexrt::managedReferenceTaskABI(exceptionABI)&&source.effects.contains("state"))requirements|=nexrt::taskCodeDeclaredState;
         if(supportsSourceExceptionTasks(p)&&source.effects.contains("throw"))requirements|=nexrt::taskCodeDeclaredThrow;
         if(source.realm=="server")requirements|=nexrt::taskCodeServer;
         if(source.effects.contains("fs"))requirements|=nexrt::taskCodeDeclaredFs;
@@ -1362,7 +1362,7 @@ public:
     if(tasks){
       auto descriptor=fresh();line(descriptor+" = llvm.mlir.addressof @"+taskCodes.at(main.name)+" : !llvm.ptr",main.span);
       auto steps=constant(taskLimits.steps,Type::I64,main.span),timeout=constant(taskLimits.timeoutMs,Type::I64,main.span),workers=constant(taskLimits.workers,Type::I64,main.span);
-      value=call((sourceExceptionTasksPrototype(p)||(isTypedSourceErrorLanguage(p.sourceLanguage)&&forcedExceptionABI!=nexrt::taskCodeTypedSourceExceptionABI))?"nex_task_source_exception_application_execute_limits":"nex_task_application_execute_limits",{{descriptor,Type::Str},{"%nex_argc64",Type::I64},{"%nex_argv",Type::Str},steps,timeout,workers},Type::I64,main.span);
+      value=call((sourceExceptionTasksPrototype(p)||(isTypedSourceErrorLanguage(p.sourceLanguage)&&!nexrt::publicSourceExceptionTaskABI(forcedExceptionABI)))?"nex_task_source_exception_application_execute_limits":"nex_task_application_execute_limits",{{descriptor,Type::Str},{"%nex_argc64",Type::I64},{"%nex_argv",Type::Str},steps,timeout,workers},Type::I64,main.span);
     }else{
       std::vector<Value> args;Value error;
       if(main.effects.contains("throw")){error=exceptionSlot(main.span);args.push_back(error);}
@@ -1674,7 +1674,7 @@ struct TaskNativeLinkage {
   int64_t privateExceptionABI=0;
 };
 TaskNativeStep emitTaskNative(const Program &p,const std::string &entry,bool application,bool optimized=false,const nexrt::TaskExecutionLimits &taskLimits={},bool profiling=false,bool taskDebug=false,const TaskNativeLinkage *linkage=nullptr,bool exceptionTasks=false,int64_t forcedExecutionABI=0){
-  const bool managedTasks=forcedExecutionABI==nexrt::taskCodeManagedReferencesDevelopmentABI;
+  const bool managedTasks=nexrt::managedReferenceTaskABI(forcedExecutionABI);
   if(forcedExecutionABI&&(!isTypedSourceErrorLanguage(p.sourceLanguage)||(forcedExecutionABI!=nexrt::taskCodeTypedSourceExceptionABI&&!(managedTasks&&p.sourceLanguage==SourceLanguage::References030))))throw Error("E_TASK_PROVIDER","invalid typed task build cohort");
   const auto selectedExceptionABI=forcedExecutionABI?forcedExecutionABI:linkage?linkage->privateExceptionABI:0;
   exceptionTasks|=isPublicSourceExceptionLanguage(p.sourceLanguage);
@@ -1783,7 +1783,7 @@ std::string emitMLIR(const Program &p,const std::string &entry,bool testEntry,bo
     // An IR-only library projection never embeds a second runtime.
     if(p.sourceLanguage==SourceLanguage::References030&&libraryEntry)options.codeOnlyLibrary=true;
     validateNativeBuildEntry(p,options);
-    if(usesNativeTasks(p,entry))return emitTaskNative(p,entry,!libraryEntry,false,{},false,false,nullptr,false,nexrt::taskCodeTypedSourceExceptionABI).mlir;
+    if(usesNativeTasks(p,entry))return emitTaskNative(p,entry,!libraryEntry,false,{},false,false,nullptr,false,usesManagedReferences(p,{entry})?nexrt::taskCodeManagedReferencesABI:nexrt::taskCodeTypedSourceExceptionABI).mlir;
     return Emitter(p).run(entry,testEntry,libraryEntry);
   }
   if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require native lowering before publication");
@@ -1920,20 +1920,20 @@ llvm::json::Object nativeTaskDebugInfoJSON(const NativeTaskDebugInfo &p){llvm::j
 NativeTaskDebugInfo nativeTaskDebugInfo(const NativeTaskDebugCatalog &catalog,const NativeTaskDebugSourceUnion &sources,const std::string &catalogFile,const std::string &sourceFile){auto c=parseNativeTaskDebugCatalog(llvm::json::Value(nativeTaskDebugCatalogJSON(catalog)));auto s=parseNativeTaskDebugSourceUnion(llvm::json::Value(nativeTaskDebugSourceUnionJSON(sources)));if(c.mode!=s.mode||c.artifact!=s.artifact||c.ownerImage!=s.ownerImage||c.registries.size()!=s.components.size())invalidDebugCatalog();NativeTaskDebugInfo info;info.catalogFile=catalogFile;info.sourceUnionFile=sourceFile;info.catalogHash=hash(json(nativeTaskDebugCatalogJSON(c),false));info.sourceUnionHash=hash(json(nativeTaskDebugSourceUnionJSON(s),false));for(size_t i=0;i<c.registries.size();++i){const auto &r=c.registries[i];const auto &source=s.components[i];if(r.component!=source.component||r.ownerImage!=source.ownerImage)invalidDebugCatalog();std::map<std::string,const NativeTaskDebugDefinition*> retained;for(const auto &d:source.definitions)if(d.retained)retained[d.name]=&d;if(retained.size()!=r.codes.size())invalidDebugCatalog();for(const auto &code:r.codes){auto found=retained.find(code.name);if(found==retained.end())invalidDebugCatalog();const auto &d=*found->second;if(code.functionHash!=d.functionHash||code.functionSourceHash!=d.functionSourceHash||code.sourceUnitHash!=d.sourceUnitHash||code.debugPath!=d.debugPath||code.contract!=d.contract)invalidDebugCatalog();}info.registries.push_back({r.component,r.accessor,hash(json(debugRegistryJSON(r),false)),r.codes.size()});}return parseDebugInfo(llvm::json::Value(nativeTaskDebugInfoJSON(info)));}
 llvm::json::Value nativeTaskApplicationStageJSON(const NativeTaskApplicationStage &stage){
   if(!stage.enabled)return nullptr;
-  const bool typed=stage.executionABI==nexrt::taskCodeTypedSourceExceptionABI,exceptions=typed||stage.executionABI==nexrt::taskCodeSourceExceptionABI,streams=exceptions||stage.executionABI==nexrt::taskCodeStreamABI,writes=streams||stage.executionABI==nexrt::taskCodeWriteABI;
+  const bool managed=stage.executionABI==nexrt::taskCodeManagedReferencesABI,typed=managed||stage.executionABI==nexrt::taskCodeTypedSourceExceptionABI,exceptions=typed||stage.executionABI==nexrt::taskCodeSourceExceptionABI,streams=exceptions||stage.executionABI==nexrt::taskCodeStreamABI,writes=streams||stage.executionABI==nexrt::taskCodeWriteABI;
   if(!writes&&stage.executionABI!=nexrt::taskCodeABI)throw Error("E_TASK_PROVIDER","unknown task application stage ABI");
   if((stage.fileWrites&&!writes)||(stage.fileStreams&&!streams))throw Error("E_TASK_PROVIDER","retained application stage cannot acquire file requirements");
   llvm::json::Object result{{"entry",stage.entry},{"descriptor_accessor",stage.descriptorAccessor},{"configured",taskLimitsJSON(stage.configured,true)},{"task_file_reads",stage.fileReads}};
-  if(writes){result["schema"]=typed?"nex.native-task-application/5":exceptions?"nex.native-task-application/4":streams?"nex.native-task-application/3":"nex.native-task-application/2";result["execution_abi"]=stage.executionABI;result["task_file_writes"]=stage.fileWrites;}
+  if(writes){result["schema"]=managed?"nex.native-task-application/6":typed?"nex.native-task-application/5":exceptions?"nex.native-task-application/4":streams?"nex.native-task-application/3":"nex.native-task-application/2";result["execution_abi"]=stage.executionABI;result["task_file_writes"]=stage.fileWrites;}
   if(streams)result["task_file_streams"]=stage.fileStreams;
   return result;
 }
 NativeTaskApplicationStage parseNativeTaskApplicationStage(const llvm::json::Value &value){
   NativeTaskApplicationStage result;if(value.getAsNull())return result;
   auto invalid=[](){throw Error("E_TASK_PROVIDER","invalid task application stage contract");};
-  auto o=value.getAsObject();if(!o)invalid();const bool typed=o->getString("schema")=="nex.native-task-application/5",exceptions=typed||o->getString("schema")=="nex.native-task-application/4",streams=exceptions||o->getString("schema")=="nex.native-task-application/3",writes=streams||o->getString("schema")=="nex.native-task-application/2";
+  auto o=value.getAsObject();if(!o)invalid();const bool managed=o->getString("schema")=="nex.native-task-application/6",typed=managed||o->getString("schema")=="nex.native-task-application/5",exceptions=typed||o->getString("schema")=="nex.native-task-application/4",streams=exceptions||o->getString("schema")=="nex.native-task-application/3",writes=streams||o->getString("schema")=="nex.native-task-application/2";
   if(o->size()!=(streams?8:writes?7:4))invalid();
-  if(writes){auto enabled=o->getBoolean("task_file_writes");auto abi=typed?nexrt::taskCodeTypedSourceExceptionABI:exceptions?nexrt::taskCodeSourceExceptionABI:streams?nexrt::taskCodeStreamABI:nexrt::taskCodeWriteABI;if(!enabled||o->getInteger("execution_abi")!=abi)invalid();result.fileWrites=*enabled;result.executionABI=abi;}
+  if(writes){auto enabled=o->getBoolean("task_file_writes");auto abi=managed?nexrt::taskCodeManagedReferencesABI:typed?nexrt::taskCodeTypedSourceExceptionABI:exceptions?nexrt::taskCodeSourceExceptionABI:streams?nexrt::taskCodeStreamABI:nexrt::taskCodeWriteABI;if(!enabled||o->getInteger("execution_abi")!=abi)invalid();result.fileWrites=*enabled;result.executionABI=abi;}
   if(streams){auto enabled=o->getBoolean("task_file_streams");if(!enabled)invalid();result.fileStreams=*enabled;}
   auto entry=o->getString("entry"),accessor=o->getString("descriptor_accessor");auto reads=o->getBoolean("task_file_reads");auto limits=o->getObject("configured");
   if(!entry||entry->empty()||entry->size()>4096||entry->contains('\0')||!accessor||*accessor!=nativeSymbol(entry->str())+"__task_code_address"||!reads||!limits||limits->size()!=3)invalid();
@@ -2045,7 +2045,8 @@ void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
   rejectUnloweredTasks(p,"native entry preparation");
   std::set<std::string> referenceEntries(options.libraryExports.begin(),options.libraryExports.end());referenceEntries.insert(options.entry);
   validateManagedReferenceExecution(p,referenceEntries);
-  if(p.sourceLanguage==SourceLanguage::References030&&usesManagedReferences(p,referenceEntries)){
+  const bool managedReferences=p.sourceLanguage==SourceLanguage::References030&&usesManagedReferences(p,referenceEntries);
+  if(managedReferences){
     if(options.libraryEntry&&!options.codeOnlyLibrary)throw Error("E_CELL_TARGET","reference libraries require code-only output and one enclosing host/application runtime",p.function(options.entry).span);
   }
   const auto taskMode=effectiveNativeTaskLinkage(options);const bool taskProviders=taskMode!=NativeTaskLinkageMode::None;
@@ -2053,6 +2054,7 @@ void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
   bool tasks=usesNativeTasks(p,options.entry);
   for(const auto &entry:options.libraryExports)tasks|=usesNativeTasks(p,entry);
   auto names=reachable(p,options.entry);for(const auto &entry:options.libraryExports){auto more=reachable(p,entry);names.insert(more.begin(),more.end());}
+  if(tasks&&managedReferences&&taskProviders)throw Error("E_CELL_TARGET","reference task-provider image lifetimes and linking remain pending",p.function(options.entry).span);
   if(taskProviders){
     if(!isPublicTaskLanguage(p)||!options.projectLibraryABI||options.taskComponent.empty()||options.taskComponent.size()>256||options.taskComponent.find('\0')!=std::string::npos||
        (options.taskDebug&&options.profile!="debug")||server||!options.foreignCatalogue.empty()||(options.libraryEntry&&!options.codeOnlyLibrary)||
@@ -2102,13 +2104,14 @@ void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
     }
   }
   if(tasks){
+    if(managedReferences&&(taskProviders||options.profile=="profile"||options.taskDebug))throw Error("E_CELL_TARGET","reference tasks currently support standalone and HTTP debug/release builds; provider images and logical debug/profile integration remain pending",p.function(options.entry).span);
     if(server&&!supportsTaskFileStreams(p))throw Error("E_TASK_TARGET","task HTTP handlers require language0.24; explicitly migrate retained source history",p.function(options.entry).span);
     if(server&&(options.profile=="profile"||options.taskDebug))throw Error("E_OPTION","task HTTP profiling and logical debugging remain pending",p.function(options.entry).span);
     if(!taskProviders&&(options.libraryEntry||options.codeOnlyLibrary||options.deferredLink||options.functionsOnly||!options.libraries.empty()||!options.libraryExports.empty()))
       throw Error("E_TASK_PROVIDER","task descriptors require one standalone image; native libraries, project providers and deferred linking remain pending",p.function(options.entry).span);
     for(const auto &name:names){
       const auto &function=p.function(name);
-      validateNativeTaskFunction(p,function);
+      validateNativeTaskFunction(p,function,managedReferences);
     }
   }
   if(options.deferredLink&&(!options.positionIndependent||!options.projectLibraryABI))
@@ -2375,7 +2378,8 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   // ABI5 uses the same checked operation classification as emitted descriptors.
   const bool taskFileReads=tasks&&(supportsTaskFileStreams(p)?taskFiles.reads:files);
   const bool taskFileWrites=tasks&&taskFiles.writes;
-  const auto taskExecutionABI=isTypedSourceErrorLanguage(p.sourceLanguage)?nexrt::taskCodeTypedSourceExceptionABI:isPublicSourceExceptionLanguage(p.sourceLanguage)?nexrt::taskCodeSourceExceptionABI:supportsTaskFileStreams(p)?nexrt::taskCodeStreamABI:supportsTaskFileWrites(p)?nexrt::taskCodeWriteABI:nexrt::taskCodeABI;
+  const bool managedTasks=tasks&&p.sourceLanguage==SourceLanguage::References030&&usesManagedReferences(p,names);
+  const auto taskExecutionABI=managedTasks?nexrt::taskCodeManagedReferencesABI:isTypedSourceErrorLanguage(p.sourceLanguage)?nexrt::taskCodeTypedSourceExceptionABI:isPublicSourceExceptionLanguage(p.sourceLanguage)?nexrt::taskCodeSourceExceptionABI:supportsTaskFileStreams(p)?nexrt::taskCodeStreamABI:supportsTaskFileWrites(p)?nexrt::taskCodeWriteABI:nexrt::taskCodeABI;
   if(configuredABI.getOS()==llvm::Triple::IOS&&foreign)
     throw Error("E_TARGET","iOS source foreign-library loading is not configured");
   if(parallel&&!configuredABI.isMacOSX()&&!configuredABI.isOSLinux()&&!windows)
@@ -2443,7 +2447,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(storage)runtimeFiles["sqlite3.h"]=readFile((std::filesystem::path(toolchain.sqliteInclude)/"sqlite3.h").string());
   if(!options.foreignCatalogue.empty()&&(!foreign||options.libraryEntry||options.foreignCatalogue!="../foreign/host.json"))
     throw Error("E_PACKAGE","invalid packaged foreign catalogue build configuration");
-  std::string runtimeIdentity=options.foreignCatalogue+":files="+std::to_string(files)+":parallel="+std::to_string(parallel)+":tasks="+std::to_string(tasks)+":task_debug="+std::to_string(options.taskDebug);for(const auto &[file,source]:runtimeFiles)runtimeIdentity+=file+source;
+  std::string runtimeIdentity=options.foreignCatalogue+":files="+std::to_string(files)+":parallel="+std::to_string(parallel)+":tasks="+std::to_string(tasks)+":managed_tasks="+std::to_string(managedTasks)+":task_debug="+std::to_string(options.taskDebug);for(const auto &[file,source]:runtimeFiles)runtimeIdentity+=file+source;
   std::string windowsResources,windowsResourceConverter;
   if(windows&&!options.libraryEntry&&!options.deferredLink){
 #ifdef _WIN32
@@ -2827,6 +2831,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       if(parallel||tasks)arguments.insert(arguments.end(),{"-pthread","-DNEX_STRUCTURED_WORKERS"});
       if(component=="nex_resource_executor.cpp"&&!windows)arguments.push_back("-pthread");
       if(tasks)arguments.push_back("-DNEX_ASYNC_TASKS");
+      if(managedTasks)arguments.push_back("-DNEX_MANAGED_TASKS");
       if(options.taskDebug)arguments.push_back("-DNEX_TASK_DEBUG_ENABLED");
       if(!options.foreignCatalogue.empty())arguments.push_back("-DNEX_FOREIGN_DEFAULT="+json(options.foreignCatalogue,false));
       if(component=="http_main.cpp")arguments.insert(arguments.end(),{"-I",toolchain.opensslInclude,"-pthread"});
@@ -2848,7 +2853,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     auto bridge=(folder/"server-bridge.cpp").string(),bridgeObject=(folder/"server-bridge.o").string();auto name=nativeSymbol(p.function(options.entry).name);
     if(tasks){
       auto accessor=nativeSymbol(p.function(options.entry).name)+"__task_code_address";
-      writeFile(bridge,"#include \"nex_task_application.h\"\nextern \"C\" const nexrt::TaskCodeDescriptor *"+accessor+"();\nstatic const nexrt::TaskExecutionLimits limits{"+std::to_string(options.taskLimits.steps)+","+std::to_string(options.taskLimits.timeoutMs)+","+std::to_string(options.taskLimits.workers)+"};\nextern \"C\" const nexrt::TaskExecutionLimits *nex_server_task_limits(){return &limits;}\nextern \"C\" nexrt::Handle *nex_server_task_dispatch(nexrt::Handle *value,unsigned workers){return nexrt::executeConfiguredTaskHttpRequest(*"+accessor+"(),value,workers); }\n");
+      writeFile(bridge,"#include \"nex_task_application.h\"\nextern \"C\" const nexrt::TaskCodeDescriptor *"+accessor+"();\nstatic const nexrt::TaskExecutionLimits limits{"+std::to_string(options.taskLimits.steps)+","+std::to_string(options.taskLimits.timeoutMs)+","+std::to_string(options.taskLimits.workers)+"};\nextern \"C\" const nexrt::TaskExecutionLimits *nex_server_task_limits(){return &limits;}\nextern \"C\" nexrt::Handle *nex_server_task_dispatch(nexrt::Handle *value,unsigned workers){"+std::string(managedTasks?"try{":"")+"return nexrt::executeConfiguredTaskHttpRequest(*"+accessor+"(),value,workers);"+std::string(managedTasks?"}catch(const nexrt::NativeSourceException &failure){auto diagnostic=failure;diagnostic.payload.reset();throw diagnostic;}":"")+" }\n");
     }else if(managedCells){
       std::string code="#include \"nex_cell_host.h\"\nextern \"C\" nexrt::Handle *"+name+"(nexrt::Handle*";
       const bool throwing=p.function(options.entry).effects.contains("throw");
@@ -2972,7 +2977,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   buildRecord["static_link_inputs"]=nativeStaticLinkInputs(toolchain,!options.deferredLink&&storage,!options.deferredLink&&foreign,!options.deferredLink&&server);
   if(server&&managedCells)buildRecord["reference_context"]=llvm::json::Object{
     {"schema","nex.reference-http-context/1"},{"owner","one RequestScope per HTTP request"},
-    {"thread_affine",true},{"shared_between_requests",false},{"task_transfer",false},
+    {"thread_affine",true},{"shared_between_requests",false},{"task_transfer",tasks},
     {"source_errors","copy diagnostics and retire live payload before leaving request context"},
     {"response","ordinary std::http::Response; no live references"},
     {"guide","docs/reference-http.md"}};
