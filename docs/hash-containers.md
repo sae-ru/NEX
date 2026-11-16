@@ -120,5 +120,5 @@ representations, pin rejection and source0.30 cells/tasks. Full matching source,
 platform and portable SDK qualification remain separate. The
 [focused0.273 receipt](evidence/hash-containers-0.273.0-2026-11-17.json) retains
 matching identities, source observations and the actual moved installation proof. Published SDK0.246.1
-is immutable and predates these modules. Efficient queues/deques/heaps and the
-remaining original PLAN stay open.
+is immutable and predates these modules. [Sequence/FIFO/LIFO/heap libraries](sequence-containers.md) have separate
+focused acceptance. Complete delivery and the remaining original PLAN stay open.

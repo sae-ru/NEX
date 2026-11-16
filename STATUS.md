@@ -1,3 +1,24 @@
+# Persistent work containers — development0.274.0
+
+Ordinary checked `std/sequence`, `std/fifo`, `std/lifo` and `std/heap` add indexed
+AVL sequences/deques, worst-case logarithmic FIFO operations, constant-time
+linked stack heads and logarithmic leftist priority updates. Retained versions
+share unchanged nodes. Deep traversal/validation uses explicit cursors/stacks.
+See [the contracts](docs/sequence-containers.md) and
+[example](examples/sequence-containers/README.md).
+
+Existing flat-list module layouts/function bodies are unchanged; complexity
+comments/pins and discovery now report repeated-prefix copying accurately.
+Compiler fallback028, selected028/029/030, graph formats and task/C ABIs remain
+unchanged. [Focused qualification](docs/evidence/sequence-containers-0.274.0-2026-11-17.json)
+records24 distinct core/affected CTest groups, an independent sequence/FIFO/LIFO/
+heap oracle, reference/native Debug/Release/strict TypeScript and030 cell/task/
+typed-error composition. A moved normal installation executes32 commands across
+five source examples; host dependencies remain. The combined256-element work
+container measurement has its own bounded scope. Full source/platform/portable
+SDK gates and the remaining original
+PLAN remain required. Published SDK0.246.1 stays immutable.
+
 # Persistent hash containers — development0.273.0
 
 Ordinary checked `std/hash_map.nex`, `std/hash_set.nex` and `std/hash.nex` add

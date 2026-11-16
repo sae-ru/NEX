@@ -1,5 +1,9 @@
 # NEX language specification 0.28
 
+Toolchain0.274 adds ordinary [sequence/queue/stack/heap libraries](sequence-containers.md)
+with immutable sharing. Retained list-container layouts and checked arithmetic
+remain unchanged. No source grammar/version, graph format or runtime ABI changes.
+
 Toolchain0.273 adds ordinary [hash container libraries](hash-containers.md)
 using existing recursive values, generics and callable snapshots. It adds no
 source production, source version, graph format or runtime ABI.

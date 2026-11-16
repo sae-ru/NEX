@@ -7,8 +7,8 @@ import re
 import shutil
 
 EXPECTED='1,1,2,3\nЯ + 🌍\n5\n6\n'
-FILES=('lib/text.nex','lib/list.nex','lib/math.nex','lib/map.nex','lib/set.nex','lib/queue.nex','lib/stack.nex','lib/deque.nex','lib/priority_queue.nex','lib/ordered_map.nex','lib/ordered_set.nex','lib/java_int.nex','lib/java_long.nex','lib/hash.nex','lib/hash_map.nex','lib/hash_set.nex')
-HASH_EXAMPLE_FILES={'README.md','main.nex','tasks.nex','nex.json','nex.lock.json'}
+FILES=('lib/text.nex','lib/list.nex','lib/math.nex','lib/map.nex','lib/set.nex','lib/queue.nex','lib/stack.nex','lib/deque.nex','lib/priority_queue.nex','lib/ordered_map.nex','lib/ordered_set.nex','lib/java_int.nex','lib/java_long.nex','lib/hash.nex','lib/hash_map.nex','lib/hash_set.nex','lib/sequence.nex','lib/fifo.nex','lib/lifo.nex','lib/heap.nex')
+CONTAINER_EXAMPLE_FILES={'README.md','main.nex','tasks.nex','nex.json','nex.lock.json'}
 
 
 def require(condition,message):
@@ -29,32 +29,32 @@ def resource_pins(resources,capability):
     return pins
 
 
-def hash_containers(*,cli,run,resources,root,browser):
-    directory=root/'hash-containers'
-    shutil.copytree(resources/'examples/hash-containers',directory,ignore=shutil.ignore_patterns('.nex','dist'))
+def container_examples(*,cli,run,resources,root,browser,name,main_stdout,schema):
+    directory=root/name
+    shutil.copytree(resources/'examples'/name,directory,ignore=shutil.ignore_patterns('.nex','dist'))
     hashes={path.relative_to(directory).as_posix():hashlib.sha256(path.read_bytes()).hexdigest()
         for path in sorted(directory.rglob('*')) if path.is_file()}
-    require(set(hashes)==HASH_EXAMPLE_FILES,'hash container example inventory differs')
+    require(set(hashes)==CONTAINER_EXAMPLE_FILES,'container example inventory differs: '+name)
     lock=directory/'nex.lock.json';before=lock.read_bytes();programs={}
-    for file,expected in [('main.nex','hash-containers-ok\n'),('tasks.nex','42\n')]:
+    for file,expected in [('main.nex',main_stdout),('tasks.nex','42\n')]:
         checked=cli('check',file,cwd=directory)
-        require(cli('eval',file,cwd=directory)['stdout']==expected,'hash container reference result differs: '+file)
+        require(cli('eval',file,cwd=directory)['stdout']==expected,'container reference result differs: '+name+'/'+file)
         native={}
         for profile in ('debug','release'):
             native[profile]=cli('run',file,'--profile',profile,cwd=directory,timeout=240)['stdout']
-            require(native[profile]==expected,'hash container native result differs: '+file+'/'+profile)
+            require(native[profile]==expected,'container native result differs: '+name+'/'+file+'/'+profile)
         typescript={'requested':browser,'executed':False}
         if browser:
-            target=root/('hash-containers-typescript-'+Path(file).stem)
+            target=root/(name+'-typescript-'+Path(file).stem)
             cli('emit',file,'--kind','typescript','--entry','main','--directory',target,cwd=directory)
             (target/'package.json').write_text('{"type":"module"}\n')
             runner=target/'runner.mjs';runner.write_text("import {entry} from './program.ts'; await entry();\n")
             actual=run([os.environ.get('NEX_NODE') or 'node','--experimental-strip-types',runner])
-            require(actual==expected,'hash container TypeScript result differs: '+file)
+            require(actual==expected,'container TypeScript result differs: '+name+'/'+file)
             typescript.update(executed=True,stdout=actual)
         programs[file]={'revision':checked['revision'],'reference_stdout':expected,'native':native,'typescript':typescript}
-    require(lock.read_bytes()==before,'hash container dependency lock changed during consumption')
-    return {'schema':'nex.hash-container-consumption/1','ok':True,'source_language':'0.30',
+    require(lock.read_bytes()==before,'container dependency lock changed during consumption: '+name)
+    return {'schema':schema,'ok':True,'source_language':'0.30',
         'example_hashes':hashes,'programs':programs,'existing_lock_enforced':True,'lock_unchanged':True}
 
 
@@ -88,13 +88,16 @@ def exercise(*,cli,run,compiler,resources,root,browser):
         require(output==EXPECTED,'standard library TypeScript result differs')
         typescript.update(executed=True,stdout=output)
     require(lock.read_bytes()==before,'standard library workflow silently changed dependency pins')
-    containers=hash_containers(cli=cli,run=run,resources=resources,root=root,browser=browser)
+    containers=container_examples(cli=cli,run=run,resources=resources,root=root,browser=browser,
+        name='hash-containers',main_stdout='hash-containers-ok\n',schema='nex.hash-container-consumption/1')
+    sequences=container_examples(cli=cli,run=run,resources=resources,root=root,browser=browser,
+        name='sequence-containers',main_stdout='sequence-containers-ok\n',schema='nex.sequence-container-consumption/1')
     return {'schema':'nex.standard-library-consumption/1','ok':True,
         'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),
         **{key:capability[key] for key in ('language','toolchain','compiler_build','descriptor_hash')},
         'compiled_source_pins':pins,'example_hashes':source_hashes,'revision':checked['revision'],
         'reference_stdout':EXPECTED,'native':profiles,'typescript':typescript,
-        'hash_containers':containers,
+        'hash_containers':containers,'sequence_containers':sequences,
         'existing_lock_enforced':True,'lock_unchanged':True,'complete_SDK_workflow_claimed':False}
 
 
@@ -123,21 +126,29 @@ def validate(report):
     require(type(browser) is bool and isinstance(ts,dict) and ts.get('requested') is browser and
         ts.get('executed') is browser and (not browser or ts.get('stdout')==EXPECTED),
         'SDK standard-library browser scope differs')
-    containers=proof.get('hash_containers',{})
-    require(isinstance(containers,dict) and containers.get('schema')=='nex.hash-container-consumption/1' and
+    for key,name,expected,schema in [
+        ('hash_containers','hash-containers','hash-containers-ok\n','nex.hash-container-consumption/1'),
+        ('sequence_containers','sequence-containers','sequence-containers-ok\n','nex.sequence-container-consumption/1')]:
+        validate_container_examples(proof.get(key,{}),inventory,browser,name,expected,schema)
+
+
+def validate_container_examples(containers,inventory,browser,name,main_stdout,schema):
+    require(isinstance(containers,dict) and containers.get('schema')==schema and
         containers.get('ok') is True and containers.get('source_language')=='0.30' and
         containers.get('existing_lock_enforced') is True and containers.get('lock_unchanged') is True,
-        'SDK hash-container consumption is missing or differs')
+        'SDK container consumption is missing or differs: '+name)
     hashes=containers.get('example_hashes',{})
-    require(isinstance(hashes,dict) and set(hashes)==HASH_EXAMPLE_FILES and
+    require(isinstance(hashes,dict) and set(hashes)==CONTAINER_EXAMPLE_FILES and
         all(isinstance(digest,str) and re.fullmatch('[0-9a-f]{64}',digest) and
-            inventory.get('examples/hash-containers/'+name)==digest for name,digest in hashes.items()),
-        'SDK hash-container example differs')
+            inventory.get('examples/'+name+'/'+file)==digest for file,digest in hashes.items()),
+        'SDK container example differs: '+name)
     programs=containers.get('programs',{})
-    require(isinstance(programs,dict) and set(programs)=={'main.nex','tasks.nex'},'SDK hash-container programs differ')
-    for file,expected in [('main.nex','hash-containers-ok\n'),('tasks.nex','42\n')]:
-        case=programs[file];ts=case.get('typescript',{})
+    require(isinstance(programs,dict) and set(programs)=={'main.nex','tasks.nex'},'SDK container programs differ: '+name)
+    for file,expected in [('main.nex',main_stdout),('tasks.nex','42\n')]:
+        case=programs[file]
+        require(isinstance(case,dict),'SDK container program is not an object: '+name+'/'+file)
+        ts=case.get('typescript',{})
         require(isinstance(case.get('revision'),str) and re.fullmatch('[0-9a-f]{64}',case['revision']) and
             case.get('reference_stdout')==expected and case.get('native')=={'debug':expected,'release':expected} and
             isinstance(ts,dict) and ts.get('requested') is browser and ts.get('executed') is browser and
-            (not browser or ts.get('stdout')==expected),'SDK hash-container backend scope differs: '+file)
+            (not browser or ts.get('stdout')==expected),'SDK container backend scope differs: '+name+'/'+file)

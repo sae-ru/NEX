@@ -110,8 +110,9 @@ immutable insertion-ordered `Map<K,V>` and `Set<T>` source containers.
 [`std/deque.nex`](containers.md) provide FIFO `Queue<T>`, LIFO `Stack<T>` and
 double-ended `Deque<T>` with `E_EMPTY` results, and
 [`std/priority_queue.nex`](containers.md) provides an ascending minimum
-`PriorityQueue<T: ordered>`. All six are list-backed: operations are O(n), not
-hash/ring/heap structures. See
+`PriorityQueue<T: ordered>`. These retained APIs are list-backed; end copying
+is O(n), repeated-prefix construction loops can be O(n²), and peeks/counts are
+O(1). See
 [Container APIs](containers.md) for limits.
 
 Toolchain 0.247 also provides [`std/ordered_map.nex` and
@@ -124,7 +125,13 @@ hash helpers as ordinary source modules. A persistent four-bit radix trie uses
 all64 hash bits, at most17 path nodes and explicit full-hash collision buckets.
 Updates preserve old snapshots; traversal has hash order. Compiled source pins,
 custom hash/equality, set algebra and source030 task composition retain their
-explicit contracts. Efficient queue/deque/heap structures remain pending.
+explicit contracts.
+
+Toolchain0.274 adds [sequence/fifo/lifo/heap](sequence-containers.md): a persistent
+indexed AVL deque, worst-case logarithmic FIFO paths, constant-time linked stack
+heads and a logarithmic leftist priority heap. Traversal and validation handle
+deep stack/left-heap chains iteratively. Existing flat-list APIs retain their
+layouts; repeated-prefix copy bounds are now described explicitly.
 
 Toolchain 0.248 adds [`std/java_int.nex`](java-integers.md), an explicit nominal
 32-bit Java integer domain with wrapping arithmetic, bits/shifts, narrowing

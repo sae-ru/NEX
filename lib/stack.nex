@@ -1,8 +1,8 @@
 module std::stack;
 
-// Immutable LIFO stack backed by a list. Every operation is linear in the
-// current size; this is a checked source container, not a hash table or a new
-// language primitive.
+// Retained flat-list LIFO API. Push copies O(n) handles; pop's repeated push
+// loop can copy O(n^2). Peek/size/empty are O(1). std/lifo.nex supplies a
+// separate linked representation with constant-time head operations.
 pub struct Stack<T> {
   items: list<T>;
 }

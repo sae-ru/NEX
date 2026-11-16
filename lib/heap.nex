@@ -1,0 +1,92 @@
+module std::heap;
+import "./lifo.nex" as stack;
+
+// Rank-biased leftist min-heap. Updating a right path shares unchanged
+// subtrees; full traversal uses an explicit stack, including deep left chains.
+pub struct Node<T> { value: T; left: list<Node<T>>; right: list<Node<T>>; rank: i64; count: i64; }
+pub struct Heap<T> { root: list<Node<T>>; compare: fn(T, T) -> i64; }
+pub struct Popped<T> { heap: Heap<T>; value: T; }
+fn rank_of<T>(root: list<Node<T>>) -> i64 { if len(root) == 0 { return 0; } return root[0].rank; }
+fn size_of<T>(root: list<Node<T>>) -> i64 { if len(root) == 0 { return 0; } return root[0].count; }
+fn make_node<T>(value: T, first: list<Node<T>>, second: list<Node<T>>) -> Node<T> {
+  if rank_of(first) < rank_of(second) { return Node(value, second, first, rank_of(first) + 1, 1 + size_of(first) + size_of(second)); }
+  return Node(value, first, second, rank_of(second) + 1, 1 + size_of(first) + size_of(second));
+}
+fn meld<T>(first: list<Node<T>>, second: list<Node<T>>, compare: fn(T, T) -> i64) -> list<Node<T>> {
+  if len(first) == 0 { return second; }
+  if len(second) == 0 { return first; }
+  let a: Node<T> = first[0]; let b: Node<T> = second[0];
+  if compare(a.value, b.value) <= 0 { return [make_node(a.value, a.left, meld(a.right, second, compare))]; }
+  return [make_node(b.value, b.left, meld(first, b.right, compare))];
+}
+pub fn empty<T>(compare: fn(T, T) -> i64) -> Heap<T> { return Heap([], compare); }
+pub fn ascending<T: ordered>() -> Heap<T> {
+  return empty(fn(a: T, b: T) -> i64 { if a < b { return -1; } if a > b { return 1; } return 0; });
+}
+pub fn descending<T: ordered>() -> Heap<T> {
+  return empty(fn(a: T, b: T) -> i64 { if a < b { return 1; } if a > b { return -1; } return 0; });
+}
+pub fn size<T>(heap: Heap<T>) -> i64 { return size_of(heap.root); }
+pub fn is_empty<T>(heap: Heap<T>) -> bool { return size(heap) == 0; }
+pub fn rank<T>(heap: Heap<T>) -> i64 { return rank_of(heap.root); }
+pub fn push_value<T>(heap: Heap<T>, value: T) -> Heap<T> { return Heap(meld(heap.root, [make_node(value, [], [])], heap.compare), heap.compare); }
+pub fn peek<T>(heap: Heap<T>) -> result<T> {
+  if is_empty(heap) { return err<T>("E_EMPTY", "heap is empty"); }
+  return ok(heap.root[0].value);
+}
+pub fn pop<T>(heap: Heap<T>) -> result<Popped<T>> {
+  if is_empty(heap) { return err<Popped<T>>("E_EMPTY", "heap is empty"); }
+  let node: Node<T> = heap.root[0];
+  return ok(Popped(Heap(meld(node.left, node.right, heap.compare), heap.compare), node.value));
+}
+fn next_stack<T>(work: stack::Stack<Node<T>>) -> stack::Stack<Node<T>> {
+  let next: stack::Popped<Node<T>> = unwrap(stack::pop(work));
+  var rest: stack::Stack<Node<T>> = next.stack;
+  if len(next.value.right) != 0 { rest = stack::push_value(rest, next.value.right[0]); }
+  if len(next.value.left) != 0 { rest = stack::push_value(rest, next.value.left[0]); }
+  return rest;
+}
+pub fn items<T>(heap: Heap<T>) -> list<T> {
+  var work: stack::Stack<Node<T>> = stack::empty();
+  if len(heap.root) != 0 { work = stack::push_value(work, heap.root[0]); }
+  return list(size(heap), work,
+    fn(state: stack::Stack<Node<T>>) -> stack::Stack<Node<T>> { return next_stack(state); },
+    fn(state: stack::Stack<Node<T>>) -> T { return unwrap(stack::peek(state)).value; });
+}
+pub fn sorted<T>(heap: Heap<T>) -> list<T> {
+  return list(size(heap), heap,
+    fn(state: Heap<T>) -> Heap<T> { return unwrap(pop(state)).heap; },
+    fn(state: Heap<T>) -> T { return unwrap(peek(state)); });
+}
+pub fn merge<T>(left: Heap<T>, right: Heap<T>) -> Heap<T> {
+  // Normalize the right input under the left comparator. Different pure
+  // ordering policies are valid operands; no function-identity guess is used.
+  var output: Heap<T> = left;
+  let values: list<T> = items(right); var index: i64 = 0;
+  while index < len(values) { output = push_value(output, values[index]); index = index + 1; }
+  return output;
+}
+pub fn validate<T>(heap: Heap<T>) -> bool {
+  if len(heap.root) > 1 { return false; }
+  var work: stack::Stack<Node<T>> = stack::empty();
+  if len(heap.root) != 0 { work = stack::push_value(work, heap.root[0]); }
+  while !stack::is_empty(work) {
+    let next: stack::Popped<Node<T>> = unwrap(stack::pop(work));
+    let node: Node<T> = next.value; work = next.stack;
+    if len(node.left) > 1 || len(node.right) > 1 || node.count <= 0 || node.rank <= 0 || node.rank > 63 { return false; }
+    let a: i64 = rank_of(node.left); let b: i64 = rank_of(node.right);
+    if a < 0 || b < 0 || a > 63 || b > 63 || a < b || node.rank != b + 1 { return false; }
+    let first: i64 = size_of(node.left); let second: i64 = size_of(node.right);
+    if first < 0 || second < 0 || first > 9223372036854775807 - second - 1 { return false; }
+    if node.count != 1 + first + second { return false; }
+    if len(node.right) != 0 {
+      if heap.compare(node.value, node.right[0].value) > 0 { return false; }
+      work = stack::push_value(work, node.right[0]);
+    }
+    if len(node.left) != 0 {
+      if heap.compare(node.value, node.left[0].value) > 0 { return false; }
+      work = stack::push_value(work, node.left[0]);
+    }
+  }
+  return true;
+}

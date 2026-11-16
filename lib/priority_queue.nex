@@ -1,8 +1,8 @@
 module std::priority_queue;
 
-// Immutable min-priority queue backed by an ordered list. Insertion keeps the
-// list sorted; every insertion is O(n). This is a checked source container,
-// not a binary heap, hash table or new language primitive.
+// Retained sorted flat-list min-priority queue. Push/pop use repeated push
+// loops and can copy O(n^2) handles; peek/size/empty are O(1). std/heap.nex
+// supplies a separate persistent heap with logarithmic updates.
 pub struct PriorityQueue<T> {
   items: list<T>;
 }

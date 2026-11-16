@@ -35,6 +35,7 @@ install(FILES tests/reference_tasks.cpp tests/reference_tasks_boundaries.py test
 install(FILES tests/reference_tasks_cli.py DESTINATION share/nex/tests)
 install(FILES tests/persistent_ui.py tests/persistent_ui_cases.mjs DESTINATION share/nex/tests)
 install(FILES tests/hash_containers.py tests/hash_containers_cases.py DESTINATION share/nex/tests)
+install(FILES tests/sequence_containers.py tests/sequence_containers_cases.py DESTINATION share/nex/tests)
 install(FILES tests/reference_library.py tests/reference_library_host.cpp DESTINATION share/nex/tests)
 install(FILES tests/reference_http.py DESTINATION share/nex/tests)
 install(DIRECTORY tests/fixtures/reference-http DESTINATION share/nex/tests/fixtures)

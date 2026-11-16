@@ -1,0 +1,32 @@
+module task_containers;
+import "std/fifo.nex" as fifo;
+import "std/lifo.nex" as lifo;
+import "std/heap.nex" as heap;
+struct Pending { values: heap::Heap<i64>; }
+
+fn scenario() -> i64 !{state,task,throw} {
+  let initial: fifo::Queue<i64> = fifo::enqueue(fifo::empty<i64>(), 41);
+  let queue: cell<fifo::Queue<i64>> = cell_new(initial);
+  let history: cell<lifo::Stack<str>> = cell_new(lifo::push_value(lifo::empty<str>(), "old"));
+  let previous: lifo::Stack<str> = cell_read(history);
+  let pending: cell<heap::Heap<i64>> = cell_new(heap::ascending<i64>());
+  let answer: i64 = with_tasks(2, fn(scope: task_scope) -> i64 !{state,task,throw} {
+    let child: task<i64> = task_spawn(scope, fn() -> i64 !{state,task} {
+      task_yield();
+      let next: fifo::Popped<i64> = unwrap(fifo::dequeue(cell_read(queue)));
+      cell_write(queue, next.queue);
+      cell_write(history, lifo::push_value(cell_read(history), "new"));
+      cell_write(pending, heap::push_value(cell_read(pending), next.value + 1));
+      cell_collect();
+      return unwrap(heap::peek(cell_read(pending)));
+    });
+    return task_wait(child);
+  });
+  assert(answer == 42 && fifo::is_empty(cell_read(queue)) && fifo::items(initial) == [41]);
+  assert(lifo::items(previous) == ["old"] && lifo::items(cell_read(history)) == ["new", "old"]);
+  try { throw(Pending(cell_read(pending))); }
+  catch (packet: Pending) { task_yield(); cell_collect(); assert(unwrap(heap::peek(packet.values)) == 42); }
+  return answer;
+}
+fn main() -> unit !{state,task,throw,io} { print(scenario()); }
+test fn snapshots_across_tasks() -> unit !{state,task,throw} { assert(scenario() == 42); }

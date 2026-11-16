@@ -18,6 +18,7 @@
     "reference_tasks_cli": ["extended", "browser", "platform", "scale"],
     "persistent_ui": ["extended", "browser", "platform"],
     "hash_containers": ["extended", "browser", "platform"],
+    "sequence_containers": ["extended", "browser", "platform", "scale"],
     "typescript_reference_tasks_development": ["extended", "browser", "platform", "scale"],
     "native_reference_tasks_development": ["extended", "platform", "scale"],
     "api": ["extended", "browser"],

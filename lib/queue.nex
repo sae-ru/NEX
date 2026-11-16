@@ -1,8 +1,8 @@
 module std::queue;
 
-// Immutable FIFO queue backed by a list. Every operation is linear in the
-// current size; this is a checked source container, not a hash table or a new
-// language primitive.
+// Retained flat-list FIFO API. Enqueue copies O(n) handles; dequeue's repeated
+// push loop can copy O(n^2). Peek/size/empty are O(1). std/fifo.nex supplies a
+// separate persistent tree representation for efficient end operations.
 pub struct Queue<T> {
   items: list<T>;
 }

@@ -1,0 +1,576 @@
+{
+  "schema": "nex.sequence-containers-development/1",
+  "ok": true,
+  "toolchain": "0.274.0",
+  "compiler_fallback": "0.28",
+  "source_languages_exercised": [
+    "0.28",
+    "0.29",
+    "0.30"
+  ],
+  "source_version_changed": false,
+  "canonical_format_changed": false,
+  "public_task_ABIs_unchanged": [
+    7,
+    8
+  ],
+  "public_C_ABI": 1,
+  "qualification_local_date": "2026-11-17",
+  "timezone": "Europe/Moscow",
+  "base_commit": "8ac8941bc5839f00c602b1f170973a15a8354c3b",
+  "compiler_sha256": "5bd1b828ba1cd2806bce6fa08a1520ee7d0527ba5fed3113434cc5030b8f4c87",
+  "compiler_build": "e3a69bc82f8cffa86be5736ca3fea818fcb475cd553ce28550bf57b3ef6787fc",
+  "descriptor_hash": "50e8070b886e7e54f38d72e7fd26c18deea7e2e383605bf63840fe7b6013984c",
+  "source_files_sha256": {
+    "CMakeLists.txt": "9927ae95d7d6d23321ccdeb6f68fe07106d5540326015edb52bfd73ead664fa0",
+    "PLAN.md": "280c122a64384866770263f45a8d6d732b05ddac1329a8db23a97becfc4a33f2",
+    "README.md": "ac6dd4c67d45e2dd307e0252738f6c844998b962fe88b975fe77ec9ee86d7cee",
+    "README.ru.md": "fbcd446fbd7d32efb125d6273bde1c420cb34ede108778d6dcef6371a381aee0",
+    "STATUS.md": "22627f7c12cdb2c23f67c0595b7c28efc2f45a7c9f8bf912a3404de8d6a82e67",
+    "VERSION": "8ed2a8642c13367afed9e18fd01d3b618731360301c657e7dc7b23157ec28835",
+    "cmake/Install.cmake": "292f153a44375a56d99495f7100017293425b5b1938bf9e04914d0fba21112a1",
+    "cmake/Tests.cmake": "53756ba6f03e99ecaaa4b86f3037ad264b41bd7d8863b1d24e4d186fd7e9126f",
+    "cmake/test-tiers.json": "396f7420bff4b0771363f27ec013f3dc5a3da21d070afa49b62f624e6c82a161",
+    "docs/INDEX.md": "99932b18deecbdf52f40513ac8c9193b9f524f8769ad13662dfbe91e57f26f24",
+    "docs/STATUS.current.md": "dc7f4ae174ef86e07bc49d8292c235e3ee8ed854adaccc2fcc6dcb3f3f207be4",
+    "docs/ci.md": "b77da40f6c7abd2eb6f9f0fb2899682a00d81f523d7467c71c4c167016d07d60",
+    "docs/containers.md": "1695fb987a697d5a2616cbdd6636ff5cee6e7b6096692baffe92f499f77ff0a1",
+    "docs/evidence/core-ci-0.273.0-2026-11-17.json": "18419cd2d6bfe3b2f974a4b60f4de0f54f2671af1bb418ccf50bad042cb68777",
+    "docs/evidence/sequence-container-workload-0.274.0-2026-11-17.json": "96bbcc1f9b41babdb6693d90af9a114d729a60fdacc3c327719a67b7bdb77325",
+    "docs/hash-containers.md": "750c9456545620b9041486b091a16b45fdeacbd60b6a0ce61efc0a4fb38e2a3c",
+    "docs/implementation-1-6.md": "8b1afbfaeae0b71cb75d3aa9a6764128195fb75c3d9d103cbf278fc0807c0083",
+    "docs/language.md": "200a2420bace947fba94b588f37a1d05d9e02e3bebb44076b2dad30294a273c0",
+    "docs/migration-readiness.md": "f30aa2eeebabfbf18087380d9e44780f193cd110aa3e0db165909f36387f56f9",
+    "docs/ordered-containers.md": "6501244ab0614b955dffefc4705fc095b1ef75aa7cc25fc700b9892f2be6e107",
+    "docs/sequence-containers.md": "76cac2b9c9d65b36d6a6842ae0e3a92fffde476a42746335e1499f23394c82b5",
+    "docs/stdlib.md": "145f2ba29d3691abb373523c08df8d452ed79b6eab431a8ce98f3c09edfa1c43",
+    "examples/sequence-containers/README.md": "f703a4d24d796c2667358c8df92175f118e123a2236667d4937d6bafb9fa5ce4",
+    "examples/sequence-containers/main.nex": "050dc89a9cb229172654f2fbdd2a2f395857b9d0cd5dec69701c48935f00b8ae",
+    "examples/sequence-containers/nex.json": "677a6ca3cec3fb7acd2f2aa8468af981d3288a256eafb9c041079342cf3ca3fe",
+    "examples/sequence-containers/nex.lock.json": "12b9a5261975c9a6a4d0ed69cdae547e5b2a68b25ddc3973b251ca4755b7d3a4",
+    "examples/sequence-containers/tasks.nex": "4288972c238b5578aded160a96c88f9868266f2ea8444e5d79b5b66c35e88a21",
+    "lib/deque.nex": "a0f542d34923ab46e706d4561032757b32c634bc85c4ffa4f12be2002637081a",
+    "lib/fifo.nex": "776944fa528161cfa92fca2e162b58e8bcb28f30db71bc35341202aef523d8f4",
+    "lib/heap.nex": "526123f6895bf952e9c9ed3285e2d0be83bd21a0c4f2aa34115e04b34f9deb4f",
+    "lib/lifo.nex": "9ca57678d0a9bddeeda39132b1a2c0b1b704f4b303f9f62d02407cea52870046",
+    "lib/priority_queue.nex": "823c3a875cfdb019f79baaed32cee80e62b59fc80c7b67685ddf24c271b64e43",
+    "lib/queue.nex": "b3844d66ab536595421a58bacb94cbfda4c8d412c700f713f390b0aeec02401e",
+    "lib/sequence.nex": "363ba0bc88ab1e7185f9bbf1c3d2149f7ded1e9425b9e9bd247ee77709d0461f",
+    "lib/stack.nex": "7dcbe04a145360d7efde7dbf72b8c555abaa896ba3935223112e10e98d4dcbfd",
+    "llm/language-pack.json": "807b76e5a3ed3324937d2a7e10f0575632e01202a2803aa5101479ad6cc5e4d6",
+    "llms.txt": "b82919da54b56671ab8a5633d6a5fc909c09017bfa966c8b4d0cc2816a6359cd",
+    "src/standard_library.cpp": "8e284a2ddf044b3298bed5d33861b2b53429f12451f8691b819e2f753911ec7c",
+    "tests/sequence_containers.py": "1cdbdde92a38c6bfbb2cda3680a94914c1662bbde5d3d33d24e6f6313d4ab0c2",
+    "tests/sequence_containers_cases.py": "c6b8aeb34450e98d684a4eb286872b12ba8e74b7bb53da1cf46bd3d25dfdd575",
+    "tests/standard_library.py": "869e1b36e4e5181149f5328f8952476f7092c3347adeaf07e784d32d50872e88",
+    "tools/sdk_stdlib.py": "3d6e8c0d1ead04554fe3486d8ecaf33679e0269eb807e948463742558c604d0b"
+  },
+  "build": {
+    "command": "cmake --build build -j 4",
+    "exit_code": 0,
+    "stdout_sha256": "b0804221a1651b6a373d487d057cbbe98a34e8a9be4c6e84871d2144d3f42c85",
+    "stderr_sha256": "0703827a9767e53a1a15177e7611c716334d30552eff56667bd5f87838cb1c53"
+  },
+  "discovery": {
+    "exact_match": true,
+    "shared_fields": 71,
+    "compared_JSON_values": 4634,
+    "manifest_sha256": "807b76e5a3ed3324937d2a7e10f0575632e01202a2803aa5101479ad6cc5e4d6",
+    "standard_library_modules": 20,
+    "standard_library_public_functions": 207
+  },
+  "ctest": {
+    "core": {
+      "schema": "nex.ctest-verification/1",
+      "ok": true,
+      "ctest_exit_code": 0,
+      "selected_groups": [
+        "bytes_runtime_native",
+        "ctest_report_validation",
+        "diagnostic_catalogue",
+        "discovery",
+        "float_runtime_native",
+        "frontend_diagnostics_native",
+        "language_pack_contract",
+        "llm_cost_ledger",
+        "llm_local_collector",
+        "managed_reference_native_context",
+        "managed_references_frontend_reference",
+        "reference_tasks_development",
+        "task_frontend_native",
+        "test_tiers",
+        "typed_source_frontend_reference",
+        "value_owner_runtime",
+        "value_retirement_runtime"
+      ],
+      "required_fixture_groups": [],
+      "expected_groups": [
+        "bytes_runtime_native",
+        "ctest_report_validation",
+        "diagnostic_catalogue",
+        "discovery",
+        "float_runtime_native",
+        "frontend_diagnostics_native",
+        "language_pack_contract",
+        "llm_cost_ledger",
+        "llm_local_collector",
+        "managed_reference_native_context",
+        "managed_references_frontend_reference",
+        "reference_tasks_development",
+        "task_frontend_native",
+        "test_tiers",
+        "typed_source_frontend_reference",
+        "value_owner_runtime",
+        "value_retirement_runtime"
+      ],
+      "observed_groups": [
+        "llm_cost_ledger",
+        "llm_local_collector",
+        "ctest_report_validation",
+        "discovery",
+        "language_pack_contract",
+        "task_frontend_native",
+        "reference_tasks_development",
+        "frontend_diagnostics_native",
+        "value_owner_runtime",
+        "value_retirement_runtime",
+        "managed_references_frontend_reference",
+        "managed_reference_native_context",
+        "bytes_runtime_native",
+        "float_runtime_native",
+        "typed_source_frontend_reference",
+        "test_tiers",
+        "diagnostic_catalogue"
+      ],
+      "results": {
+        "passed": [
+          "llm_cost_ledger",
+          "llm_local_collector",
+          "ctest_report_validation",
+          "discovery",
+          "language_pack_contract",
+          "task_frontend_native",
+          "reference_tasks_development",
+          "frontend_diagnostics_native",
+          "value_owner_runtime",
+          "value_retirement_runtime",
+          "managed_references_frontend_reference",
+          "managed_reference_native_context",
+          "bytes_runtime_native",
+          "float_runtime_native",
+          "typed_source_frontend_reference",
+          "test_tiers",
+          "diagnostic_catalogue"
+        ],
+        "failed": [],
+        "skipped": []
+      },
+      "registry_sha256": "d9d5e8f2301a88c8346207c33e18813df16fb7a4e4b5ae186920a09322a9c8c4",
+      "junit_sha256": "50a17ddc6899a2f2038bdc957e368a7170ebd026c24e068bbc88c379391f6f5a"
+    },
+    "affected": {
+      "schema": "nex.ctest-verification/1",
+      "ok": true,
+      "ctest_exit_code": 0,
+      "selected_groups": [
+        "docs_index",
+        "hash_containers",
+        "persistent_ui",
+        "standard_library",
+        "stdlib_deque",
+        "stdlib_priority_queue",
+        "stdlib_queue_stack"
+      ],
+      "required_fixture_groups": [],
+      "expected_groups": [
+        "docs_index",
+        "hash_containers",
+        "persistent_ui",
+        "standard_library",
+        "stdlib_deque",
+        "stdlib_priority_queue",
+        "stdlib_queue_stack"
+      ],
+      "observed_groups": [
+        "persistent_ui",
+        "standard_library",
+        "stdlib_queue_stack",
+        "stdlib_deque",
+        "stdlib_priority_queue",
+        "hash_containers",
+        "docs_index"
+      ],
+      "results": {
+        "passed": [
+          "persistent_ui",
+          "standard_library",
+          "stdlib_queue_stack",
+          "stdlib_deque",
+          "stdlib_priority_queue",
+          "hash_containers",
+          "docs_index"
+        ],
+        "failed": [],
+        "skipped": []
+      },
+      "registry_sha256": "d9d5e8f2301a88c8346207c33e18813df16fb7a4e4b5ae186920a09322a9c8c4",
+      "junit_sha256": "fa67daccaaee3846c109d6b37ad013ec4b9f4200417eb1468e6a3c4045d13f0d"
+    },
+    "distinct_groups": 24,
+    "direct_log_sha256": {
+      "core-v1/ctest.log": "cb53395794f141afe194c16f99910541691835e9f02aa32ae3f5b1f229adf217",
+      "affected-v1.log": "5019154a33c43f378327208791bbc6feda7fd7cfc53a41c9361a8eb4e12e69a0"
+    },
+    "full_source_regression": false
+  },
+  "new_sequence_harness": {
+    "execution": "direct script command with explicit fresh output; registered CTest group remains separate",
+    "command": [
+      "python3",
+      "-B",
+      "tests/sequence_containers.py",
+      "build/nex",
+      "--output",
+      "build/sequence-containers-v1/qualification-v1"
+    ],
+    "report": {
+      "schema": "nex.sequence-containers/1",
+      "ok": true,
+      "compiler_sha256": "5bd1b828ba1cd2806bce6fa08a1520ee7d0527ba5fed3113434cc5030b8f4c87",
+      "harness_sha256": "1cdbdde92a38c6bfbb2cda3680a94914c1662bbde5d3d33d24e6f6313d4ab0c2",
+      "oracle_sha256": "c6b8aeb34450e98d684a4eb286872b12ba8e74b7bb53da1cf46bd3d25dfdd575",
+      "programs": [
+        {
+          "name": "oracle028",
+          "revision": "a99ad552fa3daa2ee5fb7256f947e682f2787106d83f2271e3e3e99add83b6ef",
+          "source_sha256": "61c6f1d415c8151802d834c939112e00ba86d04b00186cadaaebd7bb2670332b",
+          "reference": {
+            "ok": true,
+            "stdout": "sequence-oracle-ok\n",
+            "steps": 19638065,
+            "value": null
+          },
+          "native": {
+            "debug": {
+              "stdout": "sequence-oracle-ok\n",
+              "exit_code": 0
+            },
+            "release": {
+              "stdout": "sequence-oracle-ok\n",
+              "exit_code": 0
+            }
+          },
+          "typescript": {
+            "strict": true,
+            "executed": true,
+            "map_schema": "nex.typescript-map/2",
+            "map_sha256": "1c12f18acd2dbbf6857fb4cbb16bb967adf4b9145499a4d3ae85c8033b420c01",
+            "stdout": "sequence-oracle-ok\n"
+          }
+        },
+        {
+          "name": "example030",
+          "revision": "b2e66fe0759064eb07c0a87a865ab4bca32fddaada581884b60d6f193b626cd7",
+          "source_sha256": "050dc89a9cb229172654f2fbdd2a2f395857b9d0cd5dec69701c48935f00b8ae",
+          "reference": {
+            "ok": true,
+            "stdout": "sequence-containers-ok\n",
+            "steps": 3152,
+            "value": null
+          },
+          "native": {
+            "release": {
+              "stdout": "sequence-containers-ok\n",
+              "exit_code": 0
+            }
+          },
+          "typescript": {
+            "strict": true,
+            "executed": true,
+            "map_schema": "nex.typescript-map/2",
+            "map_sha256": "823935df66a06c0c4df5e715a6265bbac7a5515f7220be62cdbe7d2ecf14940d",
+            "stdout": "sequence-containers-ok\n"
+          }
+        },
+        {
+          "name": "tasks030",
+          "revision": "fd4f81742a08931bd6bd951fa5e087f7cbadbec43de5fa22e8a810e12a0cffae",
+          "source_sha256": "4288972c238b5578aded160a96c88f9868266f2ea8444e5d79b5b66c35e88a21",
+          "reference": {
+            "ok": true,
+            "stdout": "42\n",
+            "steps": 1845,
+            "task_execution": {
+              "backend": "reference",
+              "configured": {
+                "steps": 80000000,
+                "timeout_ms": 5000,
+                "workers": 16
+              },
+              "cooperative_deadline": true,
+              "effective": {
+                "steps": 80000000,
+                "timeout_ms": 5000,
+                "workers": 16
+              },
+              "executor_workers": 1,
+              "identical_step_thresholds": false,
+              "step_model": "checked AST actions and atoms"
+            },
+            "value": null
+          },
+          "native": {
+            "debug": {
+              "stdout": "42\n",
+              "exit_code": 0
+            },
+            "release": {
+              "stdout": "42\n",
+              "exit_code": 0
+            }
+          },
+          "typescript": {
+            "strict": true,
+            "executed": true,
+            "map_schema": "nex.typescript-map/4",
+            "map_sha256": "572fda36f0b7f91bae154a3d734fac5a67538f7bd67c5bfc2f09a8115d05f88b",
+            "stdout": "42\n"
+          }
+        }
+      ],
+      "rejections": [
+        {
+          "name": "comparator-effect",
+          "code": "E_EFFECT",
+          "passed": true
+        },
+        {
+          "name": "comparator-result",
+          "code": "E_TYPE",
+          "passed": true
+        },
+        {
+          "name": "ordered-bound",
+          "code": "E_GENERIC_BOUND",
+          "passed": true
+        },
+        {
+          "name": "index-type",
+          "code": "E_TYPE",
+          "passed": true
+        },
+        {
+          "name": "private-helper",
+          "code": "E_VISIBILITY",
+          "passed": true
+        }
+      ],
+      "portable_SDK": false,
+      "compiled_pins": {
+        "sequence": "363ba0bc88ab1e7185f9bbf1c3d2149f7ded1e9425b9e9bd247ee77709d0461f",
+        "fifo": "776944fa528161cfa92fca2e162b58e8bcb28f30db71bc35341202aef523d8f4",
+        "lifo": "9ca57678d0a9bddeeda39132b1a2c0b1b704f4b303f9f62d02407cea52870046",
+        "heap": "526123f6895bf952e9c9ed3285e2d0be83bd21a0c4f2aa34115e04b34f9deb4f"
+      },
+      "compiler_build": "e3a69bc82f8cffa86be5736ca3fea818fcb475cd553ce28550bf57b3ef6787fc",
+      "toolchain": "0.274.0",
+      "oracle_scope": {
+        "sequence_operations": 240,
+        "FIFO_LIFO_operations_each": 150,
+        "heap_operations": 180,
+        "AVL_bulk": 1024,
+        "deep_stack": 16384,
+        "heap_left_chain": 4096,
+        "malformed_representations": 10
+      },
+      "retained029": true,
+      "reviewed_pin_unchanged": true
+    },
+    "report_sha256": "3fb04fc71c8b4f900c8688912dfdd952060e9694729931edc94e2500ffc0b587",
+    "registered_CTest_group": "sequence_containers",
+    "new_group_run_through_CTest": false
+  },
+  "SDK_subworkflow": {
+    "source_CTest_group": "standard_library",
+    "strict_TypeScript_projects": [
+      "standard-library-typescript",
+      "hash-containers-typescript-main",
+      "hash-containers-typescript-tasks",
+      "sequence-containers-typescript-main",
+      "sequence-containers-typescript-tasks"
+    ],
+    "proof_rejection_controls": 19,
+    "source_pins": 20,
+    "actual_source_consumption": true,
+    "complete_SDK_qualification": false
+  },
+  "moved_normal_installation": {
+    "ok": true,
+    "commands": 32,
+    "normal_CMake_installation": true,
+    "moved": true,
+    "host_dependencies_remain": true,
+    "portable_SDK": false,
+    "proof": {
+      "schema": "nex.standard-library-consumption/1",
+      "ok": true,
+      "compiler_sha256": "5bd1b828ba1cd2806bce6fa08a1520ee7d0527ba5fed3113434cc5030b8f4c87",
+      "language": "0.28",
+      "toolchain": "0.274.0",
+      "compiler_build": "e3a69bc82f8cffa86be5736ca3fea818fcb475cd553ce28550bf57b3ef6787fc",
+      "descriptor_hash": "50e8070b886e7e54f38d72e7fd26c18deea7e2e383605bf63840fe7b6013984c",
+      "compiled_source_pins": {
+        "lib/text.nex": "e5df668d9fd6bea6bf248eb26a79da892576753622e16382bb74292da1b55d64",
+        "lib/list.nex": "04be7257ced138fc83cb67cb9c220eac8ded09ccdfaa2a71861a02dda3beb63a",
+        "lib/math.nex": "6d073810efde8aabc2823db47f26f4493d431041bff87e25b16be8fadf23630e",
+        "lib/map.nex": "22f69d9a69081b5ccf9642266e74007245fe740c72161d9403d9a7540afaf4c1",
+        "lib/set.nex": "041f1df46cca9862478914154dde4496867998b63e40c9fee1acb725522d5bb9",
+        "lib/queue.nex": "b3844d66ab536595421a58bacb94cbfda4c8d412c700f713f390b0aeec02401e",
+        "lib/stack.nex": "7dcbe04a145360d7efde7dbf72b8c555abaa896ba3935223112e10e98d4dcbfd",
+        "lib/deque.nex": "a0f542d34923ab46e706d4561032757b32c634bc85c4ffa4f12be2002637081a",
+        "lib/priority_queue.nex": "823c3a875cfdb019f79baaed32cee80e62b59fc80c7b67685ddf24c271b64e43",
+        "lib/ordered_map.nex": "695126c45d32a5d1877e1d8882af70b9525efd1acf6796c8f4044cf0c83ec473",
+        "lib/ordered_set.nex": "85456b1f28c78f7596778c88cf48dcae31d5a931bfc8d1c3c42001004ce6ed3c",
+        "lib/java_int.nex": "b747c50707dd8a3da43dc181b75c411effb63728f01b4f2dc4b892944938e7f7",
+        "lib/java_long.nex": "9d782a03f2f6e89f49c41e18cc912d638a66a24764c5e055af40a205721d5b6f",
+        "lib/hash.nex": "94c5b141c74de838eaa3d48dfcfe3ea064ff7af41d6f0806c8365b950fb9d037",
+        "lib/hash_map.nex": "06c4fd5757091ba7e0300e3a55342696e8abd26d1d1c4526cd31955fdebffbe8",
+        "lib/hash_set.nex": "f7b3955c5123fe6b859509a18a5f7991ad553ae5019326e5663b3a8fb21d97a5",
+        "lib/sequence.nex": "363ba0bc88ab1e7185f9bbf1c3d2149f7ded1e9425b9e9bd247ee77709d0461f",
+        "lib/fifo.nex": "776944fa528161cfa92fca2e162b58e8bcb28f30db71bc35341202aef523d8f4",
+        "lib/lifo.nex": "9ca57678d0a9bddeeda39132b1a2c0b1b704f4b303f9f62d02407cea52870046",
+        "lib/heap.nex": "526123f6895bf952e9c9ed3285e2d0be83bd21a0c4f2aa34115e04b34f9deb4f"
+      },
+      "example_hashes": {
+        "main.nex": "be00535c40d218f97950e037f485cd2f750541d0cece5576a19f58a42dc226b1",
+        "nex.json": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30",
+        "nex.lock.json": "cda0ba2380a9697576e02872bce57c7b70fe76b332a501bf27857b97750addd3"
+      },
+      "revision": "f5dc5a9ee54a382947ae80bfa1996a6c0531d9c29c821ada453437d0cc686c86",
+      "reference_stdout": "1,1,2,3\nЯ + 🌍\n5\n6\n",
+      "native": {
+        "debug": "1,1,2,3\nЯ + 🌍\n5\n6\n",
+        "release": "1,1,2,3\nЯ + 🌍\n5\n6\n"
+      },
+      "typescript": {
+        "requested": true,
+        "executed": true,
+        "stdout": "1,1,2,3\nЯ + 🌍\n5\n6\n"
+      },
+      "hash_containers": {
+        "schema": "nex.hash-container-consumption/1",
+        "ok": true,
+        "source_language": "0.30",
+        "example_hashes": {
+          "README.md": "9695c68cfeaa0da498155d43373d2796b0d21542c30f9724a4be024eb297362e",
+          "main.nex": "e3e6a6b49ee3b7a4f327b3960d423642518df6bbf376d628888b393f5155adb2",
+          "nex.json": "677a6ca3cec3fb7acd2f2aa8468af981d3288a256eafb9c041079342cf3ca3fe",
+          "nex.lock.json": "da95f5179198880028e31f7b7243c6d50bd309e588784560be8729f0d21fec99",
+          "tasks.nex": "664819631051a2ffcb7458a42757d5c71c8d72d92330295808b949affa856370"
+        },
+        "programs": {
+          "main.nex": {
+            "revision": "d0b2491ce4f527aaf9e426f575a8de47e4512698a5a0de00e8e2a3b533ac7380",
+            "reference_stdout": "hash-containers-ok\n",
+            "native": {
+              "debug": "hash-containers-ok\n",
+              "release": "hash-containers-ok\n"
+            },
+            "typescript": {
+              "requested": true,
+              "executed": true,
+              "stdout": "hash-containers-ok\n"
+            }
+          },
+          "tasks.nex": {
+            "revision": "48bb2a6752594f7b43fdb8d26884fd458bdc9ad99b2443ed1678345e12dd4580",
+            "reference_stdout": "42\n",
+            "native": {
+              "debug": "42\n",
+              "release": "42\n"
+            },
+            "typescript": {
+              "requested": true,
+              "executed": true,
+              "stdout": "42\n"
+            }
+          }
+        },
+        "existing_lock_enforced": true,
+        "lock_unchanged": true
+      },
+      "sequence_containers": {
+        "schema": "nex.sequence-container-consumption/1",
+        "ok": true,
+        "source_language": "0.30",
+        "example_hashes": {
+          "README.md": "f703a4d24d796c2667358c8df92175f118e123a2236667d4937d6bafb9fa5ce4",
+          "main.nex": "050dc89a9cb229172654f2fbdd2a2f395857b9d0cd5dec69701c48935f00b8ae",
+          "nex.json": "677a6ca3cec3fb7acd2f2aa8468af981d3288a256eafb9c041079342cf3ca3fe",
+          "nex.lock.json": "12b9a5261975c9a6a4d0ed69cdae547e5b2a68b25ddc3973b251ca4755b7d3a4",
+          "tasks.nex": "4288972c238b5578aded160a96c88f9868266f2ea8444e5d79b5b66c35e88a21"
+        },
+        "programs": {
+          "main.nex": {
+            "revision": "b2e66fe0759064eb07c0a87a865ab4bca32fddaada581884b60d6f193b626cd7",
+            "reference_stdout": "sequence-containers-ok\n",
+            "native": {
+              "debug": "sequence-containers-ok\n",
+              "release": "sequence-containers-ok\n"
+            },
+            "typescript": {
+              "requested": true,
+              "executed": true,
+              "stdout": "sequence-containers-ok\n"
+            }
+          },
+          "tasks.nex": {
+            "revision": "fd4f81742a08931bd6bd951fa5e087f7cbadbec43de5fa22e8a810e12a0cffae",
+            "reference_stdout": "42\n",
+            "native": {
+              "debug": "42\n",
+              "release": "42\n"
+            },
+            "typescript": {
+              "requested": true,
+              "executed": true,
+              "stdout": "42\n"
+            }
+          }
+        },
+        "existing_lock_enforced": true,
+        "lock_unchanged": true
+      },
+      "existing_lock_enforced": true,
+      "lock_unchanged": true,
+      "complete_SDK_workflow_claimed": false
+    }
+  },
+  "workload": {
+    "receipt": "docs/evidence/sequence-container-workload-0.274.0-2026-11-17.json",
+    "sha256": "96bbcc1f9b41babdb6693d90af9a114d729a60fdacc3c327719a67b7bdb77325",
+    "elements_per_container": 256,
+    "samples_per_program": 5,
+    "median_seconds": {
+      "list": 0.062721792,
+      "tree": 0.014220625
+    },
+    "list_to_persistent_median_ratio": 4.410621333450534,
+    "scope": "One combined FIFO/LIFO/deque/priority workload on one Mac; not an individual-container, cross-language, token-cost or global application speedup."
+  },
+  "retained_list_modules": {
+    "function_bodies_unchanged": true,
+    "layouts_unchanged": true,
+    "comments_source_pins_and_compiled_cost_descriptions_updated": true
+  },
+  "published_SDK_0_246_1_unchanged": true,
+  "whole_goal_complete": false,
+  "pending": [
+    "remaining application APIs",
+    "native persistent task-provider lifetimes and reference task debug/profile",
+    "full matching source/platform/portable SDK acceptance",
+    "bounded LLM workflow/cost and manual Java migration pilot",
+    "remaining original PLAN"
+  ],
+  "scope": "Ordinary persistent work-container libraries and matching focused backend/installation checks."
+}

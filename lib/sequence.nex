@@ -1,0 +1,147 @@
+module std::sequence;
+
+// Persistent indexed AVL sequence. Cached counts select positions; rebuilding
+// either end changes only a balanced search path. No unbounded key counter.
+pub struct Node<T> { value: T; left: list<Node<T>>; right: list<Node<T>>; height: i64; count: i64; }
+pub struct Sequence<T> { root: list<Node<T>>; }
+pub struct Popped<T> { sequence: Sequence<T>; value: T; }
+struct Frame<T> { node: Node<T>; rest: list<Frame<T>>; }
+
+fn tree_height<T>(root: list<Node<T>>) -> i64 {
+  if len(root) == 0 { return 0; }
+  return root[0].height;
+}
+fn tree_size<T>(root: list<Node<T>>) -> i64 {
+  if len(root) == 0 { return 0; }
+  return root[0].count;
+}
+fn make_node<T>(value: T, left: list<Node<T>>, right: list<Node<T>>) -> Node<T> {
+  var height: i64 = tree_height(left);
+  if tree_height(right) > height { height = tree_height(right); }
+  return Node(value, left, right, height + 1, 1 + tree_size(left) + tree_size(right));
+}
+fn balance<T>(value: T, left: list<Node<T>>, right: list<Node<T>>) -> list<Node<T>> {
+  let delta: i64 = tree_height(left) - tree_height(right);
+  if delta > 1 {
+    let child: Node<T> = left[0];
+    if tree_height(child.left) >= tree_height(child.right) {
+      let next: Node<T> = make_node(value, child.right, right);
+      return [make_node(child.value, child.left, [next])];
+    }
+    let pivot: Node<T> = child.right[0];
+    let first: Node<T> = make_node(child.value, child.left, pivot.left);
+    let second: Node<T> = make_node(value, pivot.right, right);
+    return [make_node(pivot.value, [first], [second])];
+  }
+  if delta < -1 {
+    let child: Node<T> = right[0];
+    if tree_height(child.right) >= tree_height(child.left) {
+      let next: Node<T> = make_node(value, left, child.left);
+      return [make_node(child.value, [next], child.right)];
+    }
+    let pivot: Node<T> = child.left[0];
+    let first: Node<T> = make_node(value, left, pivot.left);
+    let second: Node<T> = make_node(child.value, pivot.right, child.right);
+    return [make_node(pivot.value, [first], [second])];
+  }
+  return [make_node(value, left, right)];
+}
+
+fn insert_front<T>(root: list<Node<T>>, value: T) -> list<Node<T>> {
+  if len(root) == 0 { return [make_node(value, [], [])]; }
+  let node: Node<T> = root[0];
+  return balance(node.value, insert_front(node.left, value), node.right);
+}
+fn insert_back<T>(root: list<Node<T>>, value: T) -> list<Node<T>> {
+  if len(root) == 0 { return [make_node(value, [], [])]; }
+  let node: Node<T> = root[0];
+  return balance(node.value, node.left, insert_back(node.right, value));
+}
+fn remove_front<T>(root: list<Node<T>>) -> list<Node<T>> {
+  let node: Node<T> = root[0];
+  if len(node.left) == 0 { return node.right; }
+  return balance(node.value, remove_front(node.left), node.right);
+}
+fn remove_back<T>(root: list<Node<T>>) -> list<Node<T>> {
+  let node: Node<T> = root[0];
+  if len(node.right) == 0 { return node.left; }
+  return balance(node.value, node.left, remove_back(node.right));
+}
+fn replace_node<T>(root: list<Node<T>>, index: i64, value: T) -> list<Node<T>> {
+  let node: Node<T> = root[0];
+  let left: i64 = tree_size(node.left);
+  if index < left { return [make_node(node.value, replace_node(node.left, index, value), node.right)]; }
+  if index == left { return [make_node(value, node.left, node.right)]; }
+  return [make_node(node.value, node.left, replace_node(node.right, index - left - 1, value))];
+}
+pub fn empty<T>() -> Sequence<T> { return Sequence([]); }
+pub fn size<T>(sequence: Sequence<T>) -> i64 { return tree_size(sequence.root); }
+pub fn is_empty<T>(sequence: Sequence<T>) -> bool { return size(sequence) == 0; }
+pub fn height<T>(sequence: Sequence<T>) -> i64 { return tree_height(sequence.root); }
+pub fn push_front<T>(sequence: Sequence<T>, value: T) -> Sequence<T> { return Sequence(insert_front(sequence.root, value)); }
+pub fn push_back<T>(sequence: Sequence<T>, value: T) -> Sequence<T> { return Sequence(insert_back(sequence.root, value)); }
+pub fn peek_front<T>(sequence: Sequence<T>) -> result<T> {
+  if is_empty(sequence) { return err<T>("E_EMPTY", "sequence is empty"); }
+  var node: Node<T> = sequence.root[0];
+  while len(node.left) != 0 { node = node.left[0]; }
+  return ok(node.value);
+}
+pub fn peek_back<T>(sequence: Sequence<T>) -> result<T> {
+  if is_empty(sequence) { return err<T>("E_EMPTY", "sequence is empty"); }
+  var node: Node<T> = sequence.root[0];
+  while len(node.right) != 0 { node = node.right[0]; }
+  return ok(node.value);
+}
+pub fn pop_front<T>(sequence: Sequence<T>) -> result<Popped<T>> {
+  if is_empty(sequence) { return err<Popped<T>>("E_EMPTY", "sequence is empty"); }
+  let value: T = unwrap(peek_front(sequence));
+  return ok(Popped(Sequence(remove_front(sequence.root)), value));
+}
+pub fn pop_back<T>(sequence: Sequence<T>) -> result<Popped<T>> {
+  if is_empty(sequence) { return err<Popped<T>>("E_EMPTY", "sequence is empty"); }
+  let value: T = unwrap(peek_back(sequence));
+  return ok(Popped(Sequence(remove_back(sequence.root)), value));
+}
+pub fn get<T>(sequence: Sequence<T>, index: i64) -> result<T> {
+  if index < 0 || index >= size(sequence) { return err<T>("E_BOUNDS", "sequence index out of bounds"); }
+  var root: list<Node<T>> = sequence.root;
+  var at: i64 = index;
+  while len(root) != 0 {
+    let node: Node<T> = root[0];
+    let left: i64 = tree_size(node.left);
+    if at == left { return ok(node.value); }
+    if at < left { root = node.left; } else { at = at - left - 1; root = node.right; }
+  }
+  return err<T>("E_BOUNDS", "sequence index out of bounds");
+}
+pub fn replace<T>(sequence: Sequence<T>, index: i64, value: T) -> result<Sequence<T>> {
+  if index < 0 || index >= size(sequence) { return err<Sequence<T>>("E_BOUNDS", "sequence index out of bounds"); }
+  return ok(Sequence(replace_node(sequence.root, index, value)));
+}
+fn left_path<T>(root: list<Node<T>>, rest: list<Frame<T>>) -> list<Frame<T>> {
+  var current: list<Node<T>> = root;
+  var stack: list<Frame<T>> = rest;
+  while len(current) != 0 { stack = [Frame(current[0], stack)]; current = current[0].left; }
+  return stack;
+}
+fn advance<T>(stack: list<Frame<T>>) -> list<Frame<T>> { return left_path(stack[0].node.right, stack[0].rest); }
+pub fn items<T>(sequence: Sequence<T>) -> list<T> {
+  return list(size(sequence), left_path(sequence.root, []),
+    fn(stack: list<Frame<T>>) -> list<Frame<T>> { return advance(stack); },
+    fn(stack: list<Frame<T>>) -> T { return stack[0].node.value; });
+}
+fn valid_tree<T>(root: list<Node<T>>, depth: i64) -> bool {
+  if len(root) > 1 { return false; }
+  if len(root) == 0 { return true; }
+  if depth > 90 { return false; }
+  let node: Node<T> = root[0];
+  if !valid_tree(node.left, depth + 1) || !valid_tree(node.right, depth + 1) { return false; }
+  let a: i64 = tree_height(node.left); let b: i64 = tree_height(node.right);
+  if a - b < -1 || a - b > 1 { return false; }
+  var expected: i64 = a + 1; if b > a { expected = b + 1; }
+  if node.height != expected { return false; }
+  let first: i64 = tree_size(node.left); let second: i64 = tree_size(node.right);
+  if second > 9223372036854775807 - first - 1 { return false; }
+  return node.count == 1 + first + second;
+}
+pub fn validate<T>(sequence: Sequence<T>) -> bool { return valid_tree(sequence.root, 1); }

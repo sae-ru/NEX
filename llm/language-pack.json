@@ -631,7 +631,12 @@
     "standard_hash_source": "lib/hash.nex",
     "standard_hash_map_source": "lib/hash_map.nex",
     "standard_hash_set_source": "lib/hash_set.nex",
-    "hash_containers": "docs/hash-containers.md"
+    "hash_containers": "docs/hash-containers.md",
+    "standard_sequence_source": "lib/sequence.nex",
+    "standard_fifo_source": "lib/fifo.nex",
+    "standard_lifo_source": "lib/lifo.nex",
+    "standard_heap_source": "lib/heap.nex",
+    "sequence_containers": "docs/sequence-containers.md"
   },
   "document_access": "nex guide --kind format|text-construction|bytes-construction|source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -4626,7 +4631,7 @@
     "lock_command": "nex lock --json",
     "modules": {
       "deque": {
-        "complexity": "push/pop/peek O(n); size/is_empty O(1); list-backed, no ring buffer or hash table",
+        "complexity": "push_back O(n); push_front/pop_front/pop_back O(n^2) repeated-prefix copying; peek_front/peek_back/size/is_empty O(1); use sequence for persistent logarithmic ends",
         "empty_result": "E_EMPTY",
         "functions": [
           "empty",
@@ -4645,7 +4650,7 @@
         "mutation": false,
         "ordering": "double-ended; immutable",
         "resource": "lib/deque.nex",
-        "sha256": "41ae77cbd0f722e34dcafba8786e8d7b052436ac296d07080e7a41ccb92d8da1",
+        "sha256": "a0f542d34923ab46e706d4561032757b32c634bc85c4ffa4f12be2002637081a",
         "types": [
           "Deque<T>",
           "Popped<T>"
@@ -4838,7 +4843,7 @@
         ]
       },
       "priority_queue": {
-        "complexity": "push_value O(n); pop/peek O(n); size/is_empty O(1); sorted list-backed, no binary heap",
+        "complexity": "push_value/pop O(n^2) repeated-prefix copying; peek/size/is_empty O(1); use heap for persistent logarithmic updates",
         "empty_result": "E_EMPTY",
         "functions": [
           "empty",
@@ -4854,14 +4859,14 @@
         "mutation": false,
         "ordering": "ascending minimum first; insertion keeps list sorted; immutable",
         "resource": "lib/priority_queue.nex",
-        "sha256": "9d12846107f282ea9b49d98341efd04ccb809dc16868dda5d05ba8d95dea67ca",
+        "sha256": "823c3a875cfdb019f79baaed32cee80e62b59fc80c7b67685ddf24c271b64e43",
         "types": [
           "PriorityQueue<T>",
           "Popped<T>"
         ]
       },
       "queue": {
-        "complexity": "enqueue O(n); dequeue/peek O(n); size/is_empty O(1); list-backed, no ring or hash table",
+        "complexity": "enqueue O(n) flat-list copy; dequeue O(n^2) repeated-prefix copying; peek/size/is_empty O(1); use fifo for persistent logarithmic paths",
         "empty_result": "E_EMPTY",
         "functions": [
           "empty",
@@ -4877,7 +4882,7 @@
         "mutation": false,
         "ordering": "FIFO; immutable",
         "resource": "lib/queue.nex",
-        "sha256": "375660dd44765cc99784f03fd7b9a74f82ad32d8f6cfef51cd5ee7f89789b0ed",
+        "sha256": "b3844d66ab536595421a58bacb94cbfda4c8d412c700f713f390b0aeec02401e",
         "types": [
           "Queue<T>",
           "Popped<T>"
@@ -4909,7 +4914,7 @@
         ]
       },
       "stack": {
-        "complexity": "push_value O(n); pop/peek O(n); size/is_empty O(1); list-backed, no ring or hash table",
+        "complexity": "push_value O(n) flat-list copy; pop O(n^2) repeated-prefix copying; peek/size/is_empty O(1); use lifo for constant-time heads",
         "empty_result": "E_EMPTY",
         "functions": [
           "empty",
@@ -4925,7 +4930,7 @@
         "mutation": false,
         "ordering": "LIFO; immutable",
         "resource": "lib/stack.nex",
-        "sha256": "93e068c4844698c0409fed925d0c6ad8ff021edb85f3f392ceb82eba2e225106",
+        "sha256": "7dcbe04a145360d7efde7dbf72b8c555abaa896ba3935223112e10e98d4dcbfd",
         "types": [
           "Stack<T>",
           "Popped<T>"
@@ -5087,10 +5092,141 @@
         "example": "examples/hash-containers/nex.json",
         "mutation": false,
         "sha256": "f7b3955c5123fe6b859509a18a5f7991ad553ae5019326e5663b3a8fb21d97a5"
+      },
+      "sequence": {
+        "types": [
+          "Sequence<T>",
+          "Node<T>",
+          "Popped<T>"
+        ],
+        "representation": "persistent indexed AVL tree",
+        "ordering": "inorder sequence positions; front/back and indexed access; immutable retained versions",
+        "complexity": "valid API-produced trees: end push/pop/peek, get/replace O(log(n+1)); size/is_empty/height O(1); items/validate O(n); excludes payload work and retirement of unreachable versions",
+        "lookup": "get/replace return E_BOUNDS results for negative/out-of-range indices; empty ends return E_EMPTY",
+        "validation": "child cardinality, cached heights/counts and AVL balance; iterative cursor enumeration; validation depth capped90",
+        "import": "std/sequence.nex",
+        "module": "std::sequence",
+        "resource": "lib/sequence.nex",
+        "introduced_toolchain": "0.274.0",
+        "functions": [
+          "empty",
+          "size",
+          "is_empty",
+          "height",
+          "push_front",
+          "push_back",
+          "peek_front",
+          "peek_back",
+          "pop_front",
+          "pop_back",
+          "get",
+          "replace",
+          "items",
+          "validate"
+        ],
+        "mutation": false,
+        "guide": "docs/sequence-containers.md",
+        "example": "examples/sequence-containers/nex.json",
+        "sha256": "363ba0bc88ab1e7185f9bbf1c3d2149f7ded1e9425b9e9bd247ee77709d0461f"
+      },
+      "fifo": {
+        "types": [
+          "Queue<T>",
+          "Popped<T>"
+        ],
+        "representation": "persistent sequence<T> FIFO wrapper",
+        "ordering": "FIFO; retained old queues remain unchanged",
+        "complexity": "enqueue/dequeue/peek worst-case O(log(n+1)) even with branching versions; size/is_empty/height O(1); items/validate O(n); excludes payload work and version cleanup",
+        "empty_result": "E_EMPTY",
+        "import": "std/fifo.nex",
+        "module": "std::fifo",
+        "resource": "lib/fifo.nex",
+        "introduced_toolchain": "0.274.0",
+        "functions": [
+          "empty",
+          "enqueue",
+          "dequeue",
+          "peek",
+          "size",
+          "is_empty",
+          "items",
+          "height",
+          "validate"
+        ],
+        "mutation": false,
+        "guide": "docs/sequence-containers.md",
+        "example": "examples/sequence-containers/nex.json",
+        "sha256": "776944fa528161cfa92fca2e162b58e8bcb28f30db71bc35341202aef523d8f4"
+      },
+      "lifo": {
+        "types": [
+          "Stack<T>",
+          "Node<T>",
+          "Popped<T>"
+        ],
+        "representation": "persistent linked stack with cached counts",
+        "ordering": "LIFO; items enumerates top first",
+        "complexity": "push_value/pop/peek/size/is_empty O(1); items/validate O(n), iterative; excludes payload work and final retirement of unreachable links",
+        "empty_result": "E_EMPTY",
+        "import": "std/lifo.nex",
+        "module": "std::lifo",
+        "resource": "lib/lifo.nex",
+        "introduced_toolchain": "0.274.0",
+        "functions": [
+          "empty",
+          "size",
+          "is_empty",
+          "push_value",
+          "peek",
+          "pop",
+          "items",
+          "validate"
+        ],
+        "mutation": false,
+        "guide": "docs/sequence-containers.md",
+        "example": "examples/sequence-containers/nex.json",
+        "sha256": "9ca57678d0a9bddeeda39132b1a2c0b1b704f4b303f9f62d02407cea52870046"
+      },
+      "heap": {
+        "types": [
+          "Heap<T>",
+          "Node<T>",
+          "Popped<T>"
+        ],
+        "representation": "persistent rank-biased leftist heap",
+        "ordering": "pure comparator fn(T,T)->i64 defines strict weak priority order; ties have no stability guarantee",
+        "complexity": "push_value/pop O(log(n+1)); peek/size/is_empty/rank O(1); items/validate O(n), iterative; sorted O(n log(n+1)); merge O(m log(n+m+1)) by normalization under left comparator; excludes comparator/payload work and version cleanup",
+        "merge": "left comparator defines output; normalize right values; mixed comparator policies supported",
+        "empty_result": "E_EMPTY",
+        "rank": "cached right-spine length, at most63 for valid positive-i64 counts; left rank >= right rank",
+        "wire": "heap contains a callback; export items/sorted when value types are wire-compatible",
+        "import": "std/heap.nex",
+        "module": "std::heap",
+        "resource": "lib/heap.nex",
+        "introduced_toolchain": "0.274.0",
+        "functions": [
+          "empty",
+          "ascending",
+          "descending",
+          "size",
+          "is_empty",
+          "rank",
+          "push_value",
+          "peek",
+          "pop",
+          "items",
+          "sorted",
+          "merge",
+          "validate"
+        ],
+        "mutation": false,
+        "guide": "docs/sequence-containers.md",
+        "example": "examples/sequence-containers/nex.json",
+        "sha256": "526123f6895bf952e9c9ed3285e2d0be83bd21a0c4f2aa34115e04b34f9deb4f"
       }
     },
     "pending": [
-      "efficient queue/deque/heap beyond list-backed modules",
+      "remaining application adapters and libraries",
       "complete matching SDK/platform qualification"
     ],
     "source_language_changed": false,

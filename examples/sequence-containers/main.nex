@@ -1,0 +1,25 @@
+module work_containers;
+import "std/sequence.nex" as seq;
+import "std/fifo.nex" as fifo;
+import "std/lifo.nex" as lifo;
+import "std/heap.nex" as heap;
+
+fn main() -> unit !{io} {
+  let order: seq::Sequence<str> = seq::push_back(seq::push_front(seq::empty<str>(), "first"), "last");
+  let changed: seq::Sequence<str> = unwrap(seq::replace(order, 1, "new"));
+  assert(seq::items(order) == ["first", "last"] && seq::items(changed) == ["first", "new"]);
+  let work: fifo::Queue<i64> = fifo::enqueue(fifo::enqueue(fifo::empty<i64>(), 41), 42);
+  let next: fifo::Popped<i64> = unwrap(fifo::dequeue(work));
+  assert(next.value == 41 && unwrap(fifo::peek(next.queue)) == 42);
+  let history: lifo::Stack<str> = lifo::push_value(lifo::push_value(lifo::empty<str>(), "old"), "new");
+  assert(unwrap(lifo::peek(history)) == "new");
+  let pending: heap::Heap<i64> = heap::push_value(heap::push_value(heap::ascending<i64>(), 2), 1);
+  assert(heap::sorted(pending) == [1, 2] && heap::validate(pending));
+  assert(seq::validate(order) && fifo::validate(work) && lifo::validate(history));
+  print("sequence-containers-ok");
+}
+test fn retained_versions() -> unit {
+  let before: fifo::Queue<i64> = fifo::enqueue(fifo::empty<i64>(), 41);
+  let after: fifo::Queue<i64> = fifo::enqueue(before, 42);
+  assert(fifo::items(before) == [41] && fifo::items(after) == [41, 42]);
+}

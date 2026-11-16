@@ -105,8 +105,8 @@ expect valid representations and do not run an O(n) validation before each call.
 The comparator field prevents serializing the entire map as a wire value; export
 `entries` instead when its key/value types support the wire protocol.
 
-These modules are not hash tables. Efficient queue/deque/heap implementations
-and matching installed SDK/platform qualification remain separate work.
+These modules are not hash tables. [Efficient sequence/queue/heap modules](sequence-containers.md) have their own
+contracts. Matching complete installed SDK/platform qualification remains separate.
 
 [0.247 focused acceptance](evidence/containers-0.247.0-2026-11-15.json) records
 272 deterministic trace operations, four insertion rotation orders, ascending

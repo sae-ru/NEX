@@ -1,0 +1,23 @@
+module std::fifo;
+import "./sequence.nex" as seq;
+
+// Pure FIFO operations have worst-case logarithmic paths even when old
+// versions branch; there is no deferred two-list rotation to repeat.
+pub struct Queue<T> { sequence: seq::Sequence<T>; }
+pub struct Popped<T> { queue: Queue<T>; value: T; }
+pub fn empty<T>() -> Queue<T> { return Queue(seq::empty<T>()); }
+pub fn enqueue<T>(queue: Queue<T>, value: T) -> Queue<T> { return Queue(seq::push_back(queue.sequence, value)); }
+pub fn dequeue<T>(queue: Queue<T>) -> result<Popped<T>> {
+  if is_empty(queue) { return err<Popped<T>>("E_EMPTY", "queue is empty"); }
+  let next: seq::Popped<T> = unwrap(seq::pop_front(queue.sequence));
+  return ok(Popped(Queue(next.sequence), next.value));
+}
+pub fn peek<T>(queue: Queue<T>) -> result<T> {
+  if is_empty(queue) { return err<T>("E_EMPTY", "queue is empty"); }
+  return seq::peek_front(queue.sequence);
+}
+pub fn size<T>(queue: Queue<T>) -> i64 { return seq::size(queue.sequence); }
+pub fn is_empty<T>(queue: Queue<T>) -> bool { return size(queue) == 0; }
+pub fn items<T>(queue: Queue<T>) -> list<T> { return seq::items(queue.sequence); }
+pub fn height<T>(queue: Queue<T>) -> i64 { return seq::height(queue.sequence); }
+pub fn validate<T>(queue: Queue<T>) -> bool { return seq::validate(queue.sequence); }

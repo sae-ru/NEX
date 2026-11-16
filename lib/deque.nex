@@ -1,8 +1,8 @@
 module std::deque;
 
-// Immutable double-ended queue backed by a list. Every operation is linear in
-// the current size; this is a checked source container, not a ring buffer,
-// hash table or new language primitive.
+// Retained flat-list deque API. Push-back copies O(n) handles; the repeated
+// push loops in push-front/pop can copy O(n^2). Peeks/size/empty are O(1).
+// std/sequence.nex supplies a separate balanced persistent deque/indexed tree.
 pub struct Deque<T> {
   items: list<T>;
 }

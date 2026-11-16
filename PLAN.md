@@ -1,11 +1,13 @@
-# Current library/application milestone — development0.273.0
+# Current library/application milestone — development0.274.0
 
 [Persistent030 UI](docs/persistent-ui.md) owns state across serialized source
 tasks and copied wire events. [Hash map/set](docs/hash-containers.md) add ordinary
 persistent source containers with full signed hash paths and explicit collision/
-equivalence contracts. Their focused evidence remains separate from complete
-source/platform/portable SDK delivery. Native task-provider lifetimes, efficient
-queues/deques/heaps and the remaining requirements below stay open. This ledger
+equivalence contracts. [Work containers](docs/sequence-containers.md) add indexed
+AVL sequences, FIFO queues, linked stacks and leftist heaps. Their focused
+evidence remains separate from complete source/platform/portable SDK delivery.
+Native task-provider lifetimes, remaining application APIs, LLM usability and the
+remaining requirements below stay open. This ledger
 retains the full original project objective; these milestones do not complete it.
 
 # Ordinary owner-thread reference tasks — development0.271.0

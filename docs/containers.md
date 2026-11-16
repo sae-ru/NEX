@@ -85,6 +85,8 @@ return `result` and empty operations use `E_EMPTY`. `std/stack.nex`
 `Deque<T>` with `push_back`/`push_front`, `pop_front`/`pop_back` and
 `peek_front`/`peek_back`. `std/priority_queue.nex` (`std::priority_queue`)
 provides an immutable ascending minimum `PriorityQueue<T: ordered>` with
-`empty`, `push_value`, `pop`, `peek`, `size` and `is_empty`. All four are
-list-backed and therefore O(n) per element operation; none is a ring buffer,
-binary heap, hash table or language primitive.
+`empty`, `push_value`, `pop`, `peek`, `size` and `is_empty`. All four retain flat-list layouts. Single `push` copies O(n) handles; repeated
+prefix-building loops in pop/dequeue/push-front/sorted insertion can copy O(n²).
+Peeks/counts/empty checks are O(1). Their source comments and discovery describe
+these bounds. For new consumers, [sequence/fifo/lifo/heap](sequence-containers.md)
+provide persistent indexed/deque, FIFO, linked-stack and priority-heap structures.

@@ -1,0 +1,22 @@
+{
+  "dependencies": {
+    "@std/fifo.nex": {
+      "module": "std::fifo",
+      "source_hash": "3af0b61e1a652ac13938556fd190e1fd7ce2d190c867eacd16840d9737a12344"
+    },
+    "@std/heap.nex": {
+      "module": "std::heap",
+      "source_hash": "cc80bc4af74537abb182a69d998aeec41c631033d41e3e08626c0dd1b74d083e"
+    },
+    "@std/lifo.nex": {
+      "module": "std::lifo",
+      "source_hash": "594d0dbd71ea85a847613c35ada150b02a54254e6a2f174bf1221a6d85b0f24a"
+    },
+    "@std/sequence.nex": {
+      "module": "std::sequence",
+      "source_hash": "51dc6c95b08645a78b20114dc3165175cdc2375a548bd9ce9fb2251e341678de"
+    }
+  },
+  "language": "0.30",
+  "schema": "nex.lock/1"
+}

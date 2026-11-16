@@ -85,6 +85,10 @@ checks belong to their subsequent source cohort.
 
 ## Dependencies and provenance
 
+The [0.273 run](evidence/core-ci-0.273.0-2026-11-17.json) passed both macOS and
+Linux at `8ac8941b`. Its17-group core receipt retains that source cohort; the
+work-container and installed-consumption changes belong to0.274.
+
 Linux reuses [the toolchain Dockerfile](../tools/linux/Dockerfile) with its pinned
 base, LLVM/MLIR22.1.8 and Z3/Node archives. Image preparation has network access;
 test containers use `--network none`, a read-only source mount and separate

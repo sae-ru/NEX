@@ -1,0 +1,79 @@
+{
+  "schema": "nex.sequence-container-workload/1",
+  "ok": true,
+  "toolchain": "0.274.0",
+  "compiler_sha256": "5bd1b828ba1cd2806bce6fa08a1520ee7d0527ba5fed3113434cc5030b8f4c87",
+  "host": {
+    "platform": "macOS-27.2.1-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "CPU": "Apple M5 Max"
+  },
+  "source_language": "0.28",
+  "profile": "release",
+  "elements_per_container": 256,
+  "operations": [
+    "insert256 sequential integers into each of FIFO, LIFO, deque and priority queue",
+    "remove all from each container, assert every order and accumulate checksum",
+    "assert all four containers empty"
+  ],
+  "expected_stdout": "131584\n",
+  "samples": {
+    "list": [
+      0.072650209,
+      0.059886292,
+      0.062721792,
+      0.061717833,
+      0.068653833
+    ],
+    "tree": [
+      0.014705959,
+      0.014220625,
+      0.013895709,
+      0.015162042,
+      0.014211458
+    ]
+  },
+  "warmup_seconds": {
+    "list": 0.480626167,
+    "tree": 0.539562208
+  },
+  "median_seconds": {
+    "list": 0.062721792,
+    "tree": 0.014220625
+  },
+  "list_to_persistent_median_ratio": 4.410621333450534,
+  "timing": "wall time of independent process, including startup and final cleanup; excludes compilation; five alternating measured trials per program",
+  "own_test_build_processes_concurrent": false,
+  "system_wide_load_controlled": false,
+  "global_throughput_claim": false,
+  "programs": {
+    "list": {
+      "source": "module measured;\nimport \"std/queue.nex\" as q;\nimport \"std/stack.nex\" as s;\nimport \"std/deque.nex\" as d;\nimport \"std/priority_queue.nex\" as p;\nfn main()->unit!{io}{\n var queue:q::Queue<i64>=q::empty();var stack:s::Stack<i64>=s::empty();\n var deque:d::Deque<i64>=d::empty();var priority:p::PriorityQueue<i64>=p::empty<i64>();\n var index:i64=0;\n while index<256{queue=q::enqueue(queue,index+1);stack=s::push_value(stack,index+1);deque=d::push_back(deque,index+1);priority=p::push_value(priority,index+1);index=index+1;}\n var total:i64=0;index=0;\n while index<256{\n  let a:q::Popped<i64>=unwrap(q::dequeue(queue));let b:s::Popped<i64>=unwrap(s::pop(stack));\n  let c:d::Popped<i64>=unwrap(d::pop_front(deque));let e:p::Popped<i64>=unwrap(p::pop(priority));\n  assert(a.value==index+1&&b.value==256-index&&c.value==index+1&&e.value==index+1);\n  total=total+a.value+b.value+c.value+e.value;\n  queue=a.queue;stack=b.stack;deque=c.deque;priority=e.queue;index=index+1;\n }\n assert(q::is_empty(queue)&&s::is_empty(stack)&&d::is_empty(deque)&&p::is_empty(priority));print(total);\n}\n",
+      "source_sha256": "9f738280afdbc8e35a184216ade24d23486a3d7ac771335ac5a5cf9f7999f6f3",
+      "executable_sha256": "1fb9e396bdb2a693ed2352149a03c4cc135eca5054bb4979f0d4f92253b21c8d",
+      "executable_bytes": 387376,
+      "build_key": "031d98d6f5aa04b47cd0d121007be790187deb6599c60d826919863c5e7ad9db",
+      "revision": "dbafcd3868fa19bb2b9556f1a37b8fec8baea02754a0a21e25c67e8bf418c801",
+      "metadata_sha256": "7ec00dc688f38b79e42a74e9b67cd15c018fde23956eb88370176f87fd15d57b"
+    },
+    "tree": {
+      "source": "module measured;\nimport \"std/fifo.nex\" as q;\nimport \"std/lifo.nex\" as s;\nimport \"std/sequence.nex\" as d;\nimport \"std/heap.nex\" as p;\nfn main()->unit!{io}{\n var queue:q::Queue<i64>=q::empty();var stack:s::Stack<i64>=s::empty();\n var deque:d::Sequence<i64>=d::empty();var priority:p::Heap<i64>=p::ascending<i64>();\n var index:i64=0;\n while index<256{queue=q::enqueue(queue,index+1);stack=s::push_value(stack,index+1);deque=d::push_back(deque,index+1);priority=p::push_value(priority,index+1);index=index+1;}\n var total:i64=0;index=0;\n while index<256{\n  let a:q::Popped<i64>=unwrap(q::dequeue(queue));let b:s::Popped<i64>=unwrap(s::pop(stack));\n  let c:d::Popped<i64>=unwrap(d::pop_front(deque));let e:p::Popped<i64>=unwrap(p::pop(priority));\n  assert(a.value==index+1&&b.value==256-index&&c.value==index+1&&e.value==index+1);\n  total=total+a.value+b.value+c.value+e.value;\n  queue=a.queue;stack=b.stack;deque=c.sequence;priority=e.heap;index=index+1;\n }\n assert(q::is_empty(queue)&&s::is_empty(stack)&&d::is_empty(deque)&&p::is_empty(priority));print(total);\n}\n",
+      "source_sha256": "6de69b662d37fa4b0d1c96fc386f2ac9c3b6e874a42341df6541de366c1f8279",
+      "executable_sha256": "da66860824a518187c0995ce5563c7582b7345868b791cd0eb8baa34c6764208",
+      "executable_bytes": 465008,
+      "build_key": "72f90b33f155039bc7ab47ec7ea77d1a0364d44a5666e23ce70f7df0ce2ec801",
+      "revision": "60d6f49c0536ddb8d892f48199a29d81dc9cda5cdcd1ec2412ce194cb9e99dd2",
+      "metadata_sha256": "02706cd13d5066dc84c5772319529c3b3293bf4f3ebcffcb19b3714682d9298b"
+    }
+  },
+  "library_sha256": {
+    "queue.nex": "b3844d66ab536595421a58bacb94cbfda4c8d412c700f713f390b0aeec02401e",
+    "stack.nex": "7dcbe04a145360d7efde7dbf72b8c555abaa896ba3935223112e10e98d4dcbfd",
+    "deque.nex": "a0f542d34923ab46e706d4561032757b32c634bc85c4ffa4f12be2002637081a",
+    "priority_queue.nex": "823c3a875cfdb019f79baaed32cee80e62b59fc80c7b67685ddf24c271b64e43",
+    "sequence.nex": "363ba0bc88ab1e7185f9bbf1c3d2149f7ded1e9425b9e9bd247ee77709d0461f",
+    "fifo.nex": "776944fa528161cfa92fca2e162b58e8bcb28f30db71bc35341202aef523d8f4",
+    "lifo.nex": "9ca57678d0a9bddeeda39132b1a2c0b1b704f4b303f9f62d02407cea52870046",
+    "heap.nex": "526123f6895bf952e9c9ed3285e2d0be83bd21a0c4f2aa34115e04b34f9deb4f"
+  }
+}

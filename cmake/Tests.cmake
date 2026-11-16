@@ -1750,6 +1750,10 @@ add_test(NAME hash_containers COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/hash_containers.py $<TARGET_FILE:nex>
   --output-parent ${CMAKE_CURRENT_BINARY_DIR})
 set_tests_properties(hash_containers PROPERTIES TIMEOUT 600)
+add_test(NAME sequence_containers COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/sequence_containers.py $<TARGET_FILE:nex>
+  --output-parent ${CMAKE_CURRENT_BINARY_DIR})
+set_tests_properties(sequence_containers PROPERTIES TIMEOUT 900)
 add_test(NAME java_int COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/java_int.py $<TARGET_FILE:nex>)
 set_tests_properties(java_int PROPERTIES TIMEOUT 600)

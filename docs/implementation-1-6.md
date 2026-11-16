@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.273.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.274.0"
 owner: repository
 ---
 
@@ -47,6 +47,13 @@ This orders the work; it does not mark the original PLAN complete or discard
 its remaining requirements. Full Java/Python runtime emulation, reflection and
 metaclass compatibility are later, project-driven requirements. Exact source
 behavior remains mandatory for each advertised migrated subset.
+
+Toolchain0.274 adds [persistent work containers](sequence-containers.md):
+indexed/deque AVL sequences, FIFO queues, linked stacks and leftist heaps. They
+retain old snapshots and compose with030 cells/tasks/errors. Existing flat-list
+layouts stay supported; their copy-cost descriptions are corrected. Whole source/
+SDK/platform acceptance, remaining application APIs and the original PLAN remain
+required.
 
 Toolchain0.273 adds [persistent hash map/set](hash-containers.md), stable hash
 helpers and explicit callback/ordering/collision contracts as ordinary source
@@ -168,7 +175,7 @@ keep source finalizers, opaque host cycles and public migration explicit.
 |---|---|---|---|
 | 1. Reconcile scope | Versioned source, descriptor, specification and receipts exist; older priority documents contain stale pending claims | Keep this current dependency/acceptance ledger alongside the historical plan; classify actual implementation and qualification separately | Every completion claim links matching source/runtime evidence; original requirements remain visible |
 | 2. Language core | Generics, traits, associated types, recursive values, 0.29 constructor kinds, inferred effect parameters, typed errors/finally, structured tasks and owned resources | Remaining higher-rank effects/handlers, type inference and ownership/concurrency requirements; correct specification/grammar drift | Parametric and rejected-program checks; reference/native Debug/Release/TypeScript agreement; explicit history-preserving migration for language changes |
-| 3. Standard library | Linear bulk builders; existing list-backed containers; persistent AVL and hash map/set | Efficient queue/heap structures and remaining application APIs; matching AVL SDK/platform qualification | Correct ordering/equivalence, retained old values, structural invariants, complexity evidence, backend agreement, installed library discovery/pins |
+| 3. Standard library | Linear bulk builders; existing list-backed containers; persistent AVL and hash map/set | Remaining application APIs and matching complete SDK/platform qualification for the tree/hash/work-container families | Correct ordering/equivalence, retained old values, structural invariants, complexity evidence, backend agreement, installed library discovery/pins |
 | 4. Backends/devices | Native CPU, structured tasks, scalar i64/f64 Wasm, bounded checked Metal/CUDA/OpenCL emission, versioned hardware providers | Wider Wasm/type coverage, general device execution, transfers/cancellation, GPU operation attribution and Apple NPU integration | Actual device execution with matching source/provider identities; declared supported operations and explicit unsupported/fallback results |
 | 5. Developer tools | LSP navigation/completion/format/rename, identifier/field fixes, source debugging/profiling/core capsules | Remaining diagnostic edits and LSP actions, optimized machine/source attribution, async/device debugging and profiling | Real editor/debugger/profiler behavior; correct source/graph/image attribution; retained diagnostics and original graph history |
 | 6. Platforms/delivery | Recorded macOS SDK; cross-platform source builds and native/web application packaging in their recorded scopes | Matching Windows/Linux SDKs, remaining static/DLL policies, complete dependency reports, mobile/native API lifecycle and delivery | Same-source build/install/move/archive/restore cohorts per platform; actual applications, resource cleanup and required external signing identities |

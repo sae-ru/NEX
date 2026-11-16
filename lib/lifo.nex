@@ -1,0 +1,37 @@
+module std::lifo;
+
+// Each link contains one value and a zero-or-one next list. End operations
+// rebuild at most the head; retained versions share all remaining links.
+pub struct Node<T> { value: T; next: list<Node<T>>; count: i64; }
+pub struct Stack<T> { root: list<Node<T>>; }
+pub struct Popped<T> { stack: Stack<T>; value: T; }
+pub fn empty<T>() -> Stack<T> { return Stack([]); }
+pub fn size<T>(stack: Stack<T>) -> i64 { if len(stack.root) == 0 { return 0; } return stack.root[0].count; }
+pub fn is_empty<T>(stack: Stack<T>) -> bool { return size(stack) == 0; }
+pub fn push_value<T>(stack: Stack<T>, value: T) -> Stack<T> { return Stack([Node(value, stack.root, size(stack) + 1)]); }
+pub fn peek<T>(stack: Stack<T>) -> result<T> {
+  if is_empty(stack) { return err<T>("E_EMPTY", "stack is empty"); }
+  return ok(stack.root[0].value);
+}
+pub fn pop<T>(stack: Stack<T>) -> result<Popped<T>> {
+  if is_empty(stack) { return err<Popped<T>>("E_EMPTY", "stack is empty"); }
+  let node: Node<T> = stack.root[0];
+  return ok(Popped(Stack(node.next), node.value));
+}
+pub fn items<T>(stack: Stack<T>) -> list<T> {
+  return list(size(stack), stack.root,
+    fn(root: list<Node<T>>) -> list<Node<T>> { return root[0].next; },
+    fn(root: list<Node<T>>) -> T { return root[0].value; });
+}
+pub fn validate<T>(stack: Stack<T>) -> bool {
+  if len(stack.root) > 1 { return false; }
+  var root: list<Node<T>> = stack.root;
+  var expected: i64 = size(stack);
+  while len(root) != 0 {
+    if len(root) != 1 || expected <= 0 { return false; }
+    let node: Node<T> = root[0];
+    if node.count != expected { return false; }
+    expected = expected - 1; root = node.next;
+  }
+  return expected == 0;
+}
