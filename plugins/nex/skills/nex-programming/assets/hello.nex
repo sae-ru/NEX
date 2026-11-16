@@ -1,0 +1,14 @@
+module hello;
+
+fn twice(value: i64) -> i64 {
+    return value * 2;
+}
+
+fn main() -> unit !{io} {
+    print(twice(21));
+    print("Привет, NEX 🌍");
+}
+
+test fn twice_is_42() -> unit {
+    assert(twice(21) == 42);
+}

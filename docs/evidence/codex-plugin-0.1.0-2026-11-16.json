@@ -1,0 +1,208 @@
+{
+  "schema": "nex.codex-plugin-validation/1",
+  "date": "2026-11-16",
+  "plugin_version": "0.1.0",
+  "source_base_commit": "6a90e9cdc6cc3d0bed297eacb55b80a1e9b96bb2",
+  "host": "macOS ARM64",
+  "compiler": {
+    "toolchain": "0.266.0",
+    "build": "5899bb9745fe527c6afee7ad6209b9886df4cc4670aaab873fe02bc77f0a7a0d",
+    "sha256": "d35f8c5be6fd67e6beba02fd95012b0ce9d8c3bf170c8fe93b19ae7ddb6e47ab",
+    "descriptor_hash": "c347580c42b931a007817ab84ece73ab223e69335de4f24d22e0d5c3f594f91f",
+    "project_language": "0.30"
+  },
+  "checks": {
+    "skill_creator_quick_validate": true,
+    "portable_manifest_json_schema": true,
+    "skill_ui_yaml": true,
+    "archive_exact_inventory": true,
+    "archive_reproducible_rebuild": true,
+    "reference_native_stdout_agreement": true,
+    "source_tests_reference_native": true,
+    "bounded_symbol_context": true,
+    "rejected_candidate_and_explanation": true
+  },
+  "commands": [
+    {
+      "arguments": [
+        "describe",
+        "--kind",
+        "index",
+        "--json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "arguments": [
+        "guide",
+        "--kind",
+        "prompt",
+        "--json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "arguments": [
+        "guide",
+        "--kind",
+        "quick",
+        "--json"
+      ],
+      "exit_code": 1,
+      "diagnostic_code": "E_RESOURCE"
+    },
+    {
+      "arguments": [
+        "guide",
+        "--kind",
+        "stdlib",
+        "--json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "arguments": [
+        "guide",
+        "--kind",
+        "graph",
+        "--json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "arguments": [
+        "guide",
+        "--kind",
+        "references",
+        "--json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "arguments": [
+        "guide",
+        "--kind",
+        "web",
+        "--json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "arguments": [
+        "guide",
+        "--kind",
+        "native-entry-abi",
+        "--json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "arguments": [
+        "guide",
+        "--kind",
+        "source-contract-migration",
+        "--json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "arguments": [
+        "init",
+        "<temporary-project>",
+        "--json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "arguments": [
+        "check",
+        "--json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "arguments": [
+        "eval",
+        "--json"
+      ],
+      "exit_code": 0,
+      "stdout": "42\nПривет, NEX 🌍\n"
+    },
+    {
+      "arguments": [
+        "run",
+        "--json"
+      ],
+      "exit_code": 0,
+      "stdout": "42\nПривет, NEX 🌍\n"
+    },
+    {
+      "arguments": [
+        "test",
+        "--interpreter-only",
+        "--json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "arguments": [
+        "test",
+        "--json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "arguments": [
+        "context",
+        "--symbol",
+        "hello::twice",
+        "--json"
+      ],
+      "exit_code": 0,
+      "schema": "nex.context/2"
+    },
+    {
+      "arguments": [
+        "check",
+        "--json"
+      ],
+      "exit_code": 1,
+      "diagnostic_code": "E_TYPE"
+    },
+    {
+      "arguments": [
+        "explain",
+        "E_TYPE",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic_code": "E_TYPE"
+    },
+    {
+      "arguments": [
+        "check",
+        "--json"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "known_sdk_issue": {
+    "reason": "E_RESOURCE: quick guide exceeds compiler resource byte bound",
+    "matching_source_commit": "6a90e9cdc6cc3d0bed297eacb55b80a1e9b96bb2",
+    "resource": "llm/QUICK_REFERENCE.md",
+    "bytes": 6392,
+    "sha256": "2676a620a9465fb61b1d8614f9bcce2946c8a31daa95a3543593ee1d19755915"
+  },
+  "archive": {
+    "path": "plugins/releases/nex-developer-tools-0.1.0.zip",
+    "sha256": "24fbacfcd3884db20a546653ea5b2e1e7c20b7678fe7cfcb9edf1ee1f1ff1879",
+    "bytes": 31069
+  },
+  "limits": [
+    "The guide quick command failed with E_RESOURCE; matching source documentation was used, and the SDK was not modified.",
+    "No independent LLM behavior or token-cost evaluation was performed.",
+    "No plugin installation was made into the user configuration. A clean desktop installation remains a catalog submission check.",
+    "No full compiler, SDK or cross-platform qualification is claimed.",
+    "No OpenAI directory submission, identity verification or approval has occurred."
+  ]
+}

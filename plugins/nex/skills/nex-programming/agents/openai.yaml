@@ -1,0 +1,4 @@
+interface:
+  display_name: "NEX Programming"
+  short_description: "Write and check NEX applications with your SDK"
+  default_prompt: "Use $nex-programming to implement this NEX application change and validate it with my installed SDK."

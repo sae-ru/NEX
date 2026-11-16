@@ -40,6 +40,12 @@ No model-specific syntax or separate private grammar is required. A natural
 language request still needs observable acceptance criteria; the compiler cannot
 prove that a test suite completely captures the user's intent.
 
+For Codex application authoring, the public
+[NEX Programming skill and plugin](../plugins/nex/README.md) package this
+compiler-led workflow with focused references and installation instructions.
+The plugin version is independent of the language/SDK version. GitHub
+distribution does not imply approval in the OpenAI plugin directory.
+
 ## Current boundaries
 
 Language0.28 includes typed source errors, ordered handlers, filters and finally,

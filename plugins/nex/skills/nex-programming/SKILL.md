@@ -1,0 +1,86 @@
+---
+name: nex-programming
+description: Write, debug, test and refactor applications in NEX (Neural Execution Language), including .nex sources and nex.json projects. Use compiler-provided language guides and bounded symbol context. Compiler/toolchain implementation work follows that repository's contributor instructions.
+license: MIT
+---
+
+# NEX programming
+
+Develop checked NEX applications using the selected SDK as the authority for
+syntax, capabilities and command arguments. Follow the user's requirements and
+project instructions. The skill version is independent of the language version.
+
+## Discover the selected compiler
+
+Use the project's chosen NEX executable consistently. If it is missing, read
+[SDK setup](references/sdk-setup.md); the skill contains no compiler.
+
+1. Run `nex describe --kind index --json`. For an SDK that rejects scoped
+   discovery, use `nex describe --json` once. Retain its compiler build and
+   descriptor identity; refresh discovery if the executable changes.
+2. Retrieve `nex guide --kind prompt --json` once for this SDK's coding contract.
+   When `llm_entry` is advertised, also read `nex guide --kind quick --json`
+   before writing source. If guides are unavailable, use matching installed
+   documentation or the corresponding release's language pack, rather than
+   assuming current GitHub documentation matches an old executable.
+   Preserve a resource error such as `E_RESOURCE` and report the fallback;
+   do not modify the SDK or claim that the failing guide command passed.
+3. Request only fields relevant to the task with
+   `nex describe --field PATH --json`, then the indicated feature guide. The
+   legacy `features` list is partial. A roadmap, a familiar language's syntax
+   or an older platform receipt does not establish current support.
+
+When `cli_interface` is advertised, get `nex help COMMAND --json` for unfamiliar
+flags. Keep `--json` before an application's `--` argument separator.
+
+## Implement the requested behavior
+
+Inspect the project manifest, relevant sources and acceptance tests. Preserve
+its selected language and dependency pins. Use `nex init PATH` for a new project;
+do not hardcode the newest language version into an existing one.
+
+For an existing symbol, request `nex context --symbol NAME --json` and expand
+to related types, imports or callers when there is a concrete uncertainty.
+Bounded context complements the physical source and tests. Graph-local IDs,
+content hashes and revisions have different meanings; use the advertised
+revision/source guards when applying graph operations.
+
+Query `standard_library` before recreating collection, text or numerical
+helpers. Prefer advertised bulk list/text/byte constructors for growing outputs.
+For feature-specific routing, read only the relevant row of
+[workflows](references/workflows.md).
+
+Keep checked arithmetic, left-to-right evaluation, lazy boolean branches,
+strict UTF-8/Unicode-scalar strings and declared effects. Ordinary aggregates
+are immutable snapshots. Use reference identity/mutation only when the selected
+language and `managed_references` advertise it. Distinguish `result<T>` values,
+catchable source errors and fatal traps. Query source-error/finalizer rules
+before relying on cleanup behavior. Preserve owned-resource cleanup and
+client/server boundaries.
+
+Do not relabel a manifest to migrate graph history. Discover and use the
+explicit guarded migration workflow when a language upgrade is requested.
+Edit authored source/templates rather than generated output.
+
+For a small new example, [hello.nex](assets/hello.nex) provides checked integer
+arithmetic, Unicode output and a source test. Copy it only when it fits the task,
+into a project initialized by the user's compiler, and validate it there.
+
+## Check the completed change
+
+After a coherent edit, run `nex check --json`, the affected `nex test` cases and
+the task's acceptance scenario. Use the compiler's actual help to select tests.
+For changed execution semantics, compare the relevant native/reference and,
+when targeted, TypeScript behavior. Successful code generation alone does not
+establish successful execution or packaging. Reserve full SDK/device suites for
+milestones or changes that require them.
+
+On failure, keep the original diagnostic code/message/span. When
+`diagnostic_catalogue` is advertised, consult `nex explain CODE --json`. Fix the
+source against the user's requirements; do not repeat an unchanged candidate,
+weaken acceptance tests or substitute a stub for missing behavior. If an SDK
+or dependency is unavailable, identify what remains unverified.
+
+Report the actual change, commands/results, selected SDK/language and material
+limits. Make performance or token-cost claims only from measurements of the
+complete task, including tool output and retries.

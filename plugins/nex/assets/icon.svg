@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="NEX">
+  <rect width="512" height="512" rx="104" fill="#F3F0FF"/>
+  <path d="M64 316V196h24l48 75v-75h25v120h-24l-48-75v75zm124 0V196h80v24h-54v23h47v24h-47v25h54v24z" fill="#17203D"/>
+  <path d="m290 196 79 120h-31l-79-120z" fill="#17203D"/>
+  <path d="m369 196-79 120h31l79-120z" fill="#6F48DB"/>
+  <path d="M424 196v120" stroke="#6F48DB" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="424" cy="171" r="10" fill="#6F48DB"/>
+</svg>

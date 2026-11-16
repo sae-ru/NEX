@@ -1,0 +1,43 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "nex-developer-tools",
+  "version": "0.1.0",
+  "description": "Write and maintain NEX applications using the installed compiler's language guides, bounded symbol context and diagnostics.",
+  "author": {
+    "name": "sae-ru",
+    "url": "https://github.com/sae-ru"
+  },
+  "homepage": "https://github.com/sae-ru/NEX/tree/main/plugins/nex",
+  "repository": "https://github.com/sae-ru/NEX",
+  "license": "MIT",
+  "keywords": ["nex", "programming-language", "compiler", "llm", "native", "typescript"],
+  "extensions": {
+    "com.openai": {
+      "requires_local_executor": true,
+      "interface": {
+        "displayName": "NEX Developer Tools",
+        "shortDescription": "Build checked NEX applications",
+        "longDescription": "Write, debug and maintain applications in NEX (Neural Execution Language). The included nex-programming skill asks the installed compiler for its supported language, focused guides and bounded symbol context, then checks changes against diagnostics and relevant tests. It covers project setup, standard-library discovery and routing to web, native build and task documentation. Requires a separately installed NEX SDK and a local execution environment. Platform and backend availability depend on that SDK; this package does not include the compiler. It provides instructions and examples, with no MCP server, accounts or additional hosted service. It does not promise measured token savings or production readiness for every platform.",
+        "developerName": "sae-ru",
+        "category": "Developer Tools",
+        "capabilities": ["Write NEX programs", "Discover compiler capabilities", "Use bounded symbol context", "Check and test changes"],
+        "websiteURL": "https://github.com/sae-ru/NEX/tree/main/plugins/nex",
+        "supportURL": "https://github.com/sae-ru/NEX/issues",
+        "defaultPrompt": [
+          "Create a small NEX application with tests using my installed SDK.",
+          "Fix this NEX compiler error while preserving the program's behavior.",
+          "Add a feature to my NEX project using only the necessary symbol context."
+        ],
+        "brandColor": "#4935B5",
+        "brandColorDark": "#B4A7FF",
+        "composerIcon": "./assets/icon.svg",
+        "composerIconDark": "./assets/icon-dark.svg",
+        "logo": "./assets/icon.svg",
+        "logoDark": "./assets/icon-dark.svg"
+      },
+      "publication": {
+        "release_notes": "Initial skills-only release. Compiler-led NEX application authoring, focused documentation routing, SDK setup guidance and a small checked source example. Requires local execution and a separate NEX SDK."
+      }
+    }
+  }
+}
