@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools/linux'))
 from check import prepare_image
@@ -73,6 +74,35 @@ class PreparationTests(unittest.TestCase):
             self.assertIn('upstream connection failed', console.getvalue())
             self.assertIn('\ufffd', console.getvalue())
             self.assertLess(len(console.getvalue()), 17000)
+
+    def test_dns_failure_retries_same_command_and_retains_failed_log(self):
+        with tempfile.TemporaryDirectory(prefix='nex-image-dns-') as folder:
+            path = Path(folder) / 'image.log'
+            counter = Path(folder) / 'attempts'
+            command = [sys.executable, '-I', '-B', '-c',
+                'import pathlib,sys; p=pathlib.Path(sys.argv[1]); n=int(p.read_text())+1 if p.exists() else 1; '
+                'p.write_text(str(n)); print("Could not resolve \'apt.llvm.org\'" if n==1 else "prepared"); '
+                'sys.exit(100 if n==1 else 0)', str(counter)]
+            with contextlib.redirect_stderr(io.StringIO()), patch('check.time.sleep') as sleep:
+                prepare_image(command, path)
+            self.assertEqual(counter.read_text(), '2')
+            self.assertEqual(path.read_bytes(), b'prepared\n')
+            self.assertEqual((path.parent / 'image.attempt-1.log').read_bytes(), b"Could not resolve 'apt.llvm.org'\n")
+            sleep.assert_called_once_with(5)
+
+    def test_persistent_dns_failure_stops_after_three_attempts(self):
+        with tempfile.TemporaryDirectory(prefix='nex-image-dns-') as folder:
+            path = Path(folder) / 'image.log'
+            command = [sys.executable, '-I', '-B', '-c',
+                'import sys; print("Temporary failure resolving apt.llvm.org"); sys.exit(100)']
+            with contextlib.redirect_stderr(io.StringIO()), patch('check.time.sleep') as sleep:
+                with self.assertRaises(subprocess.CalledProcessError) as failure:
+                    prepare_image(command, path)
+            self.assertEqual(failure.exception.returncode, 100)
+            self.assertEqual(failure.exception.cmd, command)
+            self.assertEqual([call.args for call in sleep.call_args_list], [(5,), (10,)])
+            for name in ['image.log', 'image.attempt-1.log', 'image.attempt-2.log']:
+                self.assertEqual((path.parent / name).read_bytes(), b'Temporary failure resolving apt.llvm.org\n')
 
 
 if __name__ == '__main__':

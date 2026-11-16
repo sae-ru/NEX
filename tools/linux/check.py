@@ -17,10 +17,12 @@ from debugger_packages import prepare as prepare_debugger_packages
 
 
 def prepare_image(command, log_path):
-    """Keep the complete build log and expose its failure in the job console."""
-    with log_path.open('wb') as log:
-        result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT)
-    if result.returncode:
+    """Retain each preparation failure; retry only bounded DNS download faults."""
+    for attempt in range(1, 4):
+        with log_path.open('wb') as log:
+            result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT)
+        if not result.returncode:
+            return
         # Read only the tail: image-build logs can grow without bound. The
         # complete original remains in the always-uploaded artifact.
         with log_path.open('rb') as log:
@@ -29,6 +31,18 @@ def prepare_image(command, log_path):
             tail = log.read().decode('utf-8', errors='replace')
         print(f'Linux dependency image preparation failed; NEX checks have not started. Full log: {log_path}', file=sys.stderr)
         print(tail, file=sys.stderr, flush=True)
+        # APT's own Acquire::Retries does not always retry a resolver failure.
+        # Reuse successful Docker layers and retain the original failed bytes.
+        # Compiler/test execution occurs later and is never retried here.
+        dns_failure = any(marker in tail.lower() for marker in (
+            'could not resolve', 'temporary failure resolving',
+            'temporary failure in name resolution'))
+        if dns_failure and attempt < 3:
+            saved = log_path.with_name(f'{log_path.stem}.attempt-{attempt}{log_path.suffix}')
+            log_path.replace(saved)
+            print(f'Retrying dependency image after DNS failure ({attempt}/3); saved {saved}', file=sys.stderr, flush=True)
+            time.sleep(5 * attempt)
+            continue
         raise subprocess.CalledProcessError(result.returncode, command)
 
 

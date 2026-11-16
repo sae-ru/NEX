@@ -85,6 +85,13 @@ keeps package archives out of image layers. This avoids requiring a still-live
 APT index entry for every later build of the same snapshot. Cache misses still
 need upstream bytes; cache retention is not an immutable public mirror.
 
+An observed0.259 hosted image build stopped before NEX configuration when APT
+could not resolve `apt.llvm.org`. Image preparation now retries DNS failures at
+most three times, with5/10-second delays and separate complete attempt logs.
+Unknown preparation failures still stop immediately; compiler/tests are never
+retried by this helper. Package versions, digests and offline test execution
+remain unchanged. Offline subprocess checks cover recovery and exhausted retries.
+
 Five offline preparation cases pass. The actual amd64 packages installed in a
 disposable, network-disabled Linux container and LLDB reported 23.1.6. Docker's
 build check passed without warnings. Those checks qualify preparation; they do
