@@ -393,12 +393,21 @@ target_compile_definitions(nex_task_reference_probe PRIVATE NEX_STRUCTURED_WORKE
 target_link_libraries(nex_task_reference_probe PRIVATE nex_frontend Threads::Threads)
 target_compile_options(nex_task_reference_probe PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME task_reference_native COMMAND nex_task_reference_probe)
-add_executable(nex_reference_tasks_probe tests/reference_tasks.cpp runtime/runtime.cpp)
+add_executable(nex_reference_tasks_probe tests/reference_tasks.cpp tests/owner_task_runtime.cpp
+  runtime/runtime.cpp runtime/nex_cell_host.cpp runtime/nex_task_frame.cpp)
 target_include_directories(nex_reference_tasks_probe PRIVATE runtime)
-target_compile_definitions(nex_reference_tasks_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+target_compile_definitions(nex_reference_tasks_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS NEX_OWNER_TASK_INLINE)
 target_link_libraries(nex_reference_tasks_probe PRIVATE nex_frontend Threads::Threads)
 target_compile_options(nex_reference_tasks_probe PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME reference_tasks_development COMMAND nex_reference_tasks_probe)
+add_executable(nex_native_reference_tasks_emit_probe tests/native_reference_tasks_emit.cpp)
+target_link_libraries(nex_native_reference_tasks_emit_probe PRIVATE nex_native_backend nex_frontend)
+add_test(NAME native_reference_tasks_development COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_reference_tasks.py
+  $<TARGET_FILE:nex_native_reference_tasks_emit_probe> $<TARGET_FILE:nex_reference_tasks_probe>
+  --clang ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
+  --output-parent ${CMAKE_CURRENT_BINARY_DIR})
+set_tests_properties(native_reference_tasks_development PROPERTIES TIMEOUT 900)
 set_tests_properties(reference_tasks_development PROPERTIES TIMEOUT 120)
 add_test(NAME reference_tasks_boundaries COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_tasks_boundaries.py $<TARGET_FILE:nex>)

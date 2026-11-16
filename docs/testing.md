@@ -34,6 +34,11 @@ source-build probe to core. Its21 source/control/resource scenarios exercise
 the [private reference-task context](reference-tasks.md). The explicit core
 policy grows from16 to17 groups; fixture/label and no-browser constraints stay
 active. Native/TypeScript execution of reference-bearing tasks remains gated.
+Toolchain0.269 adds seven owner-thread runtime scenarios to that same group;
+the core still has17 groups. The extended `native_reference_tasks_development`
+group compiles the shared AST corpus through MLIR/LLVM and executes independent
+O0/O2 applications, including genuine IO and fatal cleanup. Ordinary CLI cell/task
+execution and TypeScript integration remain gated.
 The core build also compiles the shipped `examples/ffi/scoped_host.cpp` against
 the current runtime. This build guard catches example/header ownership drift
 before the full installed workflow; it adds no CTest group and does not execute

@@ -1,6 +1,7 @@
 #include "nex/task_ir.h"
 #include "nex/task_frontend.h"
 #include "nex/operations.h"
+#include "nex/managed_references.h"
 #include "nex_source_error.h"
 #include <algorithm>
 #include <functional>
@@ -184,15 +185,17 @@ class Lowering {
       unwrap.atom=std::make_shared<Expr>();unwrap.atom->kind=Expr::Call;unwrap.atom->text="unwrap";unwrap.atom->type=original->type;unwrap.atom->span=original->span;unwrap.atom->args={reference(input,original->span)};emit(std::move(unwrap));drop(input,original->span);return output;
     }
     auto atom=std::make_shared<Expr>(*original);atom->args.clear();TaskInstruction op;op.kind=TaskInstruction::Eval;op.span=original->span;op.source=original.get();op.output=output;
+    const bool checkedBuiltin=builtinNames(true,supportsExternalResources(program)).contains(original->text)||
+        (supportsManagedReferences(program)&&managedReferenceBuiltins().contains(original->text));
     if(original->kind==Expr::Name){auto id=lookup(original->text,original->span);atom->text=taskSlotName(id);atom->localName.clear();op.inputs={id};}
     else for(auto argument:original->args){auto id=expr(argument);op.inputs.push_back(id);atom->args.push_back(reference(id,argument->span));}
     if(original->kind==Expr::Call&&(taskBuiltins().contains(original->text)||(fileReads&&(original->text=="file_read_text"||original->text=="file_read_bytes"))||(fileWrites&&taskFileWriteOperation(original->text))||(fileStreams&&streamFileBuiltins().contains(original->text)))){op.kind=TaskInstruction::Pause;op.operation=original->text;}
     else if(supportsTaskForeignCalls(program)&&original->kind==Expr::Call&&
-        !builtinNames(true,supportsExternalResources(program)).contains(original->text)&&!program.hasStructure(original->text)&&!program.variant(original->text)&&program.function(original->text).foreign){
+        !checkedBuiltin&&!program.hasStructure(original->text)&&!program.variant(original->text)&&program.function(original->text).foreign){
       op.kind=TaskInstruction::Pause;op.foreign=true;op.operation=original->text;
     }
     else if(original->kind==Expr::Invoke&&(supportsSourceExceptionTasks(program)||original->args[0]->type.effects.contains("task"))){op.kind=TaskInstruction::Call;op.indirect=true;}
-    else if(original->kind==Expr::Call&&!builtinNames(true,supportsExternalResources(program)).contains(original->text)&&!program.hasStructure(original->text)&&!program.variant(original->text)&&(supportsSourceExceptionTasks(program)||program.function(original->text).effects.contains("task"))){op.kind=TaskInstruction::Call;op.operation=original->text;}
+    else if(original->kind==Expr::Call&&!checkedBuiltin&&!program.hasStructure(original->text)&&!program.variant(original->text)&&(supportsSourceExceptionTasks(program)||program.function(original->text).effects.contains("task"))){op.kind=TaskInstruction::Call;op.operation=original->text;}
     bool sourceCall=original->kind==Expr::Call||original->kind==Expr::Invoke;
     bool resumes=op.kind==TaskInstruction::Pause||op.kind==TaskInstruction::Call;
     if(sourceCall)point(TaskDebugPointIR::Call,original->span,original.get());

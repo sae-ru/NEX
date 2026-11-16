@@ -18,6 +18,7 @@ install(FILES tests/java_long.py tests/java_long_cases.py tests/support.py tests
 install(FILES tests/ieee_numeric.cpp tests/ieee_numeric.py tests/ieee_numeric_cases.py tests/ieee_numeric_build.py DESTINATION share/nex/tests)
 install(DIRECTORY tests/fixtures/java-ieee DESTINATION share/nex/tests/fixtures PATTERN __pycache__ EXCLUDE)
 install(FILES tests/cells.cpp tests/managed_cell_resources.cpp tests/managed_references.cpp DESTINATION share/nex/tests)
+install(FILES tests/owner_task_runtime.cpp tests/native_reference_tasks.py tests/native_reference_tasks_emit.cpp DESTINATION share/nex/tests)
 install(FILES tests/value_owner.cpp tests/value_owner_module.cpp tests/value_retirement.cpp tests/value_retirement.py DESTINATION share/nex/tests)
 install(FILES tests/managed_reference_native.cpp tests/managed_reference_native.py DESTINATION share/nex/tests)
 install(FILES tests/managed_reference_requests.cpp tests/managed_reference_request_host.h DESTINATION share/nex/tests)

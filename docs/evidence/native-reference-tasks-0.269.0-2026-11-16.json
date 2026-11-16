@@ -1,0 +1,847 @@
+{
+  "schema": "nex.native-reference-tasks-evidence/1",
+  "ok": true,
+  "toolchain": "0.269.0",
+  "source_language": "0.30",
+  "compiler_fallback": "0.28",
+  "source_version_changed": false,
+  "source_format_changed": false,
+  "published_task_ABI": 7,
+  "private_native_task_ABI": "0x4e45585400003001",
+  "public_C_ABI": 1,
+  "ordinary_CLI_cell_task_enabled": false,
+  "base_commit": "d07e5e6699ddb15b28027615d3e476c97ea5bb2c",
+  "source_files_sha256": {
+    "PLAN.md": "ef77074079a801b914d63be5d3187202155605f409637b91f044004c676b08fe",
+    "README.md": "cef4bc813728c8098e5c37f482f6aa9290b754285fe991bc31c3b47b51d731c2",
+    "README.ru.md": "1f7509d661ee72d1eea1701fa2220b36baf82194b405b61976d9ff7c019a897f",
+    "STATUS.md": "95977eb641bdd127ba241604e817da0b4cb48aacd2524b7321b2a9a0f77aaca8",
+    "VERSION": "5bdea4f0331911a90cc6ab7b75a22641c9a6637f1890e7ac52936fc3f4821bfd",
+    "cmake/Install.cmake": "4ea91edc3220f4ec60875b4aeee2edf082833f9b63f61c6b002732a84a47a8c4",
+    "cmake/Tests.cmake": "4abad3de7212a9ebefeea8a5394c11eeb815ed4c0fd18d7c6536b96a4e182f39",
+    "cmake/test-tiers.json": "87ce73593def0aa34ec41b64ea0bbc2da8412e1a0f415c2bc30cd2636672c5b0",
+    "docs/INDEX.md": "14b9d5f15eae33112a3f6cb8ecf7864a964334fba8ea1342c26ed6064e4d0d51",
+    "docs/STATUS.current.md": "2e6249d9b60288d649a9a6cccff4144affdc87a1dd577bb3967b9d9e2cfc7d70",
+    "docs/ci.md": "0ab3a06f6b3d012ed65603dbf97e8ef0811350b9dfd1d012bba29607d18e7435",
+    "docs/evidence/core-ci-0.268.0-2026-11-16.json": "b43391f07d1a4423434154388cf19836d45d09d925fbd0cd360bd8400b00bb9e",
+    "docs/implementation-1-6.md": "1bdd164aacf2c8c59b1067032bd94d58abcd005f3e3896930ef24627e5ea3760",
+    "docs/language.md": "ccb7a2657ca43befab822c7aa46d9d319a075223a6077bbb56f8b7964e322ee1",
+    "docs/migration-readiness.md": "837fcb34853f648dcf24fdb0ca4915222642a74fe771b593a6e401fa50b61f47",
+    "docs/reference-tasks.md": "1da03e92fa13579c05a72b9abf8898448d03da91760dc9a284926ddf5154ddcd",
+    "docs/testing.md": "434f80d45dcdfbc28a1b9034867fb2276450f6306051c1955dd17820f4b1d593",
+    "include/nex/task_native.h": "f451e59d9dfc670ce10a7691197c2728c9c73f3cce86467704949aedfc27c05f",
+    "llm/language-pack.json": "5102a331ed40f0504eff44e7babe1aa4b5bdf8002c91fb35d5bf905f00222ce5",
+    "runtime/nex_cell_host.cpp": "82a00433059e0953874654de069b9e04a038fb07ab48920a5d4cce6d9117fe6a",
+    "runtime/nex_cell_host.h": "cb843ee422656d9d5f3ab50010f478a2fbc4d55c34d88c01c20c84cc7f630307",
+    "runtime/nex_task_application.cpp": "e632c6cdf5affd571331c2ee5391350c92c125af9b5c4be547d0b0c356f162b3",
+    "runtime/nex_task_frame.cpp": "d63f3e043750791860eb9812df862a5a904800d992a58414fece922a78be1785",
+    "runtime/nex_task_protocol.h": "14cc0d934d65ee5ce8f7c144c43ea903111f360b5f981ebcc9c6e37e14a84977",
+    "runtime/nex_task_values_impl.h": "5bcd43b9c6f97a90b12623ee2f79d21c7cc971203df029584046f6c99e569289",
+    "runtime/nex_tasks.h": "f4283784f11e832730d23272fefc768b4c95ce331d5afc5ffdcaa99442cdcbdb",
+    "runtime/nex_tasks_impl.h": "0238b48fc2f020dfdb0e8b62bcb6e37226d9e15e66f22190029fcd3b5c8a0cfd",
+    "runtime/runtime.cpp": "5c5af50d10b840e4d3fe5979067fe1687e1e841af0e6d116a0a3c574c6d6e14a",
+    "src/backend.cpp": "a1050f8339040c9da5c73d0e30001506dc477861f6e02513b60d4c997bedd4f3",
+    "src/managed_references.cpp": "e73f48376405fd51c6feb28e6d60da6425fdae1ba751a6054b5997910356da9f",
+    "src/task_ir.cpp": "6138d1862279fbdcb62df8d11df591376ccce3a4aa9f0397eff4f374fe7cf361",
+    "tests/ci_ctest.py": "202e03f3328d46077524ec2966d6487fc4bdbe6dc04edcfddeb2ef74c662926f",
+    "tests/native_reference_tasks.py": "9bb9315af91d8c4d2da706385e006a0b0de765dd0d01e877e624b1b62aef0d8f",
+    "tests/native_reference_tasks_emit.cpp": "d5123bdc6ef972bda6f30a723511def71b1f39e713462f3cf4d0ef129b64aa7d",
+    "tests/owner_task_runtime.cpp": "d1f7c650c11bb67aad452c86e45ea6ab3fab586c447ea2a324cedaddc490092d",
+    "tests/reference_tasks.cpp": "e79791c10295e5dae6d3bf3f0ce8c9427e43b97a7cba3286fde7fac1a0210a20",
+    "tools/ci/ctest.py": "9535528a91bddd3fa039774fc826af35ea4da2c95d547105c9a8f94030c14214"
+  },
+  "build": {
+    "command": "cmake --build build -j 4",
+    "exit": 0,
+    "integrated_log_sha256": "31363382d3608cda6e194ff5f408c6814c19c6b385e0d39bfdcbe029a8d72e83",
+    "final_all_target_log_sha256": "3779caa35185cf49153ef3c2869b77986f013395fa00630e61b20d9f96d34282"
+  },
+  "compiler_discovery": {
+    "sha256": "ede66b6b3315d07a52b82e031a450e02fe16efd73c8499b7d81fc30cccf21622",
+    "result": {
+      "ok": true,
+      "shared_fields": [
+        "browser_workers",
+        "bytes_construction",
+        "cli_interface",
+        "compute",
+        "device",
+        "diagnostic_catalogue",
+        "dns_provider",
+        "effect_parameters",
+        "features_scope",
+        "foreign_trap_reporting",
+        "generic_features",
+        "gpu_codegen",
+        "http_client_provider",
+        "http_response_streams",
+        "http_storage_transactions",
+        "ieee_numeric_kernel",
+        "language_pack_contract",
+        "list_construction",
+        "llm_cost",
+        "llm_entry",
+        "managed_references",
+        "model",
+        "native_application_lifetime",
+        "native_core",
+        "native_debug_image_binding",
+        "native_debug_pages",
+        "native_debug_session",
+        "native_entry_abi",
+        "native_runtime_search",
+        "native_tool_arguments",
+        "opencl_codegen",
+        "patch_entities",
+        "project_capture_layout",
+        "project_languages",
+        "resource_executor",
+        "resource_regions",
+        "result_propagation",
+        "runtime_contracts",
+        "runtime_diagnostic_messages",
+        "scoped_discovery",
+        "source_concurrency",
+        "source_contracts",
+        "source_contracts_development",
+        "source_exception_prototype",
+        "source_exceptions",
+        "source_formatting",
+        "source_resources",
+        "standard_library",
+        "structured_tasks_runtime",
+        "task_debugging",
+        "task_execution_limits",
+        "task_external_completion",
+        "task_file_reads",
+        "task_file_streams",
+        "task_file_streams_host",
+        "task_file_streams_prototype",
+        "task_file_writes",
+        "task_file_writes_host",
+        "task_file_writes_prototype",
+        "task_foreign_prototype",
+        "task_network_transport",
+        "task_profile_collector",
+        "task_profiling",
+        "task_provider_debugging",
+        "task_provider_profiling",
+        "task_providers",
+        "task_shared_providers",
+        "task_value_retirement",
+        "tcp_provider",
+        "text_construction",
+        "wasm_features"
+      ],
+      "shared_field_count": 71,
+      "compared_JSON_values": 4329,
+      "errors": [],
+      "schema": "nex.language-pack-validation/1",
+      "compiler_sha256": "78052c2ed2bd6a9bd1a27bf045645fcfa966fd17f280ada72d7ffa312aae6eaa",
+      "manifest_sha256": "5102a331ed40f0504eff44e7babe1aa4b5bdf8002c91fb35d5bf905f00222ce5",
+      "language": "0.28",
+      "toolchain": "0.269.0",
+      "compiler_build": "0f9605d9ec4c2c4280d85e2a7fd10d86cbea30b96842c2228665f68bde044c00",
+      "descriptor_hash": "75f634827eddc92087f97ec038a365f528adbc7ce8a768c37d0d980649f96ac6"
+    }
+  },
+  "ctest": {
+    "core_receipt_sha256": "05d5226ba070cc142d965a64379341e2d2873e884796d67b8741a149c22384b4",
+    "core": {
+      "sha256": "be932882b82678c372ea069045cad874937dc030d6e23807e5e7f313457cac51",
+      "attributes": {
+        "name": "(empty)",
+        "tests": "17",
+        "failures": "0",
+        "disabled": "0",
+        "skipped": "0",
+        "hostname": "",
+        "time": "22",
+        "timestamp": "2026-11-16T21:39:56"
+      },
+      "groups": [
+        {
+          "name": "llm_cost_ledger",
+          "seconds": 0.235567,
+          "passed": true
+        },
+        {
+          "name": "llm_local_collector",
+          "seconds": 0.144849,
+          "passed": true
+        },
+        {
+          "name": "ctest_report_validation",
+          "seconds": 0.188516,
+          "passed": true
+        },
+        {
+          "name": "discovery",
+          "seconds": 10.1547,
+          "passed": true
+        },
+        {
+          "name": "language_pack_contract",
+          "seconds": 0.35521,
+          "passed": true
+        },
+        {
+          "name": "task_frontend_native",
+          "seconds": 0.040801,
+          "passed": true
+        },
+        {
+          "name": "reference_tasks_development",
+          "seconds": 0.0538663,
+          "passed": true
+        },
+        {
+          "name": "frontend_diagnostics_native",
+          "seconds": 0.0163378,
+          "passed": true
+        },
+        {
+          "name": "value_owner_runtime",
+          "seconds": 0.0538398,
+          "passed": true
+        },
+        {
+          "name": "value_retirement_runtime",
+          "seconds": 0.39698,
+          "passed": true
+        },
+        {
+          "name": "managed_references_frontend_reference",
+          "seconds": 0.0746416,
+          "passed": true
+        },
+        {
+          "name": "managed_reference_native_context",
+          "seconds": 0.0319638,
+          "passed": true
+        },
+        {
+          "name": "bytes_runtime_native",
+          "seconds": 0.00194033,
+          "passed": true
+        },
+        {
+          "name": "float_runtime_native",
+          "seconds": 0.00947867,
+          "passed": true
+        },
+        {
+          "name": "typed_source_frontend_reference",
+          "seconds": 0.049367,
+          "passed": true
+        },
+        {
+          "name": "test_tiers",
+          "seconds": 0.130637,
+          "passed": true
+        },
+        {
+          "name": "diagnostic_catalogue",
+          "seconds": 10.7017,
+          "passed": true
+        }
+      ]
+    },
+    "affected": {
+      "sha256": "dcbb758679f6239a0602b657cbed197a65d5f57aa9f1069328bbed2ddf51f185",
+      "attributes": {
+        "name": "(empty)",
+        "tests": "11",
+        "failures": "0",
+        "disabled": "0",
+        "skipped": "0",
+        "hostname": "",
+        "time": "155",
+        "timestamp": "2026-11-16T21:32:16"
+      },
+      "groups": [
+        {
+          "name": "task_ast_native",
+          "seconds": 1.47828,
+          "passed": true
+        },
+        {
+          "name": "task_reference_native",
+          "seconds": 1.00638,
+          "passed": true
+        },
+        {
+          "name": "native_reference_tasks_development",
+          "seconds": 25.7586,
+          "passed": true
+        },
+        {
+          "name": "reference_tasks_boundaries",
+          "seconds": 18.6745,
+          "passed": true
+        },
+        {
+          "name": "task_scheduler_runtime",
+          "seconds": 1.16046,
+          "passed": true
+        },
+        {
+          "name": "references030_versioned",
+          "seconds": 105.07,
+          "passed": true
+        },
+        {
+          "name": "task_file_stream_protocol",
+          "seconds": 0.472953,
+          "passed": true
+        },
+        {
+          "name": "typed_task_public_protocol",
+          "seconds": 0.477256,
+          "passed": true
+        },
+        {
+          "name": "task_file_reads_native_runtime",
+          "seconds": 0.459983,
+          "passed": true
+        },
+        {
+          "name": "source_exception_tasks_reference",
+          "seconds": 0.691456,
+          "passed": true
+        },
+        {
+          "name": "source_exception_task_ir_reference",
+          "seconds": 0.0971765,
+          "passed": true
+        }
+      ]
+    },
+    "ci_receipts": {
+      "sha256": "de04c44d5a7242719329c68cb974bbde56c8116770e60e26cfbb43f8384d74bd",
+      "attributes": {
+        "name": "(empty)",
+        "tests": "1",
+        "failures": "0",
+        "disabled": "0",
+        "skipped": "0",
+        "hostname": "",
+        "time": "0",
+        "timestamp": "2026-11-16T21:39:40"
+      },
+      "groups": [
+        {
+          "name": "ci_ctest_receipts",
+          "seconds": 0.416908,
+          "passed": true
+        }
+      ]
+    },
+    "unique_passed_groups": 29,
+    "full_source_regression": false
+  },
+  "native_agreement": {
+    "local_report": "build/nex-native-reference-tasks-pyhucnw7/report.json",
+    "sha256": "8d90bde148a96f3f948c166acc89c3587ed6ed5dd8c95dc0839e3f1492665548",
+    "result": {
+      "schema": "nex.native-reference-task-agreement/1",
+      "ok": true,
+      "source_language": "0.30",
+      "public_source_enabled": false,
+      "task_ABI": "0x4e45585400003001",
+      "source_workers": 1,
+      "platform": "macOS-27.2.1-arm64-arm-64bit-Mach-O",
+      "compiler_sha256": "68bb87f784f09da01b7aea0f70952fb23f606242cdc4f6ff3cc26c372af0706f",
+      "emitter_sha256": "f2f78945b5807dd44618580faf3c33281b1b67c39996eb868b2525a6912c19fd",
+      "reference_probe_sha256": "31192d3da63333f5d560f5b6b29c431387b56fc5158b229e62e2e09bb059ba41",
+      "reference_cases": 21,
+      "runtime_sources_sha256": {
+        "runtime.cpp": "5c5af50d10b840e4d3fe5979067fe1687e1e841af0e6d116a0a3c574c6d6e14a",
+        "nex_cells.cpp": "f009588f1f83dc8b8e5028f98cda518d4aa2c684afe1521ce41906bb7ccdb291",
+        "nex_cell_host.cpp": "82a00433059e0953874654de069b9e04a038fb07ab48920a5d4cce6d9117fe6a",
+        "nex_files.cpp": "c37f6492f5891db8c017e24d74dbc6e63a705ea629c3604273217fbdd63845d4",
+        "files_runtime.cpp": "c432599739ba309e64eb4c71c6f654a3d61699865fffc4cd2fbec3879940cb39",
+        "nex_task_external.cpp": "b1e86bf6a1c503e843b872531798cf46f068fdd1691edf3d25fc94b37e3ca324",
+        "nex_task_frame.cpp": "d63f3e043750791860eb9812df862a5a904800d992a58414fece922a78be1785",
+        "nex_task_application.cpp": "e632c6cdf5affd571331c2ee5391350c92c125af9b5c4be547d0b0c356f162b3",
+        "nex_resource_region.cpp": "32588dace81f19cf179d14df3d7f86be8bb21b772fd6262bf1ca572625943ba1",
+        "nex_external_resource.cpp": "72bdf45f36bca279447b1f48fa4ad56878a925e970177ad0a47f4c0a110592a2",
+        "nex_resource_executor.cpp": "b8cde6d63d934896cf1c16a27061b7fc979e909482936659fd29cba9749f197c"
+      },
+      "runtime_headers_sha256": {
+        "nex_auth.h": "6d2255d0dd40dfb502a487367fda4ee043f92bf0a6eb471f3ed8f1d91dfcc452",
+        "nex_bytes.h": "f954bc5302b55286ed7fedd5fa864cf0c00cca9772f0d63cfe37ed85eaa22cd0",
+        "nex_cell_host.h": "cb843ee422656d9d5f3ab50010f478a2fbc4d55c34d88c01c20c84cc7f630307",
+        "nex_cells.h": "8aff8c57bd6ee1b41e1cb8b19ed0b0ea5a3f4b51d2804eec3d72f0d9f5bf9f00",
+        "nex_error.h": "fdc92bd215fd7e836390997ac8f565347dc41dd09a0377483f19b7f89ed20c05",
+        "nex_external_resource.h": "995b250247b068c431cebbebffe620ba95df64f3cd4ade86d3989316def2eb5e",
+        "nex_ffi.h": "ea2f81fa183034c4eadf84ef2cf54b6c6f512a8a72ceeb8064474ec143dfbbde",
+        "nex_ffi_host.h": "d0b4f72de75eac9c1b07ac845ee8555ca056584107bb52bf3dbd2898d8398535",
+        "nex_ffi_loader.h": "c7a7441b13fd5d2a2a661b2c2a218c67fdfe412bd9a18ab2332ebde89137e6cc",
+        "nex_ffi_module.h": "5cc960c3b91fa5cb9a74caa011a9f144ac94f852143c37bb4ecd1dc2994c8061",
+        "nex_ffi_resources.h": "c4dd549498649a658e5614a357e823b556d14c979fd948f5872255af532645ea",
+        "nex_ffi_types.h": "2727556fbc88a70bb6b8b17aabcb573391c3414426c09f62046377756703ed81",
+        "nex_file_abi.h": "3150b3b0e2d94634a459e9b3bd05657b645c67f7126dd793b26e83daac6612ec",
+        "nex_file_resource.h": "852e831b87b1df507b7d4d054b2f9e11c0e4b2bf6c0df4857ebaf1c86fccb6a7",
+        "nex_files.h": "f7a2deaa6256e840e47bb1a1238144386e2182fe7be363bdebc1a38c6c66a97f",
+        "nex_files_windows.h": "a5a215d8db3ee83519842361673b87ff83145f83a9bdb17b221708e97a901849",
+        "nex_float.h": "0f69f4425ffeba7af5bddacdf2b829bc4f497b71c204583d8f156a87dfd6f86a",
+        "nex_foreign.h": "30c86dc0d30a6dcabaf70cb7bc979d680ee7848a840906809ce24ce78d61169b",
+        "nex_foreign_abi.h": "70cc445bb9e1cb6dddac3f816f5bc30ddf0a4bffe700d8a47aa227bf96bf4366",
+        "nex_host.h": "f293383f8a4dfa226549169065e52cde4471e46e422ff5726afc25ce3d4c7fcb",
+        "nex_host_windows.h": "7101907f2bf30e44428fe382c0a415eece86f03be1809940aa39097ead6ac854",
+        "nex_ieee.h": "6f36c7d2bd9add2671da9d76175cb8262cf4e5bb1d657c841464faef2da42490",
+        "nex_io.h": "f68476841f4aa09ac770201110882cf71b82fdf26c3febf65a305f7df72dbb47",
+        "nex_json.h": "4c6d683956ffcd7542df521f639f85905fdcd07df6e6d7e62863636e529aa89e",
+        "nex_parallel.h": "51b036a34897b3482b4349121016eae81486544ef3d5b6e621cdfafcc38e27a4",
+        "nex_parallel_value.h": "9f12ee19dc284204bf3d7c3bf0233aa35aab8127b55293dc73b037ab62b0cd31",
+        "nex_platform.h": "7ae3440cedd5c1d71a06c9ce730f996c3e1a7026cf36cd37b32c268a38ab0327",
+        "nex_profile.h": "634aa24ff6e42b4ab73ee2f435a7fc4d9ef6d65e3856d3449dae661e6016ba54",
+        "nex_resource.h": "d77caa2020e756cb0a7ba8b2aa09bdd20539e946b26027a5005fbd9055f2e52e",
+        "nex_resource_executor.h": "2a9daf0cd629df6851af7257f2d983fa48500380dd95282b53c078ac10b2c63c",
+        "nex_resource_region.h": "fdb1d49937f69df7eec230aa60b63ab6372ce0253a6ec138edc0ab113bf2b7c5",
+        "nex_socket_platform.h": "71f2d7b3bd67f95048b3d7fa5ad2641273497d227d32c8ac2065aff58d2606d1",
+        "nex_source_error.h": "8d5d5491dddeab2cbd6630512c56bd8ae98ec58a1b4cac6cfa053ce8836ebabf",
+        "nex_task_application.h": "cc1fb7454e86057b2ebe3f1506d1eea38e5165f92233a805320724fbaee2c573",
+        "nex_task_debug.h": "138ae623e4c6891611a6a251c9a6a478ef7fcba67caf425f1d24356855db408d",
+        "nex_task_debug_site.h": "96ad04842fa1b7dfcf0fee72ed9b5ed5f0eda946e67ddcaf78807becb1b453d0",
+        "nex_task_external.h": "0066e28717bdb9aaa62f6b7720b3c41258d683bef3a455584122a0d0f9c33c56",
+        "nex_task_file_read.h": "d7a2ec9f0e45047e9d38f09d68e54621a6a9b3a33bbae257a8c6e3f922d589ba",
+        "nex_task_file_source.h": "9c726cea6f1c06d0574f625bea588ef48d6b036fa6d559c5564311b9518ccb2a",
+        "nex_task_file_stream.h": "b39e7dfb16f1a626a05dfc6cee8549897d9ccaf2a2887552ccc0710a201f2a6c",
+        "nex_task_file_write.h": "6d8e444215154c58fc8c1e5d80a20a7c79a715de01540653a72dcb29d5620405",
+        "nex_task_foreign.h": "014227917709cabca6f498c1a46880009d49d45ad13d708f324eb282d49b6eb5",
+        "nex_task_frame.h": "a3f689237be807b8e8d4e3bc0a26be6c1f9d495e300788877dc856425940e352",
+        "nex_task_limits.h": "758e7134385c182b7a64469036e5a91ee18c1931770d5e8221e1964a5c033089",
+        "nex_task_network.h": "4d406596ab300930271c1d474f48aadaf9ebe7faa95a6b41bb21d277da2da0c5",
+        "nex_task_profile.h": "0a55106cb5e4b082c4e4bce0652edaa321da4b72a3006d7db8cc0f4eb8349bc2",
+        "nex_task_profile_site.h": "10eeaca7ab01b9e190922606b42a906db2bb1384dec601dee3739a003350b4f3",
+        "nex_task_protocol.h": "14cc0d934d65ee5ce8f7c144c43ea903111f360b5f981ebcc9c6e37e14a84977",
+        "nex_task_reference_value.h": "aada6bb8490ad0ddddba4457cec11d70fccb8392cefd4e1b5e87675842a05972",
+        "nex_task_values.h": "783cb6fcfa37f4e1005086275ba87b75b405cf3a30ed1ae0dd83d908d9896a51",
+        "nex_task_values_impl.h": "5bcd43b9c6f97a90b12623ee2f79d21c7cc971203df029584046f6c99e569289",
+        "nex_tasks.h": "f4283784f11e832730d23272fefc768b4c95ce331d5afc5ffdcaa99442cdcbdb",
+        "nex_tasks_impl.h": "0238b48fc2f020dfdb0e8b62bcb6e37226d9e15e66f22190029fcd3b5c8a0cfd",
+        "nex_value.h": "9ff6da42bbcc437f384f69d11f3b87b4f467991bc9577a0d745f9d2021f4422b",
+        "nex_value_owner.h": "95bb4c22323598cb8533b9f5b1184893ac3332813a94944e58f732cf42edfb0f",
+        "third_party/compiler-rt/int_endianness.h": "ec5175561075845b7b16a92ad5ecdfd42a284de2736dd07e4ca7011b75c37709",
+        "third_party/compiler-rt/int_lib.h": "d79f2a9f4756e89fdd7a786fea5361720f40563a6d7c34d078505a236892d28f",
+        "third_party/compiler-rt/int_types.h": "bc956eca1626fee5b6242053bafd92bf0b1def230140ee36a9725034aeb02fa8",
+        "third_party/compiler-rt/int_util.h": "63d06198ab720a75c20bfd84be895c2746581b129168bae6201e7384bbb0473b",
+        "third_party/dragonbox/dragonbox.h": "d3795bba52fb25970d9a1819429f6f225bb0db09fb1db26e55bdec290291e98c",
+        "third_party/httplib.h": "bc77114769db3b3c97e4a6d753dab797c3cadaaa48beead3806298b09702df18",
+        "third_party/tracy/public/client/TracyCallstack.h": "3d8e924edf7c60262a2375cb606a5360af3b17eb0c65fd5787fa1bc3a98e0f5a",
+        "third_party/tracy/public/client/tracy_SPSCQueue.h": "8cb74f10b233693d83da294dc48aa8ba8bb2a860a1d4dafb19dfbe3a76620a70",
+        "third_party/tracy/public/client/tracy_concurrentqueue.h": "1ea6309a1497f16c3b49e94aa01961e253d99e50e85eddc9975ba393d427666f",
+        "third_party/tracy/public/client/windows/TracyETW_compat.h": "20b44391298fa52f7488dc76d0eba623f46bd5f32cef73374cc329bcd1f224be",
+        "third_party/tracy/public/common/TracyApi.h": "2a6ae36f2a43d2d6e3a008cef26acd76b29bee1175c2c18248684753da72bc04",
+        "third_party/tracy/public/common/TracyFormat.h": "c8e654f0afacf9ad944bae0a4e94c5318b6e006027445cd9dd1a9f47809dca0f",
+        "third_party/tracy/public/libbacktrace/config.h": "54d13aa453eeb2c04b6f03a3e3ffffd88b67e6d62a1de65927cd6bce35ff3f47",
+        "third_party/tracy/public/tracy/TracyC.h": "96cf8dfe60cbbbbd889f2c02a0bbaa8901881c3be74f8cc0a11403315d25cff3"
+      },
+      "harness_sha256": "9bb9315af91d8c4d2da706385e006a0b0de765dd0d01e877e624b1b62aef0d8f",
+      "owner_probe_source_sha256": "d1f7c650c11bb67aad452c86e45ea6ab3fab586c447ea2a324cedaddc490092d",
+      "cases": [
+        {
+          "file": "case-0.nex",
+          "optimization": "O0",
+          "revision": "a869f408176ccabf9feeaa8038ac4e927b6690e036fa7d946d65128037b56f60",
+          "source_sha256": "d8efe639cd0bcc699809d1e4d5345c4290758182eb18ccb1739e65bec06767e7",
+          "llvm_sha256": "e81b81958702702c6b1ae9f735d6a838e068a39b9c54b9959698b01e590bfe76",
+          "binary_sha256": "f7d6c8554072fa5c293eb985dd00aba89cab4acb02bb7c8aabd68ba6cb8f104d",
+          "genuine_file_operations": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-1.nex",
+          "optimization": "O0",
+          "revision": "b226fce53a9251c2f293d7f3e24e556fd5eb5453718e27e2ce85c24dd5592604",
+          "source_sha256": "4b7fba0fd70de9f94bceafa3bcc05fc70218310f838d75c498fe2bba3fe97be5",
+          "llvm_sha256": "601f60629d0a451519926b6b2ace0f51496849c03c65e656779b23a761f7898e",
+          "binary_sha256": "15211ccbeccd00cc8eceefc69d881ea88935c917537f8e04fb83fc8ce449eab7",
+          "genuine_file_operations": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-2.nex",
+          "optimization": "O0",
+          "revision": "1cee298cb40b7cf201237e1a9b293ee758bca38eed8f8e9f913c5e9be4161771",
+          "source_sha256": "78093a374eca5c3512c50515e1e554296fbca302ab7cedf9a6bfefaa206d6467",
+          "llvm_sha256": "667f04e6008768ddc5501383ec1fb3645d6e965b521c60035fc57ec1c2e3f01b",
+          "binary_sha256": "a63fd40fbc8152a6f57ecc2a25317b8f92af672b2b18853514c5d8b0ac5485f6",
+          "genuine_file_operations": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-3.nex",
+          "optimization": "O0",
+          "revision": "38845a6c90dfa49cb9424611a43c44bb5ca7e977e64cf829f568b20d457943f8",
+          "source_sha256": "1be2d7da931e85638d6503552db446d163bf7988edfc566f351c48bced05c2a5",
+          "llvm_sha256": "29bfd7d6fa1d8ff586f2f320ae78023633811e895c545bb79f1482a06d714b95",
+          "binary_sha256": "315c8b513d8002e923e177d83ba4715886b66b9c93428c67fed5c91096694f2c",
+          "genuine_file_operations": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-4.nex",
+          "optimization": "O0",
+          "revision": "715f9cd49459c9be158dc69ee3c9bd7c2b2ff33505df9d56c9029dbf24fd4891",
+          "source_sha256": "1847188566708b2d639ba1fd5699a01753b677863874c04902c54ae239d9a3bb",
+          "llvm_sha256": "a4fc16946fbb789ee83115142f6648c98d6fe4a172935937f8746f220334d6bf",
+          "binary_sha256": "56f272f04190a191da79401bb054fd07aebf23c1ae206785c989042e700d352c",
+          "genuine_file_operations": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-5.nex",
+          "optimization": "O0",
+          "revision": "0b1fa87549af09d537020e0633041df73a62f34e056f2df1e39a50bc3b571b5f",
+          "source_sha256": "906af6946683728c578175783a75a39759228d29368c3399f3fa91305e1a3b69",
+          "llvm_sha256": "411dc06e654be38c6ab4253eed59f07def6df8a76b8d39ad42e1e5c798dfa88b",
+          "binary_sha256": "6caa63ce25a45a1d8fdb49de342fefa0341b3ff47b95b9eefea80cbc3cff4103",
+          "genuine_file_operations": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-6.nex",
+          "optimization": "O0",
+          "revision": "149c100c9bc71f977e67d26df65ad54d456661ee7042d17db4b6028b3c8de1eb",
+          "source_sha256": "5c5879b86842d99301d1cc6bcea3ca0b21637dbad19505ddf22160b6a4588933",
+          "llvm_sha256": "18e5fb119f52690453026bd2ffa8c9fb8ff1ec6a9aaf715ddcacc949440a7a4f",
+          "binary_sha256": "7b2072f90b8d611fba440bf33d811f30d3826835839d7d262822f8372206b56a",
+          "genuine_file_operations": false,
+          "error": "E_LIMIT",
+          "passed": true
+        },
+        {
+          "file": "case-8.nex",
+          "optimization": "O0",
+          "revision": "d1513728f369001ba923f95ccef73607d21443f87e56da1f3604e8416e739532",
+          "source_sha256": "dce2c5111345c1e7afcf51dbbc1009c3eb47d0096af647514d3352cb6fe25f1b",
+          "llvm_sha256": "3b5d6b18bfa213b5349d9c2dc7a1e58e063b6811facdbe60e489894231725135",
+          "binary_sha256": "ad3ca42dce173878874150189df59b6d1eb8c6d7e565064546241cba54660042",
+          "genuine_file_operations": false,
+          "error": "E_SOURCE_EXCEPTION",
+          "passed": true
+        },
+        {
+          "file": "case-12.nex",
+          "optimization": "O0",
+          "revision": "737bdfd4a055640713d764ac4e3e9f7cbfd51387f034f9c66a7d36141e4ea187",
+          "source_sha256": "1b6e33ba978346cb178451ca7636649c03a6f4d213a880886f8b3e042da68f42",
+          "llvm_sha256": "450856a65d25535058c94915dcb4197400f08d946ec191580e75d56a49d3eb84",
+          "binary_sha256": "367c3b4a0eafcd2da6aec918f4b3a8b7fdf8c8cc4677f46eddfe502130debe3a",
+          "genuine_file_operations": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-17.nex",
+          "optimization": "O0",
+          "revision": "e6671519cca8c5a3f3b8628424e637e663a692215e4330247eccfec2663f045a",
+          "source_sha256": "b1eb5386fb87bf3d7509cbf26c685f342a57e0be2e4b57f9d082b52318a6c914",
+          "llvm_sha256": "7b83f466b8bce5316205fcce557b51ab9e41c9bfeef9cd200a5d283fcec575aa",
+          "binary_sha256": "005b0e84e6bb8db74d3a2e153702e8d0ea1386bb9e746553d2244e04737e1f9a",
+          "genuine_file_operations": true,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-18.nex",
+          "optimization": "O0",
+          "revision": "5d11891c96aaae5dd1120c19582f8d6ad82f6ce7c42380b8cd27149b744a536b",
+          "source_sha256": "5cbcfb7868bd02d7e4336c057732c71c5e972fbdecfa70f20875cb74de019a8a",
+          "llvm_sha256": "779d635da48c313aa8cbd8182c1064371cc0529ea77aaabce009fed4786855f2",
+          "binary_sha256": "1047a5fe21b7afed44a99f6dd04599f5b2a0f21dc45ebc133a4e5416bbd192b9",
+          "genuine_file_operations": true,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-19.nex",
+          "optimization": "O0",
+          "revision": "51a94f95465b4e82a37ea40d58f32c458815d3f24d7afa24ab3b4dd77c70b43a",
+          "source_sha256": "a047eaddc4b0679d7d5faadc54e954b5663fced3e5155f3e4df4eb873559c08c",
+          "llvm_sha256": "562097b323b571c6319ae6d02d3504a4c0d93bb1528b030964019b6d1ad25642",
+          "binary_sha256": "cbfebc967e7331eda70dd9fb28d084eca59abc277ee4793220d98825b080fa70",
+          "genuine_file_operations": true,
+          "error": "E_RESOURCE_SCOPE",
+          "passed": true
+        },
+        {
+          "file": "case-20.nex",
+          "optimization": "O0",
+          "revision": "1e33a74ca1898711bc980b95792c4022c34e3575031368bb682c2469443e3483",
+          "source_sha256": "147812cdb2cc36f31f19a49a06dc2f894b9df48a71d73ad041324c512142aa2f",
+          "llvm_sha256": "67d01d65bac68b4bf2a4cdf3dd7f42d9764880d894a49f7fbad52da6e858b7d1",
+          "binary_sha256": "e96c15710ff148f47650bed02d3a54126306b1640d783f781ee6486416ef339f",
+          "genuine_file_operations": true,
+          "error": "E_ASSERT",
+          "passed": true
+        },
+        {
+          "file": "case-0.nex",
+          "optimization": "O2",
+          "revision": "a869f408176ccabf9feeaa8038ac4e927b6690e036fa7d946d65128037b56f60",
+          "source_sha256": "d8efe639cd0bcc699809d1e4d5345c4290758182eb18ccb1739e65bec06767e7",
+          "llvm_sha256": "e81b81958702702c6b1ae9f735d6a838e068a39b9c54b9959698b01e590bfe76",
+          "binary_sha256": "0efe495cc67153cc60fce87cea19166346760ba5b5121d081e6384534db18721",
+          "genuine_file_operations": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-1.nex",
+          "optimization": "O2",
+          "revision": "b226fce53a9251c2f293d7f3e24e556fd5eb5453718e27e2ce85c24dd5592604",
+          "source_sha256": "4b7fba0fd70de9f94bceafa3bcc05fc70218310f838d75c498fe2bba3fe97be5",
+          "llvm_sha256": "601f60629d0a451519926b6b2ace0f51496849c03c65e656779b23a761f7898e",
+          "binary_sha256": "58f1e3c6c83740365a48b38fed03fef650925e8ffe27c6cecb9c13c96f365048",
+          "genuine_file_operations": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-2.nex",
+          "optimization": "O2",
+          "revision": "1cee298cb40b7cf201237e1a9b293ee758bca38eed8f8e9f913c5e9be4161771",
+          "source_sha256": "78093a374eca5c3512c50515e1e554296fbca302ab7cedf9a6bfefaa206d6467",
+          "llvm_sha256": "667f04e6008768ddc5501383ec1fb3645d6e965b521c60035fc57ec1c2e3f01b",
+          "binary_sha256": "907a1845f6bda9cbbd6a5264e32f068879be4fe593a2091d16d8f219ca729d0c",
+          "genuine_file_operations": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-3.nex",
+          "optimization": "O2",
+          "revision": "38845a6c90dfa49cb9424611a43c44bb5ca7e977e64cf829f568b20d457943f8",
+          "source_sha256": "1be2d7da931e85638d6503552db446d163bf7988edfc566f351c48bced05c2a5",
+          "llvm_sha256": "29bfd7d6fa1d8ff586f2f320ae78023633811e895c545bb79f1482a06d714b95",
+          "binary_sha256": "4190f04a595ea8195a5ece0b5de5d7ea15dc110c0dc2bcd9ebf88fc049a9982e",
+          "genuine_file_operations": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-4.nex",
+          "optimization": "O2",
+          "revision": "715f9cd49459c9be158dc69ee3c9bd7c2b2ff33505df9d56c9029dbf24fd4891",
+          "source_sha256": "1847188566708b2d639ba1fd5699a01753b677863874c04902c54ae239d9a3bb",
+          "llvm_sha256": "a059778996e7fe998b739d2dd5a7851415cd4cf85a128dec8fc0f3dc8744e900",
+          "binary_sha256": "306125c6c0c0c7ce7bf08b746d94aa6b41ff2bf8ef6efec9dd55b53fe714e87f",
+          "genuine_file_operations": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-5.nex",
+          "optimization": "O2",
+          "revision": "0b1fa87549af09d537020e0633041df73a62f34e056f2df1e39a50bc3b571b5f",
+          "source_sha256": "906af6946683728c578175783a75a39759228d29368c3399f3fa91305e1a3b69",
+          "llvm_sha256": "411dc06e654be38c6ab4253eed59f07def6df8a76b8d39ad42e1e5c798dfa88b",
+          "binary_sha256": "ec299c74863607ccff4f363f0825643c261b89e4b68bafef5a67270c7985fc55",
+          "genuine_file_operations": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-6.nex",
+          "optimization": "O2",
+          "revision": "149c100c9bc71f977e67d26df65ad54d456661ee7042d17db4b6028b3c8de1eb",
+          "source_sha256": "5c5879b86842d99301d1cc6bcea3ca0b21637dbad19505ddf22160b6a4588933",
+          "llvm_sha256": "18e5fb119f52690453026bd2ffa8c9fb8ff1ec6a9aaf715ddcacc949440a7a4f",
+          "binary_sha256": "7ddfcb47ef6af7fc85b7e7b43f7787b62d06a498f73a19aae415c7bf696ef6ba",
+          "genuine_file_operations": false,
+          "error": "E_LIMIT",
+          "passed": true
+        },
+        {
+          "file": "case-8.nex",
+          "optimization": "O2",
+          "revision": "d1513728f369001ba923f95ccef73607d21443f87e56da1f3604e8416e739532",
+          "source_sha256": "dce2c5111345c1e7afcf51dbbc1009c3eb47d0096af647514d3352cb6fe25f1b",
+          "llvm_sha256": "3b5d6b18bfa213b5349d9c2dc7a1e58e063b6811facdbe60e489894231725135",
+          "binary_sha256": "0eefa4a89d6af5040565ab0730f8923387b516ca5cb196d1d8b6013fb04cf15e",
+          "genuine_file_operations": false,
+          "error": "E_SOURCE_EXCEPTION",
+          "passed": true
+        },
+        {
+          "file": "case-12.nex",
+          "optimization": "O2",
+          "revision": "737bdfd4a055640713d764ac4e3e9f7cbfd51387f034f9c66a7d36141e4ea187",
+          "source_sha256": "1b6e33ba978346cb178451ca7636649c03a6f4d213a880886f8b3e042da68f42",
+          "llvm_sha256": "c30f0ea141f90b315e6ee964ede93f330fc331f67b3ede669410ce20fc6ac141",
+          "binary_sha256": "815bdb673f5c8948355d33bafbf5fe9318e1425ff4fb655a00cc9c3ce4c4af05",
+          "genuine_file_operations": false,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-17.nex",
+          "optimization": "O2",
+          "revision": "e6671519cca8c5a3f3b8628424e637e663a692215e4330247eccfec2663f045a",
+          "source_sha256": "b1eb5386fb87bf3d7509cbf26c685f342a57e0be2e4b57f9d082b52318a6c914",
+          "llvm_sha256": "7b83f466b8bce5316205fcce557b51ab9e41c9bfeef9cd200a5d283fcec575aa",
+          "binary_sha256": "7080d8e074ca4de9b6997d7049b2676056ae2b1ce72fa2076310d10eef192845",
+          "genuine_file_operations": true,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-18.nex",
+          "optimization": "O2",
+          "revision": "5d11891c96aaae5dd1120c19582f8d6ad82f6ce7c42380b8cd27149b744a536b",
+          "source_sha256": "5cbcfb7868bd02d7e4336c057732c71c5e972fbdecfa70f20875cb74de019a8a",
+          "llvm_sha256": "779d635da48c313aa8cbd8182c1064371cc0529ea77aaabce009fed4786855f2",
+          "binary_sha256": "b313b7200f9914aae5fdd265e01ffb0f8b311259b1bc34180ab5380c0685fa96",
+          "genuine_file_operations": true,
+          "error": null,
+          "passed": true
+        },
+        {
+          "file": "case-19.nex",
+          "optimization": "O2",
+          "revision": "51a94f95465b4e82a37ea40d58f32c458815d3f24d7afa24ab3b4dd77c70b43a",
+          "source_sha256": "a047eaddc4b0679d7d5faadc54e954b5663fced3e5155f3e4df4eb873559c08c",
+          "llvm_sha256": "562097b323b571c6319ae6d02d3504a4c0d93bb1528b030964019b6d1ad25642",
+          "binary_sha256": "b39f6e9d53869e85a2923725e81a8535d3d0d8b2fd1e4e6c5d0ee2b630c1a8fa",
+          "genuine_file_operations": true,
+          "error": "E_RESOURCE_SCOPE",
+          "passed": true
+        },
+        {
+          "file": "case-20.nex",
+          "optimization": "O2",
+          "revision": "1e33a74ca1898711bc980b95792c4022c34e3575031368bb682c2469443e3483",
+          "source_sha256": "147812cdb2cc36f31f19a49a06dc2f894b9df48a71d73ad041324c512142aa2f",
+          "llvm_sha256": "67d01d65bac68b4bf2a4cdf3dd7f42d9764880d894a49f7fbad52da6e858b7d1",
+          "binary_sha256": "cb4e3bcd8b6a56305b6ff96e9aacc11c8a02ad454cb01dc464c439bffb1113c5",
+          "genuine_file_operations": true,
+          "error": "E_ASSERT",
+          "passed": true
+        }
+      ],
+      "owner_runtime": [
+        {
+          "optimization": "O0",
+          "result": {
+            "ok": true,
+            "cases": 7,
+            "turns": 43
+          },
+          "binary_sha256": "b614e04510eea3a760bf02259b45545c86efab1cb8513a98f1be764d396caa9a"
+        },
+        {
+          "optimization": "O2",
+          "result": {
+            "ok": true,
+            "cases": 7,
+            "turns": 43
+          },
+          "binary_sha256": "2bb2d4029aa621284eac31fa4c14ef46e2766e06229586bd461f512934c18477"
+        }
+      ],
+      "comparisons": 26
+    }
+  },
+  "normal_installation": {
+    "prefix": "/Users/sae/projects/NEX/build/native-reference-tasks-v1/SDK moved 🧠",
+    "compiler_sha256": "78052c2ed2bd6a9bd1a27bf045645fcfa966fd17f280ada72d7ffa312aae6eaa",
+    "installed_boundary_methods": 4,
+    "installed_boundary_log_sha256": "0569af653912a8f2d25b72e577c11ed19070e23ab3943b640f2f656aa9b776cb",
+    "launch_directory": "/private/tmp",
+    "host_dependencies_retained": true,
+    "portable_SDK": false,
+    "source_deleted": false,
+    "critical_resources_sha256": {
+      "runtime/runtime.cpp": "5c5af50d10b840e4d3fe5979067fe1687e1e841af0e6d116a0a3c574c6d6e14a",
+      "runtime/nex_tasks.h": "f4283784f11e832730d23272fefc768b4c95ce331d5afc5ffdcaa99442cdcbdb",
+      "runtime/nex_tasks_impl.h": "0238b48fc2f020dfdb0e8b62bcb6e37226d9e15e66f22190029fcd3b5c8a0cfd",
+      "runtime/nex_task_protocol.h": "14cc0d934d65ee5ce8f7c144c43ea903111f360b5f981ebcc9c6e37e14a84977",
+      "runtime/nex_task_frame.cpp": "d63f3e043750791860eb9812df862a5a904800d992a58414fece922a78be1785",
+      "runtime/nex_task_application.cpp": "e632c6cdf5affd571331c2ee5391350c92c125af9b5c4be547d0b0c356f162b3",
+      "runtime/nex_cell_host.h": "cb843ee422656d9d5f3ab50010f478a2fbc4d55c34d88c01c20c84cc7f630307",
+      "runtime/nex_cell_host.cpp": "82a00433059e0953874654de069b9e04a038fb07ab48920a5d4cce6d9117fe6a",
+      "llm/language-pack.json": "5102a331ed40f0504eff44e7babe1aa4b5bdf8002c91fb35d5bf905f00222ce5",
+      "docs/reference-tasks.md": "1da03e92fa13579c05a72b9abf8898448d03da91760dc9a284926ddf5154ddcd",
+      "tests/reference_tasks.cpp": "e79791c10295e5dae6d3bf3f0ce8c9427e43b97a7cba3286fde7fac1a0210a20",
+      "tests/owner_task_runtime.cpp": "d1f7c650c11bb67aad452c86e45ea6ab3fab586c447ea2a324cedaddc490092d",
+      "tests/native_reference_tasks.py": "9bb9315af91d8c4d2da706385e006a0b0de765dd0d01e877e624b1b62aef0d8f",
+      "tests/native_reference_tasks_emit.cpp": "d5123bdc6ef972bda6f30a723511def71b1f39e713462f3cf4d0ef129b64aa7d"
+    }
+  },
+  "standalone_source_probe": {
+    "sha256": "31192d3da63333f5d560f5b6b29c431387b56fc5158b229e62e2e09bb059ba41",
+    "launch_directory": "/private/tmp",
+    "explicit_resource_directory_absent": true,
+    "result": {
+      "ok": true,
+      "cases": 21,
+      "owner_cases": 7
+    },
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "not_portable_SDK_acceptance": true
+  },
+  "documentation": {
+    "sha256": "dfc8118cf6339d8f63267d4c31f392591b4dca82e7d722365f5e2e2fd1bd50ba",
+    "result": {
+      "schema": "nex.documentation-index/1",
+      "toolchain": "0.269.0",
+      "language": "0.28",
+      "project_languages": [
+        "0.28",
+        "0.29",
+        "0.30"
+      ],
+      "documents": 203,
+      "index": "docs/INDEX.md",
+      "errors": [],
+      "links_checked": 1517,
+      "missing_links": [],
+      "current_status_ok": true,
+      "ok": true
+    }
+  },
+  "CI_log_repair": {
+    "reason": "nested CTest inventory queries overwrite the shared LastTest.log, including sequential runs",
+    "direct_core_log_sha256": "26cf63ff537043e6d39eff8e1a2387071367a250483fb23f5627fff9abb7732e",
+    "complete_core_names_in_direct_log": true,
+    "nested_real_CTest_fixture_passed": true,
+    "failure_disabled_skip_gates_preserved": true,
+    "earlier_empty_shared_log_sha256": "39c930cb2b3a16d61ea457f2f505aae7f858a052804caa3a377c740f2a9f7690",
+    "direct_stdout_and_JUnit_retained": true
+  },
+  "preceding_hosted_CI": {
+    "receipt": "docs/evidence/core-ci-0.268.0-2026-11-16.json",
+    "run_id": 43925993100,
+    "conclusion": "success",
+    "core_groups": 17,
+    "qualifies_new_native_cohort": false
+  },
+  "initial_failures": {
+    "driver_symlink": "resolving clang++ to clang changed implicit C++ linkage; the harness now retains the driver spelling",
+    "cell_builtin_lowering": "the foreign-call branch treated cell intrinsics as user functions; shared checked-builtin classification now precedes both call branches",
+    "raw_failure_logs_sha256": {
+      "acceptance-v1.stderr": "e7866061c9252175938caa83edfe2cf396d25d66d8216c012bcfd32628f0355c",
+      "acceptance-v2.stderr": "5aa5612ad85e9dc893958fe75d945a1a46c761ba8ac3d8498976de93a89d713a"
+    }
+  },
+  "bounds": [
+    "private source-build emitter and matching runtime only; ordinary CLI keeps E_CELL_CONCURRENCY",
+    "one cooperative source owner thread; physical IO workers never acquire cells",
+    "native root is a standalone unit/i64 application; arbitrary library/HTTP/task host lifetime integration remains open",
+    "reference TaskIR execution, TypeScript tasks and persistent application/UI contexts remain pending",
+    "no source debugger/profile or general shared-memory/parallel-reference promotion",
+    "local O0/O2 Mac native acceptance and core/affected groups are not matching Linux/Windows SDK qualification",
+    "normal installation retains host dependencies; published portable SDK0.246.1 remains immutable",
+    "full source/platform/portable SDK gates and the complete original NEX plan remain open"
+  ]
+}

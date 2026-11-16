@@ -1,5 +1,10 @@
 # NEX language specification 0.28
 
+Toolchain0.269 adds a private [native cell/task emitter](reference-tasks.md)
+with owner-thread continuations and a distinct unarchived descriptor cohort.
+It changes no syntax, source version, canonical format or public task ABI7.
+Normal CLI reference/task execution remains gated pending backend integration.
+
 Toolchain0.268 accepts source0.30 task callbacks declaring `state` when their
 caller declares it. Normal reference/task execution remains `E_CELL_CONCURRENCY`;
 the [private C++ reference-task entry](reference-tasks.md) provides an independent

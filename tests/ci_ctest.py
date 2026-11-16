@@ -1,5 +1,6 @@
 """Exercise the CI receipt path against real small CTest executions."""
 import argparse
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -61,6 +62,24 @@ class Receipts(unittest.TestCase):
             result = self.run_ci(root, policy, 'full')
             self.assertTrue(result['ok'], result)
             self.assertEqual(set(result['ctest']['observed_groups']), {'quick', 'extended'})
+
+    def test_nested_inventory_keeps_the_runs_direct_log(self):
+        with tempfile.TemporaryDirectory(prefix='nex-ci-nested-') as temporary:
+            root = Path(temporary)
+            build = str(root / 'build').replace('\\', '/')
+            ctest = str(args.ctest).replace('\\', '/')
+            policy = self.fixture(root, 'add_test(NAME inventory COMMAND [[' + ctest
+                                  + ']] --test-dir [[' + build + ']] --show-only=json-v1)\n'
+                                  + 'set_tests_properties(inventory PROPERTIES LABELS core)\n')
+            declared = json.loads(policy.read_text())
+            declared['tests']['inventory'] = ['core']
+            policy.write_text(json.dumps(declared))
+            result = self.run_ci(root, policy)
+            self.assertTrue(result['ok'], result)
+            self.assertEqual(set(result['ctest']['observed_groups']), {'quick', 'inventory'})
+            direct = root / 'evidence/ctest.log'
+            self.assertIn('inventory', direct.read_text())
+            self.assertEqual(result['direct_log_sha256'], hashlib.sha256(direct.read_bytes()).hexdigest())
 
     def test_failure_disabled_and_skip_cannot_produce_success(self):
         controls = [

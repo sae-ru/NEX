@@ -14,6 +14,8 @@ struct TaskNativeStep {
 };
 // Explicit027 development emitter; no public project/provider/archive delivery.
 TaskNativeStep emitTypedErrorTasksDevelopmentNative(const Program &,const std::string &entry="main",bool optimized=false);
+// Checked030 owner-thread cell/task integration; not an ordinary build/SDK path.
+TaskNativeStep emitManagedReferenceTasksDevelopmentNative(const Program &,const std::string &entry="main",bool optimized=false);
 TaskNativeStep emitTaskNativeStep(const Program &,const std::string &entry);
 TaskNativeStep emitSourceExceptionTasksPrototypeNative(const Program &,const std::string &entry="main",bool optimized=false);
 TaskNativeStep emitSourceExceptionTasksPrototypeNativeHttp(const Program &,const std::string &entry="handle",bool optimized=false);

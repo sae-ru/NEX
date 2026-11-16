@@ -1,0 +1,37 @@
+{
+  "schema": "nex.hosted-core-result/1",
+  "toolchain": "0.268.0",
+  "source_commit": "d07e5e6699ddb15b28027615d3e476c97ea5bb2c",
+  "run_id": 43925993100,
+  "url": "https://github.com/sae-ru/NEX/actions/runs/43925993100",
+  "status": "completed",
+  "conclusion": "success",
+  "observed_at": "2026-11-16T18:22:56.972692+00:00",
+  "authority": "GitHub Actions REST run and jobs responses",
+  "jobs": [
+    {
+      "id": 133505482225,
+      "name": "macos-core",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-16T18:10:19Z",
+      "completed_at": "2026-11-16T18:14:03Z"
+    },
+    {
+      "id": 133505482610,
+      "name": "linux-core",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-16T18:10:18Z",
+      "completed_at": "2026-11-16T18:15:55Z"
+    }
+  ],
+  "raw_response_sha256": {
+    "hosted-0.268-run.json": "50918b331cf0cca2841e37afc25da8a227eee5f3760bd646bcc5b5fc7f417d21",
+    "hosted-0.268-jobs.json": "ecfa97a712ccc24bd8652d82501e8e5226ede90e0bb09a374093365e956d9825"
+  },
+  "core_groups": 17,
+  "complete_source_regression": false,
+  "portable_SDK": false,
+  "scope": "preceding independent AST reference-task commit; does not qualify native reference-task development"
+}

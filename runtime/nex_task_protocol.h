@@ -22,9 +22,12 @@ inline constexpr int64_t taskCodeExceptionHostPrototypeABI=INT64_C(0x4e455854000
 inline constexpr int64_t taskCodeTypedErrorDevelopmentABI=INT64_C(0x4e45585400002701);
 // Transfer-capable027 code has its own cohort;2701 and public ABI6 keep their identity.
 inline constexpr int64_t taskCodeTypedAuthorityDevelopmentABI=INT64_C(0x4e45585400002702);
-inline bool typedSourceTaskABI(int64_t abi)noexcept{return abi==taskCodeTypedSourceExceptionABI||abi==taskCodeTypedErrorDevelopmentABI||abi==taskCodeTypedAuthorityDevelopmentABI;}
+// Unpublished030 owner-thread reference cohort; published ABI7 stays immutable.
+inline constexpr int64_t taskCodeManagedReferencesDevelopmentABI=INT64_C(0x4e45585400003001);
+inline bool typedSourceTaskABI(int64_t abi)noexcept{return abi==taskCodeTypedSourceExceptionABI||abi==taskCodeTypedErrorDevelopmentABI||abi==taskCodeTypedAuthorityDevelopmentABI||abi==taskCodeManagedReferencesDevelopmentABI;}
 inline bool sourceExceptionTaskABI(int64_t abi)noexcept{return typedSourceTaskABI(abi)||abi==taskCodeSourceExceptionABI||abi==taskCodeExceptionPrototypeABI||abi==taskCodeExceptionHostPrototypeABI;}
 inline constexpr int64_t taskCodeDeclaredThrow=4096;
+inline constexpr int64_t taskCodeDeclaredState=8192;
 inline constexpr int64_t taskCodeFileStream=1024,taskCodeImageFileStream=2048,taskCodeStreamRequirementsMask=4095;
 // Actual checked declaration/image requirements, never filesystem authority.
 inline constexpr int64_t taskCodeDeclaredTask=1,taskCodeServer=2,taskCodeDeclaredFs=4,
@@ -34,7 +37,8 @@ inline constexpr int64_t taskCodeFileWrite=256,taskCodeImageFileWrite=512,
   taskCodeWriteRequirementsMask=1023;
 inline bool fileStreamTaskABI(int64_t abi)noexcept{return typedSourceTaskABI(abi)||abi==taskCodeStreamABI||abi==taskCodeSourceExceptionABI||abi==taskCodeExceptionHostPrototypeABI;}
 inline bool validTaskCodeRequirements(int64_t abi,int64_t requirements)noexcept{
-  return (typedSourceTaskABI(abi)||abi==taskCodeSourceExceptionABI||abi==taskCodeExceptionHostPrototypeABI)?(requirements&~(taskCodeStreamRequirementsMask|taskCodeDeclaredThrow))==0:
+  return abi==taskCodeManagedReferencesDevelopmentABI?(requirements&~(taskCodeStreamRequirementsMask|taskCodeDeclaredThrow|taskCodeDeclaredState))==0:
+    (typedSourceTaskABI(abi)||abi==taskCodeSourceExceptionABI||abi==taskCodeExceptionHostPrototypeABI)?(requirements&~(taskCodeStreamRequirementsMask|taskCodeDeclaredThrow))==0:
     abi==taskCodeExceptionPrototypeABI?(requirements&~(taskCodeDeclaredTask|taskCodeServer|taskCodeDeclaredThrow))==0:
     abi==taskCodeABI?(requirements&~taskCodeRequirementsMask)==0:
     abi==taskCodeWriteABI?(requirements&~taskCodeWriteRequirementsMask)==0:

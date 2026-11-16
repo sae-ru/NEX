@@ -43,7 +43,7 @@ TaskResourceSnapshot collectTaskSnapshot(TaskGroup &group,const Value &value,con
     if(seen.size()>parallelMaximumNodes)throw DataError("E_LIMIT","task snapshot exceeds its object limit");
     if(seen.size()%64==0)pollHostOperation(0);
     auto kind=next.object->kind;
-    if(kind==Data::Cell)throw DataError("E_TASK_VALUE","managed cells do not support task transfer yet");
+    if(kind==Data::Cell)group.validateCell(next);
     if(kind==Data::External){const auto &owner=externalResource(next.object);
       if(resourceIds.insert(owner.identity()).second){
         if(resources.external.size()+resources.files.size()==4096)throw DataError("E_RESOURCE_REGION_LIMIT","task snapshot exceeds4096 distinct resource owners");

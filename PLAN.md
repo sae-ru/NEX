@@ -1,3 +1,34 @@
+# Native reference/task continuations — development0.269.0
+
+The private030 native task emitter now lowers checked source through verified
+TaskIR/MLIR/LLVM to an independent application with a matching runtime. An explicit
+owner-thread coordinator keeps cells on their request owner while physical IO
+retains raw completion/lease workers. Resume-local handles and cancellation stay
+separate; completion preserves the caller's live heap. Published task ABI7 and
+old cohorts are unchanged; this path has private ABI`0x4e45585400003001`.
+Read the [reference/native task contract](docs/reference-tasks.md).
+
+The [focused receipt](docs/evidence/native-reference-tasks-0.269.0-2026-11-16.json)
+records the independent AST corpus and O0/O2 applications: nine accepted programs
+and four runtime failures, including real file promotion/rejection and fatal
+file/cell-cycle cleanup. Seven owner-thread runtime cases cover caller context,
+typed packets, worker/cohort/thread rejection and cancellation/budget cleanup.
+They also execute in the existing17-group core; generated native comparison
+remains an extended check. Whole-heap collection is tied to retired task frames,
+not every ordinary yield.
+
+Qualification passes17 core,11 affected and one CI-receipt group:29 distinct
+groups. Four ordinary-backend checks also pass from a moved normal installation.
+CI now retains a dedicated per-run log; a nested-CTest fixture covers the shared
+LastTest overwrite without changing result, failure or skip acceptance.
+
+Ordinary CLI cell/task execution, TypeScript integration, persistent app/UI state,
+source debugger/profile coverage, library/task host lifetimes, parallel reference
+transfer and full source/platform/portable SDK qualification remain open. The
+private standalone path does not complete those requirements or the full PLAN.
+Published portable SDK0.246.1 stays immutable. The preceding [hosted0.268 core](docs/evidence/core-ci-0.268.0-2026-11-16.json)
+passed macOS and Linux at `d07e5e66`; it does not qualify the new native cohort.
+
 # Reference state across structured tasks — development0.268.0
 
 One owned cell heap now spans the independent AST task coordinator, suspended

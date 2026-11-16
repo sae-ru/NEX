@@ -134,10 +134,10 @@ int64_t sourceErrorHeapKind(const Program &p,const Type &t,Span span){
     default:throw Error("E_INTERNAL","typed handler has no native heap kind",span);
   }
 }
-void validateNativeTaskFunction(const Program &p,const Function &function){
+void validateNativeTaskFunction(const Program &p,const Function &function,bool managedTasks=false){
   const bool reads=supportsTaskFileReads(p)&&function.realm=="server"&&function.effects.contains("task")&&function.effects.contains("fs");
   const bool foreign=supportsTaskForeignCalls(p)&&function.realm=="server"&&function.effects.contains("ffi")&&(function.effects.contains("task")||function.foreign);
-  for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(effect=="throw"&&supportsSourceExceptionTasks(p))&&!(effect=="fs"&&reads)&&!(effect=="ffi"&&foreign)){
+  for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(effect=="state"&&managedTasks)&&!(effect=="throw"&&supportsSourceExceptionTasks(p))&&!(effect=="fs"&&reads)&&!(effect=="ffi"&&foreign)){
     if(effect=="fs"&&supportsTaskFileReads(p)&&!function.effects.contains("task"))throw Error("E_EFFECT","filesystem helpers in a task execution graph must explicitly declare task and fs",function.span);
     throw Error("E_TASK_UNIMPLEMENTED","compiled task application has no asynchronous host bridge for effect "+effect,function.span);
   }
@@ -1231,6 +1231,7 @@ public:
         for(const auto &slot:ir.slots)kinds.push_back(slot.type.heap()?3:scalarTag(slot.type));
         const auto &source=p.function(ir.name);int64_t requirements=0;
         if(source.effects.contains("task"))requirements|=nexrt::taskCodeDeclaredTask;
+        if(exceptionABI==nexrt::taskCodeManagedReferencesDevelopmentABI&&source.effects.contains("state"))requirements|=nexrt::taskCodeDeclaredState;
         if(supportsSourceExceptionTasks(p)&&source.effects.contains("throw"))requirements|=nexrt::taskCodeDeclaredThrow;
         if(source.realm=="server")requirements|=nexrt::taskCodeServer;
         if(source.effects.contains("fs"))requirements|=nexrt::taskCodeDeclaredFs;
@@ -1673,7 +1674,8 @@ struct TaskNativeLinkage {
   int64_t privateExceptionABI=0;
 };
 TaskNativeStep emitTaskNative(const Program &p,const std::string &entry,bool application,bool optimized=false,const nexrt::TaskExecutionLimits &taskLimits={},bool profiling=false,bool taskDebug=false,const TaskNativeLinkage *linkage=nullptr,bool exceptionTasks=false,int64_t forcedExecutionABI=0){
-  if(forcedExecutionABI&&(!isTypedSourceErrorLanguage(p.sourceLanguage)||forcedExecutionABI!=nexrt::taskCodeTypedSourceExceptionABI))throw Error("E_TASK_PROVIDER","invalid typed task build cohort");
+  const bool managedTasks=forcedExecutionABI==nexrt::taskCodeManagedReferencesDevelopmentABI;
+  if(forcedExecutionABI&&(!isTypedSourceErrorLanguage(p.sourceLanguage)||(forcedExecutionABI!=nexrt::taskCodeTypedSourceExceptionABI&&!(managedTasks&&p.sourceLanguage==SourceLanguage::References030))))throw Error("E_TASK_PROVIDER","invalid typed task build cohort");
   const auto selectedExceptionABI=forcedExecutionABI?forcedExecutionABI:linkage?linkage->privateExceptionABI:0;
   exceptionTasks|=isPublicSourceExceptionLanguage(p.sourceLanguage);
   if(sourceExceptionTasksPrototype(p)&&!exceptionTasks)throw Error("E_EXCEPTION_BACKEND","native task exceptions require compiled-frame and physical scheduler integration");
@@ -1683,7 +1685,7 @@ TaskNativeStep emitTaskNative(const Program &p,const std::string &entry,bool app
   auto complete=linkage?linkage->complete:reachable(p,entry),pure=linkage?linkage->local:complete;std::vector<TaskFunctionIR> tasks;
   for(const auto &name:linkage?linkage->local:complete){
     const auto &f=p.function(name);
-    validateNativeTaskFunction(p,f);
+    validateNativeTaskFunction(p,f,managedTasks);
     if(f.foreign)continue;
     auto body=lowerTaskFunction(p,f,true,taskDebug);
     for(const auto &slot:body.slots)if(!supportsTaskFileStreams(p)&&(supportsTaskForeignCalls(p)?containsFile(p,slot.type):containsNonTaskResource(p,slot.type)))throw Error("E_TASK_UNIMPLEMENTED","compiled task step has no file authority bridge",slot.span);
@@ -1719,6 +1721,15 @@ TaskNativeStep emitTypedErrorTasksDevelopmentNative(const Program &p,const std::
   if(!isTypedSourceErrorLanguage(p.sourceLanguage))throw Error("E_LANGUAGE_VERSION","typed task development requires explicit027 selection");
   (void)nativeEntry(p,entry,false,false,false,true);(void)analyzeTaskLifetimes(p,entry);
   return emitTaskNative(p,entry,true,optimized,{},false,false,nullptr,true);
+}
+TaskNativeStep emitManagedReferenceTasksDevelopmentNative(const Program &p,const std::string &entry,bool optimized){
+  if(p.sourceLanguage!=SourceLanguage::References030)throw Error("E_LANGUAGE_VERSION","managed native task development requires source0.30");
+  for(const auto &f:p.functions){
+    if(!f.checked&&!f.traitSignature)throw Error("E_CELL_STATE","managed native tasks require checked source",f.span);
+    if(usesParallelMap(f))throw Error("E_CELL_CONCURRENCY","managed native tasks require owner-thread execution",f.span);
+  }
+  (void)nativeEntry(p,entry,false,false,false,true);(void)analyzeTaskLifetimes(p,entry);
+  return emitTaskNative(p,entry,true,optimized,{},false,false,nullptr,true,nexrt::taskCodeManagedReferencesDevelopmentABI);
 }
 TaskNativeStep emitTaskNativeStep(const Program &p,const std::string &entry){return emitTaskNative(p,entry,false);}
 TaskNativeStep emitSourceExceptionTasksPrototypeNative(const Program &p,const std::string &entry,bool optimized){

@@ -21,6 +21,9 @@ void taskValue(TaskGroup &group,const Value &value,const TaskGroup::Scope &targe
 }
 struct TaskAccess {
   using Control=RequestScope::Control;
+  using Owner=std::shared_ptr<RequestScope::Impl>;
+  static Owner owner(){return currentRequest?currentRequest->impl:Owner{};}
+  static bool liveReferences(const Owner &owner){return owner&&owner->references.phase==ReferenceAttachment::Phase::Active;}
   static std::shared_ptr<Control> control(){
     if(!currentRequest||activeTaskState)throw Trap("E_TASK_SCOPE","a task group requires a coordinator request scope",0);
     return currentRequest->impl->control;
@@ -45,8 +48,19 @@ struct TaskAccess {
     });
   }
   static void resume(const std::shared_ptr<Control> &control,const std::atomic<bool> &stop,
-      const std::shared_ptr<const task_detail::Cancellation> &cancel,TaskBody::Handle handle,TaskGroup &group,TaskGroup::Scope resultScope,SourceLocation location){
+      const std::shared_ptr<const task_detail::Cancellation> &cancel,TaskBody::Handle handle,TaskGroup &group,TaskGroup::Scope resultScope,SourceLocation location,const Owner &owner={}){
+    // A cooperative turn borrows the coordinator's reference attachment but
+    // still owns separate temporary handles and task cancellation state.
+    // Restore TLS even if scope construction or a source operation fails.
+    if(owner&&(!currentRequest||currentRequest->impl!=owner))throw Trap("E_TASK_SCOPE","owner task turn requires its enclosing request",0);
+    struct Restore {
+      RequestScope *request;
+      decltype(resource_detail::requestBinder) binder;
+      ~Restore(){currentRequest=request;resource_detail::requestBinder=binder;}
+    } restore{currentRequest,resource_detail::requestBinder};
+    if(owner)currentRequest=nullptr;
     RequestScope scope(control,&stop);scope.impl->taskStop=cancel;ParallelDepth depth;
+    if(owner){scope.impl->borrowedReferences=&owner->references;scope.impl->preserveParentProfile=true;}
     hostOperation(location,[&]{
       scope.checkExecution(0,true,true);handle.resume();
       if(handle.done()){
@@ -142,6 +156,9 @@ struct TaskGroup::Impl {
   std::vector<std::unique_ptr<Region>> regions;
   std::vector<uint64_t> graphSeen;std::vector<size_t> graphWork;uint64_t graphEpoch=0;
   std::shared_ptr<TaskAccess::Control> control;
+  std::optional<TaskOwnerExecution> ownerExecution;
+  TaskAccess::Owner ownerRequest;
+  bool ownerCollectionPending=false;
   std::thread::id coordinator=std::this_thread::get_id();
   std::mutex mutex;std::condition_variable changed;
   std::vector<std::unique_ptr<Job>> jobs;
@@ -197,7 +214,7 @@ struct TaskGroup::Impl {
   }
 #endif
 #endif
-  Impl(size_t workers,size_t maximum,TaskExternalLimits limits,bool fileReadFailures,bool sourceErrors):control(TaskAccess::control()),ready(maximum),sourceExceptions(sourceErrors),sourceFileReadFailures(fileReadFailures||sourceErrors),externalLimits(limits){
+  Impl(size_t workers,size_t maximum,TaskExternalLimits limits,bool fileReadFailures,bool sourceErrors,std::optional<TaskOwnerExecution> owner={}):control(TaskAccess::control()),ownerExecution(owner),ownerRequest(owner?TaskAccess::owner():TaskAccess::Owner{}),ready(maximum),sourceExceptions(sourceErrors),sourceFileReadFailures(fileReadFailures||sourceErrors),externalLimits(limits){
     if(workers<1||workers>16||maximum<1||maximum>65536)throw Trap("E_RANGE","task group requires1..16 workers and1..65536 task slots",0);
     jobs.reserve(maximum);pipes.reserve(1024);regions.reserve(1024);graphSeen.resize(maximum+1024);graphWork.reserve(maximum+1024);threads.reserve(workers);
     completionWork.resize(maximum+1024);completionQueued.resize(maximum+1024);
@@ -205,7 +222,7 @@ struct TaskGroup::Impl {
     if(profileCollector)profilePending.resize(maximum);
 #endif
     try{
-      for(size_t i=0;i<workers;++i)threads.emplace_back([this]{work();});
+      if(!ownerExecution)for(size_t i=0;i<workers;++i)threads.emplace_back([this]{work();});
       {std::lock_guard lock(mutex);started=true;}changed.notify_all();
     }catch(...){
       {std::lock_guard lock(mutex);stop=true;}changed.notify_all();
@@ -558,7 +575,10 @@ struct TaskGroup::Impl {
       if(!seen.insert(next.object.get()).second)continue;
       if(seen.size()>parallelMaximumNodes)throw DataError("E_LIMIT","source snapshot exceeds its object limit");
       const auto kind=next.object->kind;
-      if(kind==Data::Cell)throw DataError("E_TASK_VALUE","managed cells do not support source task transfer yet");
+      if(kind==Data::Cell){
+        if(!ownerExecution||!ownerExecution->validateCell)throw DataError("E_TASK_VALUE","managed cells require an owner-thread task context");
+        ownerExecution->validateCell(next,ownerExecution->context);
+      }
       if(kind==Data::External){
         if(!transfer.resources)throw DataError("E_TASK_VALUE","source snapshot cannot carry external resource authority");
         const auto &owner=externalResource(next.object);
@@ -791,7 +811,7 @@ struct TaskGroup::Impl {
     }
     return none;
   }
-  void work(){
+  bool work(bool one=false){
     for(;;){
 #ifdef NEX_TASK_PROFILE_ENABLED
       flushProfiles();TaskProfileTransaction profileTransaction(profileCollector);
@@ -801,7 +821,12 @@ struct TaskGroup::Impl {
         std::unique_lock lock(mutex);changed.wait(lock,[&]{return started||stop;});
         while(!stop){
           const bool resourceRegionsEnabled=bool(resourceRoot);
-          lock.unlock();flushValueRetirements();flushSourceTransfers();if(resourceRegionsEnabled)flushResourceRetirements();
+          lock.unlock();
+          flushValueRetirements();
+          if(ownerCollectionPending&&ownerExecution&&ownerExecution->collectCells&&TaskAccess::liveReferences(ownerRequest)){
+            ownerCollectionPending=false;ownerExecution->collectCells(ownerExecution->context);
+          }
+          flushSourceTransfers();if(resourceRegionsEnabled)flushResourceRetirements();
 #ifdef NEX_TASK_DEBUG_COMPLETION_ENABLED
           flushDebugCompletions();
 #endif
@@ -810,12 +835,13 @@ struct TaskGroup::Impl {
 #ifdef NEX_TASK_PROFILE_ENABLED
           if(profileCollector&&profileCount){lock.unlock();flushProfiles();taskProfileTransactionStamp=profileCollector->sample().wallNs;lock.lock();continue;}
 #endif
+          if(one)return false;
           changed.wait_for(lock,std::chrono::milliseconds(2));
 #ifdef NEX_TASK_PROFILE_ENABLED
           if(profileCollector){lock.unlock();flushProfiles();taskProfileTransactionStamp=profileCollector->sample().wallNs;lock.lock();}
 #endif
         }
-        if(stop)return;
+        if(stop)return false;
         runningJob=jobs[index].get();
       }
       auto previousState=activeTaskState;auto previousIndex=activeTaskIndex;
@@ -828,7 +854,7 @@ struct TaskGroup::Impl {
 #ifdef NEX_TASK_PROFILE_ENABLED
         TaskProfileTurnScope profile(runningJob->profileTask);
 #endif
-        TaskAccess::resume(control,cancelled,runningJob->cancellation,runningJob->body,*runningJob->group,runningJob->memberScope==none?Scope{}:Scope(runningJob->group->impl,runningJob->memberScope),runningJob->location);}
+        TaskAccess::resume(control,cancelled,runningJob->cancellation,runningJob->body,*runningJob->group,runningJob->memberScope==none?Scope{}:Scope(runningJob->group->impl,runningJob->memberScope),runningJob->location,ownerRequest);}
       catch(...){failure=std::current_exception();}
       activeTaskState=previousState;activeTaskIndex=previousIndex;
       TaskBody::Handle destroy;
@@ -856,11 +882,13 @@ struct TaskGroup::Impl {
 #endif
           destroy.destroy();
         }
+        if(ownerExecution)ownerCollectionPending=true;
 #ifdef NEX_TASK_PROFILE_ENABLED
         TaskProfileTransaction profileRetirement(profileCollector);
 #endif
         std::lock_guard lock(mutex);jobs[index]->cleanupDone=true;tryComplete(index);
       }
+      if(one)return true;
     }
   }
   bool suspend(size_t index,Awaiter::Kind kind,size_t target,Value value,std::exception_ptr sourceFailure={}){
@@ -932,6 +960,7 @@ struct TaskGroup::Impl {
 #ifdef NEX_TASK_PROFILE_ENABLED
       TaskProfileTransaction profileTick(profileCollector);
 #endif
+      const bool ownerProgress=ownerExecution&&work(true);
       flushValueRetirements();
 #ifdef NEX_TASK_DEBUG_COMPLETION_ENABLED
       flushDebugCompletions();
@@ -940,7 +969,7 @@ struct TaskGroup::Impl {
       if(completed==jobs.size()&&valueJobHead==none&&valuePipeHead==none&&!valueRetirementsInFlight)break;
       lock.unlock();
       if(!abort&&!coordinatorFailure)try{TaskAccess::poll(control);}catch(...){coordinatorFailure=std::current_exception();cancelled=true;}
-      lock.lock();selectFileReadFatal(coordinatorFailure);interrupt();changed.wait_for(lock,std::chrono::milliseconds(2));
+      lock.lock();selectFileReadFatal(coordinatorFailure);interrupt();if(!ownerProgress)changed.wait_for(lock,std::chrono::milliseconds(2));
     }
     if(resourceRoot){
       auto retirement=resourceRoot->beginClose();retirement.requestClose();
@@ -990,6 +1019,16 @@ TaskGroup::TaskGroup(size_t workers,size_t maximumTasks,TaskExternalLimits exter
   if(!validTaskExternalLimits(externalLimits))throw Trap("E_RANGE","invalid external kernel limits",0);
   return std::make_shared<Impl>(workers,maximumTasks,externalLimits,sourceFileReadFailures,sourceExceptionPrototype);
 });}
+TaskGroup::TaskGroup(TaskOwnerExecution owner,size_t maximumTasks,TaskExternalLimits externalLimits,bool sourceFileReadFailures,bool sourceExceptionPrototype){impl=hostOperation({},[&]{
+  if(maximumTasks<1||maximumTasks>65536||!validTaskExternalLimits(externalLimits))throw Trap("E_RANGE","invalid owner-thread task limits",0);
+  return std::make_shared<Impl>(1,maximumTasks,externalLimits,sourceFileReadFailures,sourceExceptionPrototype,owner);
+});}
+bool TaskGroup::ownerThreadExecution()const{return impl->ownerExecution.has_value();}
+void TaskGroup::validateCell(const Value &value)const{
+  impl->requireContext();
+  if(!impl->ownerExecution||!impl->ownerExecution->validateCell)throw DataError("E_TASK_VALUE","managed cells require an owner-thread task context");
+  impl->ownerExecution->validateCell(value,impl->ownerExecution->context);
+}
 bool TaskGroup::sourceExceptionPrototype()const{return impl->sourceExceptions;}
 TaskGroup::~TaskGroup(){try{impl->drain(true);}catch(...){/* Destruction cannot replace an active exception. */}}
 size_t TaskGroup::taskIndex(const Ticket &ticket)const{
@@ -1153,9 +1192,10 @@ Value TaskGroup::join(const Ticket &ticket){
 #endif
     {std::lock_guard lock(impl->mutex);Impl::preferFailure(coordinatorFailure,impl->sourceFileReadFatal);}
     if(!coordinatorFailure)try{TaskAccess::poll(impl->control);}catch(...){coordinatorFailure=std::current_exception();impl->cancelled=true;std::lock_guard lock(impl->mutex);impl->selectFileReadFatal(coordinatorFailure);}
+    const bool ownerProgress=impl->ownerExecution&&impl->work(true);
     std::unique_lock lock(impl->mutex);impl->interrupt();auto &job=*impl->jobs[index];
     if(job.done){job.observed=true;auto selected=impl->sourceFileReadFatal;Impl::preferFailure(selected,coordinatorFailure);Impl::preferFailure(selected,job.failure);Impl::preferFailure(selected,job.externalFatal);if(selected)std::rethrow_exception(selected);if(job.sourceFailure)std::rethrow_exception(job.sourceFailure);return job.result;}
-    impl->changed.wait_for(lock,std::chrono::milliseconds(2));
+    if(!ownerProgress)impl->changed.wait_for(lock,std::chrono::milliseconds(2));
   }
 }
 TaskGroup::Awaiter TaskGroup::await(const Ticket &ticket){return Awaiter(Awaiter::Future,this,taskIndex(ticket));}

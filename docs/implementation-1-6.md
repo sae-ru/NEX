@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.268.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.269.0"
 owner: repository
 ---
 
@@ -62,6 +62,14 @@ one cooperative heap. The21-scenario source-build probe covers cleanup/control
 and ownership, including unexpected host failures. It is the17th core group.
 Ordinary reference/native/TypeScript execution of cells with tasks remains
 `E_CELL_CONCURRENCY`; native/TypeScript/app/UI integration is the next work.
+
+Toolchain0.269 adds a matching private [native task emitter](reference-tasks.md#native-owner-thread-continuations)
+using verified TaskIR/MLIR/LLVM and explicit owner-thread execution. It preserves
+the enclosing request heap across resumes while IO retains its physical
+completion protocol. The independent AST source corpus supplies accepted and
+fatal/resource cases for O0/O2 execution. Ordinary CLI/TypeScript promotion,
+persistent app/UI contexts, debugger/profile and full SDK/platform acceptance
+remain next; the private descriptor cohort does not change published task ABI7.
 
 Toolchain0.266 adds an explicit [Java long domain](java-long.md), including
 wrapping64 arithmetic, bits/shifts, narrowing/sign extension and typed division

@@ -46,6 +46,14 @@ struct TaskBody {
 };
 struct TaskEvent {bool present=false;Value value;};
 struct TaskResourceSnapshot {std::vector<ExternalResource> external;std::vector<FileResource> files;bool empty()const noexcept{return external.empty()&&files.empty();}};
+// Explicit compiler-private owner-thread execution. The enclosing request and
+// optional reference context outlive the joined group. Hooks run only on that
+// thread, outside scheduler locks; they grant no file/foreign authority.
+struct TaskOwnerExecution {
+  void (*validateCell)(const Value &,void *)=nullptr;
+  void (*collectCells)(void *)=nullptr;
+  void *context=nullptr;
+};
 class TaskGroup {
   friend struct TaskValueAccess;
   struct Impl;std::shared_ptr<Impl> impl;
@@ -100,6 +108,9 @@ public:
   using ContextFactory=TaskBody (*)(TaskGroup&,Value,Value,const void*);
   explicit TaskGroup(size_t workers=4,size_t maximumTasks=4096,TaskExternalLimits externalLimits={},bool sourceFileReadFailures=false);
   TaskGroup(size_t workers,size_t maximumTasks,TaskExternalLimits externalLimits,bool sourceFileReadFailures,bool sourceExceptionPrototype);
+  explicit TaskGroup(TaskOwnerExecution,size_t maximumTasks=4096,TaskExternalLimits externalLimits={},bool sourceFileReadFailures=false,bool sourceExceptionPrototype=false);
+  bool ownerThreadExecution()const;
+  void validateCell(const Value &)const;
   bool sourceExceptionPrototype()const;
   ~TaskGroup();
   TaskGroup(const TaskGroup&)=delete;

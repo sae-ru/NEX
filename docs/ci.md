@@ -64,6 +64,16 @@ The subsequent [0.267 run](evidence/core-ci-0.267.0-2026-11-16.json) passed
 Linux and macOS at `906b3943`, with the16-group core. Toolchain0.268 adds the
 private reference-task source/control/resource probe as the17th core group;
 its hosted result belongs to its own later commit.
+The [0.268 result](evidence/core-ci-0.268.0-2026-11-16.json) passed both Linux
+and macOS at `d07e5e66`, with17 groups. Toolchain0.269 extends that same core
+group with seven owner-thread runtime cases. Its generated native O0/O2 agreement
+is a separate extended check; the preceding hosted run does not qualify it.
+
+The receipt runner also records a dedicated `ctest.log` with a SHA256. This
+belongs to that invocation, unlike CTest's shared `Testing/Temporary/LastTest.log`,
+which a nested inventory query can overwrite. Exact JUnit/exit/registry checks
+remain the result authority; the shared LastTest file is supplementary. A real
+nested-CTest fixture exercises the direct log without weakening failure/skip gates.
 
 ## Dependencies and provenance
 

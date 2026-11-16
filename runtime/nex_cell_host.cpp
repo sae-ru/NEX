@@ -27,6 +27,14 @@ int64_t readScalar(Handle *cell,int64_t tag,SourceLocation location){
 }
 Handle *readHeap(Handle *cell,SourceLocation location){auto result=read(cell,location);if(result.tag!=Value::Object)throw DataError("E_CELL_TYPE","cell payload is not a checked heap value");return makeHandle(result);}
 }
+#ifdef NEX_ASYNC_TASKS
+namespace nexrt {
+TaskOwnerExecution managedTaskOwnerExecution(){
+  return {[](const Value &value,void *context){(void)static_cast<CellHeap*>(context)->read(value);},
+    [](void *context){(void)static_cast<CellHeap*>(context)->collect();},&heap({})};
+}
+}
+#endif
 extern "C" {
 void nex_cell_request_enter(int64_t line){nexrt::hostOperation({line},[&]{if(!nexrt::inRequestScope())throw nexrt::DataError("E_CELL_CONTEXT","request entry requires a live RequestScope");nex_poll(line);});}
 void nex_cell_request_enter_at(int64_t line,const nexrt::NativeSite *site){nexrt::hostOperation({line,site},[&]{if(!nexrt::inRequestScope())throw nexrt::DataError("E_CELL_CONTEXT","request entry requires a live RequestScope");nex_poll(line);});}

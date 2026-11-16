@@ -1,4 +1,7 @@
 #include "nex_task_application.h"
+#ifdef NEX_MANAGED_TASKS
+#include "nex_cell_host.h"
+#endif
 #include <limits>
 
 namespace nexrt {
@@ -122,7 +125,19 @@ static int64_t executeTaskApplicationImpl(const TaskCodeDescriptor &code,const T
 #endif
     RequestScope request(limits.steps,limits.timeoutMs);
     auto configured=configuredTaskHost(code);auto context=configured.context;
-    TaskGroup group(limits.workers,4096,{},bool(code.requirements&(taskCodeImageFileRead|taskCodeImageFileWrite|taskCodeImageForeign|taskCodeImageFileStream)),sourceErrors);
+    const bool managed=code.abi==taskCodeManagedReferencesDevelopmentABI;
+    const bool io=code.requirements&(taskCodeImageFileRead|taskCodeImageFileWrite|taskCodeImageForeign|taskCodeImageFileStream);
+    auto ownedGroup=[&]() -> std::unique_ptr<TaskGroup>{
+      if(managed){
+#ifdef NEX_MANAGED_TASKS
+        return std::make_unique<TaskGroup>(managedTaskOwnerExecution(),4096,TaskExternalLimits{},io,sourceErrors);
+#else
+        throw DataError("E_TASK_STATE","managed task application requires its matching cell runtime");
+#endif
+      }
+      return std::make_unique<TaskGroup>(limits.workers,4096,TaskExternalLimits{},io,sourceErrors);
+    }();
+    auto &group=*ownedGroup;
     if(code.requirements&(taskCodeImageForeign|taskCodeImageFileStream))group.enableResourceRegions({},true,bool(code.requirements&taskCodeImageFileStream));
     auto environment=Data::make(Data::Closure);
     environment->taskCode=&code;

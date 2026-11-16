@@ -10,9 +10,12 @@
 #include <iostream>
 #include <stdexcept>
 using namespace nex;
+int runOwnerTaskRuntime();
 namespace {
 unsigned cases=0;
 namespace fs=std::filesystem;
+fs::path corpusDirectory;
+llvm::json::Array corpus;
 size_t files(){
 #ifdef _WIN32
  return nex_test::files().size();
@@ -39,19 +42,31 @@ void runs(const std::string &body,const std::string &expected,const fs::path &ro
   require(files()==descriptors,"managed task execution leaked file descriptors");
   try{(void)evaluate(p);throw std::runtime_error("ordinary execution unexpectedly enabled managed tasks");}
   catch(const Error &error){require(error.code=="E_CELL_CONCURRENCY","ordinary execution gate changed: "+error.code);}
+  if(!corpusDirectory.empty()){
+    auto file="case-"+std::to_string(cases)+".nex";
+    writeFile((corpusDirectory/file).string(),p.source);
+    corpus.push_back(llvm::json::Object{{"file",file},{"revision",identity},{"stdout",expected},{"files",!root.empty()}});
+  }
   ++cases;
 }
 void fails(const std::string &body,const std::string &code,uint64_t limit=1000000,nexrt::CellHeapLimits bounds={},const fs::path &root={}){
-  auto baseline=nexrt::liveObjects.load();auto descriptors=files();bool failed=false;
+  auto baseline=nexrt::liveObjects.load();auto descriptors=files();bool failed=false;std::string message,output;
   {
     std::unique_ptr<nexrt::TextFiles> text;std::unique_ptr<nexrt::FileScope> scope;
     if(!root.empty()){text=std::make_unique<nexrt::TextFiles>(root.string(),true);scope=std::make_unique<nexrt::FileScope>(*text);}
     try{auto p=source(body);(void)evaluateManagedTaskReferencePrototype(p,"main",limit,bounds);}
-    catch(const Error &error){require(error.code==code,"expected "+code+", got "+error.code+": "+error.message);failed=true;}
+    catch(const Error &error){require(error.code==code,"expected "+code+", got "+error.code+": "+error.message);message=error.message;output=error.output;failed=true;}
   }
   require(failed,"expected managed task failure "+code);
   require(nexrt::liveObjects.load()==baseline,"failed managed task retained values");
-  require(files()==descriptors,"failed managed task retained descriptors");++cases;
+  require(files()==descriptors,"failed managed task retained descriptors");
+  if(!corpusDirectory.empty()&&(code=="E_LIMIT"||code=="E_SOURCE_EXCEPTION"||code=="E_RESOURCE_SCOPE"||code=="E_ASSERT")){
+    auto p=source(body);auto file="case-"+std::to_string(cases)+".nex";
+    writeFile((corpusDirectory/file).string(),p.source);
+    corpus.push_back(llvm::json::Object{{"file",file},{"revision",revision(p)},{"stdout",output},{"files",!root.empty()},
+      {"error",code},{"message",message},{"steps",int64_t(limit)}});
+  }
+  ++cases;
 }
 struct Fixture {
  fs::path root=fs::temp_directory_path()/("nex-reference-tasks-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
@@ -89,7 +104,9 @@ fn main()->unit!{state,task,throw}{
  require(files()==descriptors,"observer/control failure leaked files");++cases;
 }
 }
-int main(){try{
+int main(int argc,char **argv){try{
+  require(argc==1||argc==2,"expected optional new corpus directory");
+  if(argc==2){corpusDirectory=fs::absolute(argv[1]);require(fs::create_directory(corpusDirectory),"corpus directory must be new");}
   runs(R"nex(
 fn main()->unit!{state,task,throw,io}{
  let value:cell<i64>=cell_new(1);
@@ -251,6 +268,11 @@ server fn main()->unit!{state,task,fs,throw}{
 )nex","E_ASSERT",1000000,{},fixture.root);
    require(!fs::exists(fixture.root/"wrong"),"fatal task ran user finally");
   }
-  std::cout<<"{\"ok\":true,\"cases\":"<<cases<<"}\n";
+  if(!corpusDirectory.empty()){
+    writeFile((corpusDirectory/"input").string(),"abcdef");
+    writeFile((corpusDirectory/"cases.json").string(),json(llvm::json::Object{{"schema","nex.reference-task-corpus/1"},{"cases",std::move(corpus)}},true));
+  }
+  require(runOwnerTaskRuntime()==0,"native owner-thread runtime probe failed");
+  std::cout<<"{\"ok\":true,\"cases\":"<<cases<<",\"owner_cases\":7}\n";
 }catch(const Error &error){std::cerr<<"case "<<cases<<": "<<error.code<<": "<<error.message<<" at "<<error.span.line<<'\n';return 1;}
 catch(const std::exception &error){std::cerr<<"case "<<cases<<": "<<error.what()<<'\n';return 1;}}

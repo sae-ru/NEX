@@ -57,7 +57,8 @@ def run(build, output, *, tier='core', jobs=1, ctest='ctest', policy=None):
         (output / 'tiers.json').write_text(json.dumps(inventory, indent=2) + '\n', encoding='utf-8')
         selected = inventory['tiers']['core']['selected_groups'] if tier == 'core' else None
         argv = [str(ctest), '--test-dir', str(build), '--output-on-failure',
-                '--no-tests=error', '-j', str(jobs), '--output-junit', str(output / 'results.xml')]
+                '--no-tests=error', '-j', str(jobs), '--output-log', str(output / 'ctest.log'),
+                '--output-junit', str(output / 'results.xml')]
         if tier == 'core':
             argv += ['-L', '^core$']
         code = command('ctest', argv)
@@ -69,6 +70,11 @@ def run(build, output, *, tier='core', jobs=1, ctest='ctest', policy=None):
     except (OSError, ValueError, TypeError, KeyError) as error:
         report['error'] = str(error)
     finally:
+        direct_log = output / 'ctest.log'
+        if direct_log.is_file():
+            report['direct_log_sha256'] = hashlib.sha256(direct_log.read_bytes()).hexdigest()
+        # LastTest.log is shared mutable CTest state. Even a nested inventory
+        # query can replace it; retain it only as supplementary diagnostics.
         log = build / 'Testing/Temporary/LastTest.log'
         if any(p['name'] == 'ctest' and 'exit_code' in p for p in report['phases']) and log.is_file():
             shutil.copyfile(log, output / 'LastTest.log')

@@ -196,6 +196,7 @@ struct RequestScope::Impl {
   std::function<bool()> cancellation;
   ReferenceAttachment references;
   ApplicationState *application=currentApplication;
+  ReferenceAttachment *borrowedReferences=nullptr;
   bool worker=false;
   bool preserveParentProfile=false;
   size_t functionBaseline=functionOwners.depth;
@@ -220,7 +221,7 @@ RequestScope::~RequestScope(){
   if(!impl->worker)impl->control->active=false;
   if(!impl->preserveParentProfile)profileUnwind();impl->resources.revoke();functionOwners.unwind(impl->functionBaseline);while(!impl->handles.empty())delete *impl->handles.begin();
   impl->references.close();
-  if(impl->worker)cleanupRuntimeResources();
+  if(impl->worker&&!impl->borrowedReferences)cleanupRuntimeResources();
   currentRequest=nullptr;resource_detail::requestBinder=nullptr;
 }
 void *RequestScope::referenceContext(void *(*create)(void *),void *argument,void (*destroy)(void *)noexcept,bool exclusive){
@@ -231,7 +232,7 @@ void *RequestScope::referenceContext(void *(*create)(void *),void *argument,void
       (state->workerStop&&state->workerStop->load())||std::chrono::steady_clock::now()>=state->control->deadline)
     throw DataError("E_CELL_CONTEXT","managed reference request is no longer active");
   if(state->application!=currentApplication)throw DataError("E_CELL_CONTEXT","use the request entry instead of an application wrapper inside a request");
-  return state->references.get(create,argument,destroy,exclusive);
+  return (state->borrowedReferences?*state->borrowedReferences:state->references).get(create,argument,destroy,exclusive);
 }
 void RequestScope::track(Handle *p){impl->handles.insert(p);}
 void RequestScope::untrack(Handle *p){impl->handles.erase(p);}
