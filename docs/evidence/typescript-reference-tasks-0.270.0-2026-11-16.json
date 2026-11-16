@@ -1,0 +1,1137 @@
+{
+  "schema": "nex.typescript-reference-tasks-development/1",
+  "ok": true,
+  "toolchain": "0.270.0",
+  "source_language": "0.30",
+  "compiler_fallback": "0.28",
+  "source_version_changed": false,
+  "source_format_changed": false,
+  "published_task_ABI": 7,
+  "public_C_ABI": 1,
+  "ordinary_CLI_cell_task_enabled": false,
+  "base_commit": "acb5e00266603da892f9b73e110bff0c4eb59f02",
+  "source_files_sha256": {
+    "PLAN.md": "5c06bbb560d51dada22cd39382f5460f8eeff201dabbd3c1a25c767ab992041a",
+    "README.md": "098d71b6978dd260efaa20a8c9a95b608c77137f18cb306c1948517f9be32033",
+    "README.ru.md": "8847c8300d2f265f2b94a8ad1dd8248ef1b2aee1c5d332312707ae3bafcdb39a",
+    "STATUS.md": "cfe756f2429de048fb74f3a56975ea4d6ab89ae210a02652929bce6cb0a067b1",
+    "VERSION": "adffb39b2abe097b0b525ec4f885abe2e02ddfed590c89cbf891b119f1a4e084",
+    "cmake/Install.cmake": "42362e22e902c86e078928c82b1a9b6e782121e85478c5996c6147545f1611f1",
+    "cmake/Tests.cmake": "9a24d9ecc460d5afb1b8d6640d2e9a6e194f91a90abfc546730c9330b9870d75",
+    "cmake/test-tiers.json": "93b9e82457d6a813280064e82f0d0dd0043f38b86667adda77993ed0d03e1906",
+    "docs/INDEX.md": "7cd26c80eb6d4efaf1530b2217653fc546b8eb7d627b1cee4be12afab31b0401",
+    "docs/STATUS.current.md": "81ef4bfddfe8cf88ad12ad1158dea6cc304d018bb0fb10b281922dc75b49c7c8",
+    "docs/implementation-1-6.md": "85ffa6784ca032446cc5cf951c80ca8a31b54b9b130495c09f5e7bd1e03178bd",
+    "docs/language.md": "a167e6b011e2c5c4eceb2b0d8346d63fcfd3d800e8c3338b2ebe69a7707cee03",
+    "docs/migration-readiness.md": "6046b7a20351a1e49f961fd56574c24d7a3a826d7f82667a06f1a9efae282638",
+    "docs/reference-tasks.md": "32f9e2384db18da19a31e2116f3ef5b6ebc9eed6c9b7f39902a57ab0445a84d4",
+    "docs/references030.ebnf": "12ab290c52c34d88434f10ccc4d6301e8915586a5730b62f09f01a02266c34a3",
+    "docs/web.md": "4b09f6c3a3c834302ca2d65606fe5e326c7888aab27176626ca8f169ad0b3362",
+    "include/nex/managed_references.h": "2e825db55c5a9069772a4c33c54a6b2aff982f2965f75705adc97d4a43334ee7",
+    "llm/language-pack.json": "02e8268a50038cd783e1066b31301f59982b543b80587bc218f0c1d07bf292b7",
+    "src/managed_references.cpp": "eb23f7856f0a8e5dc8893b1ccdadc1ab9a5335130cdf302238fc43fbf29dfcd7",
+    "src/typescript.cpp": "82358b7f76fe209e88bb5ccea989270220a369028ff92123bf8859f15b638d40",
+    "tests/reference_tasks.cpp": "2025cddc4e55b7377557605ebe6a6f49fbb83061203646c90693983da2812d9d",
+    "web/nex-managed-context.ts": "b3bc3a4c54653b21a714670b5902e3b7eead1c55fbf09c2e9edc2fd6ec55f08e",
+    "web/nex-managed-heap.ts": "9f7fdd254a7f42d20fa8fee3445ca8db9944415ea4d13041681b2fd6f43fce35",
+    "web/nex-managed-runtime.ts": "a49d81a5c011d449ca5df2fe38dd9890a25cae13630c4e3efd2a9d1cc71a79ea",
+    "web/nex-task-runtime.ts": "53c04df0d55a742faf59a1672b5e8d8d53241a8756c101b332b346321416a837",
+    "tests/typescript_reference_tasks.py": "1c20e5725d8f48f1099b6e17c98a3548ad232bf5182922e9ee4621586d9346b9",
+    "tests/typescript_reference_tasks_emit.cpp": "94b0fb3efa34ce49797592adf8a42d9d405f7b8d211f29fd3af1f01210451a9c",
+    "web/nex-managed-task-runtime.ts": "0063ad9b9dd1c16d8241cb29271875d0987c4ce66a6ee1c92965b3c9a4a4e1a5"
+  },
+  "build": {
+    "command": "cmake --build build -j 4",
+    "exit_code": 0,
+    "stdout_sha256": "bddd561b6c5008c099dd22ff25d33c3c9485f487be045b9a3b530de884d396ca",
+    "stderr_sha256": "1f6780da90fd037be6dccd76888fd27623c3fc0d3d63819c79f173caa5f7095f"
+  },
+  "compiler_discovery": {
+    "ok": true,
+    "shared_fields": [
+      "browser_workers",
+      "bytes_construction",
+      "cli_interface",
+      "compute",
+      "device",
+      "diagnostic_catalogue",
+      "dns_provider",
+      "effect_parameters",
+      "features_scope",
+      "foreign_trap_reporting",
+      "generic_features",
+      "gpu_codegen",
+      "http_client_provider",
+      "http_response_streams",
+      "http_storage_transactions",
+      "ieee_numeric_kernel",
+      "language_pack_contract",
+      "list_construction",
+      "llm_cost",
+      "llm_entry",
+      "managed_references",
+      "model",
+      "native_application_lifetime",
+      "native_core",
+      "native_debug_image_binding",
+      "native_debug_pages",
+      "native_debug_session",
+      "native_entry_abi",
+      "native_runtime_search",
+      "native_tool_arguments",
+      "opencl_codegen",
+      "patch_entities",
+      "project_capture_layout",
+      "project_languages",
+      "resource_executor",
+      "resource_regions",
+      "result_propagation",
+      "runtime_contracts",
+      "runtime_diagnostic_messages",
+      "scoped_discovery",
+      "source_concurrency",
+      "source_contracts",
+      "source_contracts_development",
+      "source_exception_prototype",
+      "source_exceptions",
+      "source_formatting",
+      "source_resources",
+      "standard_library",
+      "structured_tasks_runtime",
+      "task_debugging",
+      "task_execution_limits",
+      "task_external_completion",
+      "task_file_reads",
+      "task_file_streams",
+      "task_file_streams_host",
+      "task_file_streams_prototype",
+      "task_file_writes",
+      "task_file_writes_host",
+      "task_file_writes_prototype",
+      "task_foreign_prototype",
+      "task_network_transport",
+      "task_profile_collector",
+      "task_profiling",
+      "task_provider_debugging",
+      "task_provider_profiling",
+      "task_providers",
+      "task_shared_providers",
+      "task_value_retirement",
+      "tcp_provider",
+      "text_construction",
+      "wasm_features"
+    ],
+    "shared_field_count": 71,
+    "compared_JSON_values": 4352,
+    "errors": [],
+    "schema": "nex.language-pack-validation/1",
+    "compiler_sha256": "9c83009df51f888152e3503408d09be5d6030fb7c2aa9d813a71bb6d426fd58d",
+    "manifest_sha256": "02e8268a50038cd783e1066b31301f59982b543b80587bc218f0c1d07bf292b7",
+    "language": "0.28",
+    "toolchain": "0.270.0",
+    "compiler_build": "ad1d0f227c5cfd777a2d3078f89f8f6d2a4264b34f541169673f96ba25b002c8",
+    "descriptor_hash": "a5c28fca40af8e900dfcd0948cac83d42115a1386b868ee5a646166cb31a9559"
+  },
+  "ctest": {
+    "core": {
+      "schema": "nex.ci-ctest/1",
+      "ok": true,
+      "tier": "core",
+      "build": "/Users/sae/projects/NEX/build",
+      "phases": [
+        {
+          "name": "registry",
+          "command": [
+            "ctest",
+            "--test-dir",
+            "/Users/sae/projects/NEX/build",
+            "--show-only=json-v1"
+          ],
+          "status": "passed",
+          "exit_code": 0
+        },
+        {
+          "name": "ctest",
+          "command": [
+            "ctest",
+            "--test-dir",
+            "/Users/sae/projects/NEX/build",
+            "--output-on-failure",
+            "--no-tests=error",
+            "-j",
+            "1",
+            "--output-log",
+            "/Users/sae/projects/NEX/build/typescript-reference-tasks-v1/core/ctest.log",
+            "--output-junit",
+            "/Users/sae/projects/NEX/build/typescript-reference-tasks-v1/core/results.xml",
+            "-L",
+            "^core$"
+          ],
+          "status": "passed",
+          "exit_code": 0
+        }
+      ],
+      "release_qualification": false,
+      "policy_sha256": "93b9e82457d6a813280064e82f0d0dd0043f38b86667adda77993ed0d03e1906",
+      "ctest": {
+        "schema": "nex.ctest-verification/1",
+        "ok": true,
+        "ctest_exit_code": 0,
+        "selected_groups": [
+          "bytes_runtime_native",
+          "ctest_report_validation",
+          "diagnostic_catalogue",
+          "discovery",
+          "float_runtime_native",
+          "frontend_diagnostics_native",
+          "language_pack_contract",
+          "llm_cost_ledger",
+          "llm_local_collector",
+          "managed_reference_native_context",
+          "managed_references_frontend_reference",
+          "reference_tasks_development",
+          "task_frontend_native",
+          "test_tiers",
+          "typed_source_frontend_reference",
+          "value_owner_runtime",
+          "value_retirement_runtime"
+        ],
+        "required_fixture_groups": [],
+        "expected_groups": [
+          "bytes_runtime_native",
+          "ctest_report_validation",
+          "diagnostic_catalogue",
+          "discovery",
+          "float_runtime_native",
+          "frontend_diagnostics_native",
+          "language_pack_contract",
+          "llm_cost_ledger",
+          "llm_local_collector",
+          "managed_reference_native_context",
+          "managed_references_frontend_reference",
+          "reference_tasks_development",
+          "task_frontend_native",
+          "test_tiers",
+          "typed_source_frontend_reference",
+          "value_owner_runtime",
+          "value_retirement_runtime"
+        ],
+        "observed_groups": [
+          "llm_cost_ledger",
+          "llm_local_collector",
+          "ctest_report_validation",
+          "discovery",
+          "language_pack_contract",
+          "task_frontend_native",
+          "reference_tasks_development",
+          "frontend_diagnostics_native",
+          "value_owner_runtime",
+          "value_retirement_runtime",
+          "managed_references_frontend_reference",
+          "managed_reference_native_context",
+          "bytes_runtime_native",
+          "float_runtime_native",
+          "typed_source_frontend_reference",
+          "test_tiers",
+          "diagnostic_catalogue"
+        ],
+        "results": {
+          "passed": [
+            "llm_cost_ledger",
+            "llm_local_collector",
+            "ctest_report_validation",
+            "discovery",
+            "language_pack_contract",
+            "task_frontend_native",
+            "reference_tasks_development",
+            "frontend_diagnostics_native",
+            "value_owner_runtime",
+            "value_retirement_runtime",
+            "managed_references_frontend_reference",
+            "managed_reference_native_context",
+            "bytes_runtime_native",
+            "float_runtime_native",
+            "typed_source_frontend_reference",
+            "test_tiers",
+            "diagnostic_catalogue"
+          ],
+          "failed": [],
+          "skipped": []
+        },
+        "registry_sha256": "e604d4bf00a271dc716fc830c85511a1c4213f4318fd663db6a85f938718120f",
+        "junit_sha256": "de341043b37df1cca68c7f20254631882bb4cd62e2465158b5a42492fb7fd358"
+      },
+      "direct_log_sha256": "aa54d613295968d2c18e237ef41f1724efa3cdeaf43c3f2c3912851eb2859c97",
+      "seconds": 27.713
+    },
+    "affected": {
+      "schema": "nex.ctest-verification/1",
+      "ok": true,
+      "ctest_exit_code": 0,
+      "selected_groups": [
+        "managed_heap_typescript",
+        "managed_reference_value_exports",
+        "managed_references_typescript",
+        "reference_tasks_boundaries",
+        "references030_versioned",
+        "source_exception_tasks_typescript",
+        "task_external_typescript",
+        "task_file_reads_typescript",
+        "task_typescript_public",
+        "task_typescript_steps",
+        "typed_source_tasks",
+        "typescript_reference_tasks_development"
+      ],
+      "required_fixture_groups": [],
+      "expected_groups": [
+        "managed_heap_typescript",
+        "managed_reference_value_exports",
+        "managed_references_typescript",
+        "reference_tasks_boundaries",
+        "references030_versioned",
+        "source_exception_tasks_typescript",
+        "task_external_typescript",
+        "task_file_reads_typescript",
+        "task_typescript_public",
+        "task_typescript_steps",
+        "typed_source_tasks",
+        "typescript_reference_tasks_development"
+      ],
+      "observed_groups": [
+        "task_typescript_steps",
+        "task_typescript_public",
+        "typescript_reference_tasks_development",
+        "reference_tasks_boundaries",
+        "managed_heap_typescript",
+        "references030_versioned",
+        "managed_references_typescript",
+        "managed_reference_value_exports",
+        "task_file_reads_typescript",
+        "task_external_typescript",
+        "source_exception_tasks_typescript",
+        "typed_source_tasks"
+      ],
+      "results": {
+        "passed": [
+          "task_typescript_steps",
+          "task_typescript_public",
+          "typescript_reference_tasks_development",
+          "reference_tasks_boundaries",
+          "managed_heap_typescript",
+          "references030_versioned",
+          "managed_references_typescript",
+          "managed_reference_value_exports",
+          "task_file_reads_typescript",
+          "task_external_typescript",
+          "source_exception_tasks_typescript",
+          "typed_source_tasks"
+        ],
+        "failed": [],
+        "skipped": []
+      },
+      "registry_sha256": "e604d4bf00a271dc716fc830c85511a1c4213f4318fd663db6a85f938718120f",
+      "junit_sha256": "820a55114430bf23a74f396bf1a298595fc0faacf641f8668085e37ecdb0b800"
+    },
+    "verified_distinct_groups": 29,
+    "affected_direct_log_sha256": "c93c40162d0190eed1f232dfaca8f08493e49d804832315eb3c74e36e24b8fcf",
+    "complete_source_regression": false
+  },
+  "TypeScript_agreement": {
+    "report_path": "build/nex-ts-reference-tasks-lcbt9rl1/report.json",
+    "report_sha256": "f77822546f955408c66a8215b06d24f8e1d2d49bf67424df1ca265ab82afad13",
+    "result": {
+      "schema": "nex.typescript-reference-task-agreement/1",
+      "ok": true,
+      "source_language": "0.30",
+      "public_source_enabled": false,
+      "emitter_sha256": "09955569834b036b74ab2a3279bd7e84b16ed967e3000763b4b37010741f6688",
+      "reference_sha256": "13c575f03dedd8fae709b55738c4cdf74ed3d067227dce7ac47d2b15788184f7",
+      "node_sha256": "5d9d3872911e2340a43b707962e68143de8a4e8d54628845c0c4f2de1fb7cd5c",
+      "tsc_sha256": "2219f428a7e55aaf1f7ad85b9b0f0cf5078aeb76ccc9a7c6036c92d48f492ffd",
+      "runtime_sources_sha256": {
+        "nex-runtime.ts": "88db42c861d0aeec44cfe9f4b0cc7bd38ba5de95b29f6dbe6d142dd5b8c00fd2",
+        "nex-bytes.ts": "f2d020fd01cb6fef744037cffeeea4852330c8f48525c64a1a36211bebb1068d",
+        "nex-source-exception-runtime.ts": "c73ec0e2609914331cdb54417f4f555312948bd1f877ff55ca587524d329f19b",
+        "nex-task-runtime.ts": "53c04df0d55a742faf59a1672b5e8d8d53241a8756c101b332b346321416a837",
+        "nex-managed-heap.ts": "9f7fdd254a7f42d20fa8fee3445ca8db9944415ea4d13041681b2fd6f43fce35",
+        "nex-managed-context.ts": "b3bc3a4c54653b21a714670b5902e3b7eead1c55fbf09c2e9edc2fd6ec55f08e",
+        "nex-managed-runtime.ts": "a49d81a5c011d449ca5df2fe38dd9890a25cae13630c4e3efd2a9d1cc71a79ea",
+        "nex-managed-task-runtime.ts": "0063ad9b9dd1c16d8241cb29271875d0987c4ce66a6ee1c92965b3c9a4a4e1a5"
+      },
+      "gates": {
+        "ok": true,
+        "reachable_only": true,
+        "rejected": 8
+      },
+      "cases": [
+        {
+          "name": "case-0",
+          "source_sha256": "d8efe639cd0bcc699809d1e4d5345c4290758182eb18ccb1739e65bec06767e7",
+          "revision": "a869f408176ccabf9feeaa8038ac4e927b6690e036fa7d946d65128037b56f60",
+          "kind": "return",
+          "code": null,
+          "strict_types": true,
+          "remaining_nodes": 0,
+          "statistics": {
+            "steps": 29,
+            "tasks": 2,
+            "scopes": 1,
+            "channels": 0,
+            "completed": true,
+            "retainedFrames": 0,
+            "activeCalls": 0,
+            "limits": {
+              "steps": 1000000,
+              "timeoutMs": 5000,
+              "workers": 16
+            },
+            "actualWorkers": 1,
+            "externalPending": 0,
+            "externalReservedBytes": 0,
+            "externalMailbox": 0,
+            "externalStarted": 0,
+            "externalSettled": 0,
+            "externalPeakPending": 0,
+            "externalPeakBytes": 0
+          },
+          "passed": true
+        },
+        {
+          "name": "case-1",
+          "source_sha256": "4b7fba0fd70de9f94bceafa3bcc05fc70218310f838d75c498fe2bba3fe97be5",
+          "revision": "b226fce53a9251c2f293d7f3e24e556fd5eb5453718e27e2ce85c24dd5592604",
+          "kind": "return",
+          "code": null,
+          "strict_types": true,
+          "remaining_nodes": 0,
+          "statistics": {
+            "steps": 33,
+            "tasks": 2,
+            "scopes": 1,
+            "channels": 1,
+            "completed": true,
+            "retainedFrames": 0,
+            "activeCalls": 0,
+            "limits": {
+              "steps": 1000000,
+              "timeoutMs": 5000,
+              "workers": 16
+            },
+            "actualWorkers": 1,
+            "externalPending": 0,
+            "externalReservedBytes": 0,
+            "externalMailbox": 0,
+            "externalStarted": 0,
+            "externalSettled": 0,
+            "externalPeakPending": 0,
+            "externalPeakBytes": 0
+          },
+          "passed": true
+        },
+        {
+          "name": "case-2",
+          "source_sha256": "78093a374eca5c3512c50515e1e554296fbca302ab7cedf9a6bfefaa206d6467",
+          "revision": "1cee298cb40b7cf201237e1a9b293ee758bca38eed8f8e9f913c5e9be4161771",
+          "kind": "return",
+          "code": null,
+          "strict_types": true,
+          "remaining_nodes": 0,
+          "statistics": {
+            "steps": 34,
+            "tasks": 2,
+            "scopes": 1,
+            "channels": 0,
+            "completed": true,
+            "retainedFrames": 0,
+            "activeCalls": 0,
+            "limits": {
+              "steps": 1000000,
+              "timeoutMs": 5000,
+              "workers": 16
+            },
+            "actualWorkers": 1,
+            "externalPending": 0,
+            "externalReservedBytes": 0,
+            "externalMailbox": 0,
+            "externalStarted": 0,
+            "externalSettled": 0,
+            "externalPeakPending": 0,
+            "externalPeakBytes": 0
+          },
+          "passed": true
+        },
+        {
+          "name": "case-3",
+          "source_sha256": "1be2d7da931e85638d6503552db446d163bf7988edfc566f351c48bced05c2a5",
+          "revision": "38845a6c90dfa49cb9424611a43c44bb5ca7e977e64cf829f568b20d457943f8",
+          "kind": "return",
+          "code": null,
+          "strict_types": true,
+          "remaining_nodes": 0,
+          "statistics": {
+            "steps": 40,
+            "tasks": 2,
+            "scopes": 1,
+            "channels": 0,
+            "completed": true,
+            "retainedFrames": 0,
+            "activeCalls": 0,
+            "limits": {
+              "steps": 1000000,
+              "timeoutMs": 5000,
+              "workers": 16
+            },
+            "actualWorkers": 1,
+            "externalPending": 0,
+            "externalReservedBytes": 0,
+            "externalMailbox": 0,
+            "externalStarted": 0,
+            "externalSettled": 0,
+            "externalPeakPending": 0,
+            "externalPeakBytes": 0
+          },
+          "passed": true
+        },
+        {
+          "name": "case-4",
+          "source_sha256": "1847188566708b2d639ba1fd5699a01753b677863874c04902c54ae239d9a3bb",
+          "revision": "715f9cd49459c9be158dc69ee3c9bd7c2b2ff33505df9d56c9029dbf24fd4891",
+          "kind": "return",
+          "code": null,
+          "strict_types": true,
+          "remaining_nodes": 0,
+          "statistics": {
+            "steps": 43,
+            "tasks": 2,
+            "scopes": 1,
+            "channels": 1,
+            "completed": true,
+            "retainedFrames": 0,
+            "activeCalls": 0,
+            "limits": {
+              "steps": 1000000,
+              "timeoutMs": 5000,
+              "workers": 16
+            },
+            "actualWorkers": 1,
+            "externalPending": 0,
+            "externalReservedBytes": 0,
+            "externalMailbox": 0,
+            "externalStarted": 0,
+            "externalSettled": 0,
+            "externalPeakPending": 0,
+            "externalPeakBytes": 0
+          },
+          "passed": true
+        },
+        {
+          "name": "case-5",
+          "source_sha256": "906af6946683728c578175783a75a39759228d29368c3399f3fa91305e1a3b69",
+          "revision": "0b1fa87549af09d537020e0633041df73a62f34e056f2df1e39a50bc3b571b5f",
+          "kind": "return",
+          "code": null,
+          "strict_types": true,
+          "remaining_nodes": 0,
+          "statistics": {
+            "steps": 34,
+            "tasks": 2,
+            "scopes": 1,
+            "channels": 0,
+            "completed": true,
+            "retainedFrames": 0,
+            "activeCalls": 0,
+            "limits": {
+              "steps": 1000000,
+              "timeoutMs": 5000,
+              "workers": 16
+            },
+            "actualWorkers": 1,
+            "externalPending": 0,
+            "externalReservedBytes": 0,
+            "externalMailbox": 0,
+            "externalStarted": 0,
+            "externalSettled": 0,
+            "externalPeakPending": 0,
+            "externalPeakBytes": 0
+          },
+          "passed": true
+        },
+        {
+          "name": "case-6",
+          "source_sha256": "5c5879b86842d99301d1cc6bcea3ca0b21637dbad19505ddf22160b6a4588933",
+          "revision": "149c100c9bc71f977e67d26df65ad54d456661ee7042d17db4b6028b3c8de1eb",
+          "kind": "trap",
+          "code": "E_LIMIT",
+          "strict_types": true,
+          "remaining_nodes": 0,
+          "statistics": {
+            "steps": 180,
+            "tasks": 2,
+            "scopes": 1,
+            "channels": 0,
+            "completed": true,
+            "retainedFrames": 0,
+            "activeCalls": 0,
+            "limits": {
+              "steps": 180,
+              "timeoutMs": 5000,
+              "workers": 16
+            },
+            "actualWorkers": 1,
+            "externalPending": 0,
+            "externalReservedBytes": 0,
+            "externalMailbox": 0,
+            "externalStarted": 0,
+            "externalSettled": 0,
+            "externalPeakPending": 0,
+            "externalPeakBytes": 0
+          },
+          "passed": true
+        },
+        {
+          "name": "case-8",
+          "source_sha256": "dce2c5111345c1e7afcf51dbbc1009c3eb47d0096af647514d3352cb6fe25f1b",
+          "revision": "d1513728f369001ba923f95ccef73607d21443f87e56da1f3604e8416e739532",
+          "kind": "trap",
+          "code": "E_SOURCE_EXCEPTION",
+          "strict_types": true,
+          "remaining_nodes": 0,
+          "statistics": {
+            "steps": 6,
+            "tasks": 1,
+            "scopes": 0,
+            "channels": 0,
+            "completed": true,
+            "retainedFrames": 0,
+            "activeCalls": 0,
+            "limits": {
+              "steps": 1000000,
+              "timeoutMs": 5000,
+              "workers": 16
+            },
+            "actualWorkers": 1,
+            "externalPending": 0,
+            "externalReservedBytes": 0,
+            "externalMailbox": 0,
+            "externalStarted": 0,
+            "externalSettled": 0,
+            "externalPeakPending": 0,
+            "externalPeakBytes": 0
+          },
+          "passed": true
+        },
+        {
+          "name": "case-12",
+          "source_sha256": "1b6e33ba978346cb178451ca7636649c03a6f4d213a880886f8b3e042da68f42",
+          "revision": "737bdfd4a055640713d764ac4e3e9f7cbfd51387f034f9c66a7d36141e4ea187",
+          "kind": "return",
+          "code": null,
+          "strict_types": true,
+          "remaining_nodes": 0,
+          "statistics": {
+            "steps": 34,
+            "tasks": 2,
+            "scopes": 1,
+            "channels": 0,
+            "completed": true,
+            "retainedFrames": 0,
+            "activeCalls": 0,
+            "limits": {
+              "steps": 1000000,
+              "timeoutMs": 5000,
+              "workers": 16
+            },
+            "actualWorkers": 1,
+            "externalPending": 0,
+            "externalReservedBytes": 0,
+            "externalMailbox": 0,
+            "externalStarted": 0,
+            "externalSettled": 0,
+            "externalPeakPending": 0,
+            "externalPeakBytes": 0
+          },
+          "passed": true
+        },
+        {
+          "name": "pending-callback",
+          "source_sha256": "58549401343818107114e5b5a4235a8024d5d57aad4a6ef9ac600fd931a14dd3",
+          "revision": "8522351f42b20d1f4fad74297e98a96d457d0d22c0f8685f835af919cb102f9d",
+          "kind": "return",
+          "code": null,
+          "strict_types": true,
+          "remaining_nodes": 0,
+          "statistics": {
+            "steps": 22,
+            "tasks": 2,
+            "scopes": 1,
+            "channels": 0,
+            "completed": true,
+            "retainedFrames": 0,
+            "activeCalls": 0,
+            "limits": {
+              "steps": 1000000,
+              "timeoutMs": 5000,
+              "workers": 16
+            },
+            "actualWorkers": 1,
+            "externalPending": 0,
+            "externalReservedBytes": 0,
+            "externalMailbox": 0,
+            "externalStarted": 0,
+            "externalSettled": 0,
+            "externalPeakPending": 0,
+            "externalPeakBytes": 0
+          },
+          "passed": true
+        },
+        {
+          "name": "buffered-only-root",
+          "source_sha256": "c39377483cbbc807f5c7261a2251adfbf436d3e175c286a1d9273553b57befc4",
+          "revision": "1e67eb00737da616f8a025cbbd016a6d9432740b555780b099b7be5bf39f72af",
+          "kind": "return",
+          "code": null,
+          "strict_types": true,
+          "remaining_nodes": 0,
+          "statistics": {
+            "steps": 25,
+            "tasks": 2,
+            "scopes": 1,
+            "channels": 1,
+            "completed": true,
+            "retainedFrames": 0,
+            "activeCalls": 0,
+            "limits": {
+              "steps": 1000000,
+              "timeoutMs": 5000,
+              "workers": 16
+            },
+            "actualWorkers": 1,
+            "externalPending": 0,
+            "externalReservedBytes": 0,
+            "externalMailbox": 0,
+            "externalStarted": 0,
+            "externalSettled": 0,
+            "externalPeakPending": 0,
+            "externalPeakBytes": 0
+          },
+          "passed": true
+        },
+        {
+          "name": "pending-return-finally",
+          "source_sha256": "75182e18cd0275dba084f8a7097a51cccdf51dbca18e76362ae3090941132f97",
+          "revision": "ce23c1a43dce3a85fb9a5ce9aac4aad04985b89510a4552e6d7c16903509abac",
+          "kind": "return",
+          "code": null,
+          "strict_types": true,
+          "remaining_nodes": 0,
+          "statistics": {
+            "steps": 26,
+            "tasks": 2,
+            "scopes": 1,
+            "channels": 0,
+            "completed": true,
+            "retainedFrames": 0,
+            "activeCalls": 0,
+            "limits": {
+              "steps": 1000000,
+              "timeoutMs": 5000,
+              "workers": 16
+            },
+            "actualWorkers": 1,
+            "externalPending": 0,
+            "externalReservedBytes": 0,
+            "externalMailbox": 0,
+            "externalStarted": 0,
+            "externalSettled": 0,
+            "externalPeakPending": 0,
+            "externalPeakBytes": 0
+          },
+          "passed": true
+        },
+        {
+          "name": "yielding-guard",
+          "source_sha256": "2f83704322dd36ef46bf2f984799ad5aef574371abecc253d4c0694edadfa2bc",
+          "revision": "7e810c96c7a7ec9d9a0cd6d98b50ff82b9d55e5f450933480f16ed7dfa995b5d",
+          "kind": "return",
+          "code": null,
+          "strict_types": true,
+          "remaining_nodes": 0,
+          "statistics": {
+            "steps": 13,
+            "tasks": 1,
+            "scopes": 0,
+            "channels": 0,
+            "completed": true,
+            "retainedFrames": 0,
+            "activeCalls": 0,
+            "limits": {
+              "steps": 1000000,
+              "timeoutMs": 5000,
+              "workers": 16
+            },
+            "actualWorkers": 1,
+            "externalPending": 0,
+            "externalReservedBytes": 0,
+            "externalMailbox": 0,
+            "externalStarted": 0,
+            "externalSettled": 0,
+            "externalPeakPending": 0,
+            "externalPeakBytes": 0
+          },
+          "passed": true
+        },
+        {
+          "name": "retired-error-roots",
+          "source_sha256": "e19efade4de083f58eb72dbf085398afc7851f5831c17b37cb2f8b8b36950b9f",
+          "revision": "633b0167fa97a0e103c0802d50c8b34b9c485e247690415bd5e5ae4a399d4079",
+          "kind": "return",
+          "code": null,
+          "strict_types": true,
+          "remaining_nodes": 0,
+          "statistics": {
+            "steps": 40,
+            "tasks": 3,
+            "scopes": 1,
+            "channels": 0,
+            "completed": true,
+            "retainedFrames": 0,
+            "activeCalls": 0,
+            "limits": {
+              "steps": 1000000,
+              "timeoutMs": 5000,
+              "workers": 16
+            },
+            "actualWorkers": 1,
+            "externalPending": 0,
+            "externalReservedBytes": 0,
+            "externalMailbox": 0,
+            "externalStarted": 0,
+            "externalSettled": 0,
+            "externalPeakPending": 0,
+            "externalPeakBytes": 0
+          },
+          "passed": true
+        },
+        {
+          "name": "match-roots",
+          "source_sha256": "bff883a46f6dc478281d48fa420cb7d574f0deb286f046ffbe788e1cc9c5a794",
+          "revision": "5fb8509707d7e78bf84d34ed435bf5c95972021a1f4af702607c4121824ee7f8",
+          "kind": "return",
+          "code": null,
+          "strict_types": true,
+          "remaining_nodes": 0,
+          "statistics": {
+            "steps": 15,
+            "tasks": 1,
+            "scopes": 0,
+            "channels": 0,
+            "completed": true,
+            "retainedFrames": 0,
+            "activeCalls": 0,
+            "limits": {
+              "steps": 1000000,
+              "timeoutMs": 5000,
+              "workers": 16
+            },
+            "actualWorkers": 1,
+            "externalPending": 0,
+            "externalReservedBytes": 0,
+            "externalMailbox": 0,
+            "externalStarted": 0,
+            "externalSettled": 0,
+            "externalPeakPending": 0,
+            "externalPeakBytes": 0
+          },
+          "passed": true
+        },
+        {
+          "name": "operand-roots",
+          "source_sha256": "7cbe73f77160324d45bbdd18b68d49f30a22aba1fb10bb547fa1b560f6eec052",
+          "revision": "e640f2529fd6e904501472b2878065054994c717698b48a7c4cac5daa35901c6",
+          "kind": "return",
+          "code": null,
+          "strict_types": true,
+          "remaining_nodes": 0,
+          "statistics": {
+            "steps": 8,
+            "tasks": 1,
+            "scopes": 0,
+            "channels": 0,
+            "completed": true,
+            "retainedFrames": 0,
+            "activeCalls": 0,
+            "limits": {
+              "steps": 1000000,
+              "timeoutMs": 5000,
+              "workers": 16
+            },
+            "actualWorkers": 1,
+            "externalPending": 0,
+            "externalReservedBytes": 0,
+            "externalMailbox": 0,
+            "externalStarted": 0,
+            "externalSettled": 0,
+            "externalPeakPending": 0,
+            "externalPeakBytes": 0
+          },
+          "passed": true
+        },
+        {
+          "name": "result-finally",
+          "source_sha256": "cc301adf64bc7dba3882b62e74a6f4d5458342da9a6c34f8c01f42c5a6506fac",
+          "revision": "e8207398770d727ee849cb451dab96a5b0d465acd622bab05d80bff831524009",
+          "kind": "return",
+          "code": null,
+          "strict_types": true,
+          "remaining_nodes": 0,
+          "statistics": {
+            "steps": 15,
+            "tasks": 1,
+            "scopes": 0,
+            "channels": 0,
+            "completed": true,
+            "retainedFrames": 0,
+            "activeCalls": 0,
+            "limits": {
+              "steps": 1000000,
+              "timeoutMs": 5000,
+              "workers": 16
+            },
+            "actualWorkers": 1,
+            "externalPending": 0,
+            "externalReservedBytes": 0,
+            "externalMailbox": 0,
+            "externalStarted": 0,
+            "externalSettled": 0,
+            "externalPeakPending": 0,
+            "externalPeakBytes": 0
+          },
+          "passed": true
+        },
+        {
+          "name": "scalar-list-snapshots",
+          "source_sha256": "69cfc06348b01e7990b0a2c1a3da7e9e2908a6c81ba059ddcbcc307395e5ee4d",
+          "revision": "bf7eb5e480cfce42336ed9f9c9e73ec234947b7463a22769973a869104e160e6",
+          "kind": "return",
+          "code": null,
+          "strict_types": true,
+          "remaining_nodes": 0,
+          "statistics": {
+            "steps": 33,
+            "tasks": 2,
+            "scopes": 1,
+            "channels": 0,
+            "completed": true,
+            "retainedFrames": 0,
+            "activeCalls": 0,
+            "limits": {
+              "steps": 1000000,
+              "timeoutMs": 5000,
+              "workers": 16
+            },
+            "actualWorkers": 1,
+            "externalPending": 0,
+            "externalReservedBytes": 0,
+            "externalMailbox": 0,
+            "externalStarted": 0,
+            "externalSettled": 0,
+            "externalPeakPending": 0,
+            "externalPeakBytes": 0
+          },
+          "passed": true
+        }
+      ],
+      "host_controls": [
+        {
+          "name": "independent-concurrent-invocations",
+          "runs": 3,
+          "passed": true
+        },
+        {
+          "name": "cancel-before-entry",
+          "passed": true
+        },
+        {
+          "name": "cancel-during-source-request",
+          "passed": true
+        },
+        {
+          "name": "observe-failure-owned-cleanup",
+          "passed": true
+        },
+        {
+          "name": "complete-failure-owned-cleanup",
+          "passed": true
+        },
+        {
+          "name": "nested-synchronous-context-restore",
+          "passed": true
+        },
+        {
+          "name": "deadline-owned-cleanup",
+          "passed": true
+        },
+        {
+          "name": "task-roots-excluded-from-cell-payloads",
+          "passed": true
+        }
+      ],
+      "comparisons": 18
+    }
+  },
+  "native_regression": {
+    "report_path": "build/nex-native-reference-tasks-t0vhhcim/report.json",
+    "report_sha256": "497a6c02906c314e780cb8b678799033641875f76fef30fa0a5e4e6c66692b80",
+    "schema": "nex.native-reference-task-agreement/1",
+    "ok": true,
+    "comparisons": 26,
+    "emitter_sha256": "1d5f83e4711825ef4083415d9cedd8b56faca715315db7d689c64fede2abd356",
+    "reference_probe_sha256": "13c575f03dedd8fae709b55738c4cdf74ed3d067227dce7ac47d2b15788184f7",
+    "owner_runtime": [
+      {
+        "optimization": "O0",
+        "result": {
+          "ok": true,
+          "cases": 7,
+          "turns": 43
+        },
+        "binary_sha256": "b614e04510eea3a760bf02259b45545c86efab1cb8513a98f1be764d396caa9a"
+      },
+      {
+        "optimization": "O2",
+        "result": {
+          "ok": true,
+          "cases": 7,
+          "turns": 43
+        },
+        "binary_sha256": "2bb2d4029aa621284eac31fa4c14ef46e2766e06229586bd461f512934c18477"
+      }
+    ],
+    "runtime_sources_sha256": {
+      "runtime.cpp": "5c5af50d10b840e4d3fe5979067fe1687e1e841af0e6d116a0a3c574c6d6e14a",
+      "nex_cells.cpp": "f009588f1f83dc8b8e5028f98cda518d4aa2c684afe1521ce41906bb7ccdb291",
+      "nex_cell_host.cpp": "82a00433059e0953874654de069b9e04a038fb07ab48920a5d4cce6d9117fe6a",
+      "nex_files.cpp": "c37f6492f5891db8c017e24d74dbc6e63a705ea629c3604273217fbdd63845d4",
+      "files_runtime.cpp": "c432599739ba309e64eb4c71c6f654a3d61699865fffc4cd2fbec3879940cb39",
+      "nex_task_external.cpp": "b1e86bf6a1c503e843b872531798cf46f068fdd1691edf3d25fc94b37e3ca324",
+      "nex_task_frame.cpp": "d63f3e043750791860eb9812df862a5a904800d992a58414fece922a78be1785",
+      "nex_task_application.cpp": "e632c6cdf5affd571331c2ee5391350c92c125af9b5c4be547d0b0c356f162b3",
+      "nex_resource_region.cpp": "32588dace81f19cf179d14df3d7f86be8bb21b772fd6262bf1ca572625943ba1",
+      "nex_external_resource.cpp": "72bdf45f36bca279447b1f48fa4ad56878a925e970177ad0a47f4c0a110592a2",
+      "nex_resource_executor.cpp": "b8cde6d63d934896cf1c16a27061b7fc979e909482936659fd29cba9749f197c"
+    },
+    "note": "Completed before the partial CTest run was interrupted for missing TypeScript configuration; independent native report retained. Not counted in verified complete JUnit group total."
+  },
+  "normal_installation": {
+    "exit_code": 0,
+    "methods": 4,
+    "cwd": "/private/tmp",
+    "moved_prefix": "/Users/sae/projects/NEX/build/typescript-reference-tasks-v1/SDK moved 🧠",
+    "portable_SDK": false,
+    "compiler_sha256": "9c83009df51f888152e3503408d09be5d6030fb7c2aa9d813a71bb6d426fd58d",
+    "installed_boundary_log_sha256": "aa8a514be1a793df427d424cee981a6157e54a39d60171b67414e0840c07874c",
+    "private_helper_emitter": "source-build probe, matching installed runtime resources",
+    "private_helper_execution": {
+      "kind": "return",
+      "value_json": "null",
+      "output": "42\n42\n",
+      "beforeCollection": {
+        "cells": 1,
+        "nodes": 1,
+        "edges": 1,
+        "collections": 2
+      },
+      "afterCollection": {
+        "cells": 0,
+        "nodes": 0,
+        "edges": 0,
+        "collections": 3
+      },
+      "afterClose": {
+        "cells": 0,
+        "nodes": 0,
+        "edges": 0,
+        "collections": 3
+      }
+    },
+    "private_helper_strict_TypeScript_exit_code": 0,
+    "critical_resources_sha256": {
+      "llm/language-pack.json": "02e8268a50038cd783e1066b31301f59982b543b80587bc218f0c1d07bf292b7",
+      "docs/reference-tasks.md": "32f9e2384db18da19a31e2116f3ef5b6ebc9eed6c9b7f39902a57ab0445a84d4",
+      "docs/language.md": "a167e6b011e2c5c4eceb2b0d8346d63fcfd3d800e8c3338b2ebe69a7707cee03",
+      "docs/references030.ebnf": "12ab290c52c34d88434f10ccc4d6301e8915586a5730b62f09f01a02266c34a3",
+      "tests/typescript_reference_tasks.py": "1c20e5725d8f48f1099b6e17c98a3548ad232bf5182922e9ee4621586d9346b9",
+      "tests/typescript_reference_tasks_emit.cpp": "94b0fb3efa34ce49797592adf8a42d9d405f7b8d211f29fd3af1f01210451a9c",
+      "tests/reference_tasks.cpp": "2025cddc4e55b7377557605ebe6a6f49fbb83061203646c90693983da2812d9d",
+      "tests/reference_tasks_boundaries.py": "74bb384927c97101a861c632cba5b4501fde47de286470371d507ede5d5b1a54",
+      "web/nex-runtime.ts": "88db42c861d0aeec44cfe9f4b0cc7bd38ba5de95b29f6dbe6d142dd5b8c00fd2",
+      "web/nex-bytes.ts": "f2d020fd01cb6fef744037cffeeea4852330c8f48525c64a1a36211bebb1068d",
+      "web/nex-source-exception-runtime.ts": "c73ec0e2609914331cdb54417f4f555312948bd1f877ff55ca587524d329f19b",
+      "web/nex-task-runtime.ts": "53c04df0d55a742faf59a1672b5e8d8d53241a8756c101b332b346321416a837",
+      "web/nex-managed-heap.ts": "9f7fdd254a7f42d20fa8fee3445ca8db9944415ea4d13041681b2fd6f43fce35",
+      "web/nex-managed-context.ts": "b3bc3a4c54653b21a714670b5902e3b7eead1c55fbf09c2e9edc2fd6ec55f08e",
+      "web/nex-managed-runtime.ts": "a49d81a5c011d449ca5df2fe38dd9890a25cae13630c4e3efd2a9d1cc71a79ea",
+      "web/nex-managed-task-runtime.ts": "0063ad9b9dd1c16d8241cb29271875d0987c4ce66a6ee1c92965b3c9a4a4e1a5"
+    },
+    "host_dependencies_retained": true,
+    "source_deleted": false
+  },
+  "preceding_hosted_CI": {
+    "schema": "nex.hosted-core-result/1",
+    "toolchain": "0.269.0",
+    "source_commit": "acb5e00266603da892f9b73e110bff0c4eb59f02",
+    "run_id": 43931983773,
+    "url": "https://github.com/sae-ru/NEX/actions/runs/43931983773",
+    "observed_at": "2026-11-16 19:32:46 UTC",
+    "authority": "GitHub connector fetch_workflow_run_jobs",
+    "jobs": [
+      {
+        "id": 133526538123,
+        "name": "linux-core",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 133526538615,
+        "name": "macos-core",
+        "status": "completed",
+        "conclusion": "cancelled"
+      }
+    ],
+    "all_required_jobs_passed": false,
+    "core_groups": 17,
+    "complete_source_regression": false,
+    "portable_SDK": false,
+    "scope": "Preceding native reference-task commit: Linux succeeded; macOS was cancelled without executing steps. This does not qualify the new TypeScript cohort."
+  },
+  "initial_failures": [
+    {
+      "scope": "strict runtime TypeScript v1",
+      "result": "three type errors corrected before accepted corpus; original log retained",
+      "log_sha256": "3386a4cfacfd15beebc71d6fb71a3c1e35114ed732da6049a88b3542908494a7"
+    },
+    {
+      "scope": "acceptance-v1",
+      "result": "unreachable trailing return in yielding-guard fixture; removed before accepted comparisons",
+      "log_sha256": "0fb976248bf733f734fc5eb56c08b2459568c131571b51d1c050cd2511e76293"
+    },
+    {
+      "scope": "first affected CTest attempt",
+      "result": "missing NEX_TSC; interrupted, partial output preserved; all12 TypeScript-related groups rerun with explicit pinned tools",
+      "partial_log_sha256": "6b7d31d215ebde82fe1937c74eab61053ec3039805340e2b5f3b9f7a4daf5e77",
+      "replacement": "affected-v2"
+    }
+  ],
+  "bounds": [
+    "private source-build standalone entry; ordinary CLI promotion remains open",
+    "cooperative JavaScript execution on one owner thread; no shared-memory reference transport",
+    "no managed host IO or persistent UI/application context",
+    "debugger/profiler and complete source/platform qualification remain open",
+    "normal moved install retains host dependencies; published portable SDK0.246.1 remains immutable",
+    "Java/Python conversion and complete language/toolchain PLAN remain unfinished"
+  ],
+  "documentation": {
+    "current-status-check.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "docs-check.stdout": "d71618ba859520214d65f934581f407ad4cb16d43b6931cfe627bd031a2b5328"
+  }
+}

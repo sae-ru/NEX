@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.269.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.270.0"
 owner: repository
 ---
 
@@ -47,6 +47,13 @@ This orders the work; it does not mark the original PLAN complete or discard
 its remaining requirements. Full Java/Python runtime emulation, reflection and
 metaclass compatibility are later, project-driven requirements. Exact source
 behavior remains mandatory for each advertised migrated subset.
+
+Toolchain0.270 adds the third private engine: generated TypeScript on the existing
+cooperative scheduler, with per-job roots in one invocation heap. Independent
+AST comparisons and explicit host-control checks cover suspended captures,
+channel/future/error owners, cancellation and unexpected host failures. Ordinary
+CLI integration, persistent application/UI contexts and full delivery gates remain
+next. See [the three-engine contract](reference-tasks.md).
 
 Toolchain0.267 adds a separate internal [IEEE numeric kernel](ieee-numeric.md)
 for binary32/binary64 bits, primitive arithmetic/comparisons and Java casts.

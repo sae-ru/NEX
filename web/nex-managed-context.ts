@@ -17,7 +17,7 @@ class ReturnCompletion {
 type Completion = SourceCompletion | ReturnCompletion;
 const sourceDetails = new WeakMap<SourceDetails, SourceCompletion>();
 type Roots = {frame: RootFrame; kind: 'scope' | 'expression' | 'statement'};
-type Context = {heap: CellHeap; roots: Roots[]; scopes: RootFrame[]; flight: Map<Completion, RootFrame>; output: string; print?: (text: string) => void};
+type Context = {heap: CellHeap; roots: Roots[]; scopes: RootFrame[]; flight: Map<Completion, RootFrame>; output: {text: string; print?: (text: string) => void}};
 let active: Context | undefined;
 function context(): Context {
   if (active === undefined) throw new NexError('E_CELL_CONTEXT', 'managed source execution has no active context');
@@ -136,7 +136,113 @@ export function finalize(body: () => void, finalizer: () => void): void {
     if (pending !== undefined) rethrow(pending);
   } finally { owner?.close(); }
 }
-export function print(text: string): void { const ctx = context(); ctx.output += text + '\n'; ctx.print?.(text); }
+// Generator roots belong to one scheduler lane. The scheduler activates that
+// lane only during a synchronous resume; no ambient context spans an await.
+export function* scopeTask<Y, N, T extends HeapValue | void>(body: () => Generator<Y, T, N>): Generator<Y, T, N> {
+  const ctx = context(), depth = ctx.roots.length, parent = ctx.roots.at(-1)?.frame;
+  const frame = push(ctx, 'scope'); ctx.scopes.push(frame);
+  try { const value = yield* body(); keep(parent, value); return value; }
+  finally { unwind(ctx, depth); ctx.scopes.pop(); }
+}
+export function* expressionTask<Y, N, T extends HeapValue | void>(site: Site, body: () => Generator<Y, T, N>): Generator<Y, T, N> {
+  const ctx = context(), depth = ctx.roots.length, parent = ctx.roots.at(-1)?.frame;
+  push(ctx, 'expression');
+  try { const value = yield* body(); keep(parent, value); return value; }
+  catch (error) {
+    if (error instanceof NexError && error.site === undefined) throw new NexError(error.code, error.message, site);
+    throw error;
+  } finally { unwind(ctx, depth); }
+}
+export function* conditionTask<Y, N>(body: () => Generator<Y, boolean, N>): Generator<Y, boolean, N> {
+  const ctx = context(), depth = ctx.roots.length; push(ctx, 'statement');
+  try { return yield* body(); } finally { unwind(ctx, depth); }
+}
+export function* functionTaskBody<Y, N, T extends HeapValue | void>(inputs: ReadonlyArray<HeapValue>, body: () => Generator<Y, void, N>): Generator<Y, T, N> {
+  const ctx = context(), depth = ctx.roots.length, parent = ctx.roots.at(-1)?.frame;
+  const frame = push(ctx, 'scope'); ctx.scopes.push(frame);
+  try {
+    for (const input of inputs) frame.keep(input);
+    try { yield* body(); return undefined as T; }
+    catch (error) {
+      if (!(error instanceof ReturnCompletion)) throw error;
+      const owner = acquire(error);
+      try { keep(parent, error.value); return error.value as T; }
+      finally { owner.close(); }
+    }
+  } finally { unwind(ctx, depth); ctx.scopes.pop(); }
+}
+export function* handleTask<Y, N>(body: () => Generator<Y, void, N>, handler: (error: unknown) => Generator<Y, boolean, N>): Generator<Y, void, N> {
+  try { yield* body(); }
+  catch (error) {
+    if (!(error instanceof SourceCompletion)) throw error;
+    const owner = acquire(error);
+    try { if (!(yield* handler(error))) rethrow(error); }
+    finally { owner.close(); }
+  }
+}
+export function* finalizeTask<Y, N>(body: () => Generator<Y, void, N>, finalizer: () => Generator<Y, void, N>): Generator<Y, void, N> {
+  let pending: Completion | undefined, owner: RootFrame | undefined;
+  try {
+    try { yield* body(); }
+    catch (error) { if (!completion(error)) throw error; pending = error; owner = acquire(error); }
+    yield* finalizer();
+    if (pending !== undefined) rethrow(pending);
+  } finally { owner?.close(); }
+}
+export class TaskSession {
+  readonly owner: Context;
+  readonly lanes = new Map<number, Context>();
+  private readonly result: RootFrame;
+  private closed = false;
+  constructor(limits: HeapLimits) {
+    this.owner = {heap: new CellHeap(limits), roots: [], scopes: [], flight: new Map(), output: {text: ''}};
+    this.result = this.owner.heap.frame();
+  }
+  turn<T>(job: number, body: () => T): T {
+    if (this.closed) throw new NexError('E_CELL_CONTEXT', 'managed task session is closed');
+    let lane = this.lanes.get(job);
+    if (lane === undefined) { lane = {...this.owner, roots: [], scopes: []}; this.lanes.set(job, lane); }
+    const previous = active; active = lane;
+    try { return body(); } finally { active = previous; }
+  }
+  payload(error: unknown): HeapValue | undefined { return error instanceof SourceCompletion ? error.value : undefined; }
+  release(error: unknown): void {
+    if (!completion(error)) return;
+    this.owner.flight.get(error)?.close(); this.owner.flight.delete(error);
+  }
+  retain(error: unknown): void {
+    if (!completion(error) || this.owner.flight.has(error)) return;
+    const frame = this.owner.heap.frame(); keep(frame, error.value); this.owner.flight.set(error, frame);
+  }
+  keepResult(value: HeapValue | void): void { keep(this.result, value); }
+  finish(value: HeapValue | void, error: unknown, failed: boolean, render: (value: HeapValue | void) => string): Execution {
+    try {
+      let value_json: string | undefined, failure: {code: string; message: string; line: number; file: string; site?: Site} | undefined;
+      if (!failed) value_json = render(value);
+      else if (error instanceof SourceCompletion) {
+        failure = {code: 'E_SOURCE_EXCEPTION', message: error.detail.code + ': ' + error.detail.message, line: error.detail.site[1], file: error.detail.site[0], site: error.detail.site};
+        this.release(error);
+      } else if (error instanceof NexError) failure = {code: error.code, message: error.message, line: error.site?.[1] ?? 0, file: error.site?.[0] ?? '', site: error.site};
+      else throw error;
+      this.result.close();
+      if (this.owner.flight.size || [...this.lanes.values()].some(lane => lane.roots.length || lane.scopes.length))
+        throw new NexError('E_INTERNAL', 'managed tasks retained source frames or completions');
+      const beforeCollection = this.owner.heap.stats(); this.owner.heap.collect(); const afterCollection = this.owner.heap.stats();
+      if (afterCollection.cells || afterCollection.nodes) throw new NexError('E_INTERNAL', 'managed tasks retained heap roots');
+      this.owner.heap.close();
+      return {kind: failure === undefined ? 'return' : 'trap', value_json, ...failure, output: this.owner.output.text,
+        beforeCollection, afterCollection, afterClose: this.owner.heap.stats()};
+    } finally { this.close(); }
+  }
+  close(): void {
+    if (this.closed) return;
+    for (const lane of this.lanes.values()) { unwind(lane, 0); lane.scopes.length = 0; }
+    for (const frame of this.owner.flight.values()) frame.close(); this.owner.flight.clear();
+    this.result.close(); this.owner.heap.close(); this.lanes.clear(); this.closed = true;
+  }
+}
+export function taskOwner(): CellHeap { return context().heap; }
+export function print(text: string): void { const ctx = context(); ctx.output.text += text + '\n'; ctx.output.print?.(text); }
 export type Execution = Readonly<{
   kind: 'return' | 'trap'; value_json?: string; output: string;
   code?: string; message?: string; line?: number; file?: string;
@@ -144,7 +250,7 @@ export type Execution = Readonly<{
   beforeCollection: HeapStats; afterCollection: HeapStats; afterClose: HeapStats;
 }>;
 export function run(body: () => HeapValue | void, limits: HeapLimits, render: (value: HeapValue | void) => string, print?: (text: string) => void): Execution {
-  const previous = active, ctx: Context = {heap: new CellHeap(limits), roots: [], scopes: [], flight: new Map(), output: '', print};
+  const previous = active, ctx: Context = {heap: new CellHeap(limits), roots: [], scopes: [], flight: new Map(), output: {text: '', print}};
   active = ctx; let value_json: string | undefined, failure: {code: string; message: string; line: number; file: string; site?: Site} | undefined;
   try {
     try { scope(() => { const value = body(); value_json = render(value); }); }
@@ -160,7 +266,7 @@ export function run(body: () => HeapValue | void, limits: HeapLimits, render: (v
     const beforeCollection = ctx.heap.stats(); ctx.heap.collect(); const afterCollection = ctx.heap.stats();
     if (afterCollection.nodes !== 0 || afterCollection.cells !== 0) throw new NexError('E_INTERNAL', 'managed execution retained source roots');
     ctx.heap.close();
-    return {kind: failure === undefined ? 'return' : 'trap', value_json, ...failure, output: ctx.output,
+    return {kind: failure === undefined ? 'return' : 'trap', value_json, ...failure, output: ctx.output.text,
       beforeCollection, afterCollection, afterClose: ctx.heap.stats()};
   } finally {
     unwind(ctx, 0); for (const frame of ctx.flight.values()) frame.close(); ctx.flight.clear();

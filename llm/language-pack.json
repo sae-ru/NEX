@@ -5581,6 +5581,30 @@
         "stable_public_ABI": false,
         "SDK_delivery_accepted": false,
         "full_platform_acceptance": false
+      },
+      "typescript_tasks": {
+        "introduced_toolchain": "0.270.0",
+        "selection": "emitManagedReferenceTasksDevelopmentTypeScript",
+        "guide": "docs/reference-tasks.md",
+        "test": "tests/typescript_reference_tasks.py",
+        "reference_oracle": "evaluateManagedTaskReferencePrototype",
+        "typescript": true,
+        "source_map": "nex.private-typescript-reference-tasks/1",
+        "checked_revision": true,
+        "execution": "cooperative generator continuations on the JavaScript owner thread",
+        "source_workers": 1,
+        "heap": "one owned heap per invocation; explicit per-job scope and completion roots",
+        "scheduler_roots": "pending callbacks, future results, channel buffers and source errors",
+        "cleanup": "retire lanes, scheduler roots and heap on return, fatal, cancellation and host observer failure",
+        "entry": "standalone no-argument unit or immutable wire value",
+        "host_IO": false,
+        "public_source_enabled": false,
+        "ordinary_CLI": false,
+        "parallel_transfer": false,
+        "persistent_UI_context": false,
+        "stable_public_ABI": false,
+        "SDK_delivery_accepted": false,
+        "full_platform_acceptance": false
       }
     }
   },

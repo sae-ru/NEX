@@ -1,5 +1,10 @@
 # NEX language specification 0.28
 
+Toolchain0.270 adds a private [TypeScript cell/task emitter](reference-tasks.md)
+with explicit per-job roots on one invocation heap. Its asynchronous execution
+retains checked source identity in a private map and does not enable ordinary
+CLI cell/task execution. Syntax, selected languages and public ABIs are unchanged.
+
 Toolchain0.269 adds a private [native cell/task emitter](reference-tasks.md)
 with owner-thread continuations and a distinct unarchived descriptor cohort.
 It changes no syntax, source version, canonical format or public task ABI7.

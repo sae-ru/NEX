@@ -13,6 +13,23 @@ export interface Pending<T extends nex.Value> { readonly [pendingType]: T }
 type HostWait = Readonly<{ [hostWaitType]: true }>;
 export type Step<T extends Item> = Generator<Request | HostWait, T, Item>;
 export type Request = Readonly<{ operation: string; arguments: ReadonlyArray<nex.Value>; site?: nex.Site }>;
+// Private checked030 adapter. Ordinary run/typed-source entrypoints never take
+// this policy. It supplies owned boxed values, explicit roots and resume lanes;
+// the scheduler keeps its genuine scope/channel/cancellation state machine.
+export interface ManagedDevelopmentValues {
+  children(value: object, site?: nex.Site): ReadonlyArray<nex.Value>;
+  capability(kind: 'task_scope' | 'task' | 'channel'): nex.RecordValue;
+  callback(value: nex.Value, arguments_: ReadonlyArray<nex.Value>, site?: nex.Site): Call<Item>;
+  channelResult(present: boolean, value?: Item): Item;
+  failed(value: Item): boolean;
+  source(error: unknown): boolean;
+  payload(error: unknown): Item;
+  releaseSource(error: unknown): void;
+  retainSource(error: unknown): void;
+  keepResult(value: Item): void;
+  attachRoots(read: () => ReadonlyArray<Item>): () => void;
+  turn<T>(job: number, body: () => T): T;
+}
 // Private trusted-host bridge. settled must mean physical quiescence, including
 // operation-owned buffers/readers. cancel is a request, never proof of settlement.
 // start may throw only before physical work exists. Once work has started, the
@@ -71,7 +88,7 @@ export function enter(site?: nex.Site): void {
   ++driver.jobs[job].calls;
 }
 export function enterTyped(site?: nex.Site): void {
-  if (!context().driver.typedContracts) fail('E_TASK_STATE', 'typed source tasks require checked transfer contracts', site);
+  if (!context().driver.typedContracts && !context().driver.managed) fail('E_TASK_STATE', 'typed source tasks require checked transfer contracts', site);
   enter(site);
 }
 export function leave(): void {
@@ -105,6 +122,7 @@ class Ring<T> {
   private count=0;
   constructor(capacity: number) { this.storage=new Array<T | undefined>(capacity); }
   get length(): number { return this.count; }
+  *values(): Iterable<T> { for (let i = 0; i < this.count; ++i) yield this.storage[(this.start + i) % this.storage.length]!; }
   push(value: T): void {
     if(this.count>=this.storage.length)fail('E_TASK_STATE','bounded task queue overflow');
     this.storage[(this.start+this.count)%this.storage.length]=value;++this.count;
@@ -193,11 +211,25 @@ class Driver {
   private rootDone(): boolean { return this.jobs[0].state === 'done'; }
   private readonly sourceClassifier?: (error: unknown) => boolean;
   readonly typedContracts?: ReadonlyArray<sourceException.TransferContract>;
-  constructor(options: Options, sourceClassifier?: (error: unknown) => boolean, typedContracts?: ReadonlyArray<sourceException.TransferContract>) {
+  readonly managed?: ManagedDevelopmentValues;
+  private detachRoots?: () => void;
+  constructor(options: Options, sourceClassifier?: (error: unknown) => boolean, typedContracts?: ReadonlyArray<sourceException.TransferContract>, managed?: ManagedDevelopmentValues) {
     this.sourceClassifier = sourceClassifier;
     this.typedContracts = typedContracts;
     this.options = validatedOptions(options); this.limit = this.options.steps;
     this.deadline = performance.now() + this.options.timeoutMs;
+    this.managed = managed;
+    this.detachRoots = managed?.attachRoots(() => this.retainedValues());
+  }
+  private retainedValues(): Item[] {
+    const values: Item[] = [], source = (error: unknown): void => { if (error !== undefined) values.push(this.managed!.payload(error)); };
+    for (const job of this.jobs) {
+      values.push(job.pending, job.response, job.result); source(job.responseSource); source(job.sourceFailure);
+      for (const frame of job.stack) { values.push(frame.result); source(frame.sourceFailure); }
+    }
+    for (const region of this.regions) if (!region.closed) source(region.sourceFailure);
+    for (const pipe of this.pipes) for (const value of pipe.buffer.values()) values.push(value);
+    return values;
   }
   private sourceError(error: unknown): object | undefined {
     return typeof error === 'object' && error !== null && this.sourceClassifier?.(error) ? error : undefined;
@@ -207,6 +239,7 @@ class Driver {
     if (this.options.signal?.aborted) fail('E_CANCELLED', 'task execution was cancelled', site);
   }
   private sourceSnapshot(error: object, target: number, current: number): void {
+    if (this.managed) { this.snapshot(this.managed.payload(error), target, current); return; }
     if (!this.typedContracts) return;
     const detail = sourceException.details(error);
     if (!detail) fail('E_SOURCE_TYPE', 'typed task outcome is not a branded source error');
@@ -221,6 +254,7 @@ class Driver {
   notify(): void { ++this.wakeVersion; const wake = this.wake; this.wake = undefined; wake?.(); }
   outside<T>(callback: () => T): T { const previous = active; active = undefined; try { return callback(); } finally { active = previous; } }
   reserveHost<T extends nex.Value>(job: number, start: () => HostOperation, admit: (raw: unknown) => T, bytes: number, site?: nex.Site): Pending<T> {
+    if (this.managed) fail('E_TASK_STATE', 'managed browser tasks have no host IO adapter', site);
     this.charge(site);
     if (this.closed || this.jobs[job].state !== 'ready') fail('E_TASK_STATE', 'host ticket requires a live generator resume', site);
     if (typeof start !== 'function' || typeof admit !== 'function' || !Number.isSafeInteger(bytes) || bytes < 1 || bytes > hostQuotas.payloadBytes) fail('E_RANGE', 'invalid bounded host operation', site);
@@ -405,7 +439,7 @@ class Driver {
   value(kind: Cap['kind'], index: number): nex.RecordValue {
     const state = kind === 'task_scope' ? this.regions[index] : kind === 'task' ? this.jobs[index] : this.pipes[index];
     const previous = state.capability?.deref(); if (previous) return previous;
-    const value = nex.record<nex.RecordValue>('nex.private.' + kind, []);
+    const value = this.managed ? this.managed.capability(kind) : nex.record<nex.RecordValue>('nex.private.' + kind, []);
     const scope = kind === 'task_scope' ? index : kind === 'task' ? this.jobs[index].member : this.pipes[index].scope;
     capabilities.set(value, {owner: new WeakRef(this), kind, index, scope}); nex.annotateTaskValue(value, kind);
     state.capability = new WeakRef(value); return value;
@@ -424,7 +458,8 @@ class Driver {
       const cap = capabilities.get(next);
       if (cap) { this.cap(next as nex.Value, cap.kind, current, site); if (target === none || !this.within(cap.scope, target)) fail('E_TASK_SCOPE', 'task capability escapes its owner scope', site); }
       let children: ReadonlyArray<nex.Value>;
-      if (typeof next === 'function') {
+      if (this.managed && typeof next === 'object') children = this.managed.children(next, site);
+      else if (typeof next === 'function') {
         const captures = nex.captureValues(next); if (!captures) fail('E_TASK_VALUE', 'task callable lacks checked capture metadata', site); children = captures;
       } else if (next instanceof nex.ByteBuffer) children = [];
       else children = Array.isArray(next) ? next : Object.values(next);
@@ -435,14 +470,15 @@ class Driver {
   enqueue(index: number): void { const job = this.jobs[index]; if (job.state === 'ready' && !job.queued) { this.ready.push(index); job.queued = true; } }
   answer(index: number, value?: Item): void { const job = this.jobs[index]; job.response = value; job.responseSource = job.pending = undefined; job.target = none; job.state = 'ready'; this.enqueue(index); }
   makeJob(iterator: Step<Item>, member = none, parent = none): number {
-    if (this.jobs.length >= 4096) fail('E_LIMIT', 'task slots exceed4096');
+    if (this.jobs.length >= 4096) { iterator.return(undefined); fail('E_LIMIT', 'task slots exceed4096'); }
     const spawnDepth = parent === none ? 1 : this.jobs[parent].spawnDepth + 1;
-    if (spawnDepth > 256) fail('E_LIMIT', 'task nesting exceeds256');
+    if (spawnDepth > 256) { iterator.return(undefined); fail('E_LIMIT', 'task nesting exceeds256'); }
     const index = this.jobs.length;
     this.jobs.push({state: 'ready', stack: [{iterator, scope: none, parent: none}], member, current: member, parent, spawnDepth, calls: 0, polls: 0, cancelled: false, queued: false, observed: false, target: none, owned: [], external: new Set()});
     if (member !== none) this.regions[member].members.push(index); this.enqueue(index); return index;
   }
   callback(value: nex.Value, arguments_: ReadonlyArray<nex.Value>, site?: nex.Site): Step<Item> {
+    if (this.managed) return take(this.managed.callback(value, arguments_, site), site);
     if (typeof value !== 'function' || !nex.captureValues(value)) fail('E_FUNCTION', 'task callback is not a checked callable', site);
     const invoke = value as (...args: nex.Value[]) => Call<Item>;
     return (function* (): Step<Item> { return yield* take(invoke(...arguments_), site); })();
@@ -458,6 +494,10 @@ class Driver {
     job.pending = undefined; job.target = none; job.state = 'ready'; this.enqueue(index);
   }
   finish(index: number, failure?: Error, result?: Item, sourceFailure?: object): void {
+    if (this.managed) { this.managed.turn(index, () => this.finishActive(index, failure, result, sourceFailure)); return; }
+    this.finishActive(index, failure, result, sourceFailure);
+  }
+  private finishActive(index: number, failure?: Error, result?: Item, sourceFailure?: object): void {
     const job = this.jobs[index]; if (job.state === 'done' || job.state === 'finishing') return;
     job.state = 'finishing'; job.failure = failure; job.sourceFailure = sourceFailure; job.result = result; job.pending = job.response = job.responseSource = undefined;
     const previous = active; active = {driver: this, job: index};
@@ -483,7 +523,7 @@ class Driver {
   closePipe(index: number): boolean {
     const pipe = this.pipes[index]; if (pipe.closed) return false; pipe.closed = true;
     for (let i = this.first(pipe.senders, 'send', index); i !== none; i = this.first(pipe.senders, 'send', index)) this.answer(i, false);
-    for (let i = this.first(pipe.receivers, 'receive', index); i !== none; i = this.first(pipe.receivers, 'receive', index)) this.answer(i, pipe.buffer.length ? nex.ok(pipe.buffer.shift()!) : nex.err('E_CHANNEL_CLOSED', 'channel is closed'));
+    for (let i = this.first(pipe.receivers, 'receive', index); i !== none; i = this.first(pipe.receivers, 'receive', index)) this.answer(i, this.channelResult(!!pipe.buffer.length, pipe.buffer.length ? pipe.buffer.shift()! : undefined));
     return true;
   }
   settle(): boolean {
@@ -560,20 +600,28 @@ class Driver {
       const value = args[1]; this.snapshot(value, pipe.scope, job.current, r.site);
       if (pipe.closed) { this.answer(index, false); return; }
       const receiver = this.first(pipe.receivers, 'receive', p);
-      if (receiver !== none) { this.answer(receiver, nex.ok(value)); this.answer(index, true); return; }
+      if (receiver !== none) { this.answer(receiver, this.channelResult(true, value)); this.answer(index, true); return; }
       if (pipe.buffer.length < pipe.capacity) { pipe.buffer.push(value); this.answer(index, true); return; }
       job.pending = value; job.target = p; job.state = 'send'; pipe.senders.push(index); return;
     }
     if (r.operation === 'task_recv') {
-      if (pipe.buffer.length) { const value = pipe.buffer.shift()!, sender = this.first(pipe.senders, 'send', p); if (sender !== none) { pipe.buffer.push(this.jobs[sender].pending!); this.answer(sender, true); } this.answer(index, nex.ok(value)); return; }
+      if (pipe.buffer.length) { const value = pipe.buffer.shift()!, sender = this.first(pipe.senders, 'send', p); if (sender !== none) { pipe.buffer.push(this.jobs[sender].pending!); this.answer(sender, true); } this.answer(index, this.channelResult(true, value)); return; }
       const sender = this.first(pipe.senders, 'send', p);
-      if (sender !== none) { const value = this.jobs[sender].pending!; this.answer(sender, true); this.answer(index, nex.ok(value)); return; }
-      if (pipe.closed) { this.answer(index, nex.err('E_CHANNEL_CLOSED', 'channel is closed')); return; }
+      if (sender !== none) { const value = this.jobs[sender].pending!; this.answer(sender, true); this.answer(index, this.channelResult(true, value)); return; }
+      if (pipe.closed) { this.answer(index, this.channelResult(false)); return; }
       job.target = p; job.state = 'receive'; pipe.receivers.push(index); return;
     }
     fail('E_TASK_STATE', 'unknown task request', r.site);
   }
   turn(index: number): void {
+    if (this.managed) { this.managed.turn(index, () => this.turnActive(index)); return; }
+    this.turnActive(index);
+  }
+  private channelResult(present: boolean, value?: Item): Item {
+    if (this.managed) return this.managed.channelResult(present, value);
+    return present ? nex.ok(value as nex.Value) : nex.err('E_CHANNEL_CLOSED', 'channel is closed');
+  }
+  private turnActive(index: number): void {
     const previous = active; active = {driver: this, job: index}; const job = this.jobs[index];
     try {
       const activation = job.stack[job.stack.length - 1], input = job.response, source = job.responseSource; job.response = job.responseSource = undefined;
@@ -581,7 +629,7 @@ class Driver {
       if (result.done) {
         this.snapshot(result.value, activation.scope === none ? job.member : activation.parent, job.current, activation.site);
         if (activation.scope === none) { this.finish(index, undefined, result.value); return; }
-        const region = this.regions[activation.scope], abort = failed(result.value);
+        const region = this.regions[activation.scope], abort = this.managed ? this.managed.failed(result.value) : failed(result.value);
         for (const external of [...region.external]) { const value = this.external[external]!; if (value.stamp.job === index && value.state === 'reserved') this.retireHost(value); }
         if (!abort && this.cycle(index, activation.scope, true)) fail('E_TASK_CYCLE', 'cyclic task scope drain', activation.site);
         activation.result = result.value; region.closing = true; region.abort = abort; if (abort) this.cancelRegion(activation.scope); job.target = activation.scope; job.state = 'drain'; return;
@@ -595,7 +643,7 @@ class Driver {
     } catch (error) {
       const source = this.sourceError(error);
       if (!source) this.finish(index, asError(error));
-      else {
+      else { try {
         const activation = job.stack[job.stack.length - 1];
         try { this.checkSourceControl(); this.sourceSnapshot(source, activation.scope === none ? job.member : activation.parent, job.current); }
         catch (control) { this.finish(index, asError(control)); return; }
@@ -606,7 +654,7 @@ class Driver {
           region.sourceFailure = source; region.closing = region.abort = true;
           this.cancelRegion(activation.scope); job.target = activation.scope; job.state = 'drain';
         }
-      }
+      } finally { this.managed?.releaseSource(source); } }
     }
     finally { active = previous; }
   }
@@ -663,9 +711,10 @@ class Driver {
       }
       if (this.jobs[0].failure) throw this.jobs[0].failure;
       if (this.jobs[0].sourceFailure) { this.checkSourceControl(); throw this.jobs[0].sourceFailure; }
-      return this.jobs[0].result as T;
+      this.managed?.keepResult(this.jobs[0].result); return this.jobs[0].result as T;
     } catch (error) {
-      if (!this.sourceError(error)) this.stop(asError(error)); await drain(); throw this.jobs[0].failure ?? error;
+      if (!this.sourceError(error)) this.stop(asError(error)); await drain();
+      const selected = this.jobs[0].failure ?? error; if (this.sourceError(selected)) this.managed?.retainSource(selected); throw selected;
     } finally {
       this.closed = true; this.options.signal?.removeEventListener('abort', cancel); channel.port1.close(); channel.port2.close();
       if (deadlineTimer !== undefined) clearTimeout(deadlineTimer); this.wake = undefined;
@@ -676,11 +725,15 @@ class Driver {
       // execution ceiling, not a claim that worker threads were created.
       const statistics: Statistics = {steps: this.used, tasks: this.jobs.length, scopes: this.regions.length, channels: this.pipes.length, completed: this.jobs[0].state === 'done', retainedFrames: this.jobs.reduce((n, job) => n + job.stack.length, 0), activeCalls: this.jobs.reduce((n, job) => n + job.calls, 0), limits, actualWorkers: 1, externalPending: this.externalCount, externalReservedBytes: this.externalBytes, externalMailbox: this.mailbox.length, externalStarted: this.externalStarted, externalSettled: this.externalSettled, externalPeakPending: this.externalPeakCount, externalPeakBytes: this.externalPeakBytes};
       this.pipes.length = this.regions.length = this.jobs.length = 0;this.ready.clear();
+      this.detachRoots?.(); this.detachRoots = undefined;
       this.options.complete?.(Object.freeze(statistics));
     }
   }
 }
 export async function run<T extends Item>(root: Call<T>, options: Options = {}): Promise<T> { return await new Driver(options).drive(root); }
+export async function runManagedDevelopment<T extends Item>(root: Call<T>, values: ManagedDevelopmentValues, options: Options = {}): Promise<T> {
+  return await new Driver(options, error => values.source(error), undefined, values).drive(root);
+}
 
 // Language025 selects a branded classifier per driver; host errors and traps
 // retain their ordinary cancellation path. No ambient scheduler mode is changed.

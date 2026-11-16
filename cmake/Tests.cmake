@@ -402,6 +402,13 @@ target_compile_options(nex_reference_tasks_probe PRIVATE -Wall -Wextra -Wpedanti
 add_test(NAME reference_tasks_development COMMAND nex_reference_tasks_probe)
 add_executable(nex_native_reference_tasks_emit_probe tests/native_reference_tasks_emit.cpp)
 target_link_libraries(nex_native_reference_tasks_emit_probe PRIVATE nex_native_backend nex_frontend)
+add_executable(nex_typescript_reference_tasks_emit_probe tests/typescript_reference_tasks_emit.cpp src/typescript.cpp)
+target_link_libraries(nex_typescript_reference_tasks_emit_probe PRIVATE nex_native_backend nex_frontend)
+add_test(NAME typescript_reference_tasks_development COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/typescript_reference_tasks.py
+  $<TARGET_FILE:nex_typescript_reference_tasks_emit_probe> $<TARGET_FILE:nex_reference_tasks_probe>
+  --output-parent ${CMAKE_CURRENT_BINARY_DIR})
+set_tests_properties(typescript_reference_tasks_development PROPERTIES TIMEOUT 900)
 add_test(NAME native_reference_tasks_development COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_reference_tasks.py
   $<TARGET_FILE:nex_native_reference_tasks_emit_probe> $<TARGET_FILE:nex_reference_tasks_probe>

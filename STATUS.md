@@ -1,3 +1,32 @@
+# TypeScript reference/task continuations — development0.270.0
+
+A private checked030 TypeScript emitter now composes cells with the existing
+cooperative generator scheduler. One heap belongs to each invocation; per-job
+scope/expression roots, pending callback pins and scheduler roots preserve live
+values across suspension. Source errors, yielding guards/finalizers and pending
+returns retain their owners. No ambient managed context crosses an await.
+Read [the three-engine contract](docs/reference-tasks.md).
+
+The [focused receipt](docs/evidence/typescript-reference-tasks-0.270.0-2026-11-16.json)
+records18 generated programs compared with the independent AST coordinator,
+strict TypeScript checks and actual Node execution. Eight host controls cover
+independent simultaneous runs, cancellation, deadline, unexpected callback
+failures, nested context restoration and capability payload boundaries. Eight
+emitter gates retain checked-language, heap, entry, realm and reachability rules.
+The source-build native comparison retains26 O0/O2 observations and its separate
+owner-thread runtime cases. A moved normal installation runs four ordinary CLI
+boundary methods and generates/executes a private TypeScript sample with its
+matching installed helpers. Host dependencies remain; this is not portable SDK
+qualification.
+
+Ordinary CLI reference/task promotion, application/library task lifetimes,
+persistent UI state, source debugger/profiler views, parallel transfer and matching
+full source/platform/portable SDK acceptance remain open. Source versions,
+canonical formats, task ABI7 and public C ABI1 are unchanged; the portable
+SDK0.246.1 stays immutable. [Preceding hosted0.269 core](docs/evidence/core-ci-0.269.0-2026-11-16.json)
+passed Linux; its macOS job was cancelled before execution and remains unqualified.
+The original PLAN and the compact application-first sequence remain active.
+
 # Native reference/task continuations — development0.269.0
 
 The private030 native task emitter now lowers checked source through verified

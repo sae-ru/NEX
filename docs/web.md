@@ -1,3 +1,24 @@
+# Source030 private reference tasks — development0.270.0
+
+The source-build `emitManagedReferenceTasksDevelopmentTypeScript` emits checked
+standalone030 task programs with cells through a private owner-task generator.
+One invocation heap has explicit per-job roots; no ambient managed context spans
+an `await`. Futures, channels and source-error packets retain live owners. Calls
+accept task cancellation/deadline options and close owned state on every exit.
+Only reachable client/shared code is emitted. Source maps use
+`nex.private-typescript-reference-tasks/1` with checked revision and
+`public_source_enabled:false`. Ordinary CLI cell/task execution stays gated.
+Read [the task contract](reference-tasks.md).
+
+Async managed modules pin `nex-managed-task-runtime.ts`, `nex-task-runtime.ts`,
+`nex-managed-context.ts`, `nex-managed-runtime.ts`, `nex-managed-heap.ts` and their
+base/source-error/byte helpers as runtime build inputs. Existing synchronous
+managed exports and ordinary task modules retain their own runtime input sets.
+No npm dependency, lock or bundled notice changes. There is no managed browser
+host IO, worker reference transfer, persistent UI context or public adapter
+promotion in this step. Full browser/installed/portable SDK acceptance remains
+separate.
+
 # Current language0.28 browser runtime
 
 The ordinary compiler selects language0.28. The historical development records

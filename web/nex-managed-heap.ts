@@ -3,7 +3,7 @@
 // JavaScript reachability and nondeterministic host GC are not language roots.
 import {NexError} from './nex-runtime.ts';
 
-export type NodeKind = 'string' | 'bytes' | 'list' | 'record' | 'success' | 'failure' | 'enum' | 'closure';
+export type NodeKind = 'string' | 'bytes' | 'list' | 'record' | 'success' | 'failure' | 'enum' | 'closure' | 'task_scope' | 'task' | 'channel';
 export type HeapValue = bigint | number | boolean | HeapNode | Cell;
 export type HeapLimits = Readonly<{maximumCells: number; maximumNodes: number; maximumEdges: number}>;
 export type HeapStats = Readonly<{cells: number; nodes: number; edges: number; collections: number}>;
@@ -11,7 +11,7 @@ export type Collection = Readonly<{beforeCells: number; afterCells: number; recl
 export const defaultLimits: HeapLimits = Object.freeze({maximumCells: 1048576, maximumNodes: 4194304, maximumEdges: 16777216});
 
 function fail(code: string, message: string): never { throw new NexError(code, message); }
-const kinds = new Set<NodeKind>(['string', 'bytes', 'list', 'record', 'success', 'failure', 'enum', 'closure']);
+const kinds = new Set<NodeKind>(['string', 'bytes', 'list', 'record', 'success', 'failure', 'enum', 'closure', 'task_scope', 'task', 'channel']);
 const ordinaryNodes = new WeakSet<HeapNode>();
 const ownedVector: unique symbol = Symbol('NEX.private.owned-vector');
 type Owner = {closed: boolean};
@@ -90,9 +90,11 @@ export class CellHeap {
     if (!this.#nodes.has(value as Cell) || state.values.length !== 1) fail('E_CELL_CLOSED', 'managed cell is no longer live');
     return state;
   }
-  #payloadNode(value: Node): void {
+  #payloadNode(value: Node, taskRoot = false): void {
     if (cells.has(value as Cell)) { this.#cell(value); return; }
     if (!ordinaryNodes.has(value as HeapNode)) fail('E_CELL_VALUE', 'unsupported managed payload node');
+    if (!taskRoot && ['task_scope', 'task', 'channel'].includes((value as HeapNode).kind))
+      fail('E_CELL_VALUE', 'task capabilities cannot enter a cell payload');
   }
   #operation<T>(operands: ReadonlyArray<HeapValue>, body: () => T): T {
     this.#available(); this.#operands.push(operands);
@@ -214,7 +216,7 @@ export class CellHeap {
       while (work.length) {
         const value = work.pop()!;
         if (!isNode(value) || marked.has(value)) continue;
-        this.#payloadNode(value); marked.add(value);
+        this.#payloadNode(value, true); marked.add(value);
         for (const child of children(value)) work.push(child);
       }
       let reclaimedCells = 0, reclaimedNodes = 0;

@@ -33,6 +33,9 @@ std::string emitManagedReferencesPrototypeRequestMLIR(const Program &program,
     const std::string &entry="main",bool optimized=false);
 WebModule emitManagedReferencesPrototypeTypeScript(const Program &program,
     const std::string &entry="main",nexrt::CellHeapLimits limits={});
+// Checked030 generator/scheduler development; ordinary CLI stays gated.
+WebModule emitManagedReferenceTasksDevelopmentTypeScript(const Program &program,
+    const std::string &entry="main",nexrt::CellHeapLimits limits={});
 // Private host-value boundary: ordinary immutable browser values in/out, one
 // owned heap per invocation, no live reference/closure/resource may escape.
 // Unlike the diagnostic prototype envelope, exports have checked source

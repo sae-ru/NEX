@@ -105,6 +105,19 @@ fn main()->unit!{state,task,throw}{
 }
 }
 int main(int argc,char **argv){try{
+  if(argc==7&&std::string(argv[1])=="reference"){
+    auto path=fs::absolute(argv[2]);auto p=parseVersioned(readFile(path.string()),path.string(),SourceLanguage::References030);check(p);
+    const auto baseline=nexrt::liveObjects.load();llvm::json::Object report;
+    try{
+      auto result=evaluateManagedTaskReferencePrototype(p,"main",std::stoull(argv[3]),{std::stoull(argv[4]),std::stoull(argv[5]),std::stoull(argv[6])});
+      report=llvm::json::Object{{"kind","return"},{"stdout",result.task.output},
+        {"value_json",p.function("main").result==Type::Unit?"null":nexrt::representation(result.task.value)},
+        {"after_close_cells",int64_t(result.afterClose.cells)},{"after_close_nodes",int64_t(result.afterClose.nodes)}};
+    }catch(const Error &error){report=llvm::json::Object{{"kind","trap"},{"stdout",error.output},{"code",error.code},{"message",error.message},{"line",int64_t(error.span.line)}};}
+    require(nexrt::liveObjects.load()==baseline,"single reference task evaluation leaked values");
+    report["revision"]=revision(p);report["live_delta"]=int64_t(0);
+    std::cout<<json(std::move(report),false)<<'\n';return 0;
+  }
   require(argc==1||argc==2,"expected optional new corpus directory");
   if(argc==2){corpusDirectory=fs::absolute(argv[1]);require(fs::create_directory(corpusDirectory),"corpus directory must be new");}
   runs(R"nex(

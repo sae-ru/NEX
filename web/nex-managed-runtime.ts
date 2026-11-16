@@ -4,7 +4,8 @@ import * as execution from './nex-managed-context.ts';
 import {Cell as CellIdentity, HeapNode, type HeapValue, type HeapLimits} from './nex-managed-heap.ts';
 export {NexError, type Site} from './nex-runtime.ts';
 export {scope, expression, root, beginStatement, endStatement, condition, functionBody,
-  returned, handle, finalize, details, matches, rethrow} from './nex-managed-context.ts';
+  returned, handle, finalize, details, matches, rethrow, scopeTask, expressionTask,
+  conditionTask, functionTaskBody, handleTask, finalizeTask} from './nex-managed-context.ts';
 export type {Execution} from './nex-managed-context.ts';
 export type Value = HeapValue;
 declare const textBrand: unique symbol, bytesBrand: unique symbol, listBrand: unique symbol,
@@ -15,8 +16,12 @@ export type ByteBuffer = HeapNode & {readonly [bytesBrand]: true};
 export type List<T extends Value> = HeapNode & {readonly [listBrand]: T};
 export type Result<T extends Value> = HeapNode & {readonly [resultBrand]: T};
 export type RecordValue = HeapNode & {readonly [TYPE]: string};
-export type Closure<A extends Value[], R extends Value | void> = HeapNode & {readonly [closureBrand]: (...args: A) => R};
+export type Closure<A extends Value[], R> = HeapNode & {readonly [closureBrand]: (...args: A) => R};
 export type Cell<T extends Value> = CellIdentity & {readonly [cellBrand]: T};
+declare const taskBrand: unique symbol;
+export type TaskScope = HeapNode & {readonly [taskBrand]: 'scope'};
+export type Task<T extends Value | void> = HeapNode & {readonly [taskBrand]: T};
+export type Channel<T extends Value> = HeapNode & {readonly [taskBrand]: T};
 type Builder = {items: Value[]; active: boolean};
 type Metadata = Readonly<{text?: string; bytes?: base.ByteBuffer; nominal?: string; tag?: string;
   names?: ReadonlyArray<string>; callable?: unknown; builder?: Builder}>;
@@ -43,11 +48,17 @@ export function enumeration<T extends RecordValue>(name: string, tag: string, fi
 }
 export function field<T extends Value>(value: HeapNode, offset: number): T { return value.values[offset] as T; }
 export function caseName(value: HeapNode): string { return meta(value).tag!; }
-export function captured<A extends Value[], R extends Value | void>(values: ReadonlyArray<Value>, callback: (...args: A) => R): Closure<A, R> {
+export function captured<A extends Value[], R>(values: ReadonlyArray<Value>, callback: (...args: A) => R): Closure<A, R> {
   return make('closure', values, {callable: callback});
 }
-export function invoke<A extends Value[], R extends Value | void>(value: Closure<A, R>, args: A): R {
+export function invoke<A extends Value[], R>(value: Closure<A, R>, args: A): R {
   const callback = meta(value).callable! as (...args: A) => R; return callback(...args);
+}
+export function taskCapability(kind: 'task_scope' | 'task' | 'channel'): HeapNode { return make(kind, []); }
+export function taskChildren(value: object, owner: execution.TaskSession): ReadonlyArray<Value> {
+  if (value instanceof CellIdentity) return [owner.owner.heap.read(value)];
+  if (!(value instanceof HeapNode) || !metadata.has(value)) throw new base.NexError('E_TASK_VALUE', 'task snapshot is not a checked managed value');
+  return value.values;
 }
 export function cellNew<T extends Value>(value: T): Cell<T> { return execution.heap().create(value) as Cell<T>; }
 export function cellRead<T extends Value>(value: Cell<T>): T { return execution.heap().read(value) as T; }
@@ -110,7 +121,7 @@ export {add, sub, mul, div, rem, neg, assert, checked, floatAdd, floatSub, float
 export function equal(a: Value, b: Value): boolean {
   if (a === b) return true;
   if (!(a instanceof HeapNode) || !(b instanceof HeapNode) || a.kind !== b.kind) return false;
-  if (a.kind === 'closure') return false;
+  if (a.kind === 'closure' || a.kind === 'task_scope' || a.kind === 'task' || a.kind === 'channel') return false;
   const x = meta(a), y = meta(b);
   if (a.kind === 'bytes') return x.bytes!.equals(y.bytes!);
   if (x.text !== y.text || x.nominal !== y.nominal || x.tag !== y.tag || a.values.length !== b.values.length) return false;
@@ -128,6 +139,7 @@ export function representation(value: Value | void): string {
     case 'string': return quoted(data.text!);
     case 'bytes': return quoted(data.bytes!.base64());
     case 'closure': return quoted('<function>');
+    case 'task_scope': return quoted('<task_scope>'); case 'task': return quoted('<task>'); case 'channel': return quoted('<channel>');
     case 'success': return '{"ok":' + representation(value.values[0]) + '}';
     case 'failure': return '{"error":{"code":' + quoted(data.text!) + ',"message":' + representation(value.values[0]) + '}}';
     case 'list': return '[' + value.values.map(representation).join(',') + ']';
@@ -176,6 +188,7 @@ function hostValue(value: Value, depth = 0, budget = {nodes: 0}): base.Value {
   if (value.values.length > 10000) throw new base.NexError('E_JSON', 'JSON collection exceeds item limit');
   const data = meta(value), child = (v: Value): base.Value => hostValue(v, depth + 1, budget);
   switch (value.kind) {
+    case 'task_scope': case 'task': case 'channel': throw new base.NexError('E_JSON', 'task values cannot cross the JSON boundary');
     case 'string': return data.text!;
     case 'bytes': return data.bytes!;
     case 'closure': throw new base.NexError('E_JSON', 'function values cannot cross the JSON boundary');
@@ -209,8 +222,8 @@ export function encodeJSON(value: Value, site?: base.Site): Text {
 export function decodeJSON<T extends Value>(value: Text, schema: base.Schema): Result<T> {
   return sourceValue(base.decodeJSON(raw(value), schema)) as Result<T>;
 }
-export type PayloadKind = 'i64' | 'bool' | 'f64' | 'str' | 'bytes' | 'list' | 'record' | 'enum' | 'result' | 'function' | 'cell';
-const payloadNodeKinds: Partial<Record<PayloadKind, HeapNode['kind']>> = {str: 'string', bytes: 'bytes', list: 'list', record: 'record', enum: 'enum', function: 'closure'};
+export type PayloadKind = 'i64' | 'bool' | 'f64' | 'str' | 'bytes' | 'list' | 'record' | 'enum' | 'result' | 'function' | 'cell' | 'task_scope' | 'task' | 'channel';
+const payloadNodeKinds: Partial<Record<PayloadKind, HeapNode['kind']>> = {str: 'string', bytes: 'bytes', list: 'list', record: 'record', enum: 'enum', function: 'closure', task_scope: 'task_scope', task: 'task', channel: 'channel'};
 function checkedPayload(value: Value, kind: PayloadKind, nominal: string, site: base.Site): void {
   if (kind === 'cell' && value instanceof CellIdentity) return;
   if (kind === 'i64' && typeof value === 'bigint') { base.checked(value, site); return; }

@@ -27,11 +27,11 @@ std::string typescriptType(const Type &t,bool tasks,bool managed=false){
   case Type::Cell:if(managed)return "nex.Cell<"+typescriptType(*t.element,tasks,true)+">";break;
   case Type::Record:return "T_"+symbol(t.name);
   case Type::Function:{
-    if(managed){std::string result="nex.Closure<[";for(size_t i=0;i<t.arguments.size();++i){if(i)result+=", ";result+=typescriptType(t.arguments[i],false,true);}return result+"], "+typescriptType(*t.element,false,true)+">";}
+    if(managed){std::string result="nex.Closure<[";for(size_t i=0;i<t.arguments.size();++i){if(i)result+=", ";result+=typescriptType(t.arguments[i],tasks,true);}auto output=typescriptType(*t.element,tasks,true);return result+"], "+(tasks?"task.Call<"+output+">":output)+">";}
     std::string result="((";for(size_t i=0;i<t.arguments.size();++i){if(i)result+=", ";result+="argument"+std::to_string(i)+": "+typescriptType(t.arguments[i],tasks);}auto output=typescriptType(*t.element,tasks);return result+") => "+(tasks?"task.Call<"+output+">":output)+")";}
-  case Type::TaskScope:if(tasks)return "task.Scope";break;
-  case Type::Task:if(tasks)return "task.Future<"+typescriptType(*t.element,tasks)+">";break;
-  case Type::Channel:if(tasks)return "task.Channel<"+typescriptType(*t.element,tasks)+">";break;
+  case Type::TaskScope:if(tasks)return managed?"nex.TaskScope":"task.Scope";break;
+  case Type::Task:if(tasks)return std::string(managed?"nex.Task<":"task.Future<")+typescriptType(*t.element,tasks,managed)+">";break;
+  case Type::Channel:if(tasks)return std::string(managed?"nex.Channel<":"task.Channel<")+typescriptType(*t.element,tasks,managed)+">";break;
   default:throw Error("E_INTERNAL","unresolved TypeScript type");
   }
   throw Error("E_TASK_UNIMPLEMENTED","standalone synchronous TypeScript exports cannot carry task authority; emit a task-effect entry that owns the execution scope");
@@ -65,6 +65,7 @@ class Generator {
   llvm::json::Array mappings;
   std::map<const void*,std::string> sites;
   std::string type(const Type &t){return typescriptType(t,taskMode,managedMode);}
+  std::string taskTypes(const std::string &output){return "<task.Request, task.Item, "+output+">";}
   std::pair<std::string,std::string> payloadShape(const Type &t){
     switch(t.kind){
     case Type::I64:return {"i64",""};case Type::Bool:return {"bool",""};case Type::F64:return {"f64",""};
@@ -132,6 +133,16 @@ class Generator {
     std::string code;for(size_t i=0;i<p->args.size();++i)code+=patternBindings(p->args[i],patternChild(p,i,subject,location),location);return code;
   }
   std::string matchExpression(E e){
+    if(managedMode&&taskMode){
+      auto subject="match_"+std::to_string(++unique),location=site(e);
+      std::string code="(yield* (function* (): task.Step<"+type(e->type)+"> { const "+subject+" = "+expr(e->args[0])+"; ";
+      for(auto arm:e->arms){
+        scopes.emplace_back();auto accepted="accepted_"+std::to_string(++unique),value="selected_"+std::to_string(++unique);
+        code+="if ("+patternCondition(arm->pattern,subject,location)+") { let "+accepted+" = false; const "+value+" = yield* nex.scopeTask"+taskTypes(type(e->type)+" | undefined")+"(function* (): task.Step<"+type(e->type)+" | undefined> { "+patternBindings(arm->pattern,subject,location);
+        if(arm->guard)code+="if (!(yield* nex.conditionTask(function* (): task.Step<boolean> { return "+expr(e->args[arm->guard])+"; }))) return undefined; ";
+        code+=accepted+" = true; return "+expr(e->args[arm->value])+"; }); if ("+accepted+") return "+value+" as "+type(e->type)+"; } ";scopes.pop_back();
+      }return code+"return nex.invalidEnum("+location+"); })())";
+    }
     if(managedMode){
       auto subject="match_"+std::to_string(++unique),location=site(e);std::string code="((): "+type(e->type)+" => { const "+subject+" = "+expr(e->args[0])+"; ";
       for(auto arm:e->arms){
@@ -145,7 +156,7 @@ class Generator {
     for(auto arm:e->arms){scopes.emplace_back();code+="if ("+patternCondition(arm->pattern,subject,location)+") { "+patternBindings(arm->pattern,subject,location);if(arm->guard)code+="if ("+expr(e->args[arm->guard])+") { ";code+="return "+expr(e->args[arm->value])+"; ";if(arm->guard)code+="} ";code+="} ";scopes.pop_back();}
     return code+"return nex.invalidEnum("+location+"); })()"+(taskMode?")":"");
   }
-  std::string expr(E e){auto value=expressionBody(e);return managedMode?"nex.expression<"+type(e->type)+">("+site(e)+", () => "+value+")":value;}
+  std::string expr(E e){auto value=expressionBody(e);if(managedMode&&taskMode)return "(yield* nex.expressionTask"+taskTypes(type(e->type))+"("+site(e)+", function* (): task.Step<"+type(e->type)+"> { return "+value+"; }))";return managedMode?"nex.expression<"+type(e->type)+">("+site(e)+", () => "+value+")":value;}
   std::string expressionBody(E e){
     switch(e->kind){
     case Expr::FunctionRef:case Expr::Lambda:{
@@ -153,7 +164,7 @@ class Generator {
       for(size_t i=0;i<e->args.size();++i){auto name="capture_"+std::to_string(++unique);if(i){captureParams+=", ";captureValues+=", ";arguments+=", ";captures+=", ";}captureParams+=name+": "+type(fn.captures[i].type);captureValues+=expr(e->args[i]);arguments+=name;captures+=name;}
       for(size_t i=0;i<fn.params.size();++i){auto name="argument_"+std::to_string(++unique);if(i)parameters+=", ";if(!arguments.empty())arguments+=", ";parameters+=name+": "+type(fn.params[i].type);arguments+=name;}
       auto invocation=symbol(fn.name)+"("+arguments+")";
-      if(taskMode)invocation="task.call(() => "+invocation+")";
+      if(taskMode)invocation="task.call(() => "+invocation+(managedMode?", ["+arguments+"]":std::string{})+")";
       return "(("+captureParams+"): "+type(e->type)+" => nex.captured(["+captures+"], ("+parameters+"): "+(taskMode?"task.Call<"+type(fn.result)+">":type(fn.result))+" => "+invocation+"))("+captureValues+")";
     }
     case Expr::Invoke:{auto text=managedMode?"nex.invoke("+expr(e->args[0])+", [":"("+expr(e->args[0])+")(";for(size_t i=1;i<e->args.size();++i){if(i>1)text+=", ";text+=expr(e->args[i]);}text+=managedMode?"])":")";return taskMode?"(yield* task.invoke("+text+", "+site(e)+"))":text;}
@@ -222,6 +233,28 @@ class Generator {
     throw Error("E_INTERNAL","unsupported TypeScript expression");
   }
   void managedHandler(S s){
+    if(taskMode){
+      auto error="source_error_"+std::to_string(++unique),payload="source_payload_"+std::to_string(++unique);
+      statement("yield* nex.handleTask(function* (): task.Step<void> {");++depth;block(s->body);--depth;
+      statement("}, function* ("+error+"): task.Step<boolean> {");++depth;
+      statement("const "+payload+" = sourceException.details("+error+")!;");
+      auto clause=[&](S handler,const std::vector<S> &body,bool typed){
+        statement("if (yield* nex.scopeTask"+taskTypes("boolean")+"(function* (): task.Step<boolean> {");++depth;scopes.emplace_back();
+        auto name=declare(handler->name);
+        if(typed){auto shape=payloadShape(handler->type);statement("const "+name+": "+type(handler->type)+" = sourceException.readTyped<"+type(handler->type)+">("+payload+", "+quote(handler->errorTypeKey)+", "+quote(shape.first)+", "+quote(shape.second)+", "+site(handler)+");");}
+        else{statement("const "+name+": nex.Text = nex.text("+payload+".code);");auto message=declare(handler->catchMessage);statement("const "+message+": nex.Text = nex.text("+payload+".message);");statement("nex.root(() => "+message+");");}
+        statement("nex.root(() => "+name+");");caughtSourceErrors.push_back(error);
+        if(handler->expr)statement("if (!(yield* nex.conditionTask(function* (): task.Step<boolean> { return "+expr(handler->expr)+"; }))) return false;");
+        block(body,false);statement("return true;");caughtSourceErrors.pop_back();scopes.pop_back();--depth;statement("})) return true;");
+      };
+      if(s->kind==Stmt::Try)clause(s,s->alternative,false);
+      else for(auto handler:s->alternative){
+        bool typed=handler->type!=Type::Unknown;
+        statement("if ("+(typed?"sourceException.matches("+payload+", "+quote(handler->errorTypeKey)+")":std::string("true"))+") {");++depth;
+        clause(handler,handler->body,typed);--depth;statement("}");
+      }
+      statement("return false;");--depth;statement("});");return;
+    }
     auto error="source_error_"+std::to_string(++unique),payload="source_payload_"+std::to_string(++unique);
     statement("nex.handle(() => {");++depth;block(s->body);--depth;
     statement("}, ("+error+"): boolean => {");++depth;
@@ -244,7 +277,52 @@ class Generator {
     }
     statement("return false;");--depth;statement("});");
   }
+  void managedTaskBlock(const std::vector<S> &body,bool scoped){
+    if(scoped){scopes.emplace_back();statement("yield* nex.scopeTask"+taskTypes("void")+"(function* (): task.Step<void> {");++depth;}
+    for(auto s:body){
+      auto start=line;statement("yield* task.checkpoint("+site(s)+");");
+      bool simple=s->kind==Stmt::Let||s->kind==Stmt::Var||s->kind==Stmt::Assign||s->kind==Stmt::Expression||s->kind==Stmt::Return||s->kind==Stmt::Throw||s->kind==Stmt::TypedThrow;
+      if(simple)statement("nex.beginStatement();");
+      switch(s->kind){
+      case Stmt::Let:case Stmt::Var:{auto value=expr(s->expr),name=declare(s->name);statement(std::string(s->kind==Stmt::Let?"const ":"let ")+name+": "+type(s->type)+" = "+value+";");statement("nex.root(() => "+name+");");break;}
+      case Stmt::Assign:statement(local(s->name)+" = "+expr(s->expr)+";");break;
+      case Stmt::Expression:statement(expr(s->expr)+";");break;
+      case Stmt::Return:statement("nex.returned("+(s->expr?expr(s->expr):std::string{})+");");break;
+      case Stmt::TypedThrow:{auto shape=payloadShape(s->type);statement("sourceException.raiseTyped("+quote(s->errorTypeKey)+", "+quote(typeName(s->type))+", "+expr(s->expr)+", "+quote(shape.first)+", "+quote(shape.second)+", "+site(s)+");");break;}
+      case Stmt::Throw:
+        if(s->expr)statement("sourceException.raise("+expr(s->expr->args[0])+", "+expr(s->expr->args[1])+", "+site(s)+");");
+        else{if(caughtSourceErrors.empty())throw Error("E_INTERNAL","managed task rethrow lost its lexical handler",s->span);statement("sourceException.rethrow("+caughtSourceErrors.back()+");");}break;
+      case Stmt::TypedTry:case Stmt::Try:managedHandler(s);break;
+      case Stmt::CatchClause:throw Error("E_INTERNAL","handler clause outside managed task protected statement",s->span);
+      case Stmt::Finally:
+        statement("yield* nex.finalizeTask(function* (): task.Step<void> {");++depth;block(s->body);--depth;
+        statement("}, function* (): task.Step<void> {");++depth;block(s->alternative);--depth;statement("});");break;
+      case Stmt::If:
+        statement("if (yield* nex.conditionTask(function* (): task.Step<boolean> { return "+expr(s->expr)+"; })) {");++depth;block(s->body);--depth;
+        if(!s->alternative.empty()){statement("} else {");++depth;block(s->alternative);--depth;}statement("}");break;
+      case Stmt::While:
+        statement("while (yield* nex.conditionTask(function* (): task.Step<boolean> { return "+expr(s->expr)+"; })) {");++depth;
+        statement("yield* task.checkpoint("+site(s)+");");block(s->body);--depth;statement("}");break;
+      case Stmt::Match:{
+        auto e=s->expr;auto subject="match_"+std::to_string(++unique),end="match_end_"+std::to_string(++unique),location=site(e->args[0]);
+        statement("yield* nex.scopeTask"+taskTypes("void")+"(function* (): task.Step<void> {");++depth;
+        statement("const "+subject+" = "+expr(e->args[0])+";");statement("nex.root(() => "+subject+");");statement(end+": {");++depth;
+        for(auto arm:e->arms){
+          statement("if ("+patternCondition(arm->pattern,subject,location)+") {");++depth;
+          statement("if (yield* nex.scopeTask"+taskTypes("boolean")+"(function* (): task.Step<boolean> {");++depth;scopes.emplace_back();statement(patternBindings(arm->pattern,subject,location));
+          if(arm->guard)statement("if (!(yield* nex.conditionTask(function* (): task.Step<boolean> { return "+expr(e->args[arm->guard])+"; }))) return false;");
+          block(arm->body,false);statement("return true;");scopes.pop_back();--depth;statement("})) break "+end+";");--depth;statement("}");
+        }
+        statement("nex.invalidEnum("+location+");");--depth;statement("}");--depth;statement("});");break;
+      }
+      }
+      if(simple&&s->kind!=Stmt::Return&&s->kind!=Stmt::Throw&&s->kind!=Stmt::TypedThrow)statement("nex.endStatement();");
+      mappings.push_back(llvm::json::Object{{"site",sites.at(s.get())},{"generated_line",int64_t(start)},{"file",s->span.file},{"line",int64_t(s->span.line)},{"column",int64_t(s->span.column)}});
+    }
+    if(scoped){--depth;statement("});");scopes.pop_back();}
+  }
   void managedBlock(const std::vector<S> &body,bool scoped){
+    if(taskMode){managedTaskBlock(body,scoped);return;}
     if(scoped){scopes.emplace_back();statement("nex.scope(() => {");++depth;}
     for(auto s:body){
       auto start=line;
@@ -389,7 +467,7 @@ public:
     if(hostValues)write("import * as host from './nex-runtime.ts';\n\n");
     if(privateSource||p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)write("// Private staging only; this module has no public source revision.\n");
     if(exceptionPrototype)write("import * as sourceException from './"+std::string(managedMode?"nex-managed-runtime.ts":"nex-source-exception-runtime.ts")+"';\n\n");
-    if(taskMode)write("import * as task from './nex-task-runtime.ts';\n\n");
+    if(taskMode)write("import * as task from './"+std::string(managedMode?"nex-managed-task-runtime.ts":"nex-task-runtime.ts")+"';\n\n");
     for(const auto &name:functions)if(usesParallelMap(p.function(name)))parallelEnabled=true;
     for(const auto &name:structures){
       const auto &s=p.structure(name);
@@ -429,10 +507,12 @@ public:
         std::string inputs;
         for(const auto &capture:f.captures){if(!inputs.empty())inputs+=", ";inputs+=local(capture.name);}
         for(const auto &param:f.params){if(!inputs.empty())inputs+=", ";inputs+=local(param.name);}
-        statement("return nex.functionBody<"+type(f.result)+">(["+inputs+"], () => {");++depth;
+        if(taskMode){statement("task.enterTyped(["+quote(f.span.file)+", "+std::to_string(f.span.line)+", "+std::to_string(f.span.column)+"]);");statement("try {");++depth;}
+        statement(taskMode?"return yield* nex.functionTaskBody"+taskTypes(type(f.result))+"(["+inputs+"], function* (): task.Step<void> {":"return nex.functionBody<"+type(f.result)+">(["+inputs+"], () => {");++depth;
         block(f.body,false);
         if(f.result!=Type::Unit)statement("throw new nex.NexError(\"E_INTERNAL\", \"checked function completed without a result\", ["+quote(f.span.file)+", "+std::to_string(f.span.line)+", "+std::to_string(f.span.column)+"]);");
         --depth;statement("});");
+        if(taskMode){--depth;statement("} finally { task.leave(); }");}
       }else{
       if(taskMode){statement(std::string(isTypedSourceErrorLanguage(p.sourceLanguage)?"task.enterTyped([":"task.enter([")+quote(f.span.file)+", "+std::to_string(f.span.line)+", "+std::to_string(f.span.column)+"]);");statement("try {");++depth;}
       else if(parallelEnabled){statement("nex.parallelEnter(["+quote(f.span.file)+", "+std::to_string(f.span.line)+", "+std::to_string(f.span.column)+"]);");statement("try {");++depth;}
@@ -473,14 +553,18 @@ public:
         write("export function "+alias+"("+parameters+"): "+hostValueType(function.result)+" { return nex.invokeValue<"+hostValueType(function.result)+">(() => "+symbol(function.name)+"("+arguments+"), "+limits+(function.result==Type::Unit?"":", "+json(result,false))+"); }\n");
         hostContracts[alias]=llvm::json::Object{{"symbol",function.name},{"parameters",std::move(inputs)},{"result",std::move(result)}};
       }
-      else if(managedMode)write("export function "+alias+"(): nex.Execution { return nex.run(() => "+symbol(p.function(name).name)+"(), "+limits+"); }\n");
+      else if(managedMode){
+        if(taskMode)write("export function "+alias+"(options: import('./nex-task-runtime.ts').Options = {}): Promise<nex.Execution> { return task.run(() => "+symbol(p.function(name).name)+"(), "+limits+", options); }\n");
+        else write("export function "+alias+"(): nex.Execution { return nex.run(() => "+symbol(p.function(name).name)+"(), "+limits+"); }\n");
+      }
       else write("export { "+symbol(p.function(name).name)+" as "+alias+" };\n");
     }
     if(managedMode){auto mapping=llvm::json::Object{{"schema",hostValues?"nex.private-typescript-managed-value-map/1":"nex.private-typescript-managed-map/1"},{"language",programLanguage(p)},
       {"public_source_enabled",false},{"public_revision",false},{"entry_text_hash",hash(p.source)},
       {"functions",std::move(included)},{"statements",std::move(mappings)},{"execution","sequential-owned-heap"}};
       if(hostValues){mapping["host_entry_contracts"]=std::move(hostContracts);mapping["host_values"]="immutable snapshots; no live reference escapes; one heap per call";}
-      if(p.sourceLanguage==SourceLanguage::References030){
+      if(taskMode){mapping["schema"]="nex.private-typescript-reference-tasks/1";mapping["execution"]="owner-task-generator";mapping["checked_revision"]=revision(p);mapping["ordinary_CLI"]=false;}
+      if(p.sourceLanguage==SourceLanguage::References030&&!taskMode){
         mapping["schema"]="nex.typescript-map/3";mapping["revision"]=revision(p);mapping["source_hash"]=hash(json(sourceBundle(p),false));
         mapping["public_revision"]=true;mapping["source_version_selected"]=true;
         mapping["public_source_enabled"]=true;
@@ -492,7 +576,7 @@ public:
         for(const auto &name:structures){const auto &unit=p.structure(name).unit;if(p.units.contains(unit))units[unit]=hash(p.units.at(unit).source);}
         mapping["reachable_source_units"]=std::move(units);
       }
-      return {out.str(),std::move(mapping),false,true,true};
+      return {out.str(),std::move(mapping),taskMode,true,true};
     }
     if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)return {out.str(),llvm::json::Object{{"schema","nex.private-typescript-exception-map/1"},{"language",programLanguage(p)},{"source_support",false},{"public_revision",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"},{"task_source_exceptions",taskMode}},taskMode,true};
     if(privateSource)return {out.str(),llvm::json::Object{{"schema","nex.private-typescript-task-map/1"},{"language",programLanguage(p)},{"public_source_tasks",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)}},taskMode};
@@ -566,6 +650,19 @@ WebModule emitManagedReferencesPrototypeTypeScript(const Program &p,const std::s
   for(auto value:{limits.maximumCells,limits.maximumNodes,limits.maximumEdges})if(!value||value>9007199254740991ULL)throw Error("E_CELL_LIMIT","TypeScript managed heap limits must be positive safe integers",function.span);
   return Generator(p,false,true,true,&limits).run({{"main",entry}});
 }
+WebModule emitManagedReferenceTasksDevelopmentTypeScript(const Program &p,const std::string &entry,nexrt::CellHeapLimits limits){
+  if(p.sourceLanguage!=SourceLanguage::References030)throw Error("E_LANGUAGE_VERSION","managed TypeScript tasks require source0.30");
+  for(const auto &function:p.functions)if(!function.checked&&!function.traitSignature)throw Error("E_CELL_STATE","managed TypeScript tasks require checked source",function.span);
+  const auto &function=p.function(entry);
+  if(!function.params.empty()||!function.captures.empty()||(function.result!=Type::Unit&&!satisfiesConstraint(p,function.result,"wire")))throw Error("E_CELL_ENTRY","managed task entry takes no arguments and returns unit or an immutable wire value",function.span);
+  for(auto value:{limits.maximumCells,limits.maximumNodes,limits.maximumEdges})if(!value||value>9007199254740991ULL)throw Error("E_CELL_LIMIT","TypeScript managed heap limits must be positive safe integers",function.span);
+  std::set<std::string> seen;std::function<void(const Function&)> visit=[&](const Function &f){
+    if(!seen.insert(f.name).second)return;
+    if(usesParallelMap(f))throw Error("E_CELL_CONCURRENCY","managed TypeScript tasks require cooperative owner execution",f.span);
+    for(const auto &dependency:f.dependencies)visit(p.function(dependency));
+  };visit(function);
+  return Generator(p,true,true,true,&limits).run({{"main",entry}});
+}
 namespace {
 void validateManagedValueEntries(const Program &p,const std::map<std::string,std::string> &entries,nexrt::CellHeapLimits limits){
   for(const auto &function:p.functions)if(!function.checked&&!function.traitSignature)throw Error("E_CELL_STATE","managed value exports require a fully checked program",function.span);
@@ -593,6 +690,8 @@ void writeWebModule(const WebModule &module,const std::string &directory){
   if(module.managedReferences){
     for(const auto *name:{"nex-managed-heap.ts","nex-managed-context.ts","nex-managed-runtime.ts"})
       writeFile((output/name).string(),readFile(resourceFile(std::string("web/")+name)));
+    if(module.asynchronous)for(const auto *name:{"nex-managed-task-runtime.ts","nex-task-runtime.ts","nex-source-exception-runtime.ts"})
+      writeFile((output/name).string(),readFile(resourceFile(std::string("web/")+name)));
   }else if(module.privateSourceExceptions||module.asynchronous){
     writeFile((output/"nex-source-exception-runtime.ts").string(),readFile(resourceFile("web/nex-source-exception-runtime.ts")));
     writeFile((output/"nex-task-runtime.ts").string(),readFile(resourceFile("web/nex-task-runtime.ts")));
@@ -604,7 +703,7 @@ void writeTaskTypeScriptModule(const WebModule &module,const std::string &direct
 }
 std::string webRuntimeInputs(const WebModule &module){
   auto source=readFile(resourceFile("web/nex-runtime.ts"))+readFile(resourceFile("web/nex-bytes.ts"));
-  if(module.managedReferences){for(const auto *name:{"nex-managed-heap.ts","nex-managed-context.ts","nex-managed-runtime.ts"})source+=readFile(resourceFile(std::string("web/")+name));}
+  if(module.managedReferences){for(const auto *name:{"nex-managed-heap.ts","nex-managed-context.ts","nex-managed-runtime.ts"})source+=readFile(resourceFile(std::string("web/")+name));if(module.asynchronous)for(const auto *name:{"nex-managed-task-runtime.ts","nex-task-runtime.ts","nex-source-exception-runtime.ts"})source+=readFile(resourceFile(std::string("web/")+name));}
   else if(module.asynchronous||module.privateSourceExceptions)source+=readFile(resourceFile("web/nex-task-runtime.ts"))+readFile(resourceFile("web/nex-source-exception-runtime.ts"));
   return source;
 }

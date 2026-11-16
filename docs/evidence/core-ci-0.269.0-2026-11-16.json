@@ -1,0 +1,28 @@
+{
+  "schema": "nex.hosted-core-result/1",
+  "toolchain": "0.269.0",
+  "source_commit": "acb5e00266603da892f9b73e110bff0c4eb59f02",
+  "run_id": 43931983773,
+  "url": "https://github.com/sae-ru/NEX/actions/runs/43931983773",
+  "observed_at": "2026-11-16 19:32:46 UTC",
+  "authority": "GitHub connector fetch_workflow_run_jobs",
+  "jobs": [
+    {
+      "id": 133526538123,
+      "name": "linux-core",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 133526538615,
+      "name": "macos-core",
+      "status": "completed",
+      "conclusion": "cancelled"
+    }
+  ],
+  "all_required_jobs_passed": false,
+  "core_groups": 17,
+  "complete_source_regression": false,
+  "portable_SDK": false,
+  "scope": "Preceding native reference-task commit: Linux succeeded; macOS was cancelled without executing steps. This does not qualify the new TypeScript cohort."
+}

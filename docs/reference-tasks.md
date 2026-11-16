@@ -1,15 +1,15 @@
 ---
 status: development
-applies_to: "toolchain 0.269.0; source0.30; private reference/native task execution"
+applies_to: "toolchain 0.270.0; source0.30; private reference/native/TypeScript task execution"
 owner: repository
 ---
 
-# References in structured tasks: reference/native development
+# References in structured tasks: three-engine development
 
 The source-build C++ entry `evaluateManagedTaskReferencePrototype` composes
 ordinary checked source0.30 with the independent AST task coordinator and one
 owned, thread-affine cell heap. It is the independent oracle for the native
-development path and remaining TypeScript integration. Discover
+and TypeScript development paths. Discover
 `managed_references.source030_development.reference_tasks`.
 **`public_source_enabled` remains false:** ordinary `eval`, native `build` and
 TypeScript emission retain `E_CELL_CONCURRENCY` for reference/task execution.
@@ -107,7 +107,54 @@ runtime probe checks owner-thread identity, caller state after joining, typed
 packet identity, worker/cohort/thread rejection, budget/cancellation and frame
 retirement. Those seven cases also run in the existing core reference-task group.
 
-TypeScript generators, ordinary CLI promotion, persistent application/UI
+Ordinary CLI promotion, persistent application/UI
 contexts, source debugging/profiling, host/library/task contexts, parallel
 transfer and complete SDK/platform qualification remain open. These private
 entries do not qualify an entire SDK or release.
+
+## TypeScript owner-thread generators
+
+The [focused0.270 receipt](evidence/typescript-reference-tasks-0.270.0-2026-11-16.json)
+records the exact source/compiler cohort and qualification scope.
+
+Toolchain0.270's source-build `emitManagedReferenceTasksDevelopmentTypeScript`
+requires checked030, a no-argument unit/immutable-wire entry and positive safe
+heap bounds. It emits only reachable client/shared functions and rejects
+`parallel_map`. Discover `source030_development.typescript_tasks`. Its map is
+`nex.private-typescript-reference-tasks/1`, with checked revision and both
+`ordinary_CLI` and `public_source_enabled` false. It is not a new public source
+revision, grammar or ABI.
+
+The existing cooperative generator scheduler accepts a private boxed-value
+policy. One heap belongs to each invocation, while every task owns independent
+scope/expression/function roots. Synchronous resumes temporarily activate that
+lane; no global context crosses an await. Separate simultaneous invocations and
+nested synchronous managed calls retain their original heap owners.
+
+Callback captures and inputs are pinned before their first resume, including
+cancellation before entry. Scheduler roots cover pending values, future results,
+channel buffers and typed source-error packets. Yielding handlers/finalizers and
+pending returns retain their lexical owners. Task capabilities remain genuine
+scheduler values; they may be heap roots but cannot be stored inside cells.
+
+Return, source errors, deadlock/budget, cancellation, deadline and unexpected
+observer/completion failures retire source lanes, completion flights and heap
+roots. Results/diagnostics are copied before close. This runs on one JavaScript
+thread; it provides no shared-memory source execution, managed host IO, worker
+reference transport or persistent application/UI context.
+
+`typescript_reference_tasks_development` compares18 actual generated source
+programs against the independent AST coordinator after strict TypeScript checks
+and Node execution. Nine retained non-file corpus cases cover ordinary/fatal/
+control behavior; nine additions cover pre-entry captures, buffered-only roots,
+yielding return/guards, retired source errors, match/operand roots, Result finally
+and immutable list snapshots. Eight host checks cover concurrent independent
+runs, pre-entry/in-request cancellation, observer/completion failures, nested
+context restoration, deadline cleanup and task-capability payload rejection.
+Eight emitter gates also preserve checked-language, bounds, entry and realm
+restrictions. Native file ownership coverage remains in its separate O0/O2 suite.
+
+Ordinary CLI promotion, application/library task lifetimes, persistent UI state,
+source debugger/profiler views, parallel transfer and matching complete source/
+platform/portable SDK qualification remain required. The published portable
+SDK0.246.1 is unchanged.
