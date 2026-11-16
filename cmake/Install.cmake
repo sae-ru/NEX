@@ -25,6 +25,8 @@ install(FILES tests/managed_reference_typescript.cpp tests/managed_reference_typ
 install(FILES tests/managed_reference_modules.cpp tests/managed_reference_module_cases.py DESTINATION share/nex/tests)
 install(FILES tests/references030.cpp tests/references030.py DESTINATION share/nex/tests)
 install(FILES tests/reference_library.py tests/reference_library_host.cpp DESTINATION share/nex/tests)
+install(FILES tests/reference_http.py DESTINATION share/nex/tests)
+install(DIRECTORY tests/fixtures/reference-http DESTINATION share/nex/tests/fixtures)
 install(FILES tests/fixtures/managed-references/library.nex DESTINATION share/nex/tests/fixtures/managed-references)
 install(FILES tests/fixtures/managed-references/public-baseline.json tests/fixtures/managed-references/value-exports.nex DESTINATION share/nex/tests/fixtures/managed-references)
 install(DIRECTORY tools/linux DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)

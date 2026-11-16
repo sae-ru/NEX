@@ -55,7 +55,7 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.263.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.264.0 / language 0.28 / task ABI 7**, in development.
 Language 0.29 is an explicit opt-in for partial type lambdas and higher-order kinds;
 0.28 remains the default and rejects those constructs. The compiler default is not
 a project default: `nex.json` selects 0.28 or 0.29 explicitly per project;
@@ -63,16 +63,13 @@ new `nex init` projects select 0.29.
 
 Recent source blocks add persistent AVL [ordered map/set](docs/ordered-containers.md)
 and an explicit [Java int domain](docs/java-integers.md). The
-[managed-reference candidate](docs/managed-references-prototype.md) has private
-reference/native/TypeScript [modules](docs/managed-reference-modules.md) and
-[native request contexts](docs/managed-reference-requests.md) and
-[resource-owning cells](docs/managed-reference-owned-payloads.md).
-Its private [TypeScript value exports](docs/managed-reference-value-exports.md)
-accept and return immutable browser values with a separate heap per call.
+[reference foundation](docs/managed-references-prototype.md) includes modules,
+resource-owning cells and per-call [TypeScript value exports](docs/managed-reference-value-exports.md).
 Explicit [030 development APIs](docs/references030.md) add canonical reference
 graphs and guarded migration; ordinary030 CLI publication remains pending.
 Code-only [native reference libraries](docs/reference-library-abi.md) share one
 host/application context across related calls and live handles.
+Native [HTTP requests](docs/reference-http.md) own separate reference contexts.
 Ordinary values and retained snapshots now use
 [iterative deep cleanup](docs/value-retirement.md).
 Ordinary030 CLI/project references and migration, machine i32 and other

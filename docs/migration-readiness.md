@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; explicit030 API development; toolchain 0.263.0"
+applies_to: "language 0.28; explicit030 API development; toolchain 0.264.0"
 owner: repository
 ---
 
@@ -92,7 +92,7 @@ version/history migration remain open; see [value exports](managed-reference-val
 |---|---|---|
 | Java `int`/`long`, casts, bits and shifts | Checked i64 and ordinary nominal values | Exact wrapping operations, narrow-width types/conversions and efficient native lowering |
 | Java `float`/`double` | Finite f64; zero normalization | Binary32, IEEE special values, signed zero, casts and specified rounding in an explicit domain |
-| Java object references and identity | Immutable values, owned resources; versioned030 sequential cells and code-only native library contexts | Ordinary030 CLI/project publication, nullability/class layouts, HTTP/task integration and full SDK/platform qualification |
+| Java object references and identity | Immutable values, owned resources; versioned030 sequential cells, native libraries and HTTP request contexts | Ordinary030 CLI/project publication, nullability/class layouts, task integration and full SDK/platform qualification |
 | Java classes and interfaces | Records, enums, generics, coherent static traits | Constructors/class initialization, virtual/interface dispatch, subtyping and runtime type tests; generic erasure/boxing rules |
 | Exceptions | Nominal typed throw/catch, filters, finally, task propagation | Exception subtyping/identity, causes/suppression/stack data and source-specific abrupt-completion rules |
 | Java strings/arrays | Scalar-indexed strict UTF-8 strings; immutable lists/bytes | UTF-16 code-unit representation including lone surrogates; mutable aliased arrays and bounds/error mapping |
@@ -125,6 +125,12 @@ One matching host/application runtime and enclosing context retain cell aliases,
 returned captures and typed error payloads across related calls. This closes a
 bounded native library lifetime step; HTTP/task contexts, public030 selection,
 class/nullability layouts and Python protocols remain open.
+
+Toolchain0.264 connects030 references to sequential native HTTP contexts with
+independent request heaps and copied uncaught diagnostics. Compatible static
+archives, response/error cleanup and file-owner cycles have focused functional
+coverage. Task transfer, foreign-resource HTTP acceptance, class/nullability
+layouts and the remaining Java/Python semantics stay open.
 
 ## Implementation order
 

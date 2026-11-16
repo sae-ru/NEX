@@ -5439,7 +5439,19 @@
       "reference_execution": "one sequential heap per execution; independent copied host values/errors",
       "no_reference_tasks": "ordinary029 parser, scheduler and generator behavior retained",
       "task_parallel_reference_contexts": false,
-      "reference_library_HTTP_entries": false,
+      "reference_library_HTTP_entries": true,
+      "native_reference_HTTP": {
+        "introduced_toolchain": "0.264.0",
+        "guide": "docs/reference-http.md",
+        "test": "tests/reference_http.py",
+        "sequential_request": true,
+        "concurrent_independent_requests": true,
+        "owner": "one thread-affine RequestScope per HTTP request",
+        "source_errors": "copy diagnostic; retire live payload within request",
+        "response": "ordinary immutable std::http::Response",
+        "task_transfer": false,
+        "persistent_UI_context": false
+      },
       "native_reference_libraries": {
         "introduced_toolchain": "0.263.0",
         "guide": "docs/reference-library-abi.md",

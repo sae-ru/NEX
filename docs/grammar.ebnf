@@ -305,3 +305,6 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
 (* Toolchain0.263 code-only native reference libraries add a matching-runtime
    context/ownership contract, not source syntax. Explicit030 production
    additions remain in references030.ebnf; ordinary028/029 are unchanged. *)
+
+(* Toolchain0.264 native HTTP reference contexts reuse the030 productions and
+   ordinary Request/Response signature. They add no source production. *)

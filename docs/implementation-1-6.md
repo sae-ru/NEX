@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; explicit030 API development; toolchain 0.263.0"
+applies_to: "language 0.28; explicit030 API development; toolchain 0.264.0"
 owner: repository
 ---
 
@@ -26,6 +26,12 @@ retain their exact source/platform scopes and do not qualify later changes.
 The old implementation worktree has no commits absent from current main.
 
 ## Executable backlog
+
+The0.264 [native HTTP reference contexts](reference-http.md) bind sequential030
+handlers to independent request heaps, compatible static libraries and copied
+uncaught diagnostics. Ordinary030 CLI publication, reference task transfer,
+persistent UI state, foreign-resource HTTP acceptance and full debugger/profile/
+platform/portable-SDK gates remain open.
 
 The0.263 source030 code-only [native reference libraries](reference-library-abi.md)
 share live aliases, returned captures and typed error packets in one enclosing

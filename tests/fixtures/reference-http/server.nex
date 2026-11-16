@@ -1,0 +1,33 @@
+module reference_http_server;
+import "std/http.nex" as http;
+import "./core.nex" as core;
+
+struct FileNode { owner: file; next: list<cell<FileNode>>; }
+server fn file_cycle() -> unit !{fs,state} {
+  let owner: file = unwrap(file_open_read("input"));
+  let node: cell<FileNode> = cell_new(FileNode(owner, []));
+  cell_write(node, FileNode(owner, [node]));
+  assert(unwrap(file_read(cell_read(node).owner, 6)) == utf8_bytes("abcdef"));
+}
+server fn handle(req: http::Request) -> http::Response !{state,throw,fs,db} {
+  if req.path == "/api/put" || req.path == "/api/rollback" || req.path == "/api/db-throw" {
+    let value: cell<str> = cell_new(req.body);
+    assert(unwrap(store_put("value", cell_read(value))));
+    if req.path == "/api/rollback" { return http::text_response(400, "rolled back"); }
+    if req.path == "/api/db-throw" { core::fail(req.body); }
+    return http::text_response(200, unwrap(store_get("value")));
+  }
+  if req.path == "/api/get" { return http::text_response(200, unwrap(store_get("value"))); }
+  file_cycle();
+  if req.path == "/api/uncaught" { core::fail(req.body); }
+  if req.path == "/api/trap" { assert(false); }
+  if req.path == "/api/spin" {
+    let value: cell<i64> = cell_new(0);
+    assert(unwrap(file_write_text("started", req.request_id)));
+    try { while true { cell_write(value, cell_read(value) + 1); } }
+    finally { file_write_text("finalizer", "ran"); }
+  }
+  if req.path == "/api/caught" { return http::json_response(200, encode_json(core::caught(req.body))); }
+  return http::json_response(200, encode_json(core::exercise(req.user, req.body)));
+}
+fn main() -> unit {}

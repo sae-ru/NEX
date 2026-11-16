@@ -53,8 +53,12 @@ int main(int argc,char **argv){try{
     writeFile((output/"program-wasm.mlir").string(),emitWasmMLIR(p,selected,false));
     std::cout<<json(llvm::json::Object{{"ok",true},{"language",programLanguage(p)},{"revision",rev},{"metal",hash(metal.source)},{"cuda",hash(cuda.source)},{"opencl",hash(opencl.source)}},false)<<'\n';return 0;
   }
-  if(mode=="build"||mode=="library"||mode=="library-app"||mode=="library-embedded"){
+  if(mode=="build"||mode=="library"||mode=="library-app"||mode=="library-embedded"||mode=="server"||mode=="server-library"){
     BuildOptions options;options.entry=selected;options.profile=argc>4?argv[4]:"debug";
+    if(mode=="server"||mode=="server-library"){
+      options.entry=p.function("handle").name;options.target="server";
+      if(mode=="server-library"){options.positionIndependent=true;options.projectLibraryABI=true;}
+    }
     if(mode=="library"||mode=="library-embedded"){
       if(argc!=6)throw Error("E_OPTION","library mode requires an export specification JSON");
       auto spec=llvm::json::parse(argv[5]);if(!spec||!spec->getAsObject())throw Error("E_OPTION","invalid library export specification");
@@ -63,7 +67,7 @@ int main(int argc,char **argv){try{
       options.entry=p.function(named->str()).name;options.libraryEntry=true;options.codeOnlyLibrary=mode=="library";options.positionIndependent=true;options.projectLibraryABI=true;
       for(const auto &value:*exports){auto name=value.getAsString();if(!name)throw Error("E_OPTION","export must name a source function");options.libraryExports.push_back(p.function(name->str()).name);}
     }
-    if(mode=="library-app"){
+    if(mode=="library-app"||mode=="server-library"){
       if(argc!=6)throw Error("E_OPTION","library-app requires a dependency specification JSON");
       auto spec=llvm::json::parse(argv[5]);if(!spec||!spec->getAsObject())throw Error("E_OPTION","invalid dependency specification");
       auto object=spec->getAsObject();auto named=object->getString("entry");auto libraries=object->getArray("libraries");

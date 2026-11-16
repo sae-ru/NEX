@@ -2035,7 +2035,6 @@ void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
   std::set<std::string> referenceEntries(options.libraryExports.begin(),options.libraryExports.end());referenceEntries.insert(options.entry);
   validateManagedReferenceExecution(p,referenceEntries);
   if(p.sourceLanguage==SourceLanguage::References030&&usesManagedReferences(p,referenceEntries)){
-    if(options.target=="server")throw Error("E_CELL_TARGET","language0.30 reference HTTP entry integration is pending",p.function(options.entry).span);
     if(options.libraryEntry&&!options.codeOnlyLibrary)throw Error("E_CELL_TARGET","reference libraries require code-only output and one enclosing host/application runtime",p.function(options.entry).span);
   }
   const auto taskMode=effectiveNativeTaskLinkage(options);const bool taskProviders=taskMode!=NativeTaskLinkageMode::None;
@@ -2839,6 +2838,14 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     if(tasks){
       auto accessor=nativeSymbol(p.function(options.entry).name)+"__task_code_address";
       writeFile(bridge,"#include \"nex_task_application.h\"\nextern \"C\" const nexrt::TaskCodeDescriptor *"+accessor+"();\nstatic const nexrt::TaskExecutionLimits limits{"+std::to_string(options.taskLimits.steps)+","+std::to_string(options.taskLimits.timeoutMs)+","+std::to_string(options.taskLimits.workers)+"};\nextern \"C\" const nexrt::TaskExecutionLimits *nex_server_task_limits(){return &limits;}\nextern \"C\" nexrt::Handle *nex_server_task_dispatch(nexrt::Handle *value,unsigned workers){return nexrt::executeConfiguredTaskHttpRequest(*"+accessor+"(),value,workers); }\n");
+    }else if(managedCells){
+      std::string code="#include \"nex_cell_host.h\"\nextern \"C\" nexrt::Handle *"+name+"(nexrt::Handle*";
+      const bool throwing=p.function(options.entry).effects.contains("throw");
+      code+=throwing?",nexrt::Handle**);\n":");\n";
+      code+="extern \"C\" nexrt::Handle *nex_server_dispatch(nexrt::Handle *value){nex_cell_request_enter(0);";
+      if(throwing)code+="nexrt::Handle *error=nullptr;auto result="+name+"(value,&error);if(error){auto diagnostic=nexrt::readSourceErrorHandle(error);diagnostic.payload.reset();nex_release(error);throw diagnostic;}return result;}\n";
+      else code+="return "+name+"(value);}\n";
+      writeFile(bridge,code);
     }else if(p.function(options.entry).effects.contains("throw")){
       writeFile(bridge,"#include \"nex_host.h\"\nextern \"C\" nexrt::Handle *"+name+"(nexrt::Handle*,nexrt::Handle**);\nextern \"C\" void nex_source_error_unhandled(nexrt::Handle*);\nextern \"C\" nexrt::Handle *nex_server_dispatch(nexrt::Handle *value){nexrt::Handle *error=nullptr;auto result="+name+"(value,&error);if(error)nex_source_error_unhandled(error);return result;}\n");
     }else writeFile(bridge,"#include \"nex_host.h\"\nextern \"C\" nexrt::Handle *"+name+"(nexrt::Handle*);\nextern \"C\" nexrt::Handle *nex_server_dispatch(nexrt::Handle *value){ return "+name+"(value); }\n");
@@ -2952,6 +2959,12 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   writeFile((folder/"library-abi.json").string(),json(llvm::json::Value(std::move(abiRecord)))+"\n");
   auto buildRecord=llvm::json::Object{{"schema","nex.build/1"},{"task_limits",taskLimitsJSON(options.taskLimits,tasks)},{"task_file_reads",taskFileReads},{"task_file_writes",taskFileWrites},{"task_execution_abi",tasks?taskExecutionABI:0},{"task_debug",options.taskDebug},{"task_debug_metadata_hash",taskDebugHash},{"task_limits_specified",options.taskLimitsSpecified},{"revision",revision(p)},{"key",key},{"compiler_build",NEX_BUILD_ID},{"profile",options.profile},{"target",target},{"host",host},{"host_compatible",toolchain.hostCompatible},{"toolchain_inputs",toolchain.identity},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"linker",toolchain.linker},{"kind",options.deferredLink?"object_archive":server?"http_server":options.libraryEntry?"static_library":"executable"},{"final_kind",server?"http_server":options.libraryEntry?"static_library":"executable"},{"position_independent",options.positionIndependent},{"deferred_link",options.deferredLink},{"entry",options.entry},{"foreign_catalogue",options.foreignCatalogue},{"compiler",compiler},{"compiler_identity",identity.output},{"llvm",LLVM_VERSION_STRING},{"source_projection",snapshot.path},{"runtime_source_projection",runtimeProjection.string()},{"toolchain_fingerprint",toolchainFingerprint},{"runtime_components",std::move(runtimeComponents)},{"runtime_inputs",std::move(runtimeInputs)},{"runtime_requirements",llvm::json::Object{{"wire",wire},{"storage",storage},{"files",files},{"foreign",foreign},{"profiling",profiling},{"parallel",parallel},{"tasks",tasks},{"task_file_reads",taskFileReads},{"task_file_writes",taskFileWrites},{"task_execution_abi",tasks?taskExecutionABI:0},{"task_debug",options.taskDebug}}},{"notices",result.notices},{"compilation",result.compilation},{"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules},{"completion_schema",taskProviders?"nex.native-completion/4":"nex.native-completion/2"},{"completion_inputs",llvm::json::Array(completionInputs)}};
   buildRecord["static_link_inputs"]=nativeStaticLinkInputs(toolchain,!options.deferredLink&&storage,!options.deferredLink&&foreign,!options.deferredLink&&server);
+  if(server&&managedCells)buildRecord["reference_context"]=llvm::json::Object{
+    {"schema","nex.reference-http-context/1"},{"owner","one RequestScope per HTTP request"},
+    {"thread_affine",true},{"shared_between_requests",false},{"task_transfer",false},
+    {"source_errors","copy diagnostics and retire live payload before leaving request context"},
+    {"response","ordinary std::http::Response; no live references"},
+    {"guide","docs/reference-http.md"}};
   if(options.libraryEntry){
     auto abi=llvm::json::parse(result.nativeEntryABI);
     if(!abi)throw Error("E_NATIVE_ABI","invalid native entry ABI record");

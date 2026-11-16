@@ -1,5 +1,9 @@
 # NEX language specification 0.28
 
+Toolchain0.264 connects sequential030 references to [native HTTP request contexts](reference-http.md).
+It adds no source production or version transition; ordinary028/029 selection,
+task ABI7 and the public C ABI remain unchanged.
+
 Toolchain0.263 develops code-only [native reference libraries](reference-library-abi.md)
 sharing one030 application/host context. Syntax, canonical identities, ordinary
 028/029 selection, task ABI7 and public C ABI1 remain unchanged.

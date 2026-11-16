@@ -70,6 +70,9 @@ For explicit030 C++ development reference libraries, obey the optional
 enclosing scope spanning all related calls/handles. Retire that scope after a
 fatal trap and keep code images loaded until captures and cleanup retire.
 This does not publish030 CLI support or a stable public foreign ABI.
+Explicit030 native HTTP builds own one sequential context per request. They
+return ordinary immutable responses and copy uncaught diagnostics before context
+close; reference-bearing task/parallel handlers remain unsupported.
 
 ## Work from a checked project
 

@@ -1,3 +1,27 @@
+# Native HTTP reference contexts — development0.264.0
+
+Explicit030 C++ server builds now attach sequential reference handlers to one
+independent context per HTTP request. Source modules and compatible code-only
+static libraries share that request's aliases/captures/error payloads. Responses
+remain immutable values; uncaught errors become independent diagnostics before
+the context closes. Read the [HTTP context contract](docs/reference-http.md).
+
+The focused matrix builds six Debug/Release images, including ordinary and
+archive-linked builds and handlers with/without declared throw. Fifteen server
+runs execute314 local HTTP/HTTPS requests, concurrent independent requests,
+source/fatal errors, file-owning cycles, storage commit/rollback and cooperative
+budget/deadline/disconnect controls. Shared reference/strict TypeScript results
+agree. Runtime shutdown reports no remaining live values.
+[Exact qualification](docs/evidence/reference-http-0.264.0-2026-11-16.json)
+retains core/affected checks, a moved normal installation and initial fixture
+failures. [Preceding0.263 core CI](docs/evidence/core-ci-0.263.0-2026-11-16.json)
+passed Mac/Linux; new hosted qualification follows this functional commit.
+
+Ordinary030 CLI/project publication, reference task/parallel transfer, persistent
+UI state, foreign-resource HTTP acceptance, nullable/class layouts, Java/Python
+semantics, debugger/profile and complete source/platform/portable-SDK gates stay
+open. Public SDK0.246.1 remains immutable. Converters remain deferred.
+
 # Native reference libraries — development0.263.0
 
 Explicit030 C++ build APIs now produce code-only native libraries whose cell

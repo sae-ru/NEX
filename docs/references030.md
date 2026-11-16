@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.263.0; source0.30 development APIs"
+applies_to: "toolchain 0.264.0; source0.30 development APIs"
 owner: repository
 ---
 
@@ -69,9 +69,10 @@ the boxed representation for reference-free task programs.
 Execution closures combining references with task/parallel execution currently
 receive `E_CELL_CONCURRENCY`. No cross-thread transfer or shared mutable memory
 model is inferred. Sequential code-only native libraries share one enclosing
-[host/application context](reference-library-abi.md); runtime-embedding libraries,
-HTTP entries needing a reference heap and Wasm references remain explicit
-`E_CELL_TARGET` boundaries; reference-free entry
+[host/application context](reference-library-abi.md). Sequential native
+[HTTP requests](reference-http.md) own independent reference contexts and copy
+uncaught source diagnostics before context close. Runtime-embedding reference
+libraries and Wasm references remain explicit `E_CELL_TARGET` boundaries; reference-free entry
 behavior is retained. Device emission can select030's inherited supported
 scalar operations; that version check is not physical device qualification.
 
@@ -102,7 +103,7 @@ history migration and a relocated normal installation. The matching source
 files, compiler identities, initial fixture failures and qualification bounds
 are retained; this is not a full SDK/platform release receipt.
 
-030 CLI/project publication still requires complete entry/component/HTTP/task,
+030 CLI/project publication still requires complete entry/component/task,
 debugger/profile and SDK/platform qualification. Persistent UI state needs a
 longer-lived owned context; per-call exports do not implement it. Nullable
 object layouts, class/interface dispatch, mutable arrays, memory visibility,

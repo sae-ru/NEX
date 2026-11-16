@@ -1,0 +1,34 @@
+module reference_http_core;
+pub struct Reply { user: str; body: str; initial: i64; live: i64; captured: i64; snapshot: str; }
+struct Item { count: i64; text: str; }
+struct Node { next: list<cell<Node>>; }
+pub struct Fault { value: cell<i64>; label: str; }
+
+pub fn cycle() -> unit !{state} {
+  let node: cell<Node> = cell_new(Node([]));
+  cell_write(node, Node([node]));
+}
+pub fn exercise(user: str, body: str) -> Reply !{state} {
+  let value: cell<Item> = cell_new(Item(41, body));
+  let alias: cell<Item> = value;
+  let before: Item = cell_read(value);
+  let callback: fn() -> i64 !{state} = fn() -> i64 !{state} { return cell_read(value).count; };
+  cell_write(alias, Item(before.count + len(body), body + "!"));
+  cycle();
+  cell_collect();
+  let after: Item = cell_read(value);
+  cycle(); // Leave a real cycle for request teardown to retire.
+  return Reply(user, after.text, before.count, after.count, callback(), before.text);
+}
+pub fn fail(label: str) -> i64 !{state,throw} {
+  cycle();
+  throw(Fault(cell_new(7), label));
+}
+pub fn caught(label: str) -> i64 !{state,throw} {
+  try { return fail(label); }
+  catch (fault: Fault) {
+    cell_write(fault.value, 42);
+    cell_collect();
+    return cell_read(fault.value);
+  }
+}

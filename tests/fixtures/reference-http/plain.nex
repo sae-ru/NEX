@@ -1,0 +1,7 @@
+module reference_http_plain;
+import "std/http.nex" as http;
+import "./core.nex" as core;
+server fn handle(req: http::Request) -> http::Response !{state} {
+  return http::json_response(200, encode_json(core::exercise(req.user, req.body)));
+}
+fn main() -> unit {}

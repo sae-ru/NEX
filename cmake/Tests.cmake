@@ -615,6 +615,10 @@ add_test(NAME reference_library_context COMMAND ${Python3_EXECUTABLE} -B
   $<TARGET_FILE:nex_reference_library_host> --clang ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
   --output ${CMAKE_CURRENT_BINARY_DIR}/reference-library-${PROJECT_VERSION}-acceptance)
 set_tests_properties(reference_library_context PROPERTIES TIMEOUT 600)
+add_test(NAME reference_http_context COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_http.py $<TARGET_FILE:nex_references030_probe>
+  --output ${CMAKE_CURRENT_BINARY_DIR}/reference-http-${PROJECT_VERSION}-acceptance)
+set_tests_properties(reference_http_context PROPERTIES TIMEOUT 900)
 add_test(NAME managed_references_typescript COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/managed_reference_typescript.py
   $<TARGET_FILE:nex_managed_reference_typescript_probe> $<TARGET_FILE:nex_managed_reference_native_probe>

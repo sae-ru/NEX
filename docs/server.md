@@ -8,6 +8,10 @@ keep their original contracts.
 
 # NEX native server and runtime capabilities
 
+Toolchain0.264 adds sequential [source030 reference request contexts](reference-http.md)
+through explicit C++ build APIs. Ordinary030 CLI publication, reference-bearing
+task handlers and portable SDK/platform acceptance remain pending.
+
 Toolchain0.134.4 adds native language0.24 task HTTP handlers in debug/release.
 For example, a `server fn handle(Request)->Response !{task,fs}` can schedule
 structured CPU work and use whole-file/owned stream operations. The generated
