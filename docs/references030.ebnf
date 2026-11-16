@@ -1,0 +1,19 @@
+(* Explicit source-language0.30 development additions to grammar.ebnf/0.29.
+   Selected by parseVersioned(...,References030) or loadVersionedBundle(...,"0.30").
+   Ordinary CLI/new-project selection is not enabled by this development stage.
+   All0.29 productions, kinds, contracts, errors and task syntax remain present. *)
+reference_type = "cell", "<", type, ">" ;
+reference_constructor = "cell" ; (* Unary constructor in a type argument. *)
+reference_effect = "state" ;
+reference_new = "cell_new", [ "<", type, ">" ], "(", expression, ")" ;
+reference_read = "cell_read", "(", expression, ")" ;
+reference_write = "cell_write", "(", expression, ",", expression, ")" ;
+reference_collect = "cell_collect", "(", ")" ;
+(* Add reference_type/reference_constructor to type, reference_effect to effect,
+   and the four operations to primary. Types, effects, realm/ownership and entry
+   restrictions are checked semantically. The four operation names and cell are
+   reserved only in the030 version; retained028/029 user declarations keep their
+   old meaning. All four operations require state; read returns a snapshot T,
+   write/collect return unit. The execution closure containing references is
+   sequential in this stage; reference-free task/parallel programs retain029
+   behavior. Managed wire/host entry values cannot contain a live cell or callable. *)

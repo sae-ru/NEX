@@ -1,5 +1,9 @@
 # NEX language specification 0.28
 
+Toolchain0.262 develops [versioned030 reference graphs](references030.md) through
+explicit C++ source/archive/backend APIs. Ordinary CLI versions/defaults remain
+028/029; the030 grammar and history migration have separate development scope.
+
 Toolchain0.261 adds a private [TypeScript value-entry boundary](managed-reference-value-exports.md).
 It adds no public type, effect, grammar production or source-version migration.
 

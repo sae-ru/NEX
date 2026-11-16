@@ -10,6 +10,7 @@
 
 namespace nex {
 namespace {
+void validateManagedValueEntries(const Program &,const std::map<std::string,std::string> &,nexrt::CellHeapLimits);
 std::string quote(const std::string &text){return json(llvm::json::Value(text),false);}
 std::string symbol(const std::string &name){return nativeSymbol(name);}
 std::string typescriptType(const Type &t,bool tasks,bool managed=false){
@@ -370,7 +371,7 @@ class Generator {
   }
 public:
   explicit Generator(const Program &p,bool tasks=false,bool staging=false,bool exceptions=false,const nexrt::CellHeapLimits *managed=nullptr,bool hostValues=false):p(p),taskMode(tasks),privateSource(staging),exceptionPrototype(exceptions||isPublicSourceExceptionLanguage(p.sourceLanguage)),managedMode(managed!=nullptr),hostValues(hostValues),managedLimits(managed?*managed:nexrt::CellHeapLimits{}){
-    if(supportsManagedReferences(p)&&!managedMode)throw Error("E_CELL_BACKEND","managed source requires its dedicated TypeScript emitter");
+    if(p.sourceLanguage==SourceLanguage::ManagedReferencesPrototype&&!managedMode)throw Error("E_CELL_BACKEND","managed source requires its dedicated TypeScript emitter");
     if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype&&!exceptionPrototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require the dedicated experimental TypeScript emitter");
     if(!privateSource){for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;return;}
     size_t sequence=0;std::function<void(E)> expression;std::function<void(const std::vector<S>&)> body;
@@ -479,6 +480,13 @@ public:
       {"public_source_enabled",false},{"public_revision",false},{"entry_text_hash",hash(p.source)},
       {"functions",std::move(included)},{"statements",std::move(mappings)},{"execution","sequential-owned-heap"}};
       if(hostValues){mapping["host_entry_contracts"]=std::move(hostContracts);mapping["host_values"]="immutable snapshots; no live reference escapes; one heap per call";}
+      if(p.sourceLanguage==SourceLanguage::References030){
+        mapping["schema"]="nex.typescript-map/3";mapping["revision"]=revision(p);mapping["source_hash"]=hash(json(sourceBundle(p),false));
+        mapping["public_revision"]=true;mapping["source_version_selected"]=true;
+        // Source0.30 is an explicit compiler API development version. Ordinary
+        // CLI/project promotion and UI/worker lifetime acceptance are separate.
+        mapping["ordinary_CLI"]=false;
+      }
       if(!p.units.empty()){
         llvm::json::Object units;
         for(const auto &name:functions){const auto &unit=p.function(name).unit;if(p.units.contains(unit))units[unit]=hash(p.units.at(unit).source);}
@@ -500,6 +508,12 @@ WebModule emitTypeScript(const Program &p,const std::map<std::string,std::string
 
   if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require TypeScript lowering before publication");
   rejectUnloweredTasks(p,"TypeScript emission");
+  std::set<std::string> roots;for(const auto &[alias,name]:entries)roots.insert(name);
+  validateManagedReferenceExecution(p,roots);
+  if(p.sourceLanguage==SourceLanguage::References030&&usesManagedReferences(p,roots)){
+    nexrt::CellHeapLimits limits;validateManagedValueEntries(p,entries,limits);
+    return Generator(p,false,false,true,&limits,true).run(entries);
+  }
   bool tasks=false;
   if(isPublicTaskLanguage(p)){
     std::set<std::string> visited;
@@ -514,6 +528,11 @@ WebModule emitTypeScript(const Program &p,const std::map<std::string,std::string
 }
 WebModule emitTypeScriptDelivery(const Program &p,const std::map<std::string,std::string> &entries){
   auto module=emitTypeScript(p,entries);
+  if(module.managedReferences){
+    const auto *mapping=module.mapping.getAsObject();
+    if(p.sourceLanguage!=SourceLanguage::References030||!mapping||mapping->getString("schema")!="nex.typescript-map/3"||mapping->getString("revision")!=revision(p))throw Error("E_CELL_BACKEND","managed delivery requires a checked versioned reference source map");
+    return module;
+  }
   if(!isTypedSourceErrorLanguage(p.sourceLanguage))return module;
   const auto *old=module.mapping.getAsObject();
   if(!old||old->getString("schema")!=(isContractsLanguage(p.sourceLanguage)?"nex.development-typescript/028-1":"nex.development-typescript/027-3")||
@@ -540,7 +559,7 @@ WebModule emitSourceExceptionTasksPrototypeTypeScript(const Program &p,const std
 }
 WebModule emitTaskTypeScript(const Program &p,const std::map<std::string,std::string> &entries){if(!p.taskPrototype)throw Error("E_TASK_STATE","private TypeScript tasks require checked prototype source");return Generator(p,true,true).run(entries);}
 WebModule emitManagedReferencesPrototypeTypeScript(const Program &p,const std::string &entry,nexrt::CellHeapLimits limits){
-  if(!supportsManagedReferences(p))throw Error("E_LANGUAGE_VERSION","managed TypeScript requires its dedicated private frontend");
+  if(p.sourceLanguage!=SourceLanguage::ManagedReferencesPrototype)throw Error("E_LANGUAGE_VERSION","managed TypeScript requires its dedicated private frontend");
   for(const auto &function:p.functions)if(!function.checked&&!function.traitSignature)throw Error("E_CELL_STATE","managed TypeScript requires a fully checked program",function.span);
   const auto &function=p.function(entry);
   if(!function.params.empty()||!function.captures.empty())throw Error("E_CELL_ENTRY","managed TypeScript entry must take no arguments",function.span);
@@ -548,8 +567,8 @@ WebModule emitManagedReferencesPrototypeTypeScript(const Program &p,const std::s
   for(auto value:{limits.maximumCells,limits.maximumNodes,limits.maximumEdges})if(!value||value>9007199254740991ULL)throw Error("E_CELL_LIMIT","TypeScript managed heap limits must be positive safe integers",function.span);
   return Generator(p,false,true,true,&limits).run({{"main",entry}});
 }
-WebModule emitManagedReferencesValueTypeScript(const Program &p,const std::map<std::string,std::string> &entries,nexrt::CellHeapLimits limits){
-  if(!supportsManagedReferences(p))throw Error("E_LANGUAGE_VERSION","managed value exports require the private reference frontend");
+namespace {
+void validateManagedValueEntries(const Program &p,const std::map<std::string,std::string> &entries,nexrt::CellHeapLimits limits){
   for(const auto &function:p.functions)if(!function.checked&&!function.traitSignature)throw Error("E_CELL_STATE","managed value exports require a fully checked program",function.span);
   for(auto value:{limits.maximumCells,limits.maximumNodes,limits.maximumEdges})if(!value||value>9007199254740991ULL)throw Error("E_CELL_LIMIT","TypeScript managed heap limits must be positive safe integers");
   static const std::set<std::string> reserved={"await","break","case","catch","class","const","continue","debugger","default","delete","do","else","enum","export","extends","false","finally","for","function","if","import","in","instanceof","new","null","return","super","switch","this","throw","true","try","typeof","var","void","while","with","yield","implements","interface","let","package","private","protected","public","static","arguments","eval","nex","host","sourceException","task"};
@@ -560,6 +579,11 @@ WebModule emitManagedReferencesValueTypeScript(const Program &p,const std::map<s
     if(!function.captures.empty()||(function.result!=Type::Unit&&!satisfiesConstraint(p,function.result,"wire")))throw Error("E_CELL_ENTRY","managed host result must be unit or an immutable wire value",function.span);
     for(const auto &parameter:function.params)if(!satisfiesConstraint(p,parameter.type,"wire"))throw Error("E_CELL_ENTRY","managed host arguments must be immutable wire values",parameter.span);
   }
+}
+}
+WebModule emitManagedReferencesValueTypeScript(const Program &p,const std::map<std::string,std::string> &entries,nexrt::CellHeapLimits limits){
+  if(p.sourceLanguage!=SourceLanguage::ManagedReferencesPrototype)throw Error("E_LANGUAGE_VERSION","managed value exports require the private reference frontend");
+  validateManagedValueEntries(p,entries,limits);
   return Generator(p,false,true,true,&limits,true).run(entries);
 }
 void writeWebModule(const WebModule &module,const std::string &directory){

@@ -597,6 +597,14 @@ add_test(NAME managed_heap_typescript COMMAND ${Python3_EXECUTABLE} -B
 set_tests_properties(managed_heap_typescript PROPERTIES TIMEOUT 300)
 add_executable(nex_managed_reference_typescript_probe tests/managed_reference_typescript.cpp src/typescript.cpp)
 target_link_libraries(nex_managed_reference_typescript_probe PRIVATE nex_native_backend nex_frontend)
+add_executable(nex_references030_probe tests/references030.cpp src/typescript.cpp src/web.cpp src/api.cpp src/task_process.cpp src/metal.cpp src/cuda.cpp src/opencl.cpp)
+target_link_libraries(nex_references030_probe PRIVATE nex_native_backend nex_frontend)
+add_test(NAME references030_versioned COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/references030.py $<TARGET_FILE:nex_references030_probe>
+  $<TARGET_FILE:nex> $<TARGET_FILE:nex_typed_error_migration_probe>
+  --native-host $<TARGET_FILE:nex_managed_reference_native_probe> --clang ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
+  --output ${CMAKE_CURRENT_BINARY_DIR}/references030-${PROJECT_VERSION}-acceptance)
+set_tests_properties(references030_versioned PROPERTIES TIMEOUT 900)
 add_test(NAME managed_references_typescript COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/managed_reference_typescript.py
   $<TARGET_FILE:nex_managed_reference_typescript_probe> $<TARGET_FILE:nex_managed_reference_native_probe>

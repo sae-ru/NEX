@@ -1,3 +1,32 @@
+# Versioned source030 reference graphs — development0.262.0
+
+Explicit C++ version-selected030 source/archive/backend APIs now use canonical
+format18 and ordinary source bundles, with guarded same-store migration from
+retained029. The original private candidate retains its separate unarchivable
+identity. Normal sequential reference/native/TypeScript paths select the owned
+reference context only where reachable code needs it; reference-free030 task
+programs retain029 execution. Native builds pin actual cell runtime components,
+and TypeScript maps carry their checked revision, bundle hash and entry schemas.
+Read [source030 development](docs/references030.md).
+
+Sixteen core and13 affected functional groups pass; the documentation metadata
+fix passes its separate recheck. Fifty checked reference/TypeScript cases agree,
+with96 native O0/O2 matching-host runs. Real normal Debug/Release builds include
+the cell runtime and preserve the same030 ABI as reference-free builds. Inherited
+task execution agrees in reference/TypeScript/native; scalar Metal/CUDA/OpenCL
+and Wasm source emission is checked separately from physical hardware execution.
+Eight migration scenarios also pass on actual029 graphs created by retained
+SDK0.246.1. A moved normal installation checks030 reference/native/TypeScript
+resources plus four ordinary029 CLI commands.
+[Scoped evidence](docs/evidence/references030-0.262.0-2026-11-16.json).
+[Preceding0.261 core CI](docs/evidence/core-ci-0.261.0-2026-11-16.json) passed
+Mac/Linux; matching0.262 hosted qualification follows its functional commit.
+
+Ordinary030 CLI/new-project publication, reference library/HTTP integration,
+task/parallel reference transfer, persistent UI state, debugger/profile and full
+SDK/platform qualification remain open. Java/Python object/numeric/class
+semantics and the complete original PLAN remain required; converters stay deferred.
+
 # Private TypeScript host-value entries — development0.261.0
 
 Checked private source functions can export ordinary immutable browser values,

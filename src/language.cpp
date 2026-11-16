@@ -689,7 +689,7 @@ public:
     p.source=std::move(source);p.path=std::move(path);p.taskPrototype=tasks;
     if(resources)p.sourceLanguage=SourceLanguage::OwnedResources021;
     if(exceptions)p.sourceLanguage=SourceLanguage::SourceExceptions025Prototype;
-    if(cells)p.sourceLanguage=SourceLanguage::ManagedReferencesPrototype;
+    if(cells)p.sourceLanguage=diagnosticLanguage=="0.30"?SourceLanguage::References030:SourceLanguage::ManagedReferencesPrototype;
     try{Lexer lex(p.source,p.path);
       do {tokens.push_back(lex.next());if(maxTokens&&tokens.size()>maxTokens)throw Error("E_DEBUG_LIMIT","expression exceeds its token budget",tokens.back().span);}while(tokens.back().kind!=Token::End);
     }catch(Error &error){annotate(error);throw;}
@@ -825,7 +825,7 @@ class Checker {
   bool allowsEffect(const std::string &effect)const{return f->effects.contains(effect)||(exceptionPrototype()&&effect=="throw"&&exceptionHandlers);}
   static bool effectParameter(const std::string &effect){return effect.size()>1&&effect[0]=='?';}
   void prototypeEffects(const Function &fn)const{
-    if(supportsManagedReferences(p))for(const auto &effect:fn.effects)if(effect!="io"&&effect!="state"&&effect!="throw"&&effect!="fs"&&effect!="ffi"&&!effectParameter(effect))
+    if(p.sourceLanguage==SourceLanguage::ManagedReferencesPrototype)for(const auto &effect:fn.effects)if(effect!="io"&&effect!="state"&&effect!="throw"&&effect!="fs"&&effect!="ffi"&&!effectParameter(effect))
       throw Error("E_CELL_STAGE","private reference evaluation supports sequential pure/io/state/throw/fs/ffi functions",fn.span);
     if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)for(const auto &effect:fn.effects)if(effect!="io"&&effect!="throw"&&!(p.taskPrototype&&(effect=="task"||effect=="fs"||effect=="ffi")))
       throw Error("E_EXCEPTION_STAGE","private source exception prototype supports pure/io/throw; task/fs/ffi require its dedicated task parser",fn.span);
@@ -1388,7 +1388,7 @@ class Checker {
         e->type=Type::Bytes;break;
       }
       if(e->text=="parallel_map"){
-        if(supportsManagedReferences(p))throw Error("E_CELL_STAGE","private reference evaluation has no parallel execution context",e->span);
+        if(p.sourceLanguage==SourceLanguage::ManagedReferencesPrototype)throw Error("E_CELL_STAGE","private reference evaluation has no parallel execution context",e->span);
         arity(3);Type items,callback;bool callbackTyped=false;
         auto checkCallback=[&](Type value){
           if(value.kind!=Type::Function||value.arguments.size()!=1||*value.element==Type::Unit)
@@ -1744,11 +1744,11 @@ void sourceUTF8(const std::string &source,const std::string &path,const std::str
 Program parseVersioned(std::string source,std::string path,SourceLanguage language,bool editorNames,bool editorDetails){
   switch(language){
   case SourceLanguage::Language018:break;
-  case SourceLanguage::Tasks019:case SourceLanguage::TaskFiles020:case SourceLanguage::OwnedResources021:case SourceLanguage::TaskForeign022:case SourceLanguage::TaskWrites023:case SourceLanguage::TaskStreams024:case SourceLanguage::SourceExceptions025:case SourceLanguage::ExceptionHandlers026:case SourceLanguage::TypedErrors027:case SourceLanguage::Contracts028:case SourceLanguage::Contracts029:break;
+  case SourceLanguage::Tasks019:case SourceLanguage::TaskFiles020:case SourceLanguage::OwnedResources021:case SourceLanguage::TaskForeign022:case SourceLanguage::TaskWrites023:case SourceLanguage::TaskStreams024:case SourceLanguage::SourceExceptions025:case SourceLanguage::ExceptionHandlers026:case SourceLanguage::TypedErrors027:case SourceLanguage::Contracts028:case SourceLanguage::Contracts029:case SourceLanguage::References030:break;
   default:throw Error("E_LANGUAGE_VERSION","unknown source language selected for parsing");
   }
   sourceUTF8(source,path,"unit",programLanguage(language));
-  auto p=Parser(std::move(source),std::move(path),0,"unit",editorNames,editorDetails,language!=SourceLanguage::Language018,language==SourceLanguage::OwnedResources021||language==SourceLanguage::TaskForeign022||language==SourceLanguage::TaskWrites023||language==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(language),isPublicSourceExceptionLanguage(language),language==SourceLanguage::ExceptionHandlers026||isTypedSourceErrorLanguage(language),isTypedSourceErrorLanguage(language),isContractsLanguage(language),language==SourceLanguage::Contracts029,programLanguage(language)).run();
+  auto p=Parser(std::move(source),std::move(path),0,"unit",editorNames,editorDetails,language!=SourceLanguage::Language018,language==SourceLanguage::OwnedResources021||language==SourceLanguage::TaskForeign022||language==SourceLanguage::TaskWrites023||language==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(language),isPublicSourceExceptionLanguage(language),language==SourceLanguage::ExceptionHandlers026||isTypedSourceErrorLanguage(language),isTypedSourceErrorLanguage(language),isContractsLanguage(language),language==SourceLanguage::Contracts029||language==SourceLanguage::References030,programLanguage(language),language==SourceLanguage::References030).run();
   p.sourceLanguage=language;return p;
 }
 Program parseSourceExceptionsPrototype(std::string source,std::string path){
@@ -1845,7 +1845,7 @@ std::string revision(const Program &p) {
   for(const auto &[key,unit]:p.units){std::set<std::string> targets;for(const auto &import:unit.imports)targets.insert(p.units.at(import.target).module);llvm::json::Array deps;for(const auto &target:targets)deps.push_back(target);modules[unit.module]=std::move(deps);}
   llvm::json::Object endpoints;for(const auto &endpoint:p.endpoints)endpoints[endpoint.name]=canonical(endpoint);
   llvm::json::Object traits,implementations;for(const auto &value:p.traits)traits[value.name]=canonical(value);for(const auto &value:p.implementations)implementations[value.name]=canonical(value);
-  return hash(json(llvm::json::Object{{"format",p.sourceLanguage==SourceLanguage::Contracts029?"nex.program/17":p.sourceLanguage==SourceLanguage::Contracts028?"nex.program/16":p.sourceLanguage==SourceLanguage::TypedErrors027?"nex.program/15":"nex.program/14"},{"language",programLanguage(p)},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)},{"traits",std::move(traits)},{"implementations",std::move(implementations)}},false));
+  return hash(json(llvm::json::Object{{"format",p.sourceLanguage==SourceLanguage::References030?"nex.program/18":p.sourceLanguage==SourceLanguage::Contracts029?"nex.program/17":p.sourceLanguage==SourceLanguage::Contracts028?"nex.program/16":p.sourceLanguage==SourceLanguage::TypedErrors027?"nex.program/15":"nex.program/14"},{"language",programLanguage(p)},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)},{"traits",std::move(traits)},{"implementations",std::move(implementations)}},false));
 }
 llvm::json::Value describe() {
   auto result=llvm::json::Object{

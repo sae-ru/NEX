@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.261.0"
+applies_to: "language 0.28; explicit030 API development; toolchain 0.262.0"
 owner: repository
 ---
 
@@ -26,6 +26,11 @@ retain their exact source/platform scopes and do not qualify later changes.
 The old implementation worktree has no commits absent from current main.
 
 ## Executable backlog
+
+The0.262 version-selected030 C++ APIs add canonical reference archives, normal
+backend entry points and guarded retained029 migration. Ordinary CLI publication,
+reference library/HTTP/task contexts, persistent UI state and matching full
+SDK/platform delivery remain open. See [source030 development](references030.md).
 
 The0.261 private TypeScript emitter adds checked ordinary host-value entries:
 immutable arguments/results, separate per-call heaps, independent diagnostics

@@ -18,6 +18,7 @@ const char *programLanguage(SourceLanguage language){
   case SourceLanguage::Contracts028:return "0.28";
   case SourceLanguage::Contracts029:return "0.29";
   case SourceLanguage::ManagedReferencesPrototype:return "0.30-refs-prototype";
+  case SourceLanguage::References030:return "0.30";
   }
   throw Error("E_LANGUAGE_VERSION","unknown checked program source language");
 }
@@ -65,12 +66,12 @@ bool containsTaskAuthority(const Program &program,const Type &type){
   return visit(type);
 }
 void rejectUnloweredTasks(const Program &program,const char *operation){
-  if(supportsManagedReferences(program))throw Error("E_CELL_BACKEND",std::string(operation)+" does not support the private reference candidate; use its dedicated C++ evaluator");
+  if(program.sourceLanguage==SourceLanguage::ManagedReferencesPrototype)throw Error("E_CELL_BACKEND",std::string(operation)+" does not support the private reference candidate; use its dedicated C++ evaluator");
   if(program.taskPrototype&&!isPublicTaskLanguage(program))throw Error("E_TASK_UNIMPLEMENTED",
     std::string(operation)+" requires continuation lowering and an explicit language migration; private task typing is not an executable language0.18 program");
 }
 void rejectUnarchivedTasks(const Program &program,const char *operation){
-  if(supportsManagedReferences(program))throw Error("E_CELL_MIGRATION",std::string(operation)+" cannot archive private references before public backend integration and explicit migration");
+  if(program.sourceLanguage==SourceLanguage::ManagedReferencesPrototype)throw Error("E_CELL_MIGRATION",std::string(operation)+" cannot archive private references before public backend integration and explicit migration");
   if(program.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)throw Error("E_EXCEPTION_MIGRATION",
     std::string(operation)+" cannot archive private source exceptions before explicit025 publication and migration");
   if(isPublicTaskLanguage(program)){

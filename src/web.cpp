@@ -201,7 +201,8 @@ llvm::json::Value distHashes(const std::filesystem::path &directory){
 }
 }
 ProcessResult runTypeScriptTest(const WebModule &module,const std::string &directory,unsigned timeout,const nexrt::TaskExecutionLimits *limits){
-  if(module.managedReferences)throw Error("E_CELL_BACKEND","private managed modules use their dedicated main evaluation envelope, not the public entry test adapter");
+  const auto *managedMap=module.mapping.getAsObject();
+  if(module.managedReferences&&(!managedMap||managedMap->getString("schema")!="nex.typescript-map/3"||!managedMap->getObject("host_entry_contracts")))throw Error("E_CELL_BACKEND","private managed modules use their dedicated main evaluation envelope, not the public entry test adapter");
   namespace fs=std::filesystem;
   if(limits&&!nexrt::validTaskExecutionLimits(*limits))throw Error("E_OPTION","invalid TypeScript task execution limits");
   std::string taskOptions;
@@ -217,7 +218,9 @@ ProcessResult runTypeScriptTest(const WebModule &module,const std::string &direc
   ToolDirectory runner(folder);
   if(runner.relocated())for(const auto *name:{"program.ts","nex-runtime.ts","nex-bytes.ts","nex-map.json","package.json","test.ts"})
     fs::copy_file(folder/name,runner.path()/name);
-  if(runner.relocated()&&(module.asynchronous||module.privateSourceExceptions))for(const auto *name:{"nex-task-runtime.ts","nex-source-exception-runtime.ts"})fs::copy_file(folder/name,runner.path()/name);
+  if(runner.relocated()&&module.managedReferences){
+    for(const auto *name:{"nex-managed-heap.ts","nex-managed-context.ts","nex-managed-runtime.ts"})fs::copy_file(folder/name,runner.path()/name);
+  }else if(runner.relocated()&&(module.asynchronous||module.privateSourceExceptions))for(const auto *name:{"nex-task-runtime.ts","nex-source-exception-runtime.ts"})fs::copy_file(folder/name,runner.path()/name);
   const char *node=std::getenv("NEX_NODE");
   return capture({node?node:"node","--experimental-strip-types","--no-warnings",(runner.path()/"test.ts").string()},timeout);
 }

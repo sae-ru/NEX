@@ -55,7 +55,7 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.261.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.262.0 / language 0.28 / task ABI 7**, in development.
 Language 0.29 is an explicit opt-in for partial type lambdas and higher-order kinds;
 0.28 remains the default and rejects those constructs. The compiler default is not
 a project default: `nex.json` selects 0.28 or 0.29 explicitly per project;
@@ -69,9 +69,11 @@ reference/native/TypeScript [modules](docs/managed-reference-modules.md) and
 [resource-owning cells](docs/managed-reference-owned-payloads.md).
 Its private [TypeScript value exports](docs/managed-reference-value-exports.md)
 accept and return immutable browser values with a separate heap per call.
+Explicit [030 development APIs](docs/references030.md) add canonical reference
+graphs and guarded migration; ordinary030 CLI publication remains pending.
 Ordinary values and retained snapshots now use
 [iterative deep cleanup](docs/value-retirement.md).
-Public references/state effects, graph migration, machine i32 and other
+Ordinary030 CLI/project references and migration, machine i32 and other
 [migration prerequisites](docs/migration-readiness.md) remain open.
 The [implementation sequence](docs/implementation-1-6.md) tracks remaining work.
 [Container](docs/evidence/containers-0.247.0-2026-11-15.json) and
@@ -94,12 +96,10 @@ source checks; see the [Metal receipt](docs/evidence/owned-metal-0.243.0-2026-11
 Browser applications support workers, `web/app.css`, `web/public/` assets,
 `web/index.html`, application-provided `web/components.tsx` and generated file
 hashes. iOS and Android projects are generated from the same checked web output.
-iOS Debug and Release configurations build in Xcode for the iOS 27.1 simulator
-and launch the actual UI; a test driver adds `iOSNEX` through the live input.
-Android builds debug and signed release APKs with JDK21/API36; the signed release
-installs/launches and adds `SignedNEX` through the live UI. A standalone macOS
-`.app` embeds the web resources, serves them through `nex://app/`, and its live
-input adds `DesktopNEX`. See the [iOS Release receipt](docs/evidence/mobile-ios-release-0.244.0-2026-11-13.json),
+iOS Debug/Release builds and UI interaction are recorded for the iOS27.1 simulator;
+Android JDK21/API36 builds include signed release installation/UI interaction.
+The macOS `.app` embeds web resources through `nex://app/` and has an executed UI
+check. See the [iOS Release receipt](docs/evidence/mobile-ios-release-0.244.0-2026-11-13.json),
 [Android signed receipt](docs/evidence/mobile-android-release-signed-0.244.0-2026-11-13.json)
 and [desktop interaction receipt](docs/evidence/desktop-macos-interaction-0.244.0-2026-11-13.json).
 

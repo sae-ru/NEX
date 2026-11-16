@@ -2,7 +2,7 @@
 #include "nex_cells.h"
 #include <functional>
 namespace nex {
-bool supportsManagedReferences(const Program &program){return program.sourceLanguage==SourceLanguage::ManagedReferencesPrototype;}
+bool supportsManagedReferences(const Program &program){return supportsManagedReferences(program.sourceLanguage);}
 bool containsManagedReference(const Program &program,const Type &type){
   std::set<std::string> seen;
   std::function<bool(const Type&)> visit=[&](const Type &value){
@@ -20,8 +20,36 @@ bool containsManagedReference(const Program &program,const Type &type){
 const std::set<std::string> &managedReferenceBuiltins(){
   static const std::set<std::string> names={"cell","cell_new","cell_read","cell_write","cell_collect"};return names;
 }
+bool usesManagedReferences(const Program &program,const std::set<std::string> &entries){
+  if(!supportsManagedReferences(program))return false;
+  std::set<std::string> seen;
+  std::function<bool(const Function&)> visit=[&](const Function &function){
+    if(!seen.insert(function.name).second)return false;
+    if(function.effects.contains("state")||containsManagedReference(program,function.result))return true;
+    for(const auto &parameter:function.params)if(containsManagedReference(program,parameter.type))return true;
+    for(const auto &capture:function.captures)if(containsManagedReference(program,capture.type))return true;
+    bool local=false;std::function<void(E)> expression;std::function<void(const std::vector<S>&)> block;
+    expression=[&](E value){if(value){local|=containsManagedReference(program,value->type);for(auto argument:value->args)expression(argument);for(auto arm:value->arms)block(arm->body);}};
+    block=[&](const auto &statements){for(auto statement:statements){local|=containsManagedReference(program,statement->type);expression(statement->expr);childBlocks(statement,block);}};
+    block(function.body);if(local)return true;
+    for(const auto &dependency:function.dependencies)if(visit(program.function(dependency)))return true;
+    return false;
+  };
+  for(const auto &entry:entries)if(visit(program.function(entry)))return true;
+  return false;
+}
+void validateManagedReferenceExecution(const Program &program,const std::set<std::string> &entries){
+  if(program.sourceLanguage!=SourceLanguage::References030||!usesManagedReferences(program,entries))return;
+  std::set<std::string> seen;
+  std::function<void(const Function&)> visit=[&](const Function &function){
+    if(!seen.insert(function.name).second)return;
+    if(function.effects.contains("task")||usesParallelMap(function))throw Error("E_CELL_CONCURRENCY","language0.30 reference execution is sequential; task/parallel reference contexts require separate transfer and ownership integration",function.span);
+    for(const auto &dependency:function.dependencies)visit(program.function(dependency));
+  };
+  for(const auto &entry:entries)visit(program.function(entry));
+}
 void bindManagedReferencePrototypeTypes(Program &program){
-  if(!supportsManagedReferences(program))throw Error("E_LANGUAGE_VERSION","private reference type binding requires its explicit frontend");
+  if(program.sourceLanguage!=SourceLanguage::ManagedReferencesPrototype)throw Error("E_LANGUAGE_VERSION","private reference type binding requires its explicit frontend");
   // The public module loader scopes these binders while resolving modules. The
   // private parser has no loader: sharing a raw F/T between declarations lets a
   // later kind or bound overwrite an earlier one, and leaves trait Self unbound.
@@ -122,6 +150,16 @@ llvm::json::Object managedReferencesCapability(){
       {"maximum_nodes",int64_t(limits.maximumNodes)},{"maximum_edges",int64_t(limits.maximumEdges)}}},
     {"reference_interpreter_source_enabled",false},{"native_source_enabled",false},{"typescript_source_enabled",false},
     {"public_flag_scope","ordinary published source languages; private candidate has its own selection"},
+    {"source030_development",llvm::json::Object{{"introduced_toolchain","0.262.0"},{"language","0.30"},
+      {"status","versioned_archive_backend_development"},{"selection","parseVersioned/References030; loadVersionedBundle/0.30"},
+      {"guide","docs/references030.md"},{"grammar","docs/references030.ebnf"},{"test","tests/references030.py"},
+      {"frontend",true},{"inherits029",true},{"canonical_format","nex.program/18"},{"source_bundle","nex.sources/1"},
+      {"archival",true},{"explicit_history_preserving_migration",true},{"origin029_rechecked",true},
+      {"reference_interpreter",true},{"native_application",true},{"typescript_value_entries",true},
+      {"typescript_map","nex.typescript-map/3"},{"reference_execution","one sequential heap per execution; independent copied host values/errors"},
+      {"no_reference_tasks","ordinary029 parser, scheduler and generator behavior retained"},
+      {"task_parallel_reference_contexts",false},{"reference_library_HTTP_entries",false},
+      {"ordinary_CLI",false},{"new_project_default",false},{"SDK_delivery_accepted",false},{"full_platform_acceptance",false}}},
     {"private_candidate",llvm::json::Object{{"introduced_toolchain","0.250.0"},{"language","0.30-refs-prototype"},
       {"selection","parseManagedReferencesPrototype; check; evaluateManagedReferencesPrototype"},
       {"guide","docs/managed-references-prototype.md"},{"grammar","docs/managed-references-prototype.ebnf"},

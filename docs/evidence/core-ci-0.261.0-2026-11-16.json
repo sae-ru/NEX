@@ -1,0 +1,35 @@
+{
+  "id": 43846413401,
+  "name": "Core development checks",
+  "head_sha": "6a21dcbf74a37c0e2ed572b6c525392ee5069a99",
+  "html_url": "https://github.com/sae-ru/NEX/actions/runs/43846413401",
+  "status": "completed",
+  "conclusion": "success",
+  "created_at": "2026-11-16T10:10:21Z",
+  "updated_at": "2026-11-16T10:24:53Z",
+  "schema": "nex.core-ci-evidence/1",
+  "toolchain": "0.261.0",
+  "core_groups_per_job": 16,
+  "raw_sha256": "20478ad2038055e12290bcbd0b45fc6b3f5d4313f497bc96b20663f94afafef2",
+  "scope": "Core development checks only; not full source/platform/SDK qualification",
+  "jobs": [
+    {
+      "id": 133227580376,
+      "name": "linux-core",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sae-ru/NEX/actions/runs/43846413401/job/133227580376",
+      "started_at": "2026-11-16T10:10:23Z",
+      "completed_at": "2026-11-16T10:14:26Z"
+    },
+    {
+      "id": 133227580978,
+      "name": "macos-core",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sae-ru/NEX/actions/runs/43846413401/job/133227580978",
+      "started_at": "2026-11-16T10:20:25Z",
+      "completed_at": "2026-11-16T10:24:53Z"
+    }
+  ]
+}

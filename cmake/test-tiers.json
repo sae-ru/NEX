@@ -264,6 +264,7 @@
     "managed_heap_typescript": ["extended", "browser", "platform"],
     "managed_references_typescript": ["extended", "browser", "platform"],
     "managed_reference_value_exports": ["extended", "browser", "platform"],
+    "references030_versioned": ["extended", "browser", "platform"],
     "managed_reference_module_value_exports": ["extended", "browser", "platform"],
     "effect_parameters": ["extended", "browser", "platform", "sdk"],
     "storage": ["extended", "browser"],

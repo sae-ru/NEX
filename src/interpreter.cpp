@@ -341,7 +341,7 @@ class Interpreter {
     return value;
   }
 public:
-  Interpreter(const Program &p,uint64_t limit,bool atoms=false,const TaskControlPoll *control=nullptr,const nexrt::CellHeapLimits *cellLimits=nullptr):files(supportsManagedReferences(p)&&nexrt::inFileScope()?nullptr:std::make_unique<nexrt::FileScope>()),controlPoll(control),p(p),limit(limit),cellHeap(supportsManagedReferences(p)?std::make_unique<nexrt::CellHeap>(cellLimits?*cellLimits:nexrt::CellHeapLimits{}):nullptr){if(!atoms&&p.sourceLanguage!=SourceLanguage::SourceExceptions025Prototype&&!supportsManagedReferences(p)&&(!p.taskPrototype||isPublicTaskLanguage(p)))for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
+  Interpreter(const Program &p,uint64_t limit,bool atoms=false,const TaskControlPoll *control=nullptr,const nexrt::CellHeapLimits *cellLimits=nullptr,bool managedExecution=false):files(supportsManagedReferences(p)&&nexrt::inFileScope()?nullptr:std::make_unique<nexrt::FileScope>()),controlPoll(control),p(p),limit(limit),cellHeap(!atoms&&(p.sourceLanguage==SourceLanguage::ManagedReferencesPrototype||managedExecution)?std::make_unique<nexrt::CellHeap>(cellLimits?*cellLimits:nexrt::CellHeapLimits{}):nullptr){if(!atoms&&p.sourceLanguage!=SourceLanguage::SourceExceptions025Prototype&&p.sourceLanguage!=SourceLanguage::ManagedReferencesPrototype&&(!p.taskPrototype||isPublicTaskLanguage(p)))for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
   TaskAtomResult atom(E expression,const std::map<std::string,V> &values,unsigned depth){
     atomRoot=expression;outerDepth=depth;frames.emplace_back(1);frames.back().back().values=values;
     try{auto value=this->expression(expression);return {std::move(value),result.steps,result.output};}
@@ -381,7 +381,7 @@ public:
 };
 }
 ManagedReferenceEvaluation evaluateManagedReferencesPrototype(const Program &p,const std::string &entry,uint64_t limit,nexrt::CellHeapLimits limits){
-  if(!supportsManagedReferences(p))throw Error("E_LANGUAGE_VERSION","private reference evaluation requires its dedicated frontend");
+  if(p.sourceLanguage!=SourceLanguage::ManagedReferencesPrototype)throw Error("E_LANGUAGE_VERSION","private reference evaluation requires its dedicated frontend");
   for(const auto &function:p.functions)if(!function.checked&&!function.traitSignature)throw Error("E_CELL_STATE","private reference evaluation requires a fully checked program",function.span);
   return Interpreter(p,limit,false,nullptr,&limits).runManaged(entry);
 }
@@ -394,6 +394,9 @@ TaskAtomResult evaluateTaskAtom(const Program &p,E atom,const std::map<std::stri
 Evaluation evaluate(const Program &p,const std::string &entry,uint64_t stepLimit,const nexrt::TaskExecutionLimits *taskLimits){
   rejectUnloweredTasks(p,"reference execution");
   const auto &function=p.function(entry);
+  validateManagedReferenceExecution(p,{entry});
+  const bool managed=usesManagedReferences(p,{entry});
+  if(managed&&function.result!=Type::Unit&&!satisfiesConstraint(p,function.result,"wire"))throw Error("E_CELL_ENTRY","reference execution result must be unit or an immutable wire value",function.span);
   if(taskLimits&&!nexrt::validTaskExecutionLimits(*taskLimits))throw Error("E_OPTION","invalid task execution limits",function.span);
   const bool taskExecution=isPublicTaskLanguage(p)&&usesTaskEffects(p,entry);
   if(taskLimits&&!taskExecution)
@@ -406,7 +409,7 @@ Evaluation evaluate(const Program &p,const std::string &entry,uint64_t stepLimit
     if(function.result!=Type::Unit){auto parsed=llvm::json::parse(nexrt::representation(actual.value));if(!parsed)throw Error("E_INTERNAL",llvm::toString(parsed.takeError()));result.value=std::move(*parsed);}
     return result;
   }
-  return Interpreter(p,stepLimit).run(entry);
+  return Interpreter(p,stepLimit,false,nullptr,nullptr,managed).run(entry);
 }
 llvm::json::Value evaluateExpression(const Program &p,E expression,const std::map<std::string,Type> &types,const llvm::json::Object &values,uint64_t limit,const llvm::json::Array *captures,bool demand,const std::set<std::string> *compiledCallables){
   rejectUnloweredTasks(p,"reference inspection");

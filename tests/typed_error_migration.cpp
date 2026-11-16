@@ -36,9 +36,16 @@ int main(int argc,char **argv){try{
   auto value=llvm::json::parse(readFile(argv[1]));if(!value){llvm::consumeError(value.takeError());throw Error("E_OPTION","invalid migration request JSON");}
   const auto o=value->getAsObject();if(!o||o->getString("schema")!="nex.typed-error-migration-request/1")throw Error("E_OPTION","invalid migration request schema");
   const auto targetLanguage=o->getString("target_language").value_or("0.27").str();
-  if(targetLanguage!="0.27"&&targetLanguage!="0.28")throw Error("E_OPTION","unsupported explicit migration test target");
-  const auto target=targetLanguage=="0.28"?SourceLanguage::Contracts028:SourceLanguage::TypedErrors027;
+  if(targetLanguage!="0.27"&&targetLanguage!="0.28"&&targetLanguage!="0.29"&&targetLanguage!="0.30")throw Error("E_OPTION","unsupported explicit migration test target");
+  const auto target=targetLanguage=="0.30"?SourceLanguage::References030:targetLanguage=="0.29"?SourceLanguage::Contracts029:targetLanguage=="0.28"?SourceLanguage::Contracts028:SourceLanguage::TypedErrors027;
   const auto mode=field(*o,"mode");const fs::path project=field(*o,"project"),directory=project/".nex";
+  if(mode=="origin-info"){
+    Store store(directory,StoreOpenMode::ReadOnly);const auto selected=store.headRevision();
+    if(selected!=field(*o,"expected_revision"))throw Error("E_CONFLICT","origin HEAD changed");
+    auto bundle=store.bundle(selected);const auto language=store.revisionLanguage(selected);
+    if(revision(loadVersionedBundle(bundle,project.string(),language))!=selected)throw Error("E_REVISION","origin failed retained source recheck");
+    std::cout<<json(llvm::json::Object{{"ok",true},{"language",language},{"revision",selected},{"source_hash",hash(json(bundle,false))},{"namespace",store.identityNamespace()},{"sources",std::move(bundle)}},false)<<'\n';return 0;
+  }
   if(mode=="inspect-versioned-source"){
     const auto sources=o->get("sources");if(!sources)throw Error("E_OPTION","missing versioned source bundle");
     auto p=loadVersionedBundle(*sources,project.string(),field(*o,"source_language"));

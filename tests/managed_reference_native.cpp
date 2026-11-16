@@ -79,15 +79,18 @@ int main(int argc,char **argv){try{
     if(nexrt::liveObjects.load()!=baseline)throw std::runtime_error("native reference context left live values");
     nex_runtime_finish();return status;
   }
-  const auto mode=argc>1?std::string(argv[1]):std::string{};
+  auto mode=argc>1?std::string(argv[1]):std::string{};
+  const bool versioned=mode.starts_with("030-");if(versioned)mode.erase(0,4);
   const bool requestEmit=mode=="request-emit"||mode=="bundle-request-emit";
   const bool bundled=mode=="bundle-reference"||mode=="bundle-emit"||mode=="bundle-request-emit";
   const bool emit=mode=="emit"||mode=="bundle-emit"||requestEmit;
+  if(versioned&&mode!="emit"&&mode!="bundle-emit")throw Error("E_OPTION","source030 native fixture supports ordinary emit modes only");
   if(!(((!emit&&(mode=="reference"||mode=="bundle-reference"))&&argc==6)||(emit&&argc==10)))throw std::runtime_error("expected [bundle-]reference input cells nodes edges, or [bundle-]emit input out triple layout optimized cells nodes edges");
   const auto start=emit?7:3;
   nexrt::CellHeapLimits limits{std::stoull(argv[start]),std::stoull(argv[start+1]),std::stoull(argv[start+2])};
   auto path=std::filesystem::absolute(argv[2]);Program p;
-  if(bundled){auto value=llvm::json::parse(readFile(path.string()));if(!value)throw Error("E_BUNDLE","invalid private source bundle JSON");p=loadManagedReferencesPrototypeBundle(*value,path.parent_path().string());}
+  if(bundled){auto value=llvm::json::parse(readFile(path.string()));if(!value)throw Error("E_BUNDLE","invalid source bundle JSON");p=versioned?loadVersionedBundle(*value,path.parent_path().string(),"0.30"):loadManagedReferencesPrototypeBundle(*value,path.parent_path().string());}
+  else if(versioned){auto bundle=llvm::json::Value(llvm::json::Object{{"schema","nex.sources/1"},{"entry","main.nex"},{"files",llvm::json::Object{{"main.nex",readFile(path.string())}}}});p=loadVersionedBundle(bundle,path.parent_path().string(),"0.30");}
   else{p=parseManagedReferencesPrototype(readFile(path.string()),path.string());check(p);}
   if(!emit){
     const auto baseline=nexrt::liveObjects.load();
@@ -110,7 +113,7 @@ int main(int argc,char **argv){try{
     return 0;
   }
   auto folder=std::filesystem::absolute(argv[3]);std::filesystem::create_directories(folder);
-  auto mlir=requestEmit?emitManagedReferencesPrototypeRequestMLIR(p,"main",std::string(argv[6])=="true"):emitManagedReferencesPrototypeMLIR(p,"main",std::string(argv[6])=="true",limits);
+  auto mlir=versioned?emitMLIR(p,"main"):requestEmit?emitManagedReferencesPrototypeRequestMLIR(p,"main",std::string(argv[6])=="true"):emitManagedReferencesPrototypeMLIR(p,"main",std::string(argv[6])=="true",limits);
   writeFile((folder/"program.mlir").string(),mlir);
   writeFile((folder/"program.ll").string(),lowerMLIRToLLVM(mlir,path.string(),argv[4],argv[5]));return 0;
 }catch(const Error &error){std::cerr<<error.code<<": "<<error.message<<" at "<<error.span.line<<":"<<error.span.column<<'\n';}

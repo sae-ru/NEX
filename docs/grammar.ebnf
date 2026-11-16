@@ -1,4 +1,6 @@
 (* NEX language0.28. ASCII identifiers, decimal numbers, strict UTF-8 source.
+   Explicit030 development additions are in references030.ebnf; ordinary
+   CLI/new-project selection remains028/029.
    Toolchain0.261 private TypeScript value exports add no source production.
    This is the current source grammar. Retained027 parsing/AST identities stay
    separate without source contracts; retained026 keeps its legacy handlers.

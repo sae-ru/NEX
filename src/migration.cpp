@@ -10,7 +10,8 @@ bool versionedMigrationLanguage(const std::string &language,SourceLanguage targe
     (language=="0.26"&&(target==SourceLanguage::ExceptionHandlers026||isTypedSourceErrorLanguage(target)))||
     (language=="0.27"&&isTypedSourceErrorLanguage(target))||
     (language=="0.28"&&isContractsLanguage(target))||
-    (language=="0.29"&&target==SourceLanguage::Contracts029);
+    (language=="0.29"&&(target==SourceLanguage::Contracts029||target==SourceLanguage::References030))||
+    (language=="0.30"&&target==SourceLanguage::References030);
 }
 void validateMigrationLanguage(const std::string &language,SourceLanguage target){
   if(versionedMigrationLanguage(language,target))return;
@@ -25,7 +26,7 @@ bool verifyMigrationOrigin(const llvm::json::Value &bundle,const std::filesystem
   if(original.size()!=64||!std::all_of(original.begin(),original.end(),[](char c){return (c>='0'&&c<='9')||(c>='a'&&c<='f');}))
     throw Error("E_REVISION","migration origin requires a canonical revision hash");
   if(!versionedMigrationLanguage(language,target)){
-    for(const auto *modern:{"0.18","0.19","0.20","0.21","0.22","0.23","0.24","0.25","0.26","0.27","0.28","0.29"}){
+    for(const auto *modern:{"0.18","0.19","0.20","0.21","0.22","0.23","0.24","0.25","0.26","0.27","0.28","0.29","0.30"}){
       bool matches=false;
       try{matches=revision(loadVersionedBundle(bundle,root.string(),modern))==original;}catch(const Error &){}
       if(matches)throw Error("E_REVISION","migration origin language contradicts its modern semantic revision");

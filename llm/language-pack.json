@@ -5416,6 +5416,34 @@
       "source_finalizers": false,
       "task_payloads": false,
       "browser_resource_payloads": false
+    },
+    "source030_development": {
+      "introduced_toolchain": "0.262.0",
+      "language": "0.30",
+      "status": "versioned_archive_backend_development",
+      "selection": "parseVersioned/References030; loadVersionedBundle/0.30",
+      "guide": "docs/references030.md",
+      "grammar": "docs/references030.ebnf",
+      "test": "tests/references030.py",
+      "frontend": true,
+      "inherits029": true,
+      "canonical_format": "nex.program/18",
+      "source_bundle": "nex.sources/1",
+      "archival": true,
+      "explicit_history_preserving_migration": true,
+      "origin029_rechecked": true,
+      "reference_interpreter": true,
+      "native_application": true,
+      "typescript_value_entries": true,
+      "typescript_map": "nex.typescript-map/3",
+      "reference_execution": "one sequential heap per execution; independent copied host values/errors",
+      "no_reference_tasks": "ordinary029 parser, scheduler and generator behavior retained",
+      "task_parallel_reference_contexts": false,
+      "reference_library_HTTP_entries": false,
+      "ordinary_CLI": false,
+      "new_project_default": false,
+      "SDK_delivery_accepted": false,
+      "full_platform_acceptance": false
     }
   }
 }

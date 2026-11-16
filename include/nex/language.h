@@ -17,17 +17,17 @@ inline constexpr const char *taskCandidateLanguageVersion = "0.28";
 inline constexpr const char *developmentLanguageVersion = "0.29";
 // Append semantic versions: retained ordinal values and archived interpretation
 // must never change when the public compiler default advances.
-enum class SourceLanguage { Language018, Tasks019, TaskFiles020, OwnedResources021, TaskForeign022, TaskWrites023, TaskStreams024, SourceExceptions025Prototype, SourceExceptions025, ExceptionHandlers026, TypedErrors027, Contracts028, Contracts029, ManagedReferencesPrototype };
+enum class SourceLanguage { Language018, Tasks019, TaskFiles020, OwnedResources021, TaskForeign022, TaskWrites023, TaskStreams024, SourceExceptions025Prototype, SourceExceptions025, ExceptionHandlers026, TypedErrors027, Contracts028, Contracts029, ManagedReferencesPrototype, References030 };
 inline constexpr SourceLanguage currentSourceLanguage=SourceLanguage::Contracts028;
 inline bool isContractsLanguage(SourceLanguage language){
-  return language==SourceLanguage::Contracts028||language==SourceLanguage::Contracts029||language==SourceLanguage::ManagedReferencesPrototype;
+  return language==SourceLanguage::Contracts028||language==SourceLanguage::Contracts029||language==SourceLanguage::ManagedReferencesPrototype||language==SourceLanguage::References030;
 }
 inline bool isTypedSourceErrorLanguage(SourceLanguage language){
   return language==SourceLanguage::TypedErrors027||isContractsLanguage(language);
 }
 // A shared typed packet ABI still retains the exact source version in records.
 inline bool isTypedSourceErrorVersion(llvm::StringRef language){
-  return language=="0.27"||language=="0.28"||language=="0.29";
+  return language=="0.27"||language=="0.28"||language=="0.29"||language=="0.30";
 }
 inline bool isPublicSourceExceptionLanguage(SourceLanguage language){
   if(language==SourceLanguage::ManagedReferencesPrototype)return false;
@@ -314,6 +314,7 @@ Function &instantiateFunction(Program &program,const Function &source,const std:
 std::string genericName(const std::string &name,const std::vector<Type> &arguments);
 bool containsParameter(const Type &type);
 bool supportsManagedReferences(const Program &program);
+inline bool supportsManagedReferences(SourceLanguage language){return language==SourceLanguage::ManagedReferencesPrototype||language==SourceLanguage::References030;}
 bool containsManagedReference(const Program &program,const Type &type);
 void check(Program &program);
 llvm::json::Value canonical(const Function &function);

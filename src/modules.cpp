@@ -77,7 +77,7 @@ bool inside(const fs::path &path,const fs::path &base){
 }
 struct Symbols{std::map<std::string,bool> functions,structures,variants,traits,projections;std::set<std::string> enumerations,traitMethods;};
 template<class Units> std::string resolveSymbol(const Units &units,const std::map<std::string,Symbols> &symbols,const std::string &key,const std::string &name,bool type,Span span){
-  if(!type&&units.at(key).sourceLanguage==SourceLanguage::ManagedReferencesPrototype&&managedReferenceBuiltins().contains(name))return name;
+  if(!type&&supportsManagedReferences(units.at(key).sourceLanguage)&&managedReferenceBuiltins().contains(name))return name;
   if(!type&&builtinNames(units.at(key).taskPrototype,(units.at(key).sourceLanguage==SourceLanguage::SourceExceptions025Prototype||units.at(key).sourceLanguage==SourceLanguage::OwnedResources021||units.at(key).sourceLanguage==SourceLanguage::TaskForeign022||units.at(key).sourceLanguage==SourceLanguage::TaskWrites023||units.at(key).sourceLanguage==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(units.at(key).sourceLanguage))).contains(name))return name;
   auto target=key,local=name;auto separator=name.find("::");bool external=separator!=std::string::npos;
   if(external&&(symbols.at(key).enumerations.contains(name.substr(0,separator))||symbols.at(key).traits.contains(name.substr(0,separator)))){external=false;}
@@ -104,7 +104,7 @@ template<class Units> std::string resolveTraitSymbol(const Units &units,const st
 template<class Units> void bindValueName(const Units &units,const std::map<std::string,Symbols> &symbols,const std::string &key,E expression){
   if(expression->kind!=Expr::Call&&expression->kind!=Expr::Name)return;
   const auto &name=expression->text;bool qualified=name.find("::")!=std::string::npos;
-  if(!qualified&&units.at(key).sourceLanguage==SourceLanguage::ManagedReferencesPrototype&&managedReferenceBuiltins().contains(name))return;
+  if(!qualified&&supportsManagedReferences(units.at(key).sourceLanguage)&&managedReferenceBuiltins().contains(name))return;
   if(!qualified)expression->localName=name;
   const auto &local=symbols.at(key);
   if(qualified||local.functions.contains(name)||(expression->kind==Expr::Call&&(builtinNames(units.at(key).taskPrototype,(units.at(key).sourceLanguage==SourceLanguage::OwnedResources021||units.at(key).sourceLanguage==SourceLanguage::TaskForeign022||units.at(key).sourceLanguage==SourceLanguage::TaskWrites023||units.at(key).sourceLanguage==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(units.at(key).sourceLanguage))).contains(name)||local.structures.contains(name)||local.variants.contains(name))))
@@ -198,7 +198,7 @@ class Loader {
       auto parameterScope=[&](auto &declaration){parameters.clear();for(auto &name:declaration.typeParameters){auto original=name;name=unit.module+"::"+declaration.localName+"::"+name;parameters[original]=name;}bounds(declaration.typeBounds,declaration.span);};
       std::function<void(Type&,Span)> type=[&](Type &t,Span span){
         if(t.kind==Type::Parameter){if(!parameters.contains(t.name))throw Error("E_GENERIC_SCOPE","type parameter is outside its declaration",span);t.name=parameters.at(t.name);}
-        if(supportsManagedReferences(unit)&&t.kind==Type::Constructor&&t.name!="$cell"&&t.name!="list"&&t.name!="result")
+        if(supportsManagedReferences(unit)&&t.kind==Type::Constructor&&t.name!="$cell"&&t.name!="list"&&t.name!="result"&&t.name!="task"&&t.name!="channel")
           t.name=resolve(key,t.name,true,span);
         if(t.kind==Type::Record){
           if(t.name=="result"&&!symbols.at(key).structures.contains("result")&&t.arguments.empty()){t=Type::constructor("result",1);return;}
@@ -241,7 +241,7 @@ class Loader {
 public:
   Loader(fs::path root,std::string entry,bool frozen,std::map<std::string,std::string> sources={},std::map<std::string,std::string> overlays={},bool editorNames=false,bool editorDetails=false,bool tasks=false,SourceLanguage version=SourceLanguage::Language018,SourceLanguage metadataLanguage=currentSourceLanguage,bool exceptions=false)
       :root(fs::weakly_canonical(root)),frozen(frozen),captureNames(editorNames||editorDetails),captureDetails(editorDetails),taskPrototype(tasks),privateExceptions(exceptions),sourceVersion(version),entry(std::move(entry)),overlays(std::move(overlays)),texts(std::move(sources)),builtins(builtinNames(tasks,(exceptions||version==SourceLanguage::OwnedResources021||version==SourceLanguage::TaskForeign022||version==SourceLanguage::TaskWrites023||version==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(version)))){
-    if(version==SourceLanguage::ManagedReferencesPrototype)builtins.insert(managedReferenceBuiltins().begin(),managedReferenceBuiltins().end());
+    if(version==SourceLanguage::ManagedReferencesPrototype||version==SourceLanguage::References030)builtins.insert(managedReferenceBuiltins().begin(),managedReferenceBuiltins().end());
     if(!frozen&&fs::is_regular_file(this->root/"nex.json")){
       auto value=decoded(readFile((this->root/"nex.json").string()));auto obj=value.getAsObject();if(!obj)throw Error("E_MANIFEST","nex.json must be an object");
       projectVersion(*obj,"nex.json",metadataLanguage);
@@ -355,7 +355,8 @@ Program loadVersionedBundle(const llvm::json::Value &bundle,const std::string &r
   if(language=="0.27")return bundleProgram(bundle,root,true,true,SourceLanguage::TypedErrors027);
   if(language=="0.28")return bundleProgram(bundle,root,true,true,SourceLanguage::Contracts028);
   if(language=="0.29")return bundleProgram(bundle,root,true,true,SourceLanguage::Contracts029);
-  throw Error("E_LANGUAGE_VERSION","versioned source recheck supports explicit languages0.18,0.19,0.20,0.21,0.22,0.23,0.24,0.25,0.26,0.27,0.28 and0.29");
+  if(language=="0.30")return bundleProgram(bundle,root,true,true,SourceLanguage::References030);
+  throw Error("E_LANGUAGE_VERSION","versioned source recheck supports explicit languages0.18,0.19,0.20,0.21,0.22,0.23,0.24,0.25,0.26,0.27,0.28,0.29 and0.30");
 }
 Program bindBundle(const llvm::json::Value &bundle,const std::string &root){return bundleProgram(bundle,root,false);}
 llvm::json::Object sourceExceptionTaskContext(const Program &p){

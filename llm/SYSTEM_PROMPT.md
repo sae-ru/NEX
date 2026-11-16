@@ -123,6 +123,9 @@ a private C++ candidate. Do not emit cell/ref syntax or a state effect in ordina
 Its private TypeScript value-export API is a host integration experiment: wire
 arguments/results are copied per call; it does not enable public source syntax,
 persistent browser state, UI adapter effects or reference transfer to workers.
+`managed_references.source030_development` describes explicit versioned C++
+source/archive/backend APIs. While its `ordinary_CLI` is false, do not select
+0.30 in a normal project or assume a metadata edit migrates its stored graph.
 It does not provide Java/Python object compatibility or override immutable source
 values; discover the actual source type/effect before using a future extension.
 

@@ -1346,7 +1346,7 @@ public:
     // C++ owns the application boundary so a runtime failure can unwind host
     // temporaries and release every live managed handle, including caller scopes.
     out<<"  func.func private @nex_application_entry(%nex_argc64: i64, %nex_argv: !llvm.ptr) -> i64 {\n";
-    if(supportsManagedReferences(p))call("nex_cell_context_limits",{constant(cellLimits.maximumCells,Type::I64,main.span),constant(cellLimits.maximumNodes,Type::I64,main.span),constant(cellLimits.maximumEdges,Type::I64,main.span),constant(main.span.line,Type::I64,main.span)},Type::Unit,main.span);
+    if(p.sourceLanguage==SourceLanguage::ManagedReferencesPrototype||usesManagedReferences(p,{main.name}))call("nex_cell_context_limits",{constant(cellLimits.maximumCells,Type::I64,main.span),constant(cellLimits.maximumNodes,Type::I64,main.span),constant(cellLimits.maximumEdges,Type::I64,main.span),constant(main.span.line,Type::I64,main.span)},Type::Unit,main.span);
     if(tasks&&profiling){
       if(!profileRegistryAccessor.empty())call("nex_task_profile_prepare_application_v1",{},Type::Unit,main.span);else{auto registry=fresh();line(registry+" = llvm.mlir.addressof @"+taskProfileTable+" : !llvm.ptr",main.span);
       call("nex_task_profile_prepare",{{registry,Type::Str},constant(tasks->size(),Type::I64,main.span)},Type::Unit,main.span);}
@@ -1777,7 +1777,7 @@ std::string emitSourceExceptionsPrototypeMLIR(const Program &p,const std::string
   return Emitter(p,optimized,false,nullptr,false,nullptr,false,true).run(entry,false,false);
 }
 std::string emitManagedReferencesPrototypeMLIR(const Program &p,const std::string &entry,bool optimized,nexrt::CellHeapLimits limits){
-  if(!supportsManagedReferences(p))throw Error("E_LANGUAGE_VERSION","private reference emission requires its dedicated frontend");
+  if(p.sourceLanguage!=SourceLanguage::ManagedReferencesPrototype)throw Error("E_LANGUAGE_VERSION","private reference emission requires its dedicated frontend");
   for(const auto &f:p.functions)if(!f.checked&&!f.traitSignature)throw Error("E_CELL_STATE","private reference emission requires a fully checked program",f.span);
   const auto &main=p.function(entry);
   if(main.result!=Type::Unit&&main.result!=Type::I64)throw Error("E_CELL_ENTRY","private native application entry must return unit or an i64 process status",main.span);
@@ -1785,7 +1785,7 @@ std::string emitManagedReferencesPrototypeMLIR(const Program &p,const std::strin
   return Emitter(p,optimized,false,nullptr,false,nullptr,false,true,&limits).run(entry,false,false);
 }
 std::string emitManagedReferencesPrototypeRequestMLIR(const Program &p,const std::string &entry,bool optimized){
-  if(!supportsManagedReferences(p))throw Error("E_LANGUAGE_VERSION","private request emission requires its dedicated frontend");
+  if(p.sourceLanguage!=SourceLanguage::ManagedReferencesPrototype)throw Error("E_LANGUAGE_VERSION","private request emission requires its dedicated frontend");
   for(const auto &function:p.functions)if(!function.checked&&!function.traitSignature)throw Error("E_CELL_STATE","private request emission requires a fully checked program",function.span);
   const auto &function=p.function(entry);
   if(!function.params.empty()||!function.captures.empty()||(function.result!=Type::Unit&&function.result!=Type::I64))
@@ -1793,6 +1793,7 @@ std::string emitManagedReferencesPrototypeRequestMLIR(const Program &p,const std
   return Emitter(p,optimized,false,nullptr,false,nullptr,false,true).request(entry);
 }
 std::string emitWasmMLIR(const Program &p,const std::string &entry,bool optimized){
+  if(p.sourceLanguage==SourceLanguage::References030&&usesManagedReferences(p,{entry}))throw Error("E_CELL_TARGET","managed references have no Wasm value/context lowering",p.function(entry).span);
   if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions have no Wasm lowering");
   if(isPublicSourceExceptionLanguage(p.sourceLanguage))for(const auto &name:reachable(p,entry)){
     const auto &f=p.function(name);bool exceptions=f.effects.contains("throw");
@@ -2018,6 +2019,9 @@ NativeTaskProviderInfo parseNativeTaskProvider(const llvm::json::Value &value){
 }
 void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
   rejectUnloweredTasks(p,"native entry preparation");
+  std::set<std::string> referenceEntries(options.libraryExports.begin(),options.libraryExports.end());referenceEntries.insert(options.entry);
+  validateManagedReferenceExecution(p,referenceEntries);
+  if(p.sourceLanguage==SourceLanguage::References030&&usesManagedReferences(p,referenceEntries)&&(options.libraryEntry||options.target=="server"))throw Error("E_CELL_TARGET","language0.30 reference library/HTTP entry integration is pending",p.function(options.entry).span);
   const auto taskMode=effectiveNativeTaskLinkage(options);const bool taskProviders=taskMode!=NativeTaskLinkageMode::None;
   bool server=options.target=="server";
   bool tasks=usesNativeTasks(p,options.entry);
@@ -2354,7 +2358,10 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(server&&(toolchain.opensslInclude.empty()||toolchain.opensslSSL.empty()||toolchain.opensslCrypto.empty()))throw Error("E_TARGET_LIBRARY","target server requires openssl include/ssl/crypto paths in --toolchain FILE");
   if(foreign&&(toolchain.opensslInclude.empty()||toolchain.opensslCrypto.empty()))throw Error("E_TARGET_LIBRARY","foreign calls require target OpenSSL Crypto include/library paths");
   bool profiling=options.profile=="profile";
+  const bool managedCells=p.sourceLanguage==SourceLanguage::References030&&usesManagedReferences(p,names);
   std::vector<std::string> components={"runtime.cpp"},headers={"nex_value.h","nex_value_owner.h","nex_bytes.h","nex_file_resource.h","nex_resource.h","nex_external_resource.h","nex_resource_executor.h","nex_resource_region.h","nex_error.h","nex_float.h","nex_host.h","nex_source_error.h","nex_io.h","nex_platform.h","nex_profile.h","third_party/dragonbox/dragonbox.h","third_party/dragonbox/manifest.json","third_party/dragonbox/LICENSE-Apache2-LLVM"};
+  if(managedCells)components.insert(components.end(),{"nex_cells.cpp","nex_cell_host.cpp"});
+  if(p.sourceLanguage==SourceLanguage::References030)headers.insert(headers.end(),{"nex_cells.h","nex_cell_host.h"});
   if(profiling)components.insert(components.end(),{"nex_profile.cpp","third_party/tracy/public/TracyClient.cpp"});
   if(parallel||tasks)headers.insert(headers.end(),{"nex_parallel.h","nex_parallel_value.h"});
   if(tasks){
@@ -2378,6 +2385,10 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   {std::set<std::string> seen;std::erase_if(components,[&](const auto &component){return !seen.insert(component).second;});}
   std::map<std::string,std::string> runtimeFiles;
   for(const auto &file:components)runtimeFiles[file]=readFile(resourceFile("runtime/"+file));for(const auto &file:headers)runtimeFiles[file]=readFile(resourceFile("runtime/"+file));
+  // One030 runtime cohort also covers reference-free libraries consumed by a
+  // reference application. Only reachable cells select compiled components;
+  // the cohort identity must not vary with the caller's local effect set.
+  if(p.sourceLanguage==SourceLanguage::References030)for(const auto *file:{"nex_cells.cpp","nex_cell_host.cpp"})runtimeFiles[file]=readFile(resourceFile("runtime/"+std::string(file)));
   const std::vector<std::string> taskCohortFiles={"nex_resource.h","nex_resource_region.h","nex_resource_region.cpp","nex_external_resource.h","nex_external_resource.cpp","nex_resource_executor.h","nex_resource_executor.cpp","nex_tasks.h","nex_tasks_impl.h","nex_task_external.h","nex_task_external.cpp","nex_task_values.h","nex_task_values_impl.h","nex_task_protocol.h","nex_task_frame.h","nex_task_frame.cpp","nex_task_application.h","nex_task_application.cpp","nex_task_limits.h","nex_task_profile_site.h","nex_files.h","nex_files.cpp","nex_task_file_read.h","nex_task_file_write.h","nex_task_file_stream.h","nex_task_file_source.h","nex_parallel.h","nex_parallel_value.h"};
   if(taskProviders&&profiling){for(const auto &file:{"nex_task_profile.h","nex_task_profile.cpp","nex_task_profile_site.h"})runtimeFiles[file]=readFile(resourceFile("runtime/"+std::string(file)));if(std::find(components.begin(),components.end(),"nex_task_profile.cpp")==components.end())components.push_back("nex_task_profile.cpp");}
   if(taskProviders&&options.taskDebug)for(const auto &file:{"nex_task_debug.h","nex_task_debug_site.h","nex_task_debug.cpp"})runtimeFiles[file]=readFile(resourceFile("runtime/"+std::string(file)));
@@ -2572,7 +2583,8 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   std::string coreABI;for(const auto &file:{"runtime.cpp","nex_host.h","nex_source_error.h","nex_value.h","nex_value_owner.h","nex_bytes.h","nex_file_resource.h","nex_resource.h","nex_external_resource.h","nex_resource_executor.h","nex_resource_region.h","nex_error.h","nex_float.h","nex_io.h","nex_platform.h","nex_profile.h"})coreABI+=file+hash(runtimeFiles.at(file));
   // Contracts028 is an independently versioned source cohort, even though
   // its lowered checks reuse the typed source/task ABI7 packet representation.
-  if(p.sourceLanguage==SourceLanguage::Contracts029)coreABI+=":source_language=0.29";else if(p.sourceLanguage==SourceLanguage::Contracts028)coreABI+=":source_language=0.28";
+  if(p.sourceLanguage==SourceLanguage::References030)coreABI+=":source_language=0.30";else if(p.sourceLanguage==SourceLanguage::Contracts029)coreABI+=":source_language=0.29";else if(p.sourceLanguage==SourceLanguage::Contracts028)coreABI+=":source_language=0.28";
+  if(p.sourceLanguage==SourceLanguage::References030)for(const auto *file:{"nex_cells.cpp","nex_cells.h","nex_cell_host.cpp","nex_cell_host.h"})coreABI+=file+hash(runtimeFiles.at(file));
   result.libraryABI=hash(nativeSeed+coreABI+(tasks?runtimeIdentity:std::string()));
   if(taskProviders){
     std::string cohort=coreABI;for(const auto &file:taskCohortFiles)cohort+=file+hash(runtimeFiles.at(file));if(profiling)for(const auto &[file,data]:runtimeFiles)if(file=="nex_profile.cpp"||file=="nex_task_profile.cpp"||file=="nex_task_profile.h"||file.starts_with("third_party/tracy/"))cohort+=file+hash(data);if(profiling)cohort+=":instrumentation=task-profile/1:registry=1";if(options.taskDebug){for(const auto &file:{"nex_task_debug.h","nex_task_debug_site.h","nex_task_debug.cpp"})cohort+=file+hash(runtimeFiles.at(file));cohort+=":instrumentation=task-debug/1:registry=1:catalog=2";}
@@ -2624,6 +2636,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     std::string runtimeABI;
     for(const auto &file:{"runtime.cpp","nex_value.h","nex_value_owner.h","nex_bytes.h","nex_file_resource.h","nex_resource.h","nex_external_resource.h","nex_resource_executor.h","nex_resource_region.h","nex_error.h","nex_float.h","third_party/dragonbox/dragonbox.h","nex_host.h","nex_source_error.h","nex_io.h","nex_platform.h","nex_profile.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
     if(profiling)runtimeABI+="nex_profile.cpp"+hash(runtimeFiles.at("nex_profile.cpp"));
+    if(p.sourceLanguage==SourceLanguage::References030)for(const auto *file:{"nex_cells.cpp","nex_cells.h","nex_cell_host.cpp","nex_cell_host.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
     if(unit.wire)for(const auto &file:{"wire_runtime.cpp","nex_json.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
     if(unit.storage)runtimeABI+="store_runtime.cpp"+hash(runtimeFiles.at("store_runtime.cpp"));
     if(unit.foreign)for(const auto &file:{"foreign_runtime.cpp","nex_foreign.cpp","nex_ffi_loader.cpp","nex_ffi.cpp","nex_ffi_types.cpp","nex_ffi_resources.cpp","nex_external_resource.cpp","nex_resource_region.cpp","nex_resource_executor.cpp","nex_foreign.h","nex_foreign_abi.h","nex_ffi_loader.h","nex_ffi_module.h","nex_ffi.h","nex_ffi_host.h","nex_ffi_types.h","nex_ffi_resources.h","nex_task_foreign.h"})runtimeABI+=file+hash(runtimeFiles.at(file));

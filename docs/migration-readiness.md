@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.261.0"
+applies_to: "language 0.28; explicit030 API development; toolchain 0.262.0"
 owner: repository
 ---
 
@@ -113,6 +113,12 @@ uses UTF-16 code units; [Python built-in types](https://docs.python.org/3/librar
 define unbounded integers, identity, mutable collections and operand-returning
 `and`/`or`. NEX's current scalar strings and boolean operators cannot silently
 replace these domains.
+
+Toolchain0.262 introduces distinct030 semantic archives and explicit guarded
+history migration through C++ APIs, together with normal sequential backend
+entries and inherited reference-free029 task behavior. Ordinary030 CLI/project
+publication, nullable/class layouts, library/HTTP/task reference contexts and
+debugger/SDK/platform acceptance remain open; see [source030 development](references030.md).
 
 ## Implementation order
 
