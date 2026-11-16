@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.272.0"
+applies_to: "language 0.28; toolchain 0.273.0"
 owner: repository
 generated_from: README.md#development-status
 ---
@@ -12,13 +12,14 @@ It reports recorded evidence, not a live observation of devices or remote jobs.
 For syntax and capabilities, query the selected compiler. For detailed history,
 use [STATUS](../STATUS.md); for next work, use [development priorities](development-priorities.md).
 
-Current source: **toolchain 0.272.0 / language 0.28 / task ABIs 7/8**, in development.
+Current source: **toolchain 0.273.0 / language 0.28 / task ABIs 7/8**, in development.
 The compiler fallback remains0.28. `nex.json` selects0.28,0.29 or0.30 per project;
 new `nex init` projects select0.30. Language0.29 adds partial type lambdas and
 higher-order kinds;0.30 adds typed cells and the `state` effect. Retained projects
 preserve their selected version and require explicit migration to change it.
 
-Recent source adds persistent AVL [ordered map/set](ordered-containers.md),
+Source libraries include persistent [hash map/set](hash-containers.md),
+AVL [ordered map/set](ordered-containers.md),
 explicit [Java int](java-integers.md) / [long](java-long.md) domains
 and resource-owning cells. These numerical APIs preserve ordinary checked arithmetic.
 The [internal IEEE kernel](ieee-numeric.md) has no source types yet.
@@ -34,7 +35,7 @@ Ordinary values and retained snapshots now use
 reference/native/TypeScript and native HTTP entries.
 [Persistent030 UI](persistent-ui.md) retains state across serialized events.
 Native task-provider lifetimes, parallel transfer, live cell inspection and remaining [migration prerequisites](migration-readiness.md)
-stay open. [Focused acceptance](evidence/persistent-ui-0.272.0-2026-11-17.json)
+stay open. [Focused acceptance](evidence/hash-containers-0.273.0-2026-11-17.json)
 is separate from full SDK/platform gates.
 The [implementation sequence](implementation-1-6.md) tracks remaining work.
 

@@ -11,7 +11,9 @@ insertion-ordered, and backed by a list: lookup and update are **O(n)**, not a
 hash table or a balanced tree. They do not add a language primitive or change
 language semantics.
 
-For logarithmic lookup/update with explicit comparator order, use the separate
+For a persistent hash trie with explicit stable hash/equality callbacks, use
+[hash map/set](hash-containers.md). Hash order differs from global insertion
+order. For logarithmic lookup/update with explicit comparator order, use the separate
 [persistent AVL map/set](ordered-containers.md) modules introduced in 0.247.
 
 ```nex
@@ -66,7 +68,7 @@ Operations scan the backing list. In 0.247, map updates/enumeration and set
 removal use the linear bulk constructor instead of repeatedly copying a growing
 list; `put`, `remove`, `get`, and `has` are O(n), excluding key/value comparison
 and construction. This is suitable for checked small and medium
-collections. Hash containers remain pending; balanced-tree collections are
+collections. Hash containers use the separate persistent trie modules; balanced-tree collections are
 available through the separate ordered modules. Generic numeric ordering and
 [inferred effect parameters](effect-parameters.md) are implemented features.
 Import aliases such as `maps`/`sets` avoid the reserved `list` name and

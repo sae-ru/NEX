@@ -1,0 +1,74 @@
+{
+  "schema": "nex.hash-container-workload/1",
+  "ok": true,
+  "toolchain": "0.273.0",
+  "compiler_sha256": "a99436851a62b4b5a65b27a61cd4d4f3312d0dee8c08024209c16d9b3e749bb0",
+  "host": {
+    "platform": "macOS-27.2.1-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "CPU": "Apple M5 Max"
+  },
+  "source_language": "0.28",
+  "profile": "release",
+  "entries": 4096,
+  "operations": [
+    "insert all sequential integer keys",
+    "read all values and accumulate checksum",
+    "remove all and assert empty"
+  ],
+  "expected_stdout": "25159680\n",
+  "samples": {
+    "list": [
+      4.677138667,
+      4.590546292,
+      4.5097845,
+      4.825098041,
+      4.602723792
+    ],
+    "hash": [
+      0.101623375,
+      0.10206375,
+      0.0979665,
+      0.108497459,
+      0.104693625
+    ]
+  },
+  "warmup_seconds": {
+    "list": 4.388476667,
+    "hash": 0.097197458
+  },
+  "median_seconds": {
+    "list": 4.602723792,
+    "hash": 0.10206375
+  },
+  "list_to_hash_median_ratio": 45.09655771025462,
+  "timing": "wall time of an independent process, including startup and final cleanup; excludes compilation; five alternating measured trials per program",
+  "own_test_build_processes_concurrent": false,
+  "system_wide_load_controlled": false,
+  "global_throughput_claim": false,
+  "programs": {
+    "list": {
+      "source": "module measured;\nimport \"std/map.nex\" as maps;\n\nfn main()->unit!{io}{\n var table:maps::Map<i64,i64>=maps::empty<i64,i64>();\n var index:i64=0;\n while index<4096{table=maps::put(table,index,index*3);index=index+1;}\n var total:i64=0;index=0;\n while index<4096{total=total+unwrap(maps::get(table,index));index=index+1;}\n index=0;while index<4096{table=maps::remove(table,index);index=index+1;}\n assert(maps::size(table)==0);print(total);\n}\n",
+      "source_sha256": "58d27f7e6cb5e2da9a3c0363d9de1c633531d38ab955d70d6fd9274525077e5d",
+      "executable_sha256": "999ff4364bf3fbb72f84f6228044014aeb4345cc1d81110ed20d7e35240818f2",
+      "executable_bytes": 367376,
+      "build_key": "3143cab9abcfca1af72d1e9c045ba21c1b65b4e2a3c276f007edb2457ce7f93d",
+      "revision": "8f5b91f218b0d58fd27aaa69ff10a59e8ae57245df36b50f68022afc4d93802f",
+      "metadata_sha256": "bf7b173dc83495bebc23eff3765dcd584c6c6321e149c9a1704971174936aa23"
+    },
+    "hash": {
+      "source": "module measured;\nimport \"std/hash_map.nex\" as maps;\nimport \"std/hash.nex\" as hash;\n\nfn main()->unit!{io}{\n var table:maps::Map<i64,i64>=maps::empty(hash::integer,hash::equal<i64>);\n var index:i64=0;\n while index<4096{table=maps::put(table,index,index*3);index=index+1;}\n var total:i64=0;index=0;\n while index<4096{total=total+unwrap(maps::get(table,index));index=index+1;}\n index=0;while index<4096{table=maps::remove(table,index);index=index+1;}\n assert(maps::size(table)==0);print(total);\n}\n",
+      "source_sha256": "92818bc0d344834ca932225f7232890a2d4c4d84ed3965f9ef3b047972d72294",
+      "executable_sha256": "d7dc682a162642ab082d11b20bdcee3a9e23a7078aa41e176aabf368b3f95723",
+      "executable_bytes": 459920,
+      "build_key": "a64c8396139550d3b87867154dc45899d384eba66c59a89a38d33b7f7597b560",
+      "revision": "51694fa0fd0461364e7380cfce36c339fa4aca0e5d1ccb9725f4947e657091c3",
+      "metadata_sha256": "cc798589744579b5ba327a30f6e099996359d12774c0f76f23ed5cd6ea42e984"
+    }
+  },
+  "library_sha256": {
+    "map.nex": "22f69d9a69081b5ccf9642266e74007245fe740c72161d9403d9a7540afaf4c1",
+    "hash.nex": "94c5b141c74de838eaa3d48dfcfe3ea064ff7af41d6f0806c8365b950fb9d037",
+    "hash_map.nex": "06c4fd5757091ba7e0300e3a55342696e8abd26d1d1c4526cd31955fdebffbe8"
+  }
+}

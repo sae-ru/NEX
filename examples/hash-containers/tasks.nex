@@ -1,0 +1,24 @@
+module hash_tasks;
+import "std/hash.nex" as hash;
+import "std/hash_map.nex" as maps;
+
+fn scenario() -> i64 !{state,task,throw} {
+  let before: maps::Map<str, i64> = maps::put(maps::empty(hash::text, hash::equal<str>), "start", 41);
+  let store: cell<maps::Map<str, i64>> = cell_new(before);
+  let answer: i64 = with_tasks(2, fn(scope: task_scope) -> i64 !{state,task,throw} {
+    let child: task<i64> = task_spawn(scope, fn() -> i64 !{state,task} {
+      task_yield();
+      let next: maps::Map<str, i64> = maps::put(cell_read(store), "answer", 42);
+      cell_write(store, next);
+      cell_collect();
+      return unwrap(maps::get(cell_read(store), "answer"));
+    });
+    return task_wait(child);
+  });
+  cell_collect();
+  assert(answer == 42 && !maps::has(before, "answer"));
+  assert(maps::size(cell_read(store)) == 2 && maps::validate(cell_read(store)));
+  return answer;
+}
+fn main() -> unit !{state,task,throw,io} { print(scenario()); }
+test fn snapshots_across_tasks() -> unit !{state,task,throw} { assert(scenario() == 42); }

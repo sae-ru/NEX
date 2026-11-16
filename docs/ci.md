@@ -79,6 +79,10 @@ The [0.271 run](evidence/core-ci-0.271.0-2026-11-17.json) passed Linux and
 macOS at `5538c54b`, with17 groups. The subsequent persistent UI adapter retains
 its separate local/browser/installed qualification.
 
+The [0.272 run](evidence/core-ci-0.272.0-2026-11-17.json) passed Linux and
+macOS at `4853e06d`, with17 core groups. The hash libraries and SDK consumer
+checks belong to their subsequent source cohort.
+
 ## Dependencies and provenance
 
 Linux reuses [the toolchain Dockerfile](../tools/linux/Dockerfile) with its pinned

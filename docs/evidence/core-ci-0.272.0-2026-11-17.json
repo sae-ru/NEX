@@ -1,0 +1,29 @@
+{
+  "schema": "nex.hosted-core-result/1",
+  "toolchain": "0.272.0",
+  "source_commit": "4853e06db65308ff8a53c36911fe97291724b85a",
+  "run_id": 43963307302,
+  "url": "https://github.com/sae-ru/NEX/actions/runs/43963307302",
+  "status": "completed",
+  "conclusion": "success",
+  "observed_at": "2026-11-16 22:13:52 UTC",
+  "authority": "GitHub Actions exact-commit REST run list and connector jobs",
+  "jobs": [
+    {
+      "id": 133636102846,
+      "name": "linux-core",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 133636103254,
+      "name": "macos-core",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "core_groups": 17,
+  "complete_source_regression": false,
+  "portable_SDK": false,
+  "scope": "Preceding persistent UI commit; the hash libraries retain separate source/backend/installation qualification."
+}

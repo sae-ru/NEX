@@ -1,5 +1,9 @@
 # NEX language specification 0.28
 
+Toolchain0.273 adds ordinary [hash container libraries](hash-containers.md)
+using existing recursive values, generics and callable snapshots. It adds no
+source production, source version, graph format or runtime ABI.
+
 Toolchain0.272 adds [persistent browser application contexts](persistent-ui.md)
 for030 entries with cells or tasks. Serialized source invocations share one
 application heap; events/views/commands cross a copied immutable wire boundary.

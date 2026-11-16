@@ -627,7 +627,11 @@
     "standard_java_long_source": "lib/java_long.nex",
     "java_long": "docs/java-long.md",
     "ieee_numeric_kernel": "docs/ieee-numeric.md",
-    "reference_tasks": "docs/reference-tasks.md"
+    "reference_tasks": "docs/reference-tasks.md",
+    "standard_hash_source": "lib/hash.nex",
+    "standard_hash_map_source": "lib/hash_map.nex",
+    "standard_hash_set_source": "lib/hash_set.nex",
+    "hash_containers": "docs/hash-containers.md"
   },
   "document_access": "nex guide --kind format|text-construction|bytes-construction|source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -4993,10 +4997,100 @@
         "example": "examples/java-long/nex.json",
         "mutation": false,
         "sha256": "9d782a03f2f6e89f49c41e18cc912d638a66a24764c5e055af40a205721d5b6f"
+      },
+      "hash": {
+        "import": "std/hash.nex",
+        "module": "std::hash",
+        "resource": "lib/hash.nex",
+        "introduced_toolchain": "0.273.0",
+        "functions": [
+          "integer",
+          "boolean",
+          "binary",
+          "text",
+          "equal"
+        ],
+        "arithmetic": "identity i64, boolean0/1; binary/text polynomial257 over octet+1 modulo2^32, text uses strict UTF-8 bytes",
+        "complexity": "integer/boolean O(1); binary/text O(bytes), text materializes UTF-8 bytes",
+        "purpose": "stable bucket selection; no cryptographic hash contract",
+        "guide": "docs/hash-containers.md",
+        "mutation": false,
+        "sha256": "94c5b141c74de838eaa3d48dfcfe3ea064ff7af41d6f0806c8365b950fb9d037"
+      },
+      "hash_map": {
+        "import": "std/hash_map.nex",
+        "module": "std::hash_map",
+        "resource": "lib/hash_map.nex",
+        "introduced_toolchain": "0.273.0",
+        "types": [
+          "Map<K,V>",
+          "Entry<K,V>",
+          "Item<K,V>",
+          "Node<K,V>"
+        ],
+        "functions": [
+          "empty",
+          "put",
+          "remove",
+          "get",
+          "has",
+          "size",
+          "is_empty",
+          "entries",
+          "keys",
+          "values",
+          "height",
+          "validate"
+        ],
+        "representation": "persistent four-bit radix trie over all64 signed-i64 hash bits; full-hash collision buckets",
+        "ordering": "ascending low-nibble-first hash paths; insertion order within equal-hash buckets; not global insertion order",
+        "callbacks": "pure hash fn(K)->i64 and equivalence fn(K,K)->bool; equivalent keys require equal stable hashes",
+        "replacement": "retain the first equivalent key representative; replace its value",
+        "lookup": "result<V>; E_NOT_FOUND",
+        "maximum_trie_height": 17,
+        "complexity": "valid API-produced tries: get/has/put/remove O(d+c), d<=17, c=full-hash bucket size; size/is_empty O(1); entries/keys/values/height O(n); validate O(n+sum(c^2)); excludes callbacks/value construction and unreachable-version cleanup",
+        "update_allocation": "rebuild the changed path and at most one collision bucket; unchanged subtrees shared",
+        "validation": "checks representation, hash paths, cached counts and equal duplicates within buckets; does not prove callback laws",
+        "guide": "docs/hash-containers.md",
+        "example": "examples/hash-containers/nex.json",
+        "mutation": false,
+        "sha256": "06c4fd5757091ba7e0300e3a55342696e8abd26d1d1c4526cd31955fdebffbe8"
+      },
+      "hash_set": {
+        "import": "std/hash_set.nex",
+        "module": "std::hash_set",
+        "resource": "lib/hash_set.nex",
+        "introduced_toolchain": "0.273.0",
+        "types": [
+          "Set<T>"
+        ],
+        "functions": [
+          "empty",
+          "add",
+          "remove",
+          "has",
+          "items",
+          "size",
+          "is_empty",
+          "height",
+          "validate",
+          "union",
+          "intersection",
+          "difference"
+        ],
+        "representation": "persistent hash_map<T,bool>",
+        "callbacks": "pure stable hash and equivalence; equivalent values require equal hashes",
+        "ordering": "low-nibble-first hash trie traversal; insertion order within full-hash buckets",
+        "algebra": "left callbacks define equivalence; retain left representatives; normalize right for intersection/difference",
+        "complexity": "add/remove/has O(d+c), d<=17; size/is_empty O(1); items/height O(n); validate O(n+sum(c^2)); algebra inserts/looks up each input using the left callbacks, worst-case quadratic collisions; excludes callbacks and value cleanup",
+        "guide": "docs/hash-containers.md",
+        "example": "examples/hash-containers/nex.json",
+        "mutation": false,
+        "sha256": "f7b3955c5123fe6b859509a18a5f7991ad553ae5019326e5663b3a8fb21d97a5"
       }
     },
     "pending": [
-      "hash containers; efficient queue/deque/heap beyond list-backed modules",
+      "efficient queue/deque/heap beyond list-backed modules",
       "complete matching SDK/platform qualification"
     ],
     "source_language_changed": false,

@@ -152,29 +152,37 @@ class StandardLibrary(h.ToolchainCase):
         for module in cap['modules'].values():
             names=re.findall(r'\bpub\s+fn\s+(\w+)',(h.REPO/module['resource']).read_text())
             self.assertEqual(set(names),set(module['functions']));total+=len(names)
-        self.assertEqual(total,134);self.assertFalse(cap['source_language_changed'])
+        self.assertEqual(total,163);self.assertFalse(cap['source_language_changed'])
         self.assertTrue(cap['modules']['list']['linear_bulk_construction'])
         self.assertEqual(self.cli('guide','--kind','stdlib')['text'],(h.REPO/'docs/stdlib.md').read_text())
         self.assertFalse((self.root/'.nex').exists())
 
     def test_actual_SDK_subworkflow_and_strict_typescript_with_receipt_controls(self):
         proof=sdk.exercise(cli=self.cli,run=self.run_child,compiler=Path(h.NEX),resources=h.REPO,root=self.root,browser=True)
-        inventory={**proof['compiled_source_pins'],**{'examples/stdlib/'+name:digest for name,digest in proof['example_hashes'].items()}}
+        inventory={**proof['compiled_source_pins'],**{'examples/stdlib/'+name:digest for name,digest in proof['example_hashes'].items()},
+            **{'examples/hash-containers/'+name:digest for name,digest in proof['hash_containers']['example_hashes'].items()}}
         report={'compiler_sha256':proof['compiler_sha256'],'language':h.CURRENT_LANGUAGE,'version':proof['toolchain'],
             'resource_hashes':inventory,'evidence':{'standard_library':proof,'browser_build':True,
                 'scoped_discovery':{'descriptor_hash':proof['descriptor_hash']}}}
         sdk.validate(report)
         for key,value in [('compiler_sha256','0'*64),('compiled_source_pins',{}),('native',{}),
             ('example_hashes',{}),('lock_unchanged',False),('typescript',{'requested':True,'executed':False}),
-            ('descriptor_hash','0'*64),('complete_SDK_workflow_claimed',True)]:
+            ('descriptor_hash','0'*64),('complete_SDK_workflow_claimed',True),('hash_containers',{})]:
             bad=copy.deepcopy(report);bad['evidence']['standard_library'][key]=value
             with self.subTest(rejected=key),self.assertRaises(RuntimeError):sdk.validate(bad)
         bad=copy.deepcopy(report);del bad['evidence']['standard_library']
         with self.assertRaises(RuntimeError):sdk.validate(bad)
         bad=copy.deepcopy(report);bad['resource_hashes']['lib/text.nex']='0'*64
         with self.assertRaises(RuntimeError):sdk.validate(bad)
+        for field in ['native','typescript']:
+            bad=copy.deepcopy(report);bad['evidence']['standard_library']['hash_containers']['programs']['tasks.nex'][field]={}
+            with self.subTest(hash_container=field),self.assertRaises(RuntimeError):sdk.validate(bad)
+        bad=copy.deepcopy(report);bad['resource_hashes']['examples/hash-containers/tasks.nex']='0'*64
+        with self.assertRaises(RuntimeError):sdk.validate(bad)
         self.strict_ts(self.root/'standard-library-typescript')
-        print(json.dumps({'stdlib_SDK_subworkflow':proof,'strict_typescript':True,'receipt_rejection_controls':10,'complete_SDK_executed':False}))
+        self.strict_ts(self.root/'hash-containers-typescript-main')
+        self.strict_ts(self.root/'hash-containers-typescript-tasks')
+        print(json.dumps({'stdlib_SDK_subworkflow':proof,'strict_typescript':True,'receipt_rejection_controls':14,'complete_SDK_executed':False}))
 
     def test_independent_oracles_reference_native_profiles_and_typescript(self):
         program,count=corpus();self.source(program);self.cli('check')

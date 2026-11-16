@@ -1,0 +1,530 @@
+{
+  "schema": "nex.hash-containers-development/1",
+  "ok": true,
+  "toolchain": "0.273.0",
+  "compiler_fallback": "0.28",
+  "source_languages_exercised": [
+    "0.28",
+    "0.29",
+    "0.30"
+  ],
+  "source_version_changed": false,
+  "canonical_format_changed": false,
+  "public_task_ABIs_unchanged": [
+    7,
+    8
+  ],
+  "public_C_ABI": 1,
+  "qualification_local_date": "2026-11-17",
+  "timezone": "Europe/Moscow",
+  "base_commit": "4853e06db65308ff8a53c36911fe97291724b85a",
+  "compiler_sha256": "a99436851a62b4b5a65b27a61cd4d4f3312d0dee8c08024209c16d9b3e749bb0",
+  "compiler_build": "ea1f77858758e949670e7661143effaac79c3af01c5c3b300dcc1793c38d7ff3",
+  "descriptor_hash": "3973f7668e3dcf3d4706d568cca33e419b5339b07ce7a2b61d883d93dce4ccfb",
+  "source_files_sha256": {
+    "CMakeLists.txt": "b9a03604b0d8a1c109b8ad8e0324aaa042356ec2dd8a4d92b778b51c2a7707f0",
+    "PLAN.md": "540154c2fa60d477af3a598b7bfe8d7d9de6e1587263523b1c47b2970c9c56e0",
+    "README.md": "2811de8d4617a72c72ed5556aa22f4379205dd8a3addff2727397f78ef569aa9",
+    "README.ru.md": "ec7c45eea55c356a67db5bf270b8dad7f29225f2bae2c32395c1287a7f97b479",
+    "STATUS.md": "20f6bd2e392d589bd900dfb506fbbbea60662c6a18e791e9edcb4dec55930a6f",
+    "VERSION": "eb1f47d634afaeacb4724b9866f1b9988ce4835cf8fd0538efebccea9a1be1e6",
+    "cmake/Install.cmake": "dee85896351616ae5a3e7312d3b5ff01e6ddb6941296c090b400066c6c0a71e3",
+    "cmake/Tests.cmake": "885710c69009d9e0e3bbe87abd2b5e4985b5d7b32dad8b941c8e9aa23cd30e3e",
+    "cmake/test-tiers.json": "97270573927b68717a4a87ede94c609865f845dd33ee0453dbd510921cc3370c",
+    "docs/INDEX.md": "54a6aef1b2f8c46922bb71fbedfa9bd4c4324eb8af2c19497e369892866d0577",
+    "docs/STATUS.current.md": "7d9bc65955881193d09e081943a8142e2b6145ddad04a90a5fec74e13c12db91",
+    "docs/ci.md": "0cd531f5afb9365aa17d54a1960afb3cecefa6c77c8bf110f8223e0abd1a4e5d",
+    "docs/containers.md": "0c84e0e5797ad7db1871a623b4f47c014f6104b53ac4c11a42fa88d43f0972be",
+    "docs/evidence/core-ci-0.272.0-2026-11-17.json": "80b3e0f31fcb2ab6fb3c7810eec724447b308ebd4b6b5039f77c2772f22fbcac",
+    "docs/evidence/hash-container-workload-0.273.0-2026-11-17.json": "a07062729561d25fe778c7b3a2eab2ca1586af4ef8f46c3f46daaa23def485f9",
+    "docs/hash-containers.md": "b8b0784404144bf6bf7009cf093f2791ba43b050fe65473bbd9f9f50fa25b819",
+    "docs/implementation-1-6.md": "df3c61e22e79748911c8f99a86b58264800c5277971493282283265a841207ff",
+    "docs/language.md": "729c2721a7393239f19433b5cf0ab3db72638dbd480f1be5b7282e94cd648ecc",
+    "docs/migration-readiness.md": "5d4652d7be6cc0e4ce036281682b7e53066949034a74ef9d5c6c3dfc2d33df31",
+    "docs/stdlib.md": "e54b52a8d6a05d43607a3ad83a00258b2f348efe6919219ffb55bef5dad3f687",
+    "examples/hash-containers/README.md": "9695c68cfeaa0da498155d43373d2796b0d21542c30f9724a4be024eb297362e",
+    "examples/hash-containers/main.nex": "e3e6a6b49ee3b7a4f327b3960d423642518df6bbf376d628888b393f5155adb2",
+    "examples/hash-containers/nex.json": "677a6ca3cec3fb7acd2f2aa8468af981d3288a256eafb9c041079342cf3ca3fe",
+    "examples/hash-containers/nex.lock.json": "da95f5179198880028e31f7b7243c6d50bd309e588784560be8729f0d21fec99",
+    "examples/hash-containers/tasks.nex": "664819631051a2ffcb7458a42757d5c71c8d72d92330295808b949affa856370",
+    "lib/hash.nex": "94c5b141c74de838eaa3d48dfcfe3ea064ff7af41d6f0806c8365b950fb9d037",
+    "lib/hash_map.nex": "06c4fd5757091ba7e0300e3a55342696e8abd26d1d1c4526cd31955fdebffbe8",
+    "lib/hash_set.nex": "f7b3955c5123fe6b859509a18a5f7991ad553ae5019326e5663b3a8fb21d97a5",
+    "llm/language-pack.json": "895c0b1b320a72afd30c3ae41c90a6ce539d4b831d1c702d6ee1d7df4b135b2c",
+    "llms.txt": "c904b7f8dc1ee54f453c906818efb1efdf7740f1c646a2ae35cfc523a6f587ee",
+    "src/standard_library.cpp": "21e7e82db5283a4207947886c547e7d4cf32f1c2398c14fd67761a326915ec8b",
+    "tests/hash_containers.py": "2be60c1fcb40dfac8236082d6674a094290bdc77938e1f8aa7d84384e61a12aa",
+    "tests/hash_containers_cases.py": "254ae7c6dad8ca9f2511834f3dff733dff28755369e7fe8e22c90217716c79a7",
+    "tests/standard_library.py": "313c529862609f5e28b597a731410c82888ef712dd5c47722c8777fc9e16cee9",
+    "tools/sdk_stdlib.py": "ad87598c61cedae044d219b933acc3e38866bdd0c7f33cfa0f3c2181bc7c576d"
+  },
+  "build": {
+    "command": "cmake --build build -j 4",
+    "exit_code": 0,
+    "stdout_sha256": "4bfb42927996f32f0dbaec4d1d3a66f6371a5c780bee3bd12fc3999368bdbe21",
+    "stderr_sha256": "0703827a9767e53a1a15177e7611c716334d30552eff56667bd5f87838cb1c53"
+  },
+  "discovery": {
+    "exact_match": true,
+    "shared_fields": 71,
+    "compared_JSON_values": 4515,
+    "manifest_sha256": "895c0b1b320a72afd30c3ae41c90a6ce539d4b831d1c702d6ee1d7df4b135b2c",
+    "standard_library_public_functions": 163
+  },
+  "ctest": {
+    "core": {
+      "schema": "nex.ctest-verification/1",
+      "ok": true,
+      "ctest_exit_code": 0,
+      "selected_groups": [
+        "bytes_runtime_native",
+        "ctest_report_validation",
+        "diagnostic_catalogue",
+        "discovery",
+        "float_runtime_native",
+        "frontend_diagnostics_native",
+        "language_pack_contract",
+        "llm_cost_ledger",
+        "llm_local_collector",
+        "managed_reference_native_context",
+        "managed_references_frontend_reference",
+        "reference_tasks_development",
+        "task_frontend_native",
+        "test_tiers",
+        "typed_source_frontend_reference",
+        "value_owner_runtime",
+        "value_retirement_runtime"
+      ],
+      "required_fixture_groups": [],
+      "expected_groups": [
+        "bytes_runtime_native",
+        "ctest_report_validation",
+        "diagnostic_catalogue",
+        "discovery",
+        "float_runtime_native",
+        "frontend_diagnostics_native",
+        "language_pack_contract",
+        "llm_cost_ledger",
+        "llm_local_collector",
+        "managed_reference_native_context",
+        "managed_references_frontend_reference",
+        "reference_tasks_development",
+        "task_frontend_native",
+        "test_tiers",
+        "typed_source_frontend_reference",
+        "value_owner_runtime",
+        "value_retirement_runtime"
+      ],
+      "observed_groups": [
+        "llm_cost_ledger",
+        "llm_local_collector",
+        "ctest_report_validation",
+        "discovery",
+        "language_pack_contract",
+        "task_frontend_native",
+        "reference_tasks_development",
+        "frontend_diagnostics_native",
+        "value_owner_runtime",
+        "value_retirement_runtime",
+        "managed_references_frontend_reference",
+        "managed_reference_native_context",
+        "bytes_runtime_native",
+        "float_runtime_native",
+        "typed_source_frontend_reference",
+        "test_tiers",
+        "diagnostic_catalogue"
+      ],
+      "results": {
+        "passed": [
+          "llm_cost_ledger",
+          "llm_local_collector",
+          "ctest_report_validation",
+          "discovery",
+          "language_pack_contract",
+          "task_frontend_native",
+          "reference_tasks_development",
+          "frontend_diagnostics_native",
+          "value_owner_runtime",
+          "value_retirement_runtime",
+          "managed_references_frontend_reference",
+          "managed_reference_native_context",
+          "bytes_runtime_native",
+          "float_runtime_native",
+          "typed_source_frontend_reference",
+          "test_tiers",
+          "diagnostic_catalogue"
+        ],
+        "failed": [],
+        "skipped": []
+      },
+      "registry_sha256": "45df3264eb8e15ddc2074dfd116aebd8cee3c2622b9cd85b35270026e391a8ce",
+      "junit_sha256": "86de83a29cb5cb38cd012d7a7d1dbee7a89be3e804d1ab1788aebb202486a801"
+    },
+    "affected": {
+      "schema": "nex.ctest-verification/1",
+      "ok": true,
+      "ctest_exit_code": 0,
+      "selected_groups": [
+        "containers",
+        "docs_index",
+        "ordered_containers",
+        "persistent_ui",
+        "references030_cli",
+        "standard_library"
+      ],
+      "required_fixture_groups": [],
+      "expected_groups": [
+        "containers",
+        "docs_index",
+        "ordered_containers",
+        "persistent_ui",
+        "references030_cli",
+        "standard_library"
+      ],
+      "observed_groups": [
+        "persistent_ui",
+        "references030_cli",
+        "standard_library",
+        "containers",
+        "ordered_containers",
+        "docs_index"
+      ],
+      "results": {
+        "passed": [
+          "persistent_ui",
+          "references030_cli",
+          "standard_library",
+          "containers",
+          "ordered_containers",
+          "docs_index"
+        ],
+        "failed": [],
+        "skipped": []
+      },
+      "registry_sha256": "45df3264eb8e15ddc2074dfd116aebd8cee3c2622b9cd85b35270026e391a8ce",
+      "junit_sha256": "c6b19badafe4649d57525e9f2e0be8b07ff2a04438553bb43551fd963cb54760"
+    },
+    "distinct_groups": 23,
+    "direct_log_sha256": {
+      "core-v1/ctest.log": "4632bba6d0e1df0ff86f136d0dd8da05e83cb087e33243cde4562e753380386f",
+      "affected-v1.log": "79791e1705529846d69de735364f47b2590383ed6c3b06ebb64a4dca94fca9dd"
+    },
+    "full_source_regression": false
+  },
+  "new_hash_harness": {
+    "execution": "direct script command with an explicit fresh output; registered CTest group is reserved for the full source gate",
+    "command": [
+      "python3",
+      "-B",
+      "tests/hash_containers.py",
+      "build/nex",
+      "--output",
+      "build/hash-containers-v1/qualification-v1"
+    ],
+    "report": {
+      "schema": "nex.hash-containers/1",
+      "ok": true,
+      "compiler_sha256": "a99436851a62b4b5a65b27a61cd4d4f3312d0dee8c08024209c16d9b3e749bb0",
+      "harness_sha256": "2be60c1fcb40dfac8236082d6674a094290bdc77938e1f8aa7d84384e61a12aa",
+      "oracle_sha256": "254ae7c6dad8ca9f2511834f3dff733dff28755369e7fe8e22c90217716c79a7",
+      "programs": [
+        {
+          "name": "oracle028",
+          "revision": "0ba1dc3ae6d34a69ab11840a15daf64d813210c1a7603b581e6422f4eaf73046",
+          "source_sha256": "95cf60da2c2688b4291f89e4a061cd0ecc0fbcbef4d35d9de84bfbc340f7823f",
+          "reference": {
+            "ok": true,
+            "stdout": "hash-oracle-ok\n",
+            "steps": 16032602,
+            "value": null
+          },
+          "native": {
+            "debug": {
+              "stdout": "hash-oracle-ok\n",
+              "exit_code": 0
+            },
+            "release": {
+              "stdout": "hash-oracle-ok\n",
+              "exit_code": 0
+            }
+          },
+          "typescript": {
+            "strict": true,
+            "executed": true,
+            "map_schema": "nex.typescript-map/2",
+            "map_sha256": "aeca20e4abde9094a9cd71deabda675ea09d9eaa7c92e22dedffac563157f557",
+            "stdout": "hash-oracle-ok\n"
+          }
+        },
+        {
+          "name": "example030",
+          "revision": "d0b2491ce4f527aaf9e426f575a8de47e4512698a5a0de00e8e2a3b533ac7380",
+          "source_sha256": "e3e6a6b49ee3b7a4f327b3960d423642518df6bbf376d628888b393f5155adb2",
+          "reference": {
+            "ok": true,
+            "stdout": "hash-containers-ok\n",
+            "steps": 2115,
+            "value": null
+          },
+          "native": {
+            "release": {
+              "stdout": "hash-containers-ok\n",
+              "exit_code": 0
+            }
+          },
+          "typescript": {
+            "strict": true,
+            "executed": true,
+            "map_schema": "nex.typescript-map/2",
+            "map_sha256": "51ed023b88f455591e5a3f75aabcdcf6e5fdf1c599ae7777f028a280f201d5a4",
+            "stdout": "hash-containers-ok\n"
+          }
+        },
+        {
+          "name": "tasks030",
+          "revision": "48bb2a6752594f7b43fdb8d26884fd458bdc9ad99b2443ed1678345e12dd4580",
+          "source_sha256": "664819631051a2ffcb7458a42757d5c71c8d72d92330295808b949affa856370",
+          "reference": {
+            "ok": true,
+            "stdout": "42\n",
+            "steps": 4028,
+            "task_execution": {
+              "backend": "reference",
+              "configured": {
+                "steps": 80000000,
+                "timeout_ms": 5000,
+                "workers": 16
+              },
+              "cooperative_deadline": true,
+              "effective": {
+                "steps": 80000000,
+                "timeout_ms": 5000,
+                "workers": 16
+              },
+              "executor_workers": 1,
+              "identical_step_thresholds": false,
+              "step_model": "checked AST actions and atoms"
+            },
+            "value": null
+          },
+          "native": {
+            "debug": {
+              "stdout": "42\n",
+              "exit_code": 0
+            },
+            "release": {
+              "stdout": "42\n",
+              "exit_code": 0
+            }
+          },
+          "typescript": {
+            "strict": true,
+            "executed": true,
+            "map_schema": "nex.typescript-map/4",
+            "map_sha256": "e1c49cace22c02dc511d2860619f0ddeb214c8343002a5b125ce6cb522f96f36",
+            "stdout": "42\n"
+          }
+        }
+      ],
+      "rejections": [
+        {
+          "name": "hash-effect",
+          "code": "E_EFFECT",
+          "passed": true
+        },
+        {
+          "name": "equal-effect",
+          "code": "E_EFFECT",
+          "passed": true
+        },
+        {
+          "name": "hash-result",
+          "code": "E_TYPE",
+          "passed": true
+        },
+        {
+          "name": "equal-result",
+          "code": "E_TYPE",
+          "passed": true
+        },
+        {
+          "name": "private-helper",
+          "code": "E_VISIBILITY",
+          "passed": true
+        }
+      ],
+      "portable_SDK": false,
+      "compiled_pins": {
+        "hash": "94c5b141c74de838eaa3d48dfcfe3ea064ff7af41d6f0806c8365b950fb9d037",
+        "hash_map": "06c4fd5757091ba7e0300e3a55342696e8abd26d1d1c4526cd31955fdebffbe8",
+        "hash_set": "f7b3955c5123fe6b859509a18a5f7991ad553ae5019326e5663b3a8fb21d97a5"
+      },
+      "compiler_build": "ea1f77858758e949670e7661143effaac79c3af01c5c3b300dcc1793c38d7ff3",
+      "toolchain": "0.273.0",
+      "oracle_scope": {
+        "dict_trace_operations": 222,
+        "bulk_entries": 1024,
+        "full_hash_collision_bucket": 24,
+        "maximum_trie_height": 17,
+        "retained_versions": true,
+        "independent_hash_byte_oracle": true,
+        "malformed_representation_checks": 7
+      },
+      "retained029": true,
+      "reviewed_pin_unchanged": true
+    },
+    "report_sha256": "544e48827090a863ad8b47a82b0fae71561f34e1d05ccbd5ef3a3c8d626bfed1",
+    "registered_CTest_group": "hash_containers",
+    "new_group_run_through_CTest": false
+  },
+  "SDK_subworkflow": {
+    "source_CTest_group": "standard_library",
+    "strict_TypeScript_projects": [
+      "standard-library-typescript",
+      "hash-containers-typescript-main",
+      "hash-containers-typescript-tasks"
+    ],
+    "proof_rejection_controls": 14,
+    "source_pins": 16,
+    "actual_source_consumption": true,
+    "complete_SDK_qualification": false
+  },
+  "moved_normal_installation": {
+    "ok": true,
+    "commands": 20,
+    "normal_CMake_installation": true,
+    "moved": true,
+    "host_dependencies_remain": true,
+    "portable_SDK": false,
+    "proof": {
+      "schema": "nex.standard-library-consumption/1",
+      "ok": true,
+      "compiler_sha256": "a99436851a62b4b5a65b27a61cd4d4f3312d0dee8c08024209c16d9b3e749bb0",
+      "language": "0.28",
+      "toolchain": "0.273.0",
+      "compiler_build": "ea1f77858758e949670e7661143effaac79c3af01c5c3b300dcc1793c38d7ff3",
+      "descriptor_hash": "3973f7668e3dcf3d4706d568cca33e419b5339b07ce7a2b61d883d93dce4ccfb",
+      "compiled_source_pins": {
+        "lib/text.nex": "e5df668d9fd6bea6bf248eb26a79da892576753622e16382bb74292da1b55d64",
+        "lib/list.nex": "04be7257ced138fc83cb67cb9c220eac8ded09ccdfaa2a71861a02dda3beb63a",
+        "lib/math.nex": "6d073810efde8aabc2823db47f26f4493d431041bff87e25b16be8fadf23630e",
+        "lib/map.nex": "22f69d9a69081b5ccf9642266e74007245fe740c72161d9403d9a7540afaf4c1",
+        "lib/set.nex": "041f1df46cca9862478914154dde4496867998b63e40c9fee1acb725522d5bb9",
+        "lib/queue.nex": "375660dd44765cc99784f03fd7b9a74f82ad32d8f6cfef51cd5ee7f89789b0ed",
+        "lib/stack.nex": "93e068c4844698c0409fed925d0c6ad8ff021edb85f3f392ceb82eba2e225106",
+        "lib/deque.nex": "41ae77cbd0f722e34dcafba8786e8d7b052436ac296d07080e7a41ccb92d8da1",
+        "lib/priority_queue.nex": "9d12846107f282ea9b49d98341efd04ccb809dc16868dda5d05ba8d95dea67ca",
+        "lib/ordered_map.nex": "695126c45d32a5d1877e1d8882af70b9525efd1acf6796c8f4044cf0c83ec473",
+        "lib/ordered_set.nex": "85456b1f28c78f7596778c88cf48dcae31d5a931bfc8d1c3c42001004ce6ed3c",
+        "lib/java_int.nex": "b747c50707dd8a3da43dc181b75c411effb63728f01b4f2dc4b892944938e7f7",
+        "lib/java_long.nex": "9d782a03f2f6e89f49c41e18cc912d638a66a24764c5e055af40a205721d5b6f",
+        "lib/hash.nex": "94c5b141c74de838eaa3d48dfcfe3ea064ff7af41d6f0806c8365b950fb9d037",
+        "lib/hash_map.nex": "06c4fd5757091ba7e0300e3a55342696e8abd26d1d1c4526cd31955fdebffbe8",
+        "lib/hash_set.nex": "f7b3955c5123fe6b859509a18a5f7991ad553ae5019326e5663b3a8fb21d97a5"
+      },
+      "example_hashes": {
+        "main.nex": "be00535c40d218f97950e037f485cd2f750541d0cece5576a19f58a42dc226b1",
+        "nex.json": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30",
+        "nex.lock.json": "cda0ba2380a9697576e02872bce57c7b70fe76b332a501bf27857b97750addd3"
+      },
+      "revision": "f5dc5a9ee54a382947ae80bfa1996a6c0531d9c29c821ada453437d0cc686c86",
+      "reference_stdout": "1,1,2,3\nЯ + 🌍\n5\n6\n",
+      "native": {
+        "debug": "1,1,2,3\nЯ + 🌍\n5\n6\n",
+        "release": "1,1,2,3\nЯ + 🌍\n5\n6\n"
+      },
+      "typescript": {
+        "requested": true,
+        "executed": true,
+        "stdout": "1,1,2,3\nЯ + 🌍\n5\n6\n"
+      },
+      "hash_containers": {
+        "schema": "nex.hash-container-consumption/1",
+        "ok": true,
+        "source_language": "0.30",
+        "example_hashes": {
+          "README.md": "9695c68cfeaa0da498155d43373d2796b0d21542c30f9724a4be024eb297362e",
+          "main.nex": "e3e6a6b49ee3b7a4f327b3960d423642518df6bbf376d628888b393f5155adb2",
+          "nex.json": "677a6ca3cec3fb7acd2f2aa8468af981d3288a256eafb9c041079342cf3ca3fe",
+          "nex.lock.json": "da95f5179198880028e31f7b7243c6d50bd309e588784560be8729f0d21fec99",
+          "tasks.nex": "664819631051a2ffcb7458a42757d5c71c8d72d92330295808b949affa856370"
+        },
+        "programs": {
+          "main.nex": {
+            "revision": "d0b2491ce4f527aaf9e426f575a8de47e4512698a5a0de00e8e2a3b533ac7380",
+            "reference_stdout": "hash-containers-ok\n",
+            "native": {
+              "debug": "hash-containers-ok\n",
+              "release": "hash-containers-ok\n"
+            },
+            "typescript": {
+              "requested": true,
+              "executed": true,
+              "stdout": "hash-containers-ok\n"
+            }
+          },
+          "tasks.nex": {
+            "revision": "48bb2a6752594f7b43fdb8d26884fd458bdc9ad99b2443ed1678345e12dd4580",
+            "reference_stdout": "42\n",
+            "native": {
+              "debug": "42\n",
+              "release": "42\n"
+            },
+            "typescript": {
+              "requested": true,
+              "executed": true,
+              "stdout": "42\n"
+            }
+          }
+        },
+        "existing_lock_enforced": true,
+        "lock_unchanged": true
+      },
+      "existing_lock_enforced": true,
+      "lock_unchanged": true,
+      "complete_SDK_workflow_claimed": false
+    }
+  },
+  "workload": {
+    "receipt": "docs/evidence/hash-container-workload-0.273.0-2026-11-17.json",
+    "sha256": "a07062729561d25fe778c7b3a2eab2ca1586af4ef8f46c3f46daaa23def485f9",
+    "entries": 4096,
+    "samples_per_program": 5,
+    "median_seconds": {
+      "list": 4.602723792,
+      "hash": 0.10206375
+    },
+    "list_to_hash_median_ratio": 45.09655771025462,
+    "scope": "One native integer-key process workload on one Mac; not a cross-language, token-cost or global application speedup."
+  },
+  "original_observations": [
+    {
+      "file": "build/hash-containers-v1/eval-v1.stdout",
+      "sha256": "29af6a137b7cbf52f5c38dde50d182d4969611cbe29e844041c6a5f9605ff56b",
+      "result": "E_ASSERT",
+      "explanation": "Deletion originally retained a chain above a sole remaining leaf. Propagate leaf collapse through single-child ancestors; independent corpus and full17-node-path case now pass.",
+      "old_source_sha256": "d77dd71884b41d363f2895f5d8a1ac190e140f325856e19f793c9f3e2ca30ca1"
+    },
+    {
+      "file": "build/hash-containers-v1/corpus-eval-v1.stdout",
+      "sha256": "8647d72b394d8a0228300a27b82ada4edeb3f016868fe1611acc2e4cc0fee6e4",
+      "result": "E_GENERIC_INFER",
+      "explanation": "An intentionally empty malformed Node fixture did not specify its otherwise uninferable value type. Corrected the fixture with explicit Node<i64,i64>; no checker gate was removed."
+    },
+    {
+      "file": "build/hash-containers-v1/benchmark-measure.stderr",
+      "sha256": "5159313e1d7f83444c2b69b86e3008611fc76d5b60a8ed70184af1c728b760f2",
+      "result": "CPU metadata read denied by sandbox after initial trials; those unsaved samples are not qualified.",
+      "explanation": "Read the CPU model separately and persist each new measurement before metadata assembly. Repeat collection used the same binaries and verified stdout."
+    }
+  ],
+  "published_SDK_0_246_1_unchanged": true,
+  "whole_goal_complete": false,
+  "pending": [
+    "efficient queue/deque/heap structures",
+    "native persistent task-provider lifetimes and reference task debug/profile",
+    "full matching source/platform/portable SDK acceptance",
+    "remaining original PLAN"
+  ],
+  "scope": "Ordinary persistent hash source libraries and their matching focused backend/installation checks."
+}

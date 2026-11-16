@@ -1,10 +1,15 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.272.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.273.0"
 owner: repository
 ---
 
 # Language prerequisites for Java and Python migration
+
+Toolchain0.273 adds ordinary [persistent hash map/set](hash-containers.md)
+with explicit stable hash/equality callbacks. They are a typed collection
+foundation; Python dynamic protocols/insertion-ordered dicts and JDK collection
+compatibility still need their own contracts.
 
 Toolchain0.272 adds [persistent030 browser state](persistent-ui.md) across
 serialized source-task invocations. Native persistent application/provider

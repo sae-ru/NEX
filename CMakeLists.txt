@@ -81,6 +81,7 @@ list(APPEND NEX_COMPILER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/lib/text.nex"
   "${CMAKE_CURRENT_SOURCE_DIR}/lib/list.nex" "${CMAKE_CURRENT_SOURCE_DIR}/lib/math.nex"
   "${CMAKE_CURRENT_SOURCE_DIR}/lib/map.nex" "${CMAKE_CURRENT_SOURCE_DIR}/lib/set.nex"
   "${CMAKE_CURRENT_SOURCE_DIR}/lib/ordered_map.nex" "${CMAKE_CURRENT_SOURCE_DIR}/lib/ordered_set.nex"
+  "${CMAKE_CURRENT_SOURCE_DIR}/lib/hash.nex" "${CMAKE_CURRENT_SOURCE_DIR}/lib/hash_map.nex" "${CMAKE_CURRENT_SOURCE_DIR}/lib/hash_set.nex"
   "${CMAKE_CURRENT_SOURCE_DIR}/lib/java_int.nex" "${CMAKE_CURRENT_SOURCE_DIR}/lib/java_long.nex"
   "${CMAKE_CURRENT_SOURCE_DIR}/lib/queue.nex" "${CMAKE_CURRENT_SOURCE_DIR}/lib/stack.nex"
   "${CMAKE_CURRENT_SOURCE_DIR}/lib/deque.nex"
@@ -115,7 +116,11 @@ target_sources(nex_frontend PRIVATE src/cli_catalogue.cpp src/cli_help.cpp)
 target_sources(nex_frontend PRIVATE src/list_build.cpp src/text_build.cpp src/bytes_build.cpp)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
   lib/text.nex lib/list.nex lib/math.nex lib/map.nex lib/set.nex
-  lib/queue.nex lib/stack.nex lib/deque.nex lib/priority_queue.nex lib/ordered_map.nex lib/ordered_set.nex lib/java_int.nex lib/java_long.nex)
+  lib/queue.nex lib/stack.nex lib/deque.nex lib/priority_queue.nex lib/ordered_map.nex lib/ordered_set.nex lib/java_int.nex lib/java_long.nex
+  lib/hash.nex lib/hash_map.nex lib/hash_set.nex)
+file(SHA256 "${CMAKE_CURRENT_SOURCE_DIR}/lib/hash.nex" NEX_STDLIB_HASH_SHA256)
+file(SHA256 "${CMAKE_CURRENT_SOURCE_DIR}/lib/hash_map.nex" NEX_STDLIB_HASH_MAP_SHA256)
+file(SHA256 "${CMAKE_CURRENT_SOURCE_DIR}/lib/hash_set.nex" NEX_STDLIB_HASH_SET_SHA256)
 file(SHA256 "${CMAKE_CURRENT_SOURCE_DIR}/lib/text.nex" NEX_STDLIB_TEXT_SHA256)
 file(SHA256 "${CMAKE_CURRENT_SOURCE_DIR}/lib/list.nex" NEX_STDLIB_LIST_SHA256)
 file(SHA256 "${CMAKE_CURRENT_SOURCE_DIR}/lib/math.nex" NEX_STDLIB_MATH_SHA256)
@@ -130,7 +135,7 @@ file(SHA256 "${CMAKE_CURRENT_SOURCE_DIR}/lib/stack.nex" NEX_STDLIB_STACK_SHA256)
 file(SHA256 "${CMAKE_CURRENT_SOURCE_DIR}/lib/deque.nex" NEX_STDLIB_DEQUE_SHA256)
 file(SHA256 "${CMAKE_CURRENT_SOURCE_DIR}/lib/priority_queue.nex" NEX_STDLIB_PRIORITY_QUEUE_SHA256)
 set_source_files_properties(src/standard_library.cpp PROPERTIES COMPILE_DEFINITIONS
-  "NEX_STDLIB_TEXT_SHA256=\"${NEX_STDLIB_TEXT_SHA256}\";NEX_STDLIB_LIST_SHA256=\"${NEX_STDLIB_LIST_SHA256}\";NEX_STDLIB_MATH_SHA256=\"${NEX_STDLIB_MATH_SHA256}\";NEX_STDLIB_MAP_SHA256=\"${NEX_STDLIB_MAP_SHA256}\";NEX_STDLIB_SET_SHA256=\"${NEX_STDLIB_SET_SHA256}\";NEX_STDLIB_QUEUE_SHA256=\"${NEX_STDLIB_QUEUE_SHA256}\";NEX_STDLIB_STACK_SHA256=\"${NEX_STDLIB_STACK_SHA256}\";NEX_STDLIB_DEQUE_SHA256=\"${NEX_STDLIB_DEQUE_SHA256}\";NEX_STDLIB_PRIORITY_QUEUE_SHA256=\"${NEX_STDLIB_PRIORITY_QUEUE_SHA256}\";NEX_STDLIB_ORDERED_MAP_SHA256=\"${NEX_STDLIB_ORDERED_MAP_SHA256}\";NEX_STDLIB_ORDERED_SET_SHA256=\"${NEX_STDLIB_ORDERED_SET_SHA256}\";NEX_STDLIB_JAVA_INT_SHA256=\"${NEX_STDLIB_JAVA_INT_SHA256}\";NEX_STDLIB_JAVA_LONG_SHA256=\"${NEX_STDLIB_JAVA_LONG_SHA256}\"")
+  "NEX_STDLIB_HASH_SHA256=\"${NEX_STDLIB_HASH_SHA256}\";NEX_STDLIB_HASH_MAP_SHA256=\"${NEX_STDLIB_HASH_MAP_SHA256}\";NEX_STDLIB_HASH_SET_SHA256=\"${NEX_STDLIB_HASH_SET_SHA256}\";NEX_STDLIB_TEXT_SHA256=\"${NEX_STDLIB_TEXT_SHA256}\";NEX_STDLIB_LIST_SHA256=\"${NEX_STDLIB_LIST_SHA256}\";NEX_STDLIB_MATH_SHA256=\"${NEX_STDLIB_MATH_SHA256}\";NEX_STDLIB_MAP_SHA256=\"${NEX_STDLIB_MAP_SHA256}\";NEX_STDLIB_SET_SHA256=\"${NEX_STDLIB_SET_SHA256}\";NEX_STDLIB_QUEUE_SHA256=\"${NEX_STDLIB_QUEUE_SHA256}\";NEX_STDLIB_STACK_SHA256=\"${NEX_STDLIB_STACK_SHA256}\";NEX_STDLIB_DEQUE_SHA256=\"${NEX_STDLIB_DEQUE_SHA256}\";NEX_STDLIB_PRIORITY_QUEUE_SHA256=\"${NEX_STDLIB_PRIORITY_QUEUE_SHA256}\";NEX_STDLIB_ORDERED_MAP_SHA256=\"${NEX_STDLIB_ORDERED_MAP_SHA256}\";NEX_STDLIB_ORDERED_SET_SHA256=\"${NEX_STDLIB_ORDERED_SET_SHA256}\";NEX_STDLIB_JAVA_INT_SHA256=\"${NEX_STDLIB_JAVA_INT_SHA256}\";NEX_STDLIB_JAVA_LONG_SHA256=\"${NEX_STDLIB_JAVA_LONG_SHA256}\"")
 target_sources(nex_frontend PRIVATE src/editor.cpp src/task_frontend.cpp src/task_lifetime.cpp src/task_ir.cpp src/task_machine.cpp src/task_ast.cpp src/task_reference.cpp)
 target_sources(nex_frontend PRIVATE runtime/runtime.cpp)
 target_include_directories(nex_frontend PUBLIC include runtime)

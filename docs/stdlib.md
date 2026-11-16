@@ -82,11 +82,12 @@ no measured-throughput claim.
 | `sort_by(values,less)` | Stable mergesort; pure `less` must be a strict weak ordering. |
 | `sort<T:ordered>(values)` | Ascending i64/f64; use `sort_by` for records or other supported values. |
 
-Callbacks have no declared effects. These are sequential helpers and create no
+Map/filter/fold/any/all/find_index use inferred effect parameters; the caller
+declares the inferred effects. Sorting retains pure comparators. These are
+sequential helpers and create no
 worker threads, channels or implicit IO grants. Ordinary instantiated value,
 realm, capture and ownership checks still apply. Use the separate `parallel_map`
-operation only when its concurrency limits/semantics are intended. Effect
-polymorphism in named source-library signatures remains pending. The direct
+operation only when its concurrency limits/semantics are intended. The direct
 list constructor already infers callback effects, including task suspension.
 
 The constructor appends to one unpublished buffer, then publishes it immutable.
@@ -116,8 +117,14 @@ hash/ring/heap structures. See
 Toolchain 0.247 also provides [`std/ordered_map.nex` and
 `std/ordered_set.nex`](ordered-containers.md): persistent AVL trees with pure
 comparators, O(log(n+1)) lookup/update and O(n) ordered enumeration. Existing
-list-backed modules preserve their API and insertion order. Hash tables and
-efficient queue/deque/heap structures remain pending.
+list-backed modules preserve their API and insertion order.
+
+Toolchain0.273 adds [hash map/set](hash-containers.md) and stable byte/text/integer
+hash helpers as ordinary source modules. A persistent four-bit radix trie uses
+all64 hash bits, at most17 path nodes and explicit full-hash collision buckets.
+Updates preserve old snapshots; traversal has hash order. Compiled source pins,
+custom hash/equality, set algebra and source030 task composition retain their
+explicit contracts. Efficient queue/deque/heap structures remain pending.
 
 Toolchain 0.248 adds [`std/java_int.nex`](java-integers.md), an explicit nominal
 32-bit Java integer domain with wrapping arithmetic, bits/shifts, narrowing

@@ -1,0 +1,248 @@
+module std::hash_map;
+
+// Persistent four-bit radix trie over the complete signed-i64 hash domain.
+// Only the changed path is rebuilt. Full-hash collisions share one leaf bucket.
+pub struct Item<K, V> { hash: i64; key: K; value: V; }
+pub struct Node<K, V> {
+  items: list<Item<K, V>>;
+  slots: list<i64>;
+  children: list<Node<K, V>>;
+  count: i64;
+}
+pub struct Map<K, V> {
+  root: list<Node<K, V>>;
+  hash: fn(K) -> i64;
+  equal: fn(K, K) -> bool;
+}
+pub struct Entry<K, V> { key: K; value: V; }
+struct Frame<K, V> { node: Node<K, V>; next: i64; rest: list<Frame<K, V>>; }
+struct Cursor<K, V> { items: list<Item<K, V>>; index: i64; stack: list<Frame<K, V>>; }
+
+fn digit(value: i64) -> i64 {
+  var low: i64 = value % 16;
+  if low < 0 { low = low + 16; }
+  return low;
+}
+fn tail(value: i64) -> i64 {
+  var rest: i64 = value / 16;
+  if value % 16 < 0 { rest = rest - 1; }
+  return rest;
+}
+fn remaining(value: i64, depth: i64) -> i64 {
+  var result: i64 = value;
+  var index: i64 = 0;
+  while index < depth { result = tail(result); index = index + 1; }
+  return result;
+}
+fn position(slots: list<i64>, wanted: i64) -> i64 {
+  var index: i64 = 0;
+  while index < len(slots) && slots[index] < wanted { index = index + 1; }
+  return index;
+}
+fn branch<K, V>(slots: list<i64>, children: list<Node<K, V>>) -> Node<K, V> {
+  var count: i64 = 0;
+  var index: i64 = 0;
+  while index < len(children) { count = count + children[index].count; index = index + 1; }
+  return Node([], slots, children, count);
+}
+fn join<K, V>(left: Node<K, V>, first: i64, right: Node<K, V>, second: i64, depth: i64) -> Node<K, V> {
+  assert(depth < 16);
+  let a: i64 = digit(first);
+  let b: i64 = digit(second);
+  if a == b { return branch([a], [join(left, tail(first), right, tail(second), depth + 1)]); }
+  if a < b { return branch([a, b], [left, right]); }
+  return branch([b, a], [right, left]);
+}
+fn insert<K, V>(root: list<Node<K, V>>, item: Item<K, V>, rest: i64, depth: i64, equal: fn(K, K) -> bool) -> list<Node<K, V>> {
+  if len(root) == 0 { return [Node([item], [], [], 1)]; }
+  let node: Node<K, V> = root[0];
+  if len(node.items) != 0 {
+    if node.items[0].hash != item.hash {
+      return [join(node, remaining(node.items[0].hash, depth), Node([item], [], [], 1), rest, depth)];
+    }
+    var index: i64 = 0;
+    while index < len(node.items) {
+      if equal(node.items[index].key, item.key) {
+        // Retain the first representative of an equivalence class.
+        let replacement: Item<K, V> = Item(item.hash, node.items[index].key, item.value);
+        return [Node(set(node.items, index, replacement), [], [], node.count)];
+      }
+      index = index + 1;
+    }
+    let items: list<Item<K, V>> = push(node.items, item);
+    return [Node(items, [], [], len(items))];
+  }
+  let slot: i64 = digit(rest);
+  let index: i64 = position(node.slots, slot);
+  if index < len(node.slots) && node.slots[index] == slot {
+    let next: Node<K, V> = insert([node.children[index]], item, tail(rest), depth + 1, equal)[0];
+    return [branch(node.slots, set(node.children, index, next))];
+  }
+  let slots: list<i64> = list(len(node.slots) + 1, fn(at: i64) -> i64 {
+    if at < index { return node.slots[at]; }
+    if at == index { return slot; }
+    return node.slots[at - 1];
+  });
+  let children: list<Node<K, V>> = list(len(node.children) + 1, fn(at: i64) -> Node<K, V> {
+    if at < index { return node.children[at]; }
+    if at == index { return Node([item], [], [], 1); }
+    return node.children[at - 1];
+  });
+  return [branch(slots, children)];
+}
+fn erase<K, V>(root: list<Node<K, V>>, hash: i64, key: K, rest: i64, equal: fn(K, K) -> bool) -> list<Node<K, V>> {
+  if len(root) == 0 { return root; }
+  let node: Node<K, V> = root[0];
+  if len(node.items) != 0 {
+    if node.items[0].hash != hash { return root; }
+    let items: list<Item<K, V>> = list(node.items,
+      fn(item: Item<K, V>) -> bool { return !equal(item.key, key); },
+      fn(item: Item<K, V>) -> Item<K, V> { return item; });
+    if len(items) == 0 { return []; }
+    return [Node(items, [], [], len(items))];
+  }
+  let slot: i64 = digit(rest);
+  let index: i64 = position(node.slots, slot);
+  if index == len(node.slots) || node.slots[index] != slot { return root; }
+  let next: list<Node<K, V>> = erase([node.children[index]], hash, key, tail(rest), equal);
+  if len(next) != 0 {
+    if len(node.children) == 1 && len(next[0].items) != 0 { return next; }
+    return [branch(node.slots, set(node.children, index, next[0]))];
+  }
+  let slots: list<i64> = list(len(node.slots) - 1, fn(at: i64) -> i64 {
+    if at < index { return node.slots[at]; }
+    return node.slots[at + 1];
+  });
+  let children: list<Node<K, V>> = list(len(node.children) - 1, fn(at: i64) -> Node<K, V> {
+    if at < index { return node.children[at]; }
+    return node.children[at + 1];
+  });
+  if len(children) == 0 { return []; }
+  if len(children) == 1 && len(children[0].items) != 0 { return children; }
+  return [branch(slots, children)];
+}
+
+pub fn empty<K, V>(hash: fn(K) -> i64, equal: fn(K, K) -> bool) -> Map<K, V> { return Map([], hash, equal); }
+pub fn put<K, V>(map: Map<K, V>, key: K, value: V) -> Map<K, V> {
+  let hash: i64 = map.hash(key);
+  return Map(insert(map.root, Item(hash, key, value), hash, 0, map.equal), map.hash, map.equal);
+}
+pub fn remove<K, V>(map: Map<K, V>, key: K) -> Map<K, V> {
+  let hash: i64 = map.hash(key);
+  return Map(erase(map.root, hash, key, hash, map.equal), map.hash, map.equal);
+}
+pub fn get<K, V>(map: Map<K, V>, key: K) -> result<V> {
+  let hash: i64 = map.hash(key);
+  var rest: i64 = hash;
+  var root: list<Node<K, V>> = map.root;
+  while len(root) != 0 {
+    let node: Node<K, V> = root[0];
+    if len(node.items) != 0 {
+      if node.items[0].hash != hash { return err<V>("E_NOT_FOUND", "hash map key not found"); }
+      var index: i64 = 0;
+      while index < len(node.items) {
+        if map.equal(node.items[index].key, key) { return ok(node.items[index].value); }
+        index = index + 1;
+      }
+      return err<V>("E_NOT_FOUND", "hash map key not found");
+    }
+    let slot: i64 = digit(rest);
+    let index: i64 = position(node.slots, slot);
+    if index == len(node.slots) || node.slots[index] != slot { return err<V>("E_NOT_FOUND", "hash map key not found"); }
+    root = [node.children[index]];
+    rest = tail(rest);
+  }
+  return err<V>("E_NOT_FOUND", "hash map key not found");
+}
+pub fn has<K, V>(map: Map<K, V>, key: K) -> bool { return is_ok(get(map, key)); }
+pub fn size<K, V>(map: Map<K, V>) -> i64 { if len(map.root) == 0 { return 0; } return map.root[0].count; }
+pub fn is_empty<K, V>(map: Map<K, V>) -> bool { return size(map) == 0; }
+
+fn descend<K, V>(node: Node<K, V>, rest: list<Frame<K, V>>) -> Cursor<K, V> {
+  var current: Node<K, V> = node;
+  var stack: list<Frame<K, V>> = rest;
+  while len(current.children) != 0 {
+    stack = [Frame(current, 1, stack)];
+    current = current.children[0];
+  }
+  return Cursor(current.items, 0, stack);
+}
+fn start<K, V>(map: Map<K, V>) -> Cursor<K, V> {
+  if len(map.root) == 0 { return Cursor([], 0, []); }
+  return descend(map.root[0], []);
+}
+fn advance<K, V>(cursor: Cursor<K, V>) -> Cursor<K, V> {
+  if cursor.index + 1 < len(cursor.items) { return Cursor(cursor.items, cursor.index + 1, cursor.stack); }
+  var stack: list<Frame<K, V>> = cursor.stack;
+  while len(stack) != 0 {
+    let frame: Frame<K, V> = stack[0];
+    stack = frame.rest;
+    if frame.next < len(frame.node.children) {
+      return descend(frame.node.children[frame.next], [Frame(frame.node, frame.next + 1, stack)]);
+    }
+  }
+  return Cursor([], 0, []);
+}
+pub fn entries<K, V>(map: Map<K, V>) -> list<Entry<K, V>> {
+  return list(size(map), start(map),
+    fn(cursor: Cursor<K, V>) -> Cursor<K, V> { return advance(cursor); },
+    fn(cursor: Cursor<K, V>) -> Entry<K, V> { return Entry(cursor.items[cursor.index].key, cursor.items[cursor.index].value); });
+}
+pub fn keys<K, V>(map: Map<K, V>) -> list<K> {
+  return list(size(map), start(map),
+    fn(cursor: Cursor<K, V>) -> Cursor<K, V> { return advance(cursor); },
+    fn(cursor: Cursor<K, V>) -> K { return cursor.items[cursor.index].key; });
+}
+pub fn values<K, V>(map: Map<K, V>) -> list<V> {
+  return list(size(map), start(map),
+    fn(cursor: Cursor<K, V>) -> Cursor<K, V> { return advance(cursor); },
+    fn(cursor: Cursor<K, V>) -> V { return cursor.items[cursor.index].value; });
+}
+fn node_height<K, V>(node: Node<K, V>) -> i64 {
+  var maximum: i64 = 0;
+  var index: i64 = 0;
+  while index < len(node.children) {
+    let value: i64 = node_height(node.children[index]);
+    if value > maximum { maximum = value; }
+    index = index + 1;
+  }
+  return maximum + 1;
+}
+pub fn height<K, V>(map: Map<K, V>) -> i64 { if len(map.root) == 0 { return 0; } return node_height(map.root[0]); }
+
+fn valid_node<K, V>(node: Node<K, V>, path: list<i64>, hash: fn(K) -> i64, equal: fn(K, K) -> bool) -> bool {
+  if len(path) > 16 || node.count <= 0 { return false; }
+  if len(node.items) != 0 {
+    if len(node.children) != 0 || len(node.slots) != 0 || node.count != len(node.items) { return false; }
+    var index: i64 = 0;
+    while index < len(node.items) {
+      let item: Item<K, V> = node.items[index];
+      if item.hash != node.items[0].hash || hash(item.key) != item.hash { return false; }
+      var rest: i64 = item.hash;
+      var level: i64 = 0;
+      while level < len(path) { if digit(rest) != path[level] { return false; } rest = tail(rest); level = level + 1; }
+      var previous: i64 = 0;
+      while previous < index { if equal(node.items[previous].key, item.key) { return false; } previous = previous + 1; }
+      index = index + 1;
+    }
+    return true;
+  }
+  if len(path) == 16 || len(node.slots) == 0 || len(node.slots) > 16 || len(node.slots) != len(node.children) { return false; }
+  var index: i64 = 0;
+  var count: i64 = 0;
+  while index < len(node.slots) {
+    let slot: i64 = node.slots[index];
+    if slot < 0 || slot > 15 { return false; }
+    if index > 0 && node.slots[index - 1] >= slot { return false; }
+    if !valid_node(node.children[index], push(path, slot), hash, equal) { return false; }
+    if node.children[index].count > 9223372036854775807 - count { return false; }
+    count = count + node.children[index].count;
+    index = index + 1;
+  }
+  return count == node.count;
+}
+pub fn validate<K, V>(map: Map<K, V>) -> bool {
+  if len(map.root) > 1 { return false; }
+  if len(map.root) == 0 { return true; }
+  return valid_node(map.root[0], [], map.hash, map.equal);
+}

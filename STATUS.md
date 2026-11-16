@@ -1,3 +1,24 @@
+# Persistent hash containers — development0.273.0
+
+Ordinary checked `std/hash_map.nex`, `std/hash_set.nex` and `std/hash.nex` add
+persistent four-bit radix tries and stable bucket helpers. The complete signed
+hash domain has at most17 path nodes; full-hash collision buckets retain exact
+key equivalence. Updates share unchanged subtrees and preserve old snapshots.
+Enumeration follows hash order. Existing insertion-ordered and AVL APIs retain
+their contracts. See [the guide](docs/hash-containers.md) and
+[example](examples/hash-containers/README.md).
+
+These are source libraries, with compiled SHA256 pins and reviewed dependency
+locks. Syntax/source versions, canonical graph formats and task/C ABIs remain
+unchanged. [Focused qualification](docs/evidence/hash-containers-0.273.0-2026-11-17.json)
+records17 core plus six affected CTest groups, the direct222-operation oracle,
+1024-entry bulk case, reference/native Debug/Release/strict TypeScript agreement
+and source030 cell/task composition. A moved normal installation runs the actual
+SDK standard-library subworkflow, including the new hash examples. The local
+4096-entry workload retains its own measured scope. Full matching SDK/platform delivery, efficient queue/
+deque/heap structures and the remaining original PLAN are still required.
+Published portable SDK0.246.1 is immutable.
+
 # Persistent030 browser application state — development0.272.0
 
 Browser applications retain opaque030 State in one owned heap across serialized

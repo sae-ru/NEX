@@ -1,0 +1,23 @@
+module hash_inventory;
+import "std/hash.nex" as hash;
+import "std/hash_map.nex" as maps;
+import "std/hash_set.nex" as sets;
+
+fn main() -> unit !{io} {
+  let empty: maps::Map<str, i64> = maps::empty(hash::text, hash::equal<str>);
+  let before: maps::Map<str, i64> = maps::put(empty, "bolts", 12);
+  let after: maps::Map<str, i64> = maps::put(before, "bolts", 42);
+  assert(unwrap(maps::get(before, "bolts")) == 12);
+  assert(unwrap(maps::get(after, "bolts")) == 42);
+  assert(maps::validate(before) && maps::validate(after));
+  let tags: sets::Set<str> = sets::add(sets::add(sets::empty(hash::text, hash::equal<str>), "metal"), "metal");
+  assert(sets::size(tags) == 1 && sets::has(tags, "metal"));
+  assert(sets::validate(tags));
+  print("hash-containers-ok");
+}
+test fn retained_values() -> unit {
+  let original: maps::Map<i64, str> = maps::put(maps::empty(hash::integer, hash::equal<i64>), 0, "zero");
+  let changed: maps::Map<i64, str> = maps::put(original, -9223372036854775808, "minimum");
+  assert(maps::size(original) == 1 && maps::size(changed) == 2);
+  assert(maps::height(changed) == 17 && maps::validate(changed));
+}
