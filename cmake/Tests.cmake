@@ -497,13 +497,25 @@ endif()
 add_library(nex_foreign_test_module MODULE tests/foreign_module.c)
 target_include_directories(nex_foreign_test_module PRIVATE runtime)
 set_target_properties(nex_foreign_test_module PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON C_VISIBILITY_PRESET hidden)
-add_executable(nex_foreign_scope_probe tests/foreign_scope.cpp runtime/nex_foreign.cpp runtime/foreign_runtime.cpp runtime/runtime.cpp runtime/nex_ffi_loader.cpp runtime/nex_ffi.cpp runtime/nex_ffi_types.cpp runtime/nex_ffi_resources.cpp runtime/nex_external_resource.cpp runtime/nex_resource_region.cpp runtime/nex_resource_executor.cpp runtime/nex_files.cpp runtime/nex_json.cpp)
+set(NEX_SCOPED_FOREIGN_RUNTIME_SOURCES
+  runtime/nex_foreign.cpp runtime/foreign_runtime.cpp runtime/runtime.cpp
+  runtime/nex_ffi_loader.cpp runtime/nex_ffi.cpp runtime/nex_ffi_types.cpp
+  runtime/nex_ffi_resources.cpp runtime/nex_external_resource.cpp
+  runtime/nex_resource_region.cpp runtime/nex_resource_executor.cpp
+  runtime/nex_files.cpp runtime/nex_json.cpp)
+add_executable(nex_foreign_scope_probe tests/foreign_scope.cpp ${NEX_SCOPED_FOREIGN_RUNTIME_SOURCES})
 target_include_directories(nex_foreign_scope_probe PRIVATE runtime)
 target_compile_options(nex_foreign_scope_probe PRIVATE -Wall -Wextra -Wpedantic)
 target_link_libraries(nex_foreign_scope_probe PRIVATE Threads::Threads OpenSSL::Crypto ${CMAKE_DL_LIBS})
 add_dependencies(nex_foreign_scope_probe nex_foreign_test_module)
 add_test(NAME foreign_scope_native COMMAND nex_foreign_scope_probe $<TARGET_FILE:nex_foreign_test_module>)
 set_tests_properties(foreign_scope_native PROPERTIES TIMEOUT 120)
+# Compile the installed example in core CI as well as in the full SDK workflow.
+# A stale runtime owner constructor must fail before the lengthy installed gate.
+add_executable(nex_scoped_host_example examples/ffi/scoped_host.cpp ${NEX_SCOPED_FOREIGN_RUNTIME_SOURCES})
+target_include_directories(nex_scoped_host_example PRIVATE runtime)
+target_compile_options(nex_scoped_host_example PRIVATE -Wall -Wextra -Wpedantic)
+target_link_libraries(nex_scoped_host_example PRIVATE Threads::Threads OpenSSL::Crypto ${CMAKE_DL_LIBS})
 add_library(nex_ffi_test_module MODULE tests/ffi_module.c)
 add_library(nex_ffi_test_missing MODULE tests/ffi_module.c)
 add_library(nex_ffi_executable_module MODULE tests/ffi_executable_module.c)
@@ -1639,12 +1651,12 @@ if(WIN32)
   endforeach()
 endif()
 
-# Build only the existing compiler/probes needed by the fast CTest layer.
+# Build the compiler/probes and shipped C++ example needed by the fast layer.
 # This target does not execute tests or prepare browser/package dependencies.
 add_custom_target(nex_core_tests DEPENDS nex nex_frontend_diagnostics_probe
   nex_float_runtime_probe nex_bytes_runtime_probe nex_task_frontend_probe nex_typed_source_probe
   nex_managed_references_probe nex_managed_reference_native_probe nex_value_retirement_probe
-  nex_value_owner_probe nex_value_owner_module)
+  nex_value_owner_probe nex_value_owner_module nex_scoped_host_example)
 add_test(NAME test_tiers COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_tiers.py --build ${CMAKE_CURRENT_BINARY_DIR}
   --ctest ${CMAKE_CTEST_COMMAND} --cmake ${CMAKE_COMMAND})

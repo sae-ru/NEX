@@ -29,6 +29,14 @@ reference frontend/interpreter probe, including effect/ownership failures and
 preserved 0.28/0.29 revision identities. It runs without Node and is built by
 `nex_core_tests`, so hosted core CI executes the same new source semantics.
 Earlier 11/12-group receipts below retain their original scopes.
+The core build also compiles the shipped `examples/ffi/scoped_host.cpp` against
+the current runtime. This build guard catches example/header ownership drift
+before the full installed workflow; it adds no CTest group and does not execute
+the foreign module in core. The existing `foreign_scope_native` group and the
+installed SDK's `foreign-boundary` phase retain their execution checks. The
+[focused repair receipt](evidence/sdk-scoped-example-0.266.0-2026-11-16.json)
+records the real installed C11 module/C++20 example and NEX model agreement.
+
 Toolchain 0.251 also includes the application-context lifecycle probe, making
 the current core 14 groups. Native generated-code/executable agreement remains
 an additional compiler/platform check.

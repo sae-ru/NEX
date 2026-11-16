@@ -1,3 +1,21 @@
+# Installed scoped-host example repair — development0.266.0
+
+The [nightly Linux run](https://github.com/sae-ru/NEX/actions/runs/43859732440)
+passed363/363 source groups at0.262, then the source-free installed workflow
+failed to compile a stale C++ example. Its old `shared_ptr<Data>` constructor
+now uses the runtime's `Data::make` owner factory. The shipped example also
+compiles in the core build, without adding another CTest group.
+
+[Focused qualification](docs/evidence/sdk-scoped-example-0.266.0-2026-11-16.json)
+reproduces the old example failure with current installed headers, then runs
+the fixed installed C++20 host/C11 module and core-built host with absent NEX
+resources. Both agree with source030 reference/native Debug/Release output.
+The all-target/core builds and two affected CTest groups pass. Compiler bytes,
+source-language semantics and ABIs are unchanged. The complete updated Linux
+installed/portable SDK workflow remains pending; SDK0.246.1 stays immutable.
+The preceding [0.266 core CI](docs/evidence/core-ci-0.266.0-2026-11-16.json)
+passed Linux and macOS. Original language/migration prerequisites remain open.
+
 # Explicit Java long arithmetic — development0.266.0
 
 The ordinary source module `std/java_long.nex` adds a nominal signed64 domain:

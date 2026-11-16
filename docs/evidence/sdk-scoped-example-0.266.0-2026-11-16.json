@@ -1,0 +1,414 @@
+{
+  "schema": "nex.sdk-scoped-example-fix/1",
+  "toolchain": "0.266.0",
+  "base_commit": "6a90e9cdc6cc3d0bed297eacb55b80a1e9b96bb2",
+  "observed_at": "2026-11-16T15:50:55.642791+00:00",
+  "language_changed": false,
+  "runtime_changed": false,
+  "compiler_sha256": "d35f8c5be6fd67e6beba02fd95012b0ce9d8c3bf170c8fe93b19ae7ddb6e47ab",
+  "public_C_ABI": 1,
+  "task_ABI": 7,
+  "source_files_sha256": {
+    "examples/ffi/scoped_host.cpp": "d09cfe3033f332da4d0e4be1757480805230b253d077464627abb988c74120c9",
+    "cmake/Tests.cmake": "5c9ccff9724971aab108c4ec3e62d5a2cb7c790a67888da4b36fa7b7a260dbd2",
+    "docs/testing.md": "9f7867347d8bf1c21a6efd5cd09b76701da2b955a60aa91df3ba2c4218d2bd8b",
+    "docs/ci.md": "37ccb4d7420684f036d4beeb6e8c913a27a61bffd7244cbe8529c259411bb2cc",
+    "PLAN.md": "a5ef15ec958418d9dda15972f01292066d8f6bc29135f7e725c5383fa0fbef2b",
+    "STATUS.md": "a56431841a895fcb4fb3090dddba35d2157df7af7f94edc65fd28e329de74c76"
+  },
+  "nightly_failure": {
+    "run_id": 43859732440,
+    "url": "https://github.com/sae-ru/NEX/actions/runs/43859732440",
+    "source_commit": "e95b792f4fdf816f0becad346ff0e9f89452083c",
+    "toolchain": "0.262.0",
+    "workflow_conclusion": "failure",
+    "artifact_name": "linux-full-43859732440-1.zip",
+    "artifact_sha256": "1353056da485e14588febfdf7384639f94cbd51d10909187b5ba4161505b0a5a",
+    "artifact_file_count": 794,
+    "source_ctest": {
+      "ok": true,
+      "exit_code": 0,
+      "passed": 363,
+      "selected": 363,
+      "expected": 363,
+      "observed": 363,
+      "result_counts": {
+        "passed": 363,
+        "failed": 0,
+        "skipped": 0
+      },
+      "registry_sha256": "e4588128decbd139aa45d4934d3078eeff287b41325259e72ea605aa302b6143",
+      "junit_sha256": "4eebf7640b5e43fa3b092a4421a93ce9e5856c691617b6102a596b0c6373cd87",
+      "seconds": 10524.502
+    },
+    "installed_workflow": {
+      "ok": false,
+      "completed_phases": 20,
+      "failed_phase": "foreign-boundary",
+      "error": "RuntimeError: unexpected command result; inspect /evidence/workflow/logs/383.stderr",
+      "failed_command": {
+        "command": [
+          "/usr/lib/llvm-22/bin/clang++",
+          "-std=c++20",
+          "-pthread",
+          "-I/sdk/share/nex/runtime",
+          "-I/usr/include",
+          "/evidence/workflow/foreign-boundary/loaded/scoped_host.cpp",
+          "/sdk/share/nex/runtime/runtime.cpp",
+          "/sdk/share/nex/runtime/foreign_runtime.cpp",
+          "/sdk/share/nex/runtime/nex_foreign.cpp",
+          "/sdk/share/nex/runtime/nex_ffi_loader.cpp",
+          "/sdk/share/nex/runtime/nex_ffi.cpp",
+          "/sdk/share/nex/runtime/nex_ffi_types.cpp",
+          "/sdk/share/nex/runtime/nex_ffi_resources.cpp",
+          "/sdk/share/nex/runtime/nex_external_resource.cpp",
+          "/sdk/share/nex/runtime/nex_resource_region.cpp",
+          "/sdk/share/nex/runtime/nex_resource_executor.cpp",
+          "/sdk/share/nex/runtime/nex_files.cpp",
+          "/sdk/share/nex/runtime/nex_json.cpp",
+          "/usr/lib/x86_64-linux-gnu/libcrypto.so.3",
+          "-Xlinker",
+          "-rpath",
+          "-Xlinker",
+          "/usr/lib/x86_64-linux-gnu",
+          "-ldl",
+          "-o",
+          "/evidence/workflow/foreign-boundary/loaded/scoped-host"
+        ],
+        "cwd": "/evidence/workflow",
+        "stdout": "/evidence/workflow/logs/383.stdout",
+        "stderr": "/evidence/workflow/logs/383.stderr",
+        "status": "failed",
+        "exit_code": 1
+      },
+      "diagnostic": "scoped_host.cpp: no matching conversion from shared_ptr<nexrt::Data> to nexrt::Value; current constructor requires ValueOwner<Data>",
+      "stderr_sha256": "eb561cc3d4da3c4a8a3cfac17862912279c5b914c9eddf3fb47354a7f699edb0"
+    }
+  },
+  "before_current_headers": {
+    "old_example_from_toolchain": "0.266.0",
+    "current_headers_from_toolchain": "0.266.0",
+    "expected_compile_exit": 1,
+    "stderr_sha256": "795e1ac429029bfe67d36a3ce5fbb16d764cf8ad7489b53b13c2ac5a19e3b2c3",
+    "diagnostic_preserved": true
+  },
+  "repair": "Use Data::make(List) and compile the actual shipped example in the core build; reuse the existing scoped runtime source list.",
+  "all_target_build": {
+    "ok": true,
+    "log_sha256": "dddc994a22ae3ff57741813410fc4735e85acfc996a3984eb299df380d45a399",
+    "final_exit_code": 0,
+    "final_log_sha256": "c5af97deaa4b9197bb3b5951b6df70fa863b148e6aec5fe5fce993e4336a7027"
+  },
+  "core_build": {
+    "ok": true,
+    "log_sha256": "17d6669b95c239418bc1c5a45ce2640b2a29bdc237881e18ac8f97ed20d064fa",
+    "actual_example_target": "nex_scoped_host_example",
+    "CTest_group_added": false
+  },
+  "affected_ctest": {
+    "ok": true,
+    "groups": [
+      "foreign_scope_native",
+      "test_tiers"
+    ],
+    "junit_sha256": "fd370ef8229389878e44b11d62d2c301829e58aedb4f2da5d7edad3af9d614d1",
+    "log_sha256": "5b3ead8e2657fa6ec07bf5b9565bd5798f258b7e87f33cf8df752dadf615d8b2"
+  },
+  "normal_installation_reproduction": {
+    "schema": "nex.scoped-example-reproduction/1",
+    "ok": true,
+    "sdk": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0",
+    "commands": [
+      {
+        "argv": [
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/bin/nex",
+          "doctor",
+          "--json"
+        ],
+        "cwd": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example",
+        "NEX_RESOURCE_DIR": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex",
+        "exit_code": 0,
+        "seconds": 0.6755680000060238,
+        "stdout": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/logs/0.stdout",
+        "stdout_sha256": "f8f58dc33bc3b3ecdeaed73d3c3600f6caa4989b2371b506cb332b68424bb788",
+        "stderr": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/logs/0.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "argv": [
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/bin/nex",
+          "check",
+          "--json"
+        ],
+        "cwd": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/model",
+        "NEX_RESOURCE_DIR": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex",
+        "exit_code": 0,
+        "seconds": 0.04879212498781271,
+        "stdout": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/logs/1.stdout",
+        "stdout_sha256": "503834b8cbb8db0f4e5eec06aa114fb84a0d0b794d9ea97cb8f6f11d2b23b8bd",
+        "stderr": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/logs/1.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "argv": [
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/bin/nex",
+          "ffi",
+          "--symbol",
+          "ffi_example::contract",
+          "--json"
+        ],
+        "cwd": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/model",
+        "NEX_RESOURCE_DIR": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex",
+        "exit_code": 0,
+        "seconds": 0.04397629198501818,
+        "stdout": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/logs/2.stdout",
+        "stdout_sha256": "64e1bf8c88da9b372530d88b049151f7c9026b558309b2c259bfe40be97da660",
+        "stderr": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/logs/2.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "argv": [
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/bin/nex",
+          "eval",
+          "--json"
+        ],
+        "cwd": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/model",
+        "NEX_RESOURCE_DIR": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex",
+        "exit_code": 0,
+        "seconds": 0.04567270798725076,
+        "stdout": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/logs/3.stdout",
+        "stdout_sha256": "a86ef09a9a4c40ab670504ceabe2ba0e922236457f3bbfdc07814dcebc6ce522",
+        "stderr": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/logs/3.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "argv": [
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/bin/nex",
+          "run",
+          "--profile",
+          "debug",
+          "--json"
+        ],
+        "cwd": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/model",
+        "NEX_RESOURCE_DIR": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex",
+        "exit_code": 0,
+        "seconds": 4.161206707998645,
+        "stdout": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/logs/4.stdout",
+        "stdout_sha256": "10f77c8033fffc1c47a0cc1bc53887f746267d8e5064cb4487bd7c2275226716",
+        "stderr": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/logs/4.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "argv": [
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/bin/nex",
+          "run",
+          "--profile",
+          "release",
+          "--json"
+        ],
+        "cwd": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/model",
+        "NEX_RESOURCE_DIR": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex",
+        "exit_code": 0,
+        "seconds": 6.573759082995821,
+        "stdout": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/logs/5.stdout",
+        "stdout_sha256": "acd958e43e109be0c360478966e82672082977decfa8675287d93490e54aa293",
+        "stderr": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/logs/5.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "argv": [
+          "/opt/homebrew/Cellar/llvm@22/22.1.8/bin/clang++",
+          "-x",
+          "c",
+          "-std=c11",
+          "-shared",
+          "-fPIC",
+          "-fvisibility=hidden",
+          "-I/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex/runtime",
+          "-DNEX_EXAMPLE_SIGNATURE_SHA256=\"1a48eee64ea15740c2ea607c220cbe42f708ac7d7add69c65b26ab06d0c9df95\"",
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/producer.c",
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/module.c",
+          "-o",
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/bundle/module"
+        ],
+        "cwd": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example",
+        "NEX_RESOURCE_DIR": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex",
+        "exit_code": 0,
+        "seconds": 0.15407766701537184,
+        "stdout": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/logs/6.stdout",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/logs/6.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "argv": [
+          "/opt/homebrew/Cellar/llvm@22/22.1.8/bin/clang++",
+          "-std=c++20",
+          "-pthread",
+          "-I/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex/runtime",
+          "-I/opt/homebrew/Cellar/openssl@3/3.6.3/include",
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/scoped_host.cpp",
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex/runtime/runtime.cpp",
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex/runtime/foreign_runtime.cpp",
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex/runtime/nex_foreign.cpp",
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex/runtime/nex_ffi_loader.cpp",
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex/runtime/nex_ffi.cpp",
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex/runtime/nex_ffi_types.cpp",
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex/runtime/nex_ffi_resources.cpp",
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex/runtime/nex_external_resource.cpp",
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex/runtime/nex_resource_region.cpp",
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex/runtime/nex_resource_executor.cpp",
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex/runtime/nex_files.cpp",
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex/runtime/nex_json.cpp",
+          "/opt/homebrew/Cellar/openssl@3/3.6.3/lib/libcrypto.3.dylib",
+          "-Xlinker",
+          "-rpath",
+          "-Xlinker",
+          "/opt/homebrew/Cellar/openssl@3/3.6.3/lib",
+          "-o",
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/scoped-host"
+        ],
+        "cwd": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example",
+        "NEX_RESOURCE_DIR": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex",
+        "exit_code": 0,
+        "seconds": 12.900581958005205,
+        "stdout": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/logs/7.stdout",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/logs/7.stderr",
+        "stderr_sha256": "47be669d4f428a41a9bf7afea9a1cbec06663bec480198ea842558dd9fd8f8d8"
+      },
+      {
+        "argv": [
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/scoped-host",
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/host.json",
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/binding.json"
+        ],
+        "cwd": "/private/tmp",
+        "NEX_RESOURCE_DIR": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/absent-resources",
+        "exit_code": 0,
+        "seconds": 0.8661943330080248,
+        "stdout": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/logs/8.stdout",
+        "stdout_sha256": "81a4825194b3f492c085eba8722e3be358a215c989db21fef08bcbd54117a43d",
+        "stderr": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/logs/8.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "argv": [
+          "/Users/sae/projects/NEX/build/nex_scoped_host_example",
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/host.json",
+          "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/binding.json"
+        ],
+        "cwd": "/private/tmp",
+        "NEX_RESOURCE_DIR": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/absent-resources",
+        "exit_code": 0,
+        "seconds": 0.7689364160178229,
+        "stdout": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/logs/9.stdout",
+        "stdout_sha256": "81a4825194b3f492c085eba8722e3be358a215c989db21fef08bcbd54117a43d",
+        "stderr": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/scoped-example/logs/9.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "portable_SDK": false,
+    "complete_SDK_workflow": false,
+    "doctor": {
+      "cpu": "apple-m4",
+      "host": "arm64-apple-darwin27.2.0",
+      "language": "0.28",
+      "llvm": "22.1.8",
+      "native_archiver": "/opt/homebrew/Cellar/llvm@22/22.1.8/bin/llvm-ar",
+      "native_compiler": "/opt/homebrew/Cellar/llvm@22/22.1.8/bin/clang++",
+      "native_debug_packager": "/opt/homebrew/Cellar/llvm@22/22.1.8/bin/dsymutil",
+      "native_linker": "",
+      "native_openssl_crypto": "/opt/homebrew/Cellar/openssl@3/3.6.3/lib/libcrypto.3.dylib",
+      "native_openssl_include": "/opt/homebrew/Cellar/openssl@3/3.6.3/include",
+      "native_openssl_ssl": "/opt/homebrew/Cellar/openssl@3/3.6.3/lib/libssl.3.dylib",
+      "native_sqlite_include": "/opt/local/include",
+      "native_sqlite_library": "/opt/local/lib/libsqlite3.3.53.1.dylib",
+      "native_sysroot": "",
+      "native_windows_notices": "",
+      "native_windows_runtime": "",
+      "runtime": "/Users/sae/projects/NEX/build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0/share/nex/runtime/runtime.cpp",
+      "runtime_available": true,
+      "schema": "nex.doctor/1",
+      "sdk_manifest": "",
+      "verifier": "Z3",
+      "verifier_version": "5.3.1.0 ac9156f97cb44e56472e1c841f7a2beb1e976b24",
+      "version": "0.266.0",
+      "wasm_compiler": "/opt/homebrew/Cellar/llvm@22/22.1.8/bin/clang++",
+      "wasm_linker": "/Users/sae/projects/NEX/build/deps/lld-wasm-22.1.8-macos/wasm-ld"
+    },
+    "compiler_sha256": "d35f8c5be6fd67e6beba02fd95012b0ce9d8c3bf170c8fe93b19ae7ddb6e47ab",
+    "installed_source_sha256": {
+      "scoped_host.cpp": "d09cfe3033f332da4d0e4be1757480805230b253d077464627abb988c74120c9",
+      "main.nex": "9292d69480e657056a27cd3c7bc67a3bc9d44eb6640dbb4c13d5a0d6c20bfe44",
+      "producer.c": "4d53143d7f850628f0899c2a79bd4e0392b7299acf5648427a577063feb3c4ce",
+      "module.c": "457d3dd9f1c199155259bd6f3919bd2f06b4ca3f5bd3ac2a38ea03f7e5716f67",
+      "NOTICE": "173c58060c38c33a4353eb3acef9eea71842fe4aab6ddae559989c9879b87b8c"
+    },
+    "runtime_source_sha256": {
+      "runtime.cpp": "e59311f5c2a000bb533056750ef7f71c3c5f24fc261fd1b902fcba3aaa7f56d0",
+      "foreign_runtime.cpp": "a9138f9645363cefb937e45d317d0c983c9361be4850d818cbce6dcbf4a32f80",
+      "nex_foreign.cpp": "f6354a79a47b42d1a092bcd9aa0274ad4a3e3745e4a2c46dc65f9c46f622ffed",
+      "nex_ffi_loader.cpp": "9c3d911f77340d6404eca3205aec3c571fdd642ff933cfe0d8df05f98130d1d5",
+      "nex_ffi.cpp": "9428efd2c2498d1ca4e37af073be7293ca57eb20092b509d51e654f7ced843e7",
+      "nex_ffi_types.cpp": "fb9b98a08f9feaef98c8e62e7165338cd2c09990f07aab14d07a29b246027aa6",
+      "nex_ffi_resources.cpp": "a6ad310a67e4ae839b32bca7549169592f16d199bc0fb1189eacc73a83ee9a8f",
+      "nex_external_resource.cpp": "72bdf45f36bca279447b1f48fa4ad56878a925e970177ad0a47f4c0a110592a2",
+      "nex_resource_region.cpp": "32588dace81f19cf179d14df3d7f86be8bb21b772fd6262bf1ca572625943ba1",
+      "nex_resource_executor.cpp": "b8cde6d63d934896cf1c16a27061b7fc979e909482936659fd29cba9749f197c",
+      "nex_files.cpp": "c37f6492f5891db8c017e24d74dbc6e63a705ea629c3604273217fbdd63845d4",
+      "nex_json.cpp": "aca623fe9def268c96ce6506bda130e50b008d71275715e057d3bd07866ff823"
+    },
+    "source_language": "0.30",
+    "model_revision": "2c5680d7966f34c89349fe0d3500f00ce5f15ecc592fd396605f550951478888",
+    "expected_stdout": "{\"ok\":{\"case\":\"Ready\",\"fields\":{\"packet\":{\"data\":\"AP+AAQ==\",\"text\":\"\u042f\\u0000\ud83e\udde0\"}}}}\n",
+    "reference_debug_release_agreement": true,
+    "C11_module": true,
+    "CPP20_host": true,
+    "actual_shipped_example": true,
+    "copied_host_and_C_module_sources_deleted": true,
+    "installed_host_and_CMake_guard_agree": true,
+    "resource_directory_absent_at_launch": true,
+    "launched_from": "/private/tmp",
+    "host_dependencies_retained": true,
+    "host_sha256": "25e8dc5a7d5bc28e540ff62508bc8ad01b36c3148d5938792548e98858c3a818",
+    "CMake_guard_sha256": "2a407892e40db30c93bad6b49bd1d6692a0cfc2d6b171835479b8f4920edbcde",
+    "signature_sha256": "1a48eee64ea15740c2ea607c220cbe42f708ac7d7add69c65b26ab06d0c9df95",
+    "manifest_sha256": "d6d0adaf17afaf5e0808cc53f935f6386adb3b6c2baec35c78f710cc83534d34"
+  },
+  "scope": {
+    "full_updated_source_regression": false,
+    "full_updated_installed_workflow": false,
+    "portable_SDK": false,
+    "current_Linux_installed_recheck": false,
+    "host_dependencies_retained": true,
+    "public_SDK_0_246_1_unchanged": true,
+    "converters_implemented": false
+  },
+  "obsolete_normal_installation_cleanup": {
+    "removed": true,
+    "inventory_sha256": "381e7518115105bae623d20d255b6c10bd862a7f744fb388dfc1650e4bf1c627",
+    "directories": [
+      {
+        "path": "/Users/sae/projects/NEX/build/reference-http-v1/SDK moved \ud83e\udde0",
+        "compiler_sha256": "f4d3b892437b4e1959d7fecfe08ec8b9c280d70df259be7440e969a0973d9648",
+        "file_count": 2038,
+        "apparent_bytes": 56861182
+      },
+      {
+        "path": "/Users/sae/projects/NEX/build/references030-cli-v1/SDK moved \ud83e\udde0",
+        "compiler_sha256": "8fc385977fcdc3c2d67b9a41e6183e93c49e18aa835cc6205c6c5f6633d27b4c",
+        "file_count": 2044,
+        "apparent_bytes": 57069675
+      }
+    ],
+    "apparent_bytes_removed": 113930857,
+    "preserved": [
+      "build/sdk-scoped-host-fix-v1/SDK moved \ud83e\udde0",
+      "build/java-long-0.266-v1/SDK moved \ud83e\udde0",
+      "build/sdk-0.246.1-macos-v3",
+      ".nex",
+      "all parent evidence directories and logs"
+    ]
+  }
+}

@@ -29,10 +29,17 @@ the actual completed ARM64 installed SDK run. See the
 [retention receipt](evidence/ci-artifact-retention-0.246.1-2026-11-15.json) and
 [combined SDK evidence](evidence/sdk-current-0.246.1-2026-11-15.json).
 
-The compiler tests were not repeated for this CI-only report-copying change.
-The complete pipeline with the corrected export has not been rerun; its next
-manual/nightly execution remains separate from these focused checks. Linux
-installed acceptance does not qualify a portable Linux archive. Windows CI, hosted macOS full
+The compiler tests were not repeated for that CI-only report-copying change.
+The later [nightly at `e95b792f`](https://github.com/sae-ru/NEX/actions/runs/43859732440)
+retained its artifact successfully. All **363/363 Linux source groups** passed.
+Its source-free installed workflow passed20 phases, then failed while compiling
+the shipped scoped C++ host in `foreign-boundary`: the example still constructed
+`std::shared_ptr<Data>` after the runtime switched to `ValueOwner<Data>`.
+Toolchain0.266 source now uses `Data::make`. The actual fixed installed example
+and C11 module agree with reference/native Debug/Release NEX output; the example
+also compiles in the core build. This [focused repair](evidence/sdk-scoped-example-0.266.0-2026-11-16.json)
+does not rerun or qualify the complete source-free Linux/portable SDK workflow.
+Linux installed acceptance does not qualify a portable Linux archive. Windows CI, hosted macOS full
 CI and new physical GPU/NPU acceptance remain separate work. A green core job
 is development feedback; the matching [SDK release record](sdk.md) records
 source regression and portable archive acceptance separately. The Qwen experiment
@@ -44,6 +51,9 @@ ARM runner and reported capacity/internal-service errors. Its workflow conclusio
 is failure; the macOS source tests did not start. Local macOS source acceptance
 has its separate receipts. Changing source tests cannot remedy runner acquisition;
 later development runs retain their own observed conclusions.
+The subsequent [0.266 development run](evidence/core-ci-0.266.0-2026-11-16.json)
+passed both Linux and macOS at `6a90e9cd`. That result precedes the scoped-example
+repair; its own commit receives a separate core run.
 
 ## Dependencies and provenance
 
