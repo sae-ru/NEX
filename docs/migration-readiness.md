@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; explicit030 API development; toolchain 0.262.0"
+applies_to: "language 0.28; explicit030 API development; toolchain 0.263.0"
 owner: repository
 ---
 
@@ -92,13 +92,13 @@ version/history migration remain open; see [value exports](managed-reference-val
 |---|---|---|
 | Java `int`/`long`, casts, bits and shifts | Checked i64 and ordinary nominal values | Exact wrapping operations, narrow-width types/conversions and efficient native lowering |
 | Java `float`/`double` | Finite f64; zero normalization | Binary32, IEEE special values, signed zero, casts and specified rounding in an explicit domain |
-| Java object references and identity | Immutable values; owned opaque resources; private checked/reference/native/TypeScript cell candidate | Public types/effects/migration, nullability, entry/module/ABI integration and qualified collection/lifetime rules |
+| Java object references and identity | Immutable values, owned resources; versioned030 sequential cells and code-only native library contexts | Ordinary030 CLI/project publication, nullability/class layouts, HTTP/task integration and full SDK/platform qualification |
 | Java classes and interfaces | Records, enums, generics, coherent static traits | Constructors/class initialization, virtual/interface dispatch, subtyping and runtime type tests; generic erasure/boxing rules |
 | Exceptions | Nominal typed throw/catch, filters, finally, task propagation | Exception subtyping/identity, causes/suppression/stack data and source-specific abrupt-completion rules |
 | Java strings/arrays | Scalar-indexed strict UTF-8 strings; immutable lists/bytes | UTF-16 code-unit representation including lone surrogates; mutable aliased arrays and bounds/error mapping |
 | Java concurrency | Structured tasks/channels and explicit cancellation | Monitors, atomics, visibility/memory-model rules, interruption, thread-local state and compatible library behavior |
 | Python integers/numerics | Checked i64, finite f64 and explicit numeric helpers | Big integers, Python division/remainder/shifts, numeric coercion and boolean-as-integer rules |
-| Python objects and containers | Nominal immutable aggregates and callable snapshots | Dynamic values, identity, mutable list/dict/set aliasing, hashing/equality protocol and ordered dict behavior |
+| Python objects and containers | Nominal immutable aggregates, callable snapshots and sequential030 typed cell identity | Dynamic values, Python object identity/protocols, mutable list/dict/set aliasing, hashing/equality and ordered dict behavior |
 | Python calls/classes | Typed functions/closures and static traits | Attribute/method lookup, descriptors, multiple inheritance, keyword/default/variadic calls and runtime type operations |
 | Python control flow | Explicit loops, typed errors and structured tasks | Generators/iterators, context-manager exits, async generator/coroutine semantics and truth-value protocols |
 | Libraries and native boundaries | Explicit native FFI and provider boundaries | Defined JDK/Python library contracts and reviewed native adapters; no implicit JVM/CPython dependence |
@@ -119,6 +119,12 @@ history migration through C++ APIs, together with normal sequential backend
 entries and inherited reference-free029 task behavior. Ordinary030 CLI/project
 publication, nullable/class layouts, library/HTTP/task reference contexts and
 debugger/SDK/platform acceptance remain open; see [source030 development](references030.md).
+
+Toolchain0.263 adds sequential code-only [native reference libraries](reference-library-abi.md).
+One matching host/application runtime and enclosing context retain cell aliases,
+returned captures and typed error payloads across related calls. This closes a
+bounded native library lifetime step; HTTP/task contexts, public030 selection,
+class/nullability layouts and Python protocols remain open.
 
 ## Implementation order
 

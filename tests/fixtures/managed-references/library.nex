@@ -1,0 +1,29 @@
+module reference_library;
+pub struct Snapshot { left: cell<i64>; right: cell<i64>; label: str; }
+pub struct Fault { value: cell<i64>; }
+pub struct Node { next: list<cell<Node>>; }
+pub fn make(value: i64) -> cell<i64> !{state} { return cell_new(value); }
+pub fn alias(value: cell<i64>) -> cell<i64> { return value; }
+pub fn snapshot(value: cell<i64>) -> Snapshot { return Snapshot(value, value, "Я\u0000🧠"); }
+pub fn closure(value: cell<i64>) -> (fn() -> i64 !{state}) {
+  return fn() -> i64 !{state} { return cell_read(value); };
+}
+pub fn cycle() -> cell<Node> !{state} {
+  let value: cell<Node> = cell_new(Node([]));
+  cell_write(value, Node([value]));
+  return value;
+}
+pub fn raise_value(value: cell<i64>) -> i64 !{throw} { throw(Fault(value)); }
+pub fn read(value: cell<i64>) -> i64 !{state} { return cell_read(value); }
+pub fn write(value: cell<i64>, next: i64) -> unit !{state} { cell_write(value, next); }
+pub fn invoke(value: fn() -> i64 !{state}) -> i64 !{state} { return value(); }
+pub fn fault_value(value: Fault) -> i64 !{state} { return cell_read(value.value); }
+pub fn collect() -> unit !{state} { cell_collect(); }
+pub fn overflow(value: cell<i64>) -> i64 !{state} { return cell_read(value) + 9223372036854775807; }
+pub fn scenario() -> i64 !{state,throw} {
+  let value: cell<i64> = make(41);
+  try { raise_value(value); }
+  catch (fault: Fault) { write(fault.value, 42); }
+  return read(value);
+}
+fn main() -> unit {}

@@ -65,6 +65,11 @@ For native library hosts, discover `native_entry_abi` and read the matching buil
 hidden source-error output. A context `native_symbol` alone is not a call
 prototype. Match the runtime cohort and ownership scope; task continuations
 require their executor. See the indexed native entry ABI guide.
+For explicit030 C++ development reference libraries, obey the optional
+`reference_context` contract: code-only images, one matching runtime and one
+enclosing scope spanning all related calls/handles. Retire that scope after a
+fatal trap and keep code images loaded until captures and cleanup retire.
+This does not publish030 CLI support or a stable public foreign ABI.
 
 ## Work from a checked project
 

@@ -1,5 +1,9 @@
 # NEX language specification 0.28
 
+Toolchain0.263 develops code-only [native reference libraries](reference-library-abi.md)
+sharing one030 application/host context. Syntax, canonical identities, ordinary
+028/029 selection, task ABI7 and public C ABI1 remain unchanged.
+
 Toolchain0.262 develops [versioned030 reference graphs](references030.md) through
 explicit C++ source/archive/backend APIs. Ordinary CLI versions/defaults remain
 028/029; the030 grammar and history migration have separate development scope.

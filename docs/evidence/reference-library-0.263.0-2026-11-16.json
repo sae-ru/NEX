@@ -1,0 +1,3464 @@
+{
+  "schema": "nex.reference-library-evidence/1",
+  "toolchain": "0.263.0",
+  "development_language": "0.30",
+  "ordinary030_CLI": false,
+  "public_languages": [
+    "0.28",
+    "0.29"
+  ],
+  "base_commit": "e95b792f4fdf816f0becad346ff0e9f89452083c",
+  "source_files_sha256": {
+    "PLAN.md": "8b81beda927fcb0396034fc60e04c34c53364bdb380afed83be0dc811fadc9cd",
+    "README.md": "127f88dec1764603fbaa491c2f3f301772a3f3ceb6943e5060c051457d1081c1",
+    "README.ru.md": "f30d475241bf33111385f18396e008b6604fadcdca41589ad5a34bc1c9372be8",
+    "VERSION": "e32dacc27bced55ce964325a4cf000ba55c6681f775de881d161e0343e724cdc",
+    "cmake/Install.cmake": "e3a8242cbc7ecef43e182cedadad8a6ee4c92bdb918fc9246e6a2c4c9de2c000",
+    "cmake/Tests.cmake": "c41e07bb161dccb35d41a54d9743a0b74ef6a26280f78766e3e261936bce3866",
+    "cmake/test-tiers.json": "cec0daabc37953de113b7489c73ea57bec757083d489cd2ddb639abab67edab6",
+    "docs/INDEX.md": "539a0fd3c9d30a78a683806039209963c02f6327ef05eb7241f9eb3213b95d2a",
+    "docs/STATUS.current.md": "04d31acf6ce3b61046a5d5f41751dc8835301063f365a25bf25c0f20e4b551d0",
+    "docs/evidence/core-ci-0.262.0-2026-11-16.json": "d910bd9951d0fa61534419dcfd0d33245f17cb4eb51d01f28c709026cc37affa",
+    "docs/grammar.ebnf": "fdad835c6c7c04e8ca9da262a00d2ae44d0f397f1fdab59061123a71f3950cb0",
+    "docs/implementation-1-6.md": "a15dcb70d99a5dffdb2d4d999fe8c8f2d71555e119d7caf4712863544f81b666",
+    "docs/language.md": "789a8e178356dfc09ff6e2e6acf945b6e9a3df936a4c3037f552f615f9c2fbb7",
+    "docs/migration-readiness.md": "45346705248f350a5b15e83d316f57ed284c944d43414197f3e9ffb2cee28922",
+    "docs/native-entry-abi.md": "fb89297c37f7152eddebbd490e3bcc61bdb6de4c5bb5718398d580f307b58cf7",
+    "docs/reference-library-abi.md": "8cf57d0da6d2a3994754feb445ff2160729048a22020caf526b776d0ed0c2cec",
+    "docs/references030.ebnf": "01215852cda0ddc4ad1d3e7cf5add7c6e4dacece9bb5fd0c02a50154e7979685",
+    "docs/references030.md": "aec1796c3ebe6f398bfa1510d6e697381dc286db2a30c35affcee85b6a8cbe7b",
+    "llm/SYSTEM_PROMPT.md": "93e7c41f494ccae42ee22589915a033bd8607cd19856a3547bdd8155abfec286",
+    "llm/language-pack.json": "112c803cf0d911a11dadc715fa81a0059e82db3cd9ef035b778bc91cf7e32614",
+    "llm/native-entry-abi.schema.json": "eae35f5bea73527fb438a4f625e0e06429da47a70105b8da1c9072369da7a7ec",
+    "src/backend.cpp": "9bd2fd896b80ffcc34e1800f53e1579e17a00f781c914fb328dd034ca61b14f1",
+    "src/managed_references.cpp": "75cc18d64516465f0365737f34862bf447d200ae0ad9044bf8c08afe6db80b62",
+    "tests/fixtures/managed-references/library.nex": "2dedce3cf3574e357a0bff208f4689641cefd831ddb1aa7d4ffdd475f03f162c",
+    "tests/reference_library.py": "e2ff1d683868315e85dfc4c8c6e71e292f7bf7741b57809997dc85d9db1bc924",
+    "tests/reference_library_host.cpp": "f17a91873191e6e4bd617d25fa6bb3a58c74a1d194ad83f54dc5b83d681b39a9",
+    "tests/references030.cpp": "fc4ab7c3cd2ee67637c594fc95694645fda7c974eaa1b0bc4a596cab62db47ba"
+  },
+  "compiler_discovery": {
+    "ok": true,
+    "shared_fields": [
+      "browser_workers",
+      "bytes_construction",
+      "cli_interface",
+      "compute",
+      "device",
+      "diagnostic_catalogue",
+      "dns_provider",
+      "effect_parameters",
+      "features_scope",
+      "foreign_trap_reporting",
+      "generic_features",
+      "gpu_codegen",
+      "http_client_provider",
+      "http_response_streams",
+      "http_storage_transactions",
+      "language_pack_contract",
+      "list_construction",
+      "llm_cost",
+      "llm_entry",
+      "managed_references",
+      "model",
+      "native_application_lifetime",
+      "native_core",
+      "native_debug_image_binding",
+      "native_debug_pages",
+      "native_debug_session",
+      "native_entry_abi",
+      "native_runtime_search",
+      "native_tool_arguments",
+      "opencl_codegen",
+      "patch_entities",
+      "project_capture_layout",
+      "resource_executor",
+      "resource_regions",
+      "result_propagation",
+      "runtime_contracts",
+      "runtime_diagnostic_messages",
+      "scoped_discovery",
+      "source_concurrency",
+      "source_contracts",
+      "source_contracts_development",
+      "source_exception_prototype",
+      "source_exceptions",
+      "source_formatting",
+      "source_resources",
+      "standard_library",
+      "structured_tasks_runtime",
+      "task_debugging",
+      "task_execution_limits",
+      "task_external_completion",
+      "task_file_reads",
+      "task_file_streams",
+      "task_file_streams_host",
+      "task_file_streams_prototype",
+      "task_file_writes",
+      "task_file_writes_host",
+      "task_file_writes_prototype",
+      "task_foreign_prototype",
+      "task_network_transport",
+      "task_profile_collector",
+      "task_profiling",
+      "task_provider_debugging",
+      "task_provider_profiling",
+      "task_providers",
+      "task_shared_providers",
+      "task_value_retirement",
+      "tcp_provider",
+      "text_construction",
+      "wasm_features"
+    ],
+    "shared_field_count": 69,
+    "compared_JSON_values": 4198,
+    "errors": [],
+    "schema": "nex.language-pack-validation/1",
+    "compiler_sha256": "dc700982d81aec9d4ce07963fa49d32b6d27042567b972e67bb92a4030fc1711",
+    "manifest_sha256": "112c803cf0d911a11dadc715fa81a0059e82db3cd9ef035b778bc91cf7e32614",
+    "language": "0.28",
+    "toolchain": "0.263.0",
+    "compiler_build": "d8e9ab20b2cae3ef181e03a9379f490b66be794f4ccaca2d8d349147d888affb",
+    "descriptor_hash": "569a51a06fd3201a7605f69382ca58d5ab7e5feea0928bf1ce458fffd4fc3cce"
+  },
+  "ctest": {
+    "core": {
+      "sha256": "90205f7b7ed0477a8f848ab07598afdd6b20773c2142ebc535eea056e4df92ca",
+      "tests": 16,
+      "failures": 0,
+      "skipped": 0,
+      "cases": [
+        {
+          "name": "llm_cost_ledger",
+          "passed": true,
+          "time_seconds": 0.273528
+        },
+        {
+          "name": "llm_local_collector",
+          "passed": true,
+          "time_seconds": 0.160855
+        },
+        {
+          "name": "ctest_report_validation",
+          "passed": true,
+          "time_seconds": 0.228441
+        },
+        {
+          "name": "discovery",
+          "passed": true,
+          "time_seconds": 12.705
+        },
+        {
+          "name": "language_pack_contract",
+          "passed": true,
+          "time_seconds": 0.396993
+        },
+        {
+          "name": "task_frontend_native",
+          "passed": true,
+          "time_seconds": 0.589844
+        },
+        {
+          "name": "frontend_diagnostics_native",
+          "passed": true,
+          "time_seconds": 0.489601
+        },
+        {
+          "name": "value_owner_runtime",
+          "passed": true,
+          "time_seconds": 0.0669132
+        },
+        {
+          "name": "value_retirement_runtime",
+          "passed": true,
+          "time_seconds": 0.910148
+        },
+        {
+          "name": "managed_references_frontend_reference",
+          "passed": true,
+          "time_seconds": 0.622285
+        },
+        {
+          "name": "managed_reference_native_context",
+          "passed": true,
+          "time_seconds": 0.499602
+        },
+        {
+          "name": "bytes_runtime_native",
+          "passed": true,
+          "time_seconds": 0.00654133
+        },
+        {
+          "name": "float_runtime_native",
+          "passed": true,
+          "time_seconds": 0.012997
+        },
+        {
+          "name": "typed_source_frontend_reference",
+          "passed": true,
+          "time_seconds": 0.58663
+        },
+        {
+          "name": "test_tiers",
+          "passed": true,
+          "time_seconds": 0.154985
+        },
+        {
+          "name": "diagnostic_catalogue",
+          "passed": true,
+          "time_seconds": 10.8471
+        }
+      ]
+    },
+    "affected": {
+      "sha256": "1e58aebe0ef2ea6d121d247be177f714de1db9995debec431fdb1a916c912e4c",
+      "tests": 7,
+      "failures": 2,
+      "skipped": 0,
+      "cases": [
+        {
+          "name": "managed_reference_modules_frontend",
+          "passed": true,
+          "time_seconds": 0.785218
+        },
+        {
+          "name": "references030_versioned",
+          "passed": false,
+          "time_seconds": 0.950976
+        },
+        {
+          "name": "reference_library_context",
+          "passed": false,
+          "time_seconds": 2.50041
+        },
+        {
+          "name": "managed_references_native",
+          "passed": true,
+          "time_seconds": 112.562
+        },
+        {
+          "name": "managed_reference_modules_native",
+          "passed": true,
+          "time_seconds": 35.1125
+        },
+        {
+          "name": "native_entry_abi",
+          "passed": true,
+          "time_seconds": 19.5619
+        },
+        {
+          "name": "test_tiers",
+          "passed": true,
+          "time_seconds": 0.152896
+        }
+      ]
+    },
+    "context-final": {
+      "sha256": "d2a55a4f83c93d7a0b010f7ce5dcfc8b03627126e017759b38e249bf257ba126",
+      "tests": 1,
+      "failures": 0,
+      "skipped": 0,
+      "cases": [
+        {
+          "name": "reference_library_context",
+          "passed": true,
+          "time_seconds": 5.77895
+        }
+      ]
+    },
+    "versioned-final": {
+      "sha256": "cf16adacd48d03f7ccbd0cdc369d7093b25e77c4001bf158365807743c0db67c",
+      "tests": 1,
+      "failures": 0,
+      "skipped": 0,
+      "cases": [
+        {
+          "name": "references030_versioned",
+          "passed": true,
+          "time_seconds": 105.362
+        }
+      ]
+    },
+    "docs": {
+      "sha256": "c50349f7e258fcb7660fc8a8528136c723a828bc97cf46af7611effcd4ae34bb",
+      "tests": 1,
+      "failures": 0,
+      "skipped": 0,
+      "cases": [
+        {
+          "name": "docs_index",
+          "passed": true,
+          "time_seconds": 0.0906961
+        }
+      ]
+    }
+  },
+  "latest_unique_groups": 23,
+  "latest_all_passed": true,
+  "library_matrix": {
+    "schema": "nex.reference-library-acceptance/1",
+    "source_sha256": "2dedce3cf3574e357a0bff208f4689641cefd831ddb1aa7d4ffdd475f03f162c",
+    "host_sha256": "3efd5ae6f8465e42fa4d3b20d9c63fd06dafb438531390347dbfbee8fed59ebc",
+    "platform": "macOS-27.2.1-arm64-arm-64bit-Mach-O",
+    "profiles": [
+      {
+        "profile": "debug",
+        "library_abi": "4bbb2b481946a8297e703f0d24070fd1c5820f797731463ef9a5c5a8b9b9897f",
+        "archives": {
+          "a": {
+            "artifact_sha256": "4acb50cbadaac26e02040c803591f359f148e8b2fcf0a3dfbc4a4a74bd2292d4",
+            "key": "111a17df4c98bfcaa8ce70754b7098a1ed80100f0fd140fbbd794f5ea4d66545",
+            "native_entry_abi": {
+              "build_key": "111a17df4c98bfcaa8ce70754b7098a1ed80100f0fd140fbbd794f5ea4d66545",
+              "cleanup_after_scopes": "nex_runtime_finish",
+              "compiler_build": "d8e9ab20b2cae3ef181e03a9379f490b66be794f4ccaca2d8d349147d888affb",
+              "compiler_target": "arm64-apple-macosx27.0.0",
+              "data_layout": "e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-n32:64-S128-Fn32",
+              "entries": [
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "ptr (ptr)",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_5_alias",
+                  "parameters": [
+                    {
+                      "index": 0,
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_handle_valid_for_call",
+                      "role": "source_parameter",
+                      "source_name": "value",
+                      "source_type": "cell<i64>"
+                    }
+                  ],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "ptr",
+                    "ownership": "same_runtime_scope_managed_handle"
+                  },
+                  "source_effects": [],
+                  "source_function": "reference_library::alias",
+                  "source_function_hash": "00046ff940036f9380863d72dcab3b9dfe00585593d9a5c1ad4bac11d3ce36ae",
+                  "source_result": "cell<i64>",
+                  "variadic": false
+                },
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "ptr (ptr)",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_7_closure",
+                  "parameters": [
+                    {
+                      "index": 0,
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_handle_valid_for_call",
+                      "role": "source_parameter",
+                      "source_name": "value",
+                      "source_type": "cell<i64>"
+                    }
+                  ],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "ptr",
+                    "ownership": "same_runtime_scope_managed_handle"
+                  },
+                  "source_effects": [],
+                  "source_function": "reference_library::closure",
+                  "source_function_hash": "1613f0252f29c2efe2460252e9fb3870784c5557da7ecdeed3cac83ecd52739c",
+                  "source_result": "fn()->i64!{state}",
+                  "variadic": false
+                },
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "ptr ()",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_5_cycle",
+                  "parameters": [],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "ptr",
+                    "ownership": "same_runtime_scope_managed_handle"
+                  },
+                  "source_effects": [
+                    "state"
+                  ],
+                  "source_function": "reference_library::cycle",
+                  "source_function_hash": "1e1dd96e149040ef87c51757abdb0961965078494e2182934bb65e4d7112614e",
+                  "source_result": "cell<reference_library::Node>",
+                  "variadic": false
+                },
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "ptr (i64)",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_4_make",
+                  "parameters": [
+                    {
+                      "index": 0,
+                      "llvm_attributes": "",
+                      "llvm_type": "i64",
+                      "ownership": "value",
+                      "role": "source_parameter",
+                      "source_name": "value",
+                      "source_type": "i64"
+                    }
+                  ],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "ptr",
+                    "ownership": "same_runtime_scope_managed_handle"
+                  },
+                  "source_effects": [
+                    "state"
+                  ],
+                  "source_function": "reference_library::make",
+                  "source_function_hash": "752357f7b0f4d65048357d276d2afe512b2d1c25cfca8fdab04d815f80826552",
+                  "source_result": "cell<i64>",
+                  "variadic": false
+                },
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "i64 (ptr, ptr)",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_11_raise_value",
+                  "parameters": [
+                    {
+                      "index": 0,
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_handle_valid_for_call",
+                      "role": "source_parameter",
+                      "source_name": "value",
+                      "source_type": "cell<i64>"
+                    },
+                    {
+                      "index": 1,
+                      "initialize": "null_handle",
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "on_non_null": "nex_source_error_unhandled",
+                      "role": "source_error_out",
+                      "runtime_cpp_type": "nexrt::Handle **"
+                    }
+                  ],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "i64",
+                    "ownership": "value"
+                  },
+                  "source_effects": [
+                    "throw"
+                  ],
+                  "source_function": "reference_library::raise_value",
+                  "source_function_hash": "b14e3321469b3fc6bb021647720f18df4069dc62073e74aa4f4edebfa2d598ef",
+                  "source_result": "i64",
+                  "variadic": false
+                },
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "ptr (ptr)",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_8_snapshot",
+                  "parameters": [
+                    {
+                      "index": 0,
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_handle_valid_for_call",
+                      "role": "source_parameter",
+                      "source_name": "value",
+                      "source_type": "cell<i64>"
+                    }
+                  ],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "ptr",
+                    "ownership": "same_runtime_scope_managed_handle"
+                  },
+                  "source_effects": [],
+                  "source_function": "reference_library::snapshot",
+                  "source_function_hash": "2d68129eba7f7b6497286779eef5cbac71ddce5594efac179b89ff6d3ffdfd30",
+                  "source_result": "reference_library::Snapshot",
+                  "variadic": false
+                }
+              ],
+              "language": "0.30",
+              "library_abi": "4bbb2b481946a8297e703f0d24070fd1c5820f797731463ef9a5c5a8b9b9897f",
+              "llvm_sha256": "646c99823775077907b3f740d11d2d7c94aaa06cae5a84c8c8f5522b72ebfc09",
+              "reference_context": {
+                "code_images": "keep all images loaded until returned callables and captures retire",
+                "code_only": true,
+                "context_end": "handles retire; retained cell Values become inert",
+                "fatal_traps": "unwind and close the enclosing context before further calls",
+                "guide": "docs/reference-library-abi.md",
+                "native_host_scope": "one RequestScope spans related calls and their handles",
+                "runtime_owner": "one enclosing host or compiled application",
+                "runtime_unload": false,
+                "schema": "nex.native-reference-context/1",
+                "source_errors": "same-context owned packets; inspect before using the result",
+                "thread_affine": true
+              },
+              "runtime_header": "nex_host.h",
+              "schema": "nex.native-entry-abi/1",
+              "stable_public_abi": false,
+              "synchronous_call_scope": "nexrt::RequestScope",
+              "target": "arm64-apple-darwin27.2.0",
+              "task_calls_require_executor": true,
+              "toolchain": "0.263.0"
+            }
+          },
+          "b": {
+            "artifact_sha256": "3248f0029048e39d20da26b8334435eb461e07b87e6314126f1faf535345f450",
+            "key": "421f4128223f28790a23f81163e1aed3a3d8f48bc21d0f8faca27e575188d16e",
+            "native_entry_abi": {
+              "build_key": "421f4128223f28790a23f81163e1aed3a3d8f48bc21d0f8faca27e575188d16e",
+              "cleanup_after_scopes": "nex_runtime_finish",
+              "compiler_build": "d8e9ab20b2cae3ef181e03a9379f490b66be794f4ccaca2d8d349147d888affb",
+              "compiler_target": "arm64-apple-macosx27.0.0",
+              "data_layout": "e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-n32:64-S128-Fn32",
+              "entries": [
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "void ()",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_7_collect",
+                  "parameters": [],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "void",
+                    "ownership": "none"
+                  },
+                  "source_effects": [
+                    "state"
+                  ],
+                  "source_function": "reference_library::collect",
+                  "source_function_hash": "b7a6cba804f274cd39f375a325da09201059abeea8d64edb136fa4e47bd73dfd",
+                  "source_result": "unit",
+                  "variadic": false
+                },
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "i64 (ptr)",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_11_fault_value",
+                  "parameters": [
+                    {
+                      "index": 0,
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_handle_valid_for_call",
+                      "role": "source_parameter",
+                      "source_name": "value",
+                      "source_type": "reference_library::Fault"
+                    }
+                  ],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "i64",
+                    "ownership": "value"
+                  },
+                  "source_effects": [
+                    "state"
+                  ],
+                  "source_function": "reference_library::fault_value",
+                  "source_function_hash": "97abd7f27f99900f5144b40fc2125aa0d64064cc2f9c278249127c7a4787ea48",
+                  "source_result": "i64",
+                  "variadic": false
+                },
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "i64 (ptr)",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_6_invoke",
+                  "parameters": [
+                    {
+                      "index": 0,
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_handle_valid_for_call",
+                      "role": "source_parameter",
+                      "source_name": "value",
+                      "source_type": "fn()->i64!{state}"
+                    }
+                  ],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "i64",
+                    "ownership": "value"
+                  },
+                  "source_effects": [
+                    "state"
+                  ],
+                  "source_function": "reference_library::invoke",
+                  "source_function_hash": "5cc8bcdea63a98ba27ccd6d424adb74fe21da8aa66970ea572c7237fe0d4ba2b",
+                  "source_result": "i64",
+                  "variadic": false
+                },
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "i64 (ptr)",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_8_overflow",
+                  "parameters": [
+                    {
+                      "index": 0,
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_handle_valid_for_call",
+                      "role": "source_parameter",
+                      "source_name": "value",
+                      "source_type": "cell<i64>"
+                    }
+                  ],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "i64",
+                    "ownership": "value"
+                  },
+                  "source_effects": [
+                    "state"
+                  ],
+                  "source_function": "reference_library::overflow",
+                  "source_function_hash": "a0c754cecf862e6b3ac9aa8f3be6195c4398a67eda9064317385e05ddc29cc1b",
+                  "source_result": "i64",
+                  "variadic": false
+                },
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "i64 (ptr)",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_4_read",
+                  "parameters": [
+                    {
+                      "index": 0,
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_handle_valid_for_call",
+                      "role": "source_parameter",
+                      "source_name": "value",
+                      "source_type": "cell<i64>"
+                    }
+                  ],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "i64",
+                    "ownership": "value"
+                  },
+                  "source_effects": [
+                    "state"
+                  ],
+                  "source_function": "reference_library::read",
+                  "source_function_hash": "15221f13a2df78a411c0b849c3dd663d4527037ee6c5a3cc6ca89f2cad790751",
+                  "source_result": "i64",
+                  "variadic": false
+                },
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "void (ptr, i64)",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_5_write",
+                  "parameters": [
+                    {
+                      "index": 0,
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_handle_valid_for_call",
+                      "role": "source_parameter",
+                      "source_name": "value",
+                      "source_type": "cell<i64>"
+                    },
+                    {
+                      "index": 1,
+                      "llvm_attributes": "",
+                      "llvm_type": "i64",
+                      "ownership": "value",
+                      "role": "source_parameter",
+                      "source_name": "next",
+                      "source_type": "i64"
+                    }
+                  ],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "void",
+                    "ownership": "none"
+                  },
+                  "source_effects": [
+                    "state"
+                  ],
+                  "source_function": "reference_library::write",
+                  "source_function_hash": "654f0a659dfd8e12b5c84436ab849e3409b41d3e84f16acfcbb09cb930278e86",
+                  "source_result": "unit",
+                  "variadic": false
+                }
+              ],
+              "language": "0.30",
+              "library_abi": "4bbb2b481946a8297e703f0d24070fd1c5820f797731463ef9a5c5a8b9b9897f",
+              "llvm_sha256": "266581d8597006fecb7d0b6e253add407d9ec12be1e0bea9d9c15998f993a3f4",
+              "reference_context": {
+                "code_images": "keep all images loaded until returned callables and captures retire",
+                "code_only": true,
+                "context_end": "handles retire; retained cell Values become inert",
+                "fatal_traps": "unwind and close the enclosing context before further calls",
+                "guide": "docs/reference-library-abi.md",
+                "native_host_scope": "one RequestScope spans related calls and their handles",
+                "runtime_owner": "one enclosing host or compiled application",
+                "runtime_unload": false,
+                "schema": "nex.native-reference-context/1",
+                "source_errors": "same-context owned packets; inspect before using the result",
+                "thread_affine": true
+              },
+              "runtime_header": "nex_host.h",
+              "schema": "nex.native-entry-abi/1",
+              "stable_public_abi": false,
+              "synchronous_call_scope": "nexrt::RequestScope",
+              "target": "arm64-apple-darwin27.2.0",
+              "task_calls_require_executor": true,
+              "toolchain": "0.263.0"
+            }
+          }
+        },
+        "images": {
+          "a": "4313b99b50918427a1d243bb925efe9fba2aa863fc2aa67b90f694bf560f4928",
+          "b": "9781971c4ce0d7d943cc99ea66403879f718b3db21fb112871bea3c3202b5f7b"
+        },
+        "host": {
+          "ok": true,
+          "related_calls": 1346,
+          "cycles": 64,
+          "source_packets": 64,
+          "unrelated_context_rejected": true,
+          "ended_context_rejected": true,
+          "fatal_contexts": 3,
+          "live_delta": 0
+        },
+        "compiled_source_catch_exit": 42,
+        "embedded_runtime_rejected": true
+      },
+      {
+        "profile": "release",
+        "library_abi": "4a18ba508086ed2bb1aa8811686ba5bbdfa199f992b7315968bf4b2ff189b30e",
+        "archives": {
+          "a": {
+            "artifact_sha256": "094c0762a404acbebad4f7a1f5be529a12216a256457d2ae37c6d9003bac8127",
+            "key": "a16aff771b700ad01534d71331d27720ce4d10cd18fd0434ce9979b84e680dd6",
+            "native_entry_abi": {
+              "build_key": "a16aff771b700ad01534d71331d27720ce4d10cd18fd0434ce9979b84e680dd6",
+              "cleanup_after_scopes": "nex_runtime_finish",
+              "compiler_build": "d8e9ab20b2cae3ef181e03a9379f490b66be794f4ccaca2d8d349147d888affb",
+              "compiler_target": "arm64-apple-macosx27.0.0",
+              "data_layout": "e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-n32:64-S128-Fn32",
+              "entries": [
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "ptr (ptr)",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_5_alias",
+                  "parameters": [
+                    {
+                      "index": 0,
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_handle_valid_for_call",
+                      "role": "source_parameter",
+                      "source_name": "value",
+                      "source_type": "cell<i64>"
+                    }
+                  ],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "ptr",
+                    "ownership": "same_runtime_scope_managed_handle"
+                  },
+                  "source_effects": [],
+                  "source_function": "reference_library::alias",
+                  "source_function_hash": "00046ff940036f9380863d72dcab3b9dfe00585593d9a5c1ad4bac11d3ce36ae",
+                  "source_result": "cell<i64>",
+                  "variadic": false
+                },
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "ptr (ptr)",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_7_closure",
+                  "parameters": [
+                    {
+                      "index": 0,
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_handle_valid_for_call",
+                      "role": "source_parameter",
+                      "source_name": "value",
+                      "source_type": "cell<i64>"
+                    }
+                  ],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "ptr",
+                    "ownership": "same_runtime_scope_managed_handle"
+                  },
+                  "source_effects": [],
+                  "source_function": "reference_library::closure",
+                  "source_function_hash": "1613f0252f29c2efe2460252e9fb3870784c5557da7ecdeed3cac83ecd52739c",
+                  "source_result": "fn()->i64!{state}",
+                  "variadic": false
+                },
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "ptr ()",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_5_cycle",
+                  "parameters": [],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "ptr",
+                    "ownership": "same_runtime_scope_managed_handle"
+                  },
+                  "source_effects": [
+                    "state"
+                  ],
+                  "source_function": "reference_library::cycle",
+                  "source_function_hash": "1e1dd96e149040ef87c51757abdb0961965078494e2182934bb65e4d7112614e",
+                  "source_result": "cell<reference_library::Node>",
+                  "variadic": false
+                },
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "ptr (i64)",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_4_make",
+                  "parameters": [
+                    {
+                      "index": 0,
+                      "llvm_attributes": "",
+                      "llvm_type": "i64",
+                      "ownership": "value",
+                      "role": "source_parameter",
+                      "source_name": "value",
+                      "source_type": "i64"
+                    }
+                  ],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "ptr",
+                    "ownership": "same_runtime_scope_managed_handle"
+                  },
+                  "source_effects": [
+                    "state"
+                  ],
+                  "source_function": "reference_library::make",
+                  "source_function_hash": "752357f7b0f4d65048357d276d2afe512b2d1c25cfca8fdab04d815f80826552",
+                  "source_result": "cell<i64>",
+                  "variadic": false
+                },
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "i64 (ptr, ptr)",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_11_raise_value",
+                  "parameters": [
+                    {
+                      "index": 0,
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_handle_valid_for_call",
+                      "role": "source_parameter",
+                      "source_name": "value",
+                      "source_type": "cell<i64>"
+                    },
+                    {
+                      "index": 1,
+                      "initialize": "null_handle",
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "on_non_null": "nex_source_error_unhandled",
+                      "role": "source_error_out",
+                      "runtime_cpp_type": "nexrt::Handle **"
+                    }
+                  ],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "i64",
+                    "ownership": "value"
+                  },
+                  "source_effects": [
+                    "throw"
+                  ],
+                  "source_function": "reference_library::raise_value",
+                  "source_function_hash": "b14e3321469b3fc6bb021647720f18df4069dc62073e74aa4f4edebfa2d598ef",
+                  "source_result": "i64",
+                  "variadic": false
+                },
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "ptr (ptr)",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_8_snapshot",
+                  "parameters": [
+                    {
+                      "index": 0,
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_handle_valid_for_call",
+                      "role": "source_parameter",
+                      "source_name": "value",
+                      "source_type": "cell<i64>"
+                    }
+                  ],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "ptr",
+                    "ownership": "same_runtime_scope_managed_handle"
+                  },
+                  "source_effects": [],
+                  "source_function": "reference_library::snapshot",
+                  "source_function_hash": "2d68129eba7f7b6497286779eef5cbac71ddce5594efac179b89ff6d3ffdfd30",
+                  "source_result": "reference_library::Snapshot",
+                  "variadic": false
+                }
+              ],
+              "language": "0.30",
+              "library_abi": "4a18ba508086ed2bb1aa8811686ba5bbdfa199f992b7315968bf4b2ff189b30e",
+              "llvm_sha256": "ecb6fd2981447f496c7c2e9d1560dbea7be350a1ecfb281a5b8c0d3d74044377",
+              "reference_context": {
+                "code_images": "keep all images loaded until returned callables and captures retire",
+                "code_only": true,
+                "context_end": "handles retire; retained cell Values become inert",
+                "fatal_traps": "unwind and close the enclosing context before further calls",
+                "guide": "docs/reference-library-abi.md",
+                "native_host_scope": "one RequestScope spans related calls and their handles",
+                "runtime_owner": "one enclosing host or compiled application",
+                "runtime_unload": false,
+                "schema": "nex.native-reference-context/1",
+                "source_errors": "same-context owned packets; inspect before using the result",
+                "thread_affine": true
+              },
+              "runtime_header": "nex_host.h",
+              "schema": "nex.native-entry-abi/1",
+              "stable_public_abi": false,
+              "synchronous_call_scope": "nexrt::RequestScope",
+              "target": "arm64-apple-darwin27.2.0",
+              "task_calls_require_executor": true,
+              "toolchain": "0.263.0"
+            }
+          },
+          "b": {
+            "artifact_sha256": "f6bf704463f3574641d30eebc14a3fbdab24b9fbdfa25a7adf477b99365254de",
+            "key": "af26f485ffc837e0d7248e36bcadefc593ec50a71d46ef6fb6980a9cf8d89322",
+            "native_entry_abi": {
+              "build_key": "af26f485ffc837e0d7248e36bcadefc593ec50a71d46ef6fb6980a9cf8d89322",
+              "cleanup_after_scopes": "nex_runtime_finish",
+              "compiler_build": "d8e9ab20b2cae3ef181e03a9379f490b66be794f4ccaca2d8d349147d888affb",
+              "compiler_target": "arm64-apple-macosx27.0.0",
+              "data_layout": "e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-n32:64-S128-Fn32",
+              "entries": [
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "void ()",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_7_collect",
+                  "parameters": [],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "void",
+                    "ownership": "none"
+                  },
+                  "source_effects": [
+                    "state"
+                  ],
+                  "source_function": "reference_library::collect",
+                  "source_function_hash": "b7a6cba804f274cd39f375a325da09201059abeea8d64edb136fa4e47bd73dfd",
+                  "source_result": "unit",
+                  "variadic": false
+                },
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "i64 (ptr)",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_11_fault_value",
+                  "parameters": [
+                    {
+                      "index": 0,
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_handle_valid_for_call",
+                      "role": "source_parameter",
+                      "source_name": "value",
+                      "source_type": "reference_library::Fault"
+                    }
+                  ],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "i64",
+                    "ownership": "value"
+                  },
+                  "source_effects": [
+                    "state"
+                  ],
+                  "source_function": "reference_library::fault_value",
+                  "source_function_hash": "97abd7f27f99900f5144b40fc2125aa0d64064cc2f9c278249127c7a4787ea48",
+                  "source_result": "i64",
+                  "variadic": false
+                },
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "i64 (ptr)",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_6_invoke",
+                  "parameters": [
+                    {
+                      "index": 0,
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_handle_valid_for_call",
+                      "role": "source_parameter",
+                      "source_name": "value",
+                      "source_type": "fn()->i64!{state}"
+                    }
+                  ],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "i64",
+                    "ownership": "value"
+                  },
+                  "source_effects": [
+                    "state"
+                  ],
+                  "source_function": "reference_library::invoke",
+                  "source_function_hash": "5cc8bcdea63a98ba27ccd6d424adb74fe21da8aa66970ea572c7237fe0d4ba2b",
+                  "source_result": "i64",
+                  "variadic": false
+                },
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "i64 (ptr)",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_8_overflow",
+                  "parameters": [
+                    {
+                      "index": 0,
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_handle_valid_for_call",
+                      "role": "source_parameter",
+                      "source_name": "value",
+                      "source_type": "cell<i64>"
+                    }
+                  ],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "i64",
+                    "ownership": "value"
+                  },
+                  "source_effects": [
+                    "state"
+                  ],
+                  "source_function": "reference_library::overflow",
+                  "source_function_hash": "a0c754cecf862e6b3ac9aa8f3be6195c4398a67eda9064317385e05ddc29cc1b",
+                  "source_result": "i64",
+                  "variadic": false
+                },
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "i64 (ptr)",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_4_read",
+                  "parameters": [
+                    {
+                      "index": 0,
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_handle_valid_for_call",
+                      "role": "source_parameter",
+                      "source_name": "value",
+                      "source_type": "cell<i64>"
+                    }
+                  ],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "i64",
+                    "ownership": "value"
+                  },
+                  "source_effects": [
+                    "state"
+                  ],
+                  "source_function": "reference_library::read",
+                  "source_function_hash": "15221f13a2df78a411c0b849c3dd663d4527037ee6c5a3cc6ca89f2cad790751",
+                  "source_result": "i64",
+                  "variadic": false
+                },
+                {
+                  "calling_convention": 0,
+                  "defined": true,
+                  "direct_host_call": true,
+                  "llvm_function_attributes": "uwtable",
+                  "llvm_function_type": "void (ptr, i64)",
+                  "mode": "synchronous",
+                  "native_symbol": "nex_17_reference_library_5_write",
+                  "parameters": [
+                    {
+                      "index": 0,
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_handle_valid_for_call",
+                      "role": "source_parameter",
+                      "source_name": "value",
+                      "source_type": "cell<i64>"
+                    },
+                    {
+                      "index": 1,
+                      "llvm_attributes": "",
+                      "llvm_type": "i64",
+                      "ownership": "value",
+                      "role": "source_parameter",
+                      "source_name": "next",
+                      "source_type": "i64"
+                    }
+                  ],
+                  "return": {
+                    "llvm_attributes": "",
+                    "llvm_type": "void",
+                    "ownership": "none"
+                  },
+                  "source_effects": [
+                    "state"
+                  ],
+                  "source_function": "reference_library::write",
+                  "source_function_hash": "654f0a659dfd8e12b5c84436ab849e3409b41d3e84f16acfcbb09cb930278e86",
+                  "source_result": "unit",
+                  "variadic": false
+                }
+              ],
+              "language": "0.30",
+              "library_abi": "4a18ba508086ed2bb1aa8811686ba5bbdfa199f992b7315968bf4b2ff189b30e",
+              "llvm_sha256": "34d2a09c735e7076ee44f14994dc6c0223bb97591a74a57035d136b22b117273",
+              "reference_context": {
+                "code_images": "keep all images loaded until returned callables and captures retire",
+                "code_only": true,
+                "context_end": "handles retire; retained cell Values become inert",
+                "fatal_traps": "unwind and close the enclosing context before further calls",
+                "guide": "docs/reference-library-abi.md",
+                "native_host_scope": "one RequestScope spans related calls and their handles",
+                "runtime_owner": "one enclosing host or compiled application",
+                "runtime_unload": false,
+                "schema": "nex.native-reference-context/1",
+                "source_errors": "same-context owned packets; inspect before using the result",
+                "thread_affine": true
+              },
+              "runtime_header": "nex_host.h",
+              "schema": "nex.native-entry-abi/1",
+              "stable_public_abi": false,
+              "synchronous_call_scope": "nexrt::RequestScope",
+              "target": "arm64-apple-darwin27.2.0",
+              "task_calls_require_executor": true,
+              "toolchain": "0.263.0"
+            }
+          }
+        },
+        "images": {
+          "a": "803768af55625a55fff75ad32187b12acffd155f5ea2376fd5e7b85fd2839799",
+          "b": "333a25fef3e5bc201a1e263c4bff35479f3831bf89c39ae84a6b700d6dc697a1"
+        },
+        "host": {
+          "ok": true,
+          "related_calls": 1346,
+          "cycles": 64,
+          "source_packets": 64,
+          "unrelated_context_rejected": true,
+          "ended_context_rejected": true,
+          "fatal_contexts": 3,
+          "live_delta": 0
+        },
+        "compiled_source_catch_exit": 42,
+        "embedded_runtime_rejected": true
+      }
+    ]
+  },
+  "versioned_matrix": {
+    "schema": "nex.references030-acceptance/1",
+    "ok": true,
+    "language": "0.30",
+    "ordinary_CLI": false,
+    "probe_sha256": "fbd52fdb22f6ed1a7cdf4933413e6cb32337347e3cf4caa69beede8932bf070d",
+    "compiler_sha256": "dc700982d81aec9d4ce07963fa49d32b6d27042567b972e67bb92a4030fc1711",
+    "native_host_sha256": "27e48e2e8e64c71e858c238db4e2dea9a198ae4377feb48ebbb1e26db756380f",
+    "cases": [
+      {
+        "name": "core-1",
+        "revision": "33a70fa48ae66db836a9d5dba67eaa751686e91db5f9d6cb147c751fab6d9c69",
+        "source_sha256": "c4c99e4c6e55d8362e33b133a1be4317834dd5b5cc9c3e1ada7b722f06aa2e36",
+        "typescript_sha256": "899d095cb11ca48ca5a6b0171092c295820108f699d5326a23e7ceecc8056f3f",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "core-2",
+        "revision": "f61381029e7b92075a983dc814ad21b2852a276b40920bb01b80400f21cba41c",
+        "source_sha256": "cb263c0e5dcf41d130cb79492ee38e1c114c46a5c864ffff7a38fc5acb4cee2e",
+        "typescript_sha256": "7757380fc5330194a91fb8809cfcdf960cb538e9299e38d9199f51099ad020fa",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "core-3",
+        "revision": "7603d7fc4eabe3ac949663e0b74f45ef38d11ada54e852b6aeb18cf0026f4e3e",
+        "source_sha256": "b9e20cca10c0f20cb6911d41a621cdfb6254285165a8f2403534c2bbccb21961",
+        "typescript_sha256": "aa4bd8af24ae856d34ad7912de4e4c70bb662010677513dcc34999e6df41a0c9",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "core-4",
+        "revision": "075dae317d842c8af64ee8ed807273dd6128d9f40a1a9584a46282a6bb1820e1",
+        "source_sha256": "74fd2f51bb3b86d5ea7e0380a1ec3f02f09c64cfcd0019c09eca0b63f739e1e0",
+        "typescript_sha256": "ad5f6cb74b32cc2c23d126d450b9bdf736881e30c795276a0c3fac9f8b51d11a",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "core-5",
+        "revision": "e7666b28d6f1382797d40a2cd689e4864fb593bd4072980d6f0f18157ee1ff79",
+        "source_sha256": "fa6e5587fa7c8ea6d61eb65d87c98611c4eae7d3aa48ba72dd888a52213e2585",
+        "typescript_sha256": "5d2f97038649e7c6684606c3a549a8b533aab2f53794d3b153c5341336a52def",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "core-6",
+        "revision": "5fe122e1224c6de6ebe09bdcce3084985cd5cb6a09726f55e994635942747ec2",
+        "source_sha256": "5b546f51cd5b645907e75f87aba24c96d758068d0e9e62ff7d622b0e5a033882",
+        "typescript_sha256": "b517b70893f0fcfe9c3fb8ff6afa8261f3e442fd70afe097af67bf5d7f6883b4",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "core-7",
+        "revision": "2404accdf93465029ea80febe9db7113f30335317fc96f5a1c132a037c9ea7df",
+        "source_sha256": "b5292e6382e1047a2e21b3739181001ccc01382bc13f05b1387fcbb599b159f7",
+        "typescript_sha256": "3de7b7e2496d0b4a79f7316edbb8542dfc30a8d5a739c47a958130c6aaf1659a",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "core-8",
+        "revision": "89b867306ef76c7951b90400d3b786ac97e29309cae6c2a0b56bf38a62fd244d",
+        "source_sha256": "f927f38f2cf68f37b1c96202a18e5d706344f7e988c3e34f29e470fe0c566ad9",
+        "typescript_sha256": "ad593469b5d9dde79b9de2def1109b604b1ff1149e56b4e1d278882720407ea7",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "core-9",
+        "revision": "ae32c9c54427913e88b9064ff4d6fc327505856acd49734cd59335c7c7200d79",
+        "source_sha256": "fb6eb1e61e40e81eb1fbf49612538d7279f24e0f7ba08873a6d8992f3600da16",
+        "typescript_sha256": "fc54925fac379010c19447876f0d0198c6489f20ad2121a298f6e803842092b7",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "core-10",
+        "revision": "ca8d269dd0666a7a35a98d629be54bcf2a8369c96a10b523ad92e7ac5ae43fb5",
+        "source_sha256": "a65c19ef70855e9971c09da2c35cda312af363e83995849642dd69b179cd45f7",
+        "typescript_sha256": "7bc033da815b5d23c7d946a032e282724908a6f80e5e94ebd5ec1565f0773526",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "core-11",
+        "revision": "ed871c24baaf7a00f6956e862ed76dadc7079b01f20b712a3dba19453ecb3887",
+        "source_sha256": "0f51f7e329ea5da0c03263cdc64e4564922dadd130e1bbb4308c1e42a9dd22b3",
+        "typescript_sha256": "1d6b0a56d1418b6cbcc8fcbd4e43b8e68601eb6311dac6341598bedbd689e095",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "core-12",
+        "revision": "96498a46134ddcdb076ab199b831d2d7df03964c0efd8d90aa656b8bac0fc91c",
+        "source_sha256": "af46b48b311aad1c5593186b7b0d9e41f0541083442cfe66e8676d5304b99152",
+        "typescript_sha256": "6c7f03cc5e8fd28f5b8a56f74a246fc3edda207adc7b8daa5932d50ecc174ff7",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "core-13",
+        "revision": "a7ea9539690d9389cd317d2632c8cd83a4dee93ee814c6fe7357bfeb2ffa8e72",
+        "source_sha256": "14699462a492c04d7abc024ccc8aa7a81ef68e401fd6eba490cf727db9a164a1",
+        "typescript_sha256": "10b03ba37dc13ef1447e3876e9c0a16a88338d598cd611e8901780925adc60ff",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "core-14",
+        "revision": "30b6487c59cd38fe8dd3907cbe3e720f287a586c1a0fcf767d3eac85a9b2dd37",
+        "source_sha256": "c52910e24e06dd44906fa8b2e66e82736b20838a58329ab7100a4b91a0bca907",
+        "typescript_sha256": "3f065b69b2e48e79154069f0725a225aa2af2fd0de9ce340ad2a2815f8a26022",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "core-15",
+        "revision": "692f0da370f7306710bcc597c23b6fd6eb86dbceeb5c7ff761fbdba9d2d18d7f",
+        "source_sha256": "44e6ece38ad906f7ad8d6093288b5c4ee2f90d587423e48122a9f61916bb38bd",
+        "typescript_sha256": "b543080d9577865cf08e13a799b940acdc0218aa1ef43ab9004b351887a8011b",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "bool-float-bytes",
+        "revision": "3fa39b357c95e96cdba523248bf7da6fc830b0801aef79701f9b9fdd88e5b22f",
+        "source_sha256": "68161f629ec686decf6a7d4ee7f044e21985f9fbc860d1f2239612ad164f9af7",
+        "typescript_sha256": "96c70dae91f649f34d66ace25d8227ce52431acb9721d63598016fbe3d0ef8cf",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "uncaught-cell",
+        "revision": "c66300e3f96db9dbff16977073283a1185b036fb08dd78935dafed8216ebae81",
+        "source_sha256": "9a342dec06724f83bc6ca96813908c6cd120bb58d24cc9dc942be52de31a21d7",
+        "typescript_sha256": "8ed2d2551957572b532852a2f0d09c6132ce96d35bf625fdf85de53977231c94",
+        "outcome": "trap",
+        "passed": true
+      },
+      {
+        "name": "overflow-cleanup",
+        "revision": "9080ab0b13c43fa43770dbf4f3ce66f37c6fa46aed47f5dfc72c84ba0e57060a",
+        "source_sha256": "38a81d0ddc83e6e366513d98a2f05bca31a361aa9fb9a0adb37dea7cb6805533",
+        "typescript_sha256": "dfe50272d085057212cf248bab3eba43cff78ef68295dc2218c1447cbc99e8a7",
+        "outcome": "trap",
+        "passed": true
+      },
+      {
+        "name": "operand-root",
+        "revision": "1bba7fbc2fa5e54f6dbb6b56c122e10c028994ce5a8b80ff4242b007aff32df4",
+        "source_sha256": "07033739ad3d7839ada98255cf1d9e9e850006376f68dce223eb0b34dd2305a9",
+        "typescript_sha256": "80c92130bb1ccad887855bba46b88f0cdee2f2e9f380cf0412119d4620a4f8f4",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "closure-operand-root",
+        "revision": "677e903144ca7af4d2a97dcddcb3e9b877b3c6aa331142d451e644f484bbbc52",
+        "source_sha256": "8f63367ea62dc8ee336bd9dfcb0349ecc7b9be4eecf9c411118beeb5a9911c0c",
+        "typescript_sha256": "ceb268b5ea348ca31ba1b570bb6e838be932448d9390bf45b58f476674a5c224",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "consumed-operand-retirement",
+        "revision": "47ce9f4ebd698a2da95d6539bfdb18f2e560f61de1cab4702c85c1e698675568",
+        "source_sha256": "cdcd09d110289c49d5192a1644abbd5689d1becb30b3156cae9d9939b47173c1",
+        "typescript_sha256": "3e1d7fae8d716927be7d066b1795bf7998c3e2b7e5ff38158ee59785a20f542e",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "return-through-finally",
+        "revision": "241455c11ce0026f611073ba08fbabbb29b79049bf5c2d7920095f83618ec960",
+        "source_sha256": "c6bcdcf475b8a933834d9fb2934cf808f1d6c3d5123e7976c20f15dd8314e32b",
+        "typescript_sha256": "59a97c60151c590abd6865dc84361bb9c3e4451bf8476ee0f72f83cd61048e01",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "replaced-return-retirement",
+        "revision": "a48d45cae6e4891bc18ac61d7ca12470e62307682693c972d5f68378a614b45a",
+        "source_sha256": "a9fb7b8ed7352f6118ece63a5e856b9bd06233e71423aa46d9fb50854310b762",
+        "typescript_sha256": "dc2ae7d31c3117d134c3c03a992c43fe43e80ead8cbfe2148081fabe35e49ff1",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "handler-filter-root",
+        "revision": "e4a30a08331605b4e04a776a305a01077f118a5ce6363691b1d032c4b8aa2d9a",
+        "source_sha256": "9fa47233611f342374f4b2a16c2a95ec1ba37ab5066732bf1e462ba3f0f245d3",
+        "typescript_sha256": "85354d506deb7bf480da53ecf4860890dbd2bb279300f8fc869b9aefce3f0d14",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "handler-retirement-loop",
+        "revision": "b84a070241efadabb4233fffa45f5b44e632663103baf9186b15cafe9e80e400",
+        "source_sha256": "5342b9c57e0a366a9cba4ba8c6c69088a233a2a938e2a14660ee641cb9d56338",
+        "typescript_sha256": "3ae4a5bf95702b1cc52561832550040c4df423642d2ae019817265ffd62a0b95",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "rethrow-flight-root",
+        "revision": "8892e6895c2183e48351c5d9dcd95734eae6df22ceee42f59294a56b4deeac81",
+        "source_sha256": "4c14f8775b3ba40f0a7b5da97b720f1140ddd489f1b6e239afb0324f4cfc54bb",
+        "typescript_sha256": "b3c6439f4c0a23115e5b27d3b2fe160b20026d4ada28e668db20064cd5b79e50",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "replacement-source-error",
+        "revision": "441cb733d6a3a34b3fc2bd0f3ea935e4cb099dfd7378a2e43b47bf5175924e0e",
+        "source_sha256": "17d42606bb284d7098151fe913004356145265e854d56bbabd03c970e43ddad3",
+        "typescript_sha256": "7c2b962fdff5ed01640e854dd4f3b29849059fb8fde4deb6ba682bc0b51057cd",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "fatal-replaces-source-error",
+        "revision": "2282ea46e9a86d1daf818aae8c2fbfcb5633f3a03e9650e3058a6992ce3c5a14",
+        "source_sha256": "3365281ec0c0d19d007484c806d8bbd533049a29bb06be7c5682cf0fb169f957",
+        "typescript_sha256": "2c8dea2675121733f78dfae00a66a4f4828c64a94edf6cce4f5426ac1b9448a4",
+        "outcome": "trap",
+        "passed": true
+      },
+      {
+        "name": "legacy-filter",
+        "revision": "d42ade53f10a042b458830b9011b3bdcaa8512f1f360a9aea44801393ff76827",
+        "source_sha256": "83984047bd57cd1ae6dfadc61180000d2d50dee2a99c1a2c34a0fbe310fcdf5e",
+        "typescript_sha256": "248a51bd252d470cf73740b69e39503c830f97d8c7b1550e970704e1dfc1c82e",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "pattern-guard-roots",
+        "revision": "1dded31e772659de83210060449bec1860f1dce252cabb0cddb7585815043d2f",
+        "source_sha256": "341784201c627a880a561c94356f697be25999e9a4b05274432b760fcd7eca1f",
+        "typescript_sha256": "3e195f033f8914c8eb9bd4b448c95cb6e644cc1db747b7c511b79a2757c49257",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "list-builder-roots",
+        "revision": "ecfbd1d0edc657f948607c7779f4bd6e969eb0b745e519ee3ec3c1304c2d83e1",
+        "source_sha256": "3096a8ac9d578c90cd37aa17a02949470d8c841730f5daf31b4a4127aee24427",
+        "typescript_sha256": "c8a295c12fd05e9de6245541aec9ef3905dc11b17b5efacc8d375e2b170f4df2",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "text-byte-builders",
+        "revision": "7efe7a9b6fe353abfc4332ad212c631ce00d641551881d73c7a06f3711bb2f26",
+        "source_sha256": "47ad16f9fc560b8c2ea95d1c6ae36eecee6d4518f07abd2ef71b2b381c590ff5",
+        "typescript_sha256": "2111256e1896ce75ee5f96ffd3335f651bbe1555411f43b01e33675ab1094677",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "result-propagation-root",
+        "revision": "ff640a92548891f91996e3b115def8ae3f7bb6c6e24f9ed436442febe6623fdf",
+        "source_sha256": "3353cb0d48fb5db6f89d44e22d80dc7a54721e16ccea911f559529d6e6c11cab",
+        "typescript_sha256": "4da041acdd412b04bd6fb2f8220c71928fad6657f7409ecb62a054e98dceb8be",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "json-boxed-values",
+        "revision": "719d3a12f5363964f3b5525c26714fd669a7bb4b199857da22c6aab480984aea",
+        "source_sha256": "d8d61394d79d84fd47d31adc315cd50abbc36529f003ee1268f12ac9e5102db1",
+        "typescript_sha256": "a6b1105944dc35dde5f6095435044f5be4f04ba023b1f7e5c80b5a8ee77baf83",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "typed-payload-shapes",
+        "revision": "018a8b5e07efefa84a0f9817a52b31c1539837fc3b739490a61fde26327d6bcd",
+        "source_sha256": "23680ff0ba1fa19d5dddc7eaf454a77cd58dd667a239c6b9dddfade60e227395",
+        "typescript_sha256": "5ad7b2b58f9d7055e42c31f26a58d0b270d2964654902262e9bcad38cb7cae5c",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "deep-ordinary-retirement",
+        "revision": "662304c37e31aa4a19c5ac4df8bfcd51d1c987c795a8ef182b8757ac0b223fac",
+        "source_sha256": "500c28878d63bdf344b4b26a832e20ae34938dd0e45264f6c949b20163c5db3f",
+        "typescript_sha256": "d75855d9dda5c25064884f96713a1d99dfff8d19a12ec5643138386ae0b11023",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "deep-source-unwind",
+        "revision": "ea225115c4f5d4fd0c8e7c724b5d74f6f5d6822b2661cb049f3260fd52ff9b36",
+        "source_sha256": "9501b17ec6241ccb83fe8e1049cf3165913cd83cd277823a9ed09d46495c69f9",
+        "typescript_sha256": "79e2c5525b6f227ab0690add13e3205c75ce6f0e929c684fed2262bd6c546595",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "deep-fatal-unwind",
+        "revision": "72e2fe08dd2a162914aef8b53ef91c8b0f5a984b1672dfd9a0303e2b238a56c2",
+        "source_sha256": "84abe382208c70b2424e4078b5f53d55b17eec57be8b26c9c3180dac59abb0a7",
+        "typescript_sha256": "00498795f2530c5a430786f380ade9b9d1535d82dc6296f9e6c9a0eb7d65d982",
+        "outcome": "trap",
+        "passed": true
+      },
+      {
+        "name": "host-i64",
+        "revision": "49dbae95abf24c6d5d1ad13ef011e1409c78990f8d6801b13beac29cd62312ad",
+        "source_sha256": "d98da0163edaf705606132bc4857ad53ed22365de3bae4fd540d756e28394850",
+        "typescript_sha256": "6c2aa45b733e5b1783cf4ccee80f3e6e34480f82751ade3ccbfa9eb8d7def97a",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "host-snapshot",
+        "revision": "65dddfaf45cd95b8df4e7527f2f79466757a200c155faa6348eeb00f9c8f8d70",
+        "source_sha256": "34f2c160bec9d19005555d05c79a79ef998a0ec781c5afc9f670cb24434d4131",
+        "typescript_sha256": "cf81475be603e733a271f9dff5c9144eeba757f0c7d4a9ea8f191a61f4b18697",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "030-module-alias-snapshot",
+        "revision": "3913766050d36a625e66f87aaee7c27558198cd0c6b62f9cb3371de129a53e34",
+        "source_sha256": "ed2948d464ae0541167f7b339f826ff0353921bf8af6afe9d06c97b02069057e",
+        "typescript_sha256": "8e8a958d37caa08b2980bfa806f7e1f89e808200d3fe349f6272c3e818034954",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "030-module-partial-type-identities",
+        "revision": "1ddb8126548426710e1529d3425eb43c0de9d4d82c835e66d1048c0ce54b68ad",
+        "source_sha256": "60c0e48f44450429d51109cbd9f300852aad226d3bc9b9546f074dd19f925756",
+        "typescript_sha256": "6ccea7c33bd13bb6a65d8e573c9ce98e48ab53bb93f9b3f5daab18760b15b456",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "030-module-trait-associated-methods",
+        "revision": "b526fbc6339d0a271e010a4087af07d078508248eb0029025bf9c9e65c12f74f",
+        "source_sha256": "5226be5e069266b3af233550e2d5fe7fda3a8e6e519173797b4ff90a2dd2398f",
+        "typescript_sha256": "3bb5289e0ee2883d86679bbb3e52faabdb4e94a970dfdd0e9f8c8fef387f0e72",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "030-module-source-error-finally",
+        "revision": "5ab7953c2850f0ee9e8126ea3fe89b5d3a4a430a780a46abe869b0cab983ad4e",
+        "source_sha256": "5c6c2a1bfea0c6b2d906c6d7ef1ad351c0d8cbe9b9d994f751f3daa2cda6e017",
+        "typescript_sha256": "9367845991322af3efb3f7b0944775b16f3baaa7f2491beeaaf678574ddd35a5",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "030-module-cycles-closure-return",
+        "revision": "b69935584c8291b7232e8af7d1a515d6ed6696b429e115324cbfb319ac79e716",
+        "source_sha256": "d65fcc50618f6de687821f7214bb645fafabb965fc698ddb4147611fb41873d8",
+        "typescript_sha256": "8731e02d718b6f361c215507ae64545205eedc84af50606f34601a4a0b3a69a1",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "030-module-defaults-contracts",
+        "revision": "9eb2829eb00f8005cc71d87adeca7625e3acc2495a567da9ff7388b58b63690b",
+        "source_sha256": "4a52b602997b64c6c5faa2298c81a908d6ad269170127b1dc29e50ba70b8312e",
+        "typescript_sha256": "8008443617f8f8056c4283a0efcc8b77da12a167b4078703b70e1e8b5c40a12b",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "030-module-client-reachability",
+        "revision": "ae2ecc672fb98304714e97b4411dce7be5f0a51339461f2c2bcdbbd6a47c8c84",
+        "source_sha256": "81be2144493142bb20d937718a31b621943358e30880fb9c43a39e7bc66950bb",
+        "typescript_sha256": "7b47d1e0f254b8b954eb713d4e83a0b44633988b2143986bf8ef43e96fa15286",
+        "outcome": "return",
+        "passed": true
+      },
+      {
+        "name": "030-module-fatal-cleanup",
+        "revision": "b4e781a1c9c657087783684a945806e0f53ca64c18ea1981d0d80bad67bd9d2f",
+        "source_sha256": "fc62ea6300b440ecca61003905459c3d757346d39c1e4597eb219bfc2d527d9a",
+        "typescript_sha256": "42cebe4bc88dd6c3813a86b57e2d7a4337ed65095fcc3df70dc1342a18ba2ae3",
+        "outcome": "trap",
+        "passed": true
+      },
+      {
+        "name": "030-module-uncaught-source-cleanup",
+        "revision": "170fe7f46e89b973a28d7780655accbf51e1d2af95d9af9d64983d4a186a43a1",
+        "source_sha256": "d0ced73c61faacab3960d2d0b0baf527115e620b64c00cffeea213b88e8f8f1c",
+        "typescript_sha256": "087eb00de691737a839809e1f9ce29ce687c1aa93effbdeaa437f691e9ef87a3",
+        "outcome": "trap",
+        "passed": true
+      },
+      {
+        "name": "030-module-import-change",
+        "revision": "9f9d19a7665af166d8bf2304895133fc1cbc921be7e2b0352d22750af0a5c55b",
+        "source_sha256": "92b81533b252c0e49bbd2719d76c6d670d8341a2f3ccafba2aab56df563fc358",
+        "typescript_sha256": "d503b4053b1bbb787f9825f499b7de6ea2492f95163a4e86512826b6d5008261",
+        "outcome": "return",
+        "passed": true
+      }
+    ],
+    "native": [
+      {
+        "name": "core-1",
+        "optimization": "0",
+        "artifact_sha256": "17ef3c16e1319e6a742a356cbaa2ce6aa58438ba3228a719dc3bfe220e53a742",
+        "passed": true
+      },
+      {
+        "name": "core-1",
+        "optimization": "2",
+        "artifact_sha256": "c8588ee030b0df9e0056ceca3f475ec2d558a9da80712349aca252d60bc3c14c",
+        "passed": true
+      },
+      {
+        "name": "core-2",
+        "optimization": "0",
+        "artifact_sha256": "c4be486e923ad728619cf450db492546444c37dd7968b20448dedd64ba60c996",
+        "passed": true
+      },
+      {
+        "name": "core-2",
+        "optimization": "2",
+        "artifact_sha256": "de8cc1fd7e275445fecf2cc407e262a9e1ca57f7c34ec4e7b9b9271268f080cd",
+        "passed": true
+      },
+      {
+        "name": "core-3",
+        "optimization": "0",
+        "artifact_sha256": "94e28f6ad29c748e93d7d458ae642be498659a87466ba679b0c09e5baed7df5a",
+        "passed": true
+      },
+      {
+        "name": "core-3",
+        "optimization": "2",
+        "artifact_sha256": "ed60358bc9cf50cc96f772bb4f70f8e3993992c606ab009faae44db5e0dc1ff8",
+        "passed": true
+      },
+      {
+        "name": "core-4",
+        "optimization": "0",
+        "artifact_sha256": "ceb3514441ddcab29aa952938963b6ec43afbde61f782292c6e5898d5ef0b3a2",
+        "passed": true
+      },
+      {
+        "name": "core-4",
+        "optimization": "2",
+        "artifact_sha256": "702767e1b9a821bb2a2575969acf76d4fe440a5010a2bd0c9a1bdfb1123c7af9",
+        "passed": true
+      },
+      {
+        "name": "core-5",
+        "optimization": "0",
+        "artifact_sha256": "3b6895cf9fe1267d144624219b73aaedbc73660b23a0912b3a0261f85977d306",
+        "passed": true
+      },
+      {
+        "name": "core-5",
+        "optimization": "2",
+        "artifact_sha256": "fe75c5aa5e461098708873cb4bb04d8675beda8cb3a7f86001781cf8b65f9cbe",
+        "passed": true
+      },
+      {
+        "name": "core-6",
+        "optimization": "0",
+        "artifact_sha256": "f9d2cb511eb68e37c876325afd6aeb2b4860c3da2f298a9d5395532404bc8799",
+        "passed": true
+      },
+      {
+        "name": "core-6",
+        "optimization": "2",
+        "artifact_sha256": "d2558adb900d699fb4e4c0c59447982f0d842e0427d9f4e10ac5b6eb520ea8d3",
+        "passed": true
+      },
+      {
+        "name": "core-7",
+        "optimization": "0",
+        "artifact_sha256": "982d9cba7dcdee4be7d1021a344a077696ee3f0146823615dba8cb1709e43264",
+        "passed": true
+      },
+      {
+        "name": "core-7",
+        "optimization": "2",
+        "artifact_sha256": "960daba8fb3ffe733ac17030894efc3f459731647e2461869ffdda01ba9bb519",
+        "passed": true
+      },
+      {
+        "name": "core-8",
+        "optimization": "0",
+        "artifact_sha256": "2f10054e4e71bc6c2a9501acd6d522bb468e102dcb4618b64cec1fc1096911f3",
+        "passed": true
+      },
+      {
+        "name": "core-8",
+        "optimization": "2",
+        "artifact_sha256": "eea6523b75e2b77a27d66eb6aef152158b5c8dc0708ceda75966c6a0a56aa5dd",
+        "passed": true
+      },
+      {
+        "name": "core-9",
+        "optimization": "0",
+        "artifact_sha256": "75fe39938fd61c7d32f07c09898eb61355d47328bacb50f665a864775c72d1da",
+        "passed": true
+      },
+      {
+        "name": "core-9",
+        "optimization": "2",
+        "artifact_sha256": "340038402f3afccb90c6976de9da8c6a60fa7d5086e64f3e034138a3c22c65e1",
+        "passed": true
+      },
+      {
+        "name": "core-10",
+        "optimization": "0",
+        "artifact_sha256": "d25902f3838fb5129a4715c2160876cd1aa43a65a48af151ba476e61fa4aa6c6",
+        "passed": true
+      },
+      {
+        "name": "core-10",
+        "optimization": "2",
+        "artifact_sha256": "69894006b16234c0ad5d3e23ded8b26a03b4f44f6b62ac153a793b496d4efdbe",
+        "passed": true
+      },
+      {
+        "name": "core-11",
+        "optimization": "0",
+        "artifact_sha256": "e0a7b0678dfb3af7a186382b82ebf174f69d68b7d51fe75d1eadde3ca01de0fd",
+        "passed": true
+      },
+      {
+        "name": "core-11",
+        "optimization": "2",
+        "artifact_sha256": "0a2134573c96044323410afb2e9deaabb5dee7b020a5f7116178864b5ebfd952",
+        "passed": true
+      },
+      {
+        "name": "core-12",
+        "optimization": "0",
+        "artifact_sha256": "3a807bfd2788a02d3aa1162d9968a18faf1d8ffff258654517c024c56529aadd",
+        "passed": true
+      },
+      {
+        "name": "core-12",
+        "optimization": "2",
+        "artifact_sha256": "deb1137398e2c6236255045e4bac978567a8a6a51aa3d02c8e095e0ca63f4ac5",
+        "passed": true
+      },
+      {
+        "name": "core-13",
+        "optimization": "0",
+        "artifact_sha256": "239a91ac34d13507acf4cbaa79000a0cd95ef6aa91abba8559c741aef8cab7eb",
+        "passed": true
+      },
+      {
+        "name": "core-13",
+        "optimization": "2",
+        "artifact_sha256": "25b29793e9dc9c01ae0f4ec918f746f278f06fac1cba74d3c12ac61cfa645fae",
+        "passed": true
+      },
+      {
+        "name": "core-14",
+        "optimization": "0",
+        "artifact_sha256": "d91fd426ad916b539a5499897197d6b50b118d5e79b2c33155d4007b00e2bc59",
+        "passed": true
+      },
+      {
+        "name": "core-14",
+        "optimization": "2",
+        "artifact_sha256": "da4a33af90f6381c9dc1ea9da51677f1c6105f0cce57adb7b24fd581f8bdd5a5",
+        "passed": true
+      },
+      {
+        "name": "core-15",
+        "optimization": "0",
+        "artifact_sha256": "6acc34d91343b5a358188c2ef76b94d5f49742ba259920fa3e5ee2451a80eddd",
+        "passed": true
+      },
+      {
+        "name": "core-15",
+        "optimization": "2",
+        "artifact_sha256": "c773fd99b168caea986b8e1556f28406deb934c5792090fd66804a6dde6ea50d",
+        "passed": true
+      },
+      {
+        "name": "bool-float-bytes",
+        "optimization": "0",
+        "artifact_sha256": "66bffd3466c3636095379b6a8e1f87ce43c4dd5f270ef903878ee79ff2977af4",
+        "passed": true
+      },
+      {
+        "name": "bool-float-bytes",
+        "optimization": "2",
+        "artifact_sha256": "8a0b0c9f068ab2c6cff89b4c23a25b50b309fc1e32b8569f2b8248552300fcdd",
+        "passed": true
+      },
+      {
+        "name": "uncaught-cell",
+        "optimization": "0",
+        "artifact_sha256": "7fd7986bdb0d49c2df46f409823c603ed456d350035673d8d1570f9e69ad8440",
+        "passed": true
+      },
+      {
+        "name": "uncaught-cell",
+        "optimization": "2",
+        "artifact_sha256": "ceaf3de9d35e50e9cd6754696493b5d3f321eca82f99bffaa32c755430e58d87",
+        "passed": true
+      },
+      {
+        "name": "overflow-cleanup",
+        "optimization": "0",
+        "artifact_sha256": "9522a910e28dcf0ce2fd583f12ba67272cf1dfe12ae7aa5c149b2db7ad252510",
+        "passed": true
+      },
+      {
+        "name": "overflow-cleanup",
+        "optimization": "2",
+        "artifact_sha256": "5df7217e35ff106ee3e55869d0dab027dacb694c05760fc257a05fcd17d723da",
+        "passed": true
+      },
+      {
+        "name": "operand-root",
+        "optimization": "0",
+        "artifact_sha256": "78764d505eaf8d14275254bac7be6ec5de08f006c453a42276331f2f0081adc5",
+        "passed": true
+      },
+      {
+        "name": "operand-root",
+        "optimization": "2",
+        "artifact_sha256": "c644ce3a76db659bf2263471da9e9bde88538897e92e8fcc6053c0b6df163e9a",
+        "passed": true
+      },
+      {
+        "name": "closure-operand-root",
+        "optimization": "0",
+        "artifact_sha256": "779442e7bdc56168dffa1b207396a7f7d41d5e7f6ccab71a54c944ee034a47e1",
+        "passed": true
+      },
+      {
+        "name": "closure-operand-root",
+        "optimization": "2",
+        "artifact_sha256": "694a4e4271aa82276629048e19f78c44d4719c44efdb6d2cbf74d94e3f9397aa",
+        "passed": true
+      },
+      {
+        "name": "consumed-operand-retirement",
+        "optimization": "0",
+        "artifact_sha256": "b13ae1b324f14802377868c68906f0a1130040ca2f89e33778a2c647b9606d6a",
+        "passed": true
+      },
+      {
+        "name": "consumed-operand-retirement",
+        "optimization": "2",
+        "artifact_sha256": "babe9110e8bbaaa821a537d04a3fc1a863faaaf5ca3f3a24b68b59615b03fc34",
+        "passed": true
+      },
+      {
+        "name": "return-through-finally",
+        "optimization": "0",
+        "artifact_sha256": "486073f91ad70b94ad436647ebd55d706f6c5136b8b77d069744fb214b2dd9f1",
+        "passed": true
+      },
+      {
+        "name": "return-through-finally",
+        "optimization": "2",
+        "artifact_sha256": "790d976c0a7cdef9c943edbbfdd814455b941c92ee67f4164c4b60b4b3b1debe",
+        "passed": true
+      },
+      {
+        "name": "replaced-return-retirement",
+        "optimization": "0",
+        "artifact_sha256": "83300d7a08c0c748e41df419085f3513cbd22629ab3664d79021d7640532108b",
+        "passed": true
+      },
+      {
+        "name": "replaced-return-retirement",
+        "optimization": "2",
+        "artifact_sha256": "d5d050c9f64ae92647dcaae9b8909fc66fb51f787282489a841a3c4be2f4fb5a",
+        "passed": true
+      },
+      {
+        "name": "handler-filter-root",
+        "optimization": "0",
+        "artifact_sha256": "c661a4c542a88391bd0fed689c47f42a9081cc18fea3ede1eca35c00d5f54a1f",
+        "passed": true
+      },
+      {
+        "name": "handler-filter-root",
+        "optimization": "2",
+        "artifact_sha256": "4d9219c993c98832b827252f1176f3e281d35a503d0f4073f57f8a890350cddd",
+        "passed": true
+      },
+      {
+        "name": "handler-retirement-loop",
+        "optimization": "0",
+        "artifact_sha256": "d7193cf6243e2043fdf3759b644e2e86a3e78970d3be1aeb7408afd47d7ef82f",
+        "passed": true
+      },
+      {
+        "name": "handler-retirement-loop",
+        "optimization": "2",
+        "artifact_sha256": "09c85fdabffb96641a66a2518b3b5ac1a875aecd61468ac2134ce5776f04d054",
+        "passed": true
+      },
+      {
+        "name": "rethrow-flight-root",
+        "optimization": "0",
+        "artifact_sha256": "e02ae1c9b2d34e4c0b8b98e8a3b730e332a60ae597bb28c29269e69dbcfb894a",
+        "passed": true
+      },
+      {
+        "name": "rethrow-flight-root",
+        "optimization": "2",
+        "artifact_sha256": "779d55932c6141af176c8c84bfd289786913dcbf0728aa45f5ec6b4fd36a2b74",
+        "passed": true
+      },
+      {
+        "name": "replacement-source-error",
+        "optimization": "0",
+        "artifact_sha256": "28da1f905d61b4178e8bfd6ddda2f3a0a0fa844ecaa1f96043e02502a663fa81",
+        "passed": true
+      },
+      {
+        "name": "replacement-source-error",
+        "optimization": "2",
+        "artifact_sha256": "818149289f93bf36886c6616b1dac375dc4c2019e70ffe82de7a9b3027828eae",
+        "passed": true
+      },
+      {
+        "name": "fatal-replaces-source-error",
+        "optimization": "0",
+        "artifact_sha256": "79b4dfc279043be8344b83de1f08cb9b8dd24a742a4bc1e87259c51b8901eef2",
+        "passed": true
+      },
+      {
+        "name": "fatal-replaces-source-error",
+        "optimization": "2",
+        "artifact_sha256": "17263712961abc56d980d623a6f1ef6132eb01b9b6d49cf91e99d588e65f3abe",
+        "passed": true
+      },
+      {
+        "name": "legacy-filter",
+        "optimization": "0",
+        "artifact_sha256": "ae9d65eea2071c5edc6307beea80fec48b4389faa1538a9203ff678866bf6f33",
+        "passed": true
+      },
+      {
+        "name": "legacy-filter",
+        "optimization": "2",
+        "artifact_sha256": "a27ea3d03fc40446980a1575330ae9c5ba4ef8f966cf6e61196847007c2410a1",
+        "passed": true
+      },
+      {
+        "name": "pattern-guard-roots",
+        "optimization": "0",
+        "artifact_sha256": "6712d819c900497f47ef581b1fc5b1a1edb9fa1800bcdede42aaf60c6f94cb3d",
+        "passed": true
+      },
+      {
+        "name": "pattern-guard-roots",
+        "optimization": "2",
+        "artifact_sha256": "ca10479dcadd5f7ee5f4b69b5aebb4358b1a1ccb04e20e74e67ba5f5db93a62c",
+        "passed": true
+      },
+      {
+        "name": "list-builder-roots",
+        "optimization": "0",
+        "artifact_sha256": "4055cf4da34d88844495c69f8ba61b698888d0451c8e7ab2ff02a28ad758c567",
+        "passed": true
+      },
+      {
+        "name": "list-builder-roots",
+        "optimization": "2",
+        "artifact_sha256": "a7c5765ad734a44e1531f3e17f31d986c62ed773ec323a09aee6385dd2e8399c",
+        "passed": true
+      },
+      {
+        "name": "text-byte-builders",
+        "optimization": "0",
+        "artifact_sha256": "bc2cf3a9cb782c96e040fe2bc864b04bc6b2f70cd239244871a984a2dfd2b1f6",
+        "passed": true
+      },
+      {
+        "name": "text-byte-builders",
+        "optimization": "2",
+        "artifact_sha256": "dacefb6f6730f3c0e38fc720e167385ade9d62cd786c80935e48d6aae23e12dc",
+        "passed": true
+      },
+      {
+        "name": "result-propagation-root",
+        "optimization": "0",
+        "artifact_sha256": "76928e301006b316bf4ca22b2d2eb46be8957f9fefeb0e16d8533164cabb0043",
+        "passed": true
+      },
+      {
+        "name": "result-propagation-root",
+        "optimization": "2",
+        "artifact_sha256": "817f47bf6ad88fcd72c01417a7ee1b98d571f97cb9beb48deb0957bedffe534b",
+        "passed": true
+      },
+      {
+        "name": "json-boxed-values",
+        "optimization": "0",
+        "artifact_sha256": "71b95822a3d2a781610b0de08e6d560baa5838c5056f5187277e63c3ec6fbd76",
+        "passed": true
+      },
+      {
+        "name": "json-boxed-values",
+        "optimization": "2",
+        "artifact_sha256": "afc0dcb1ad52f4533547183a5d30ddb51e74b15676a24e310ba143459bd76ad3",
+        "passed": true
+      },
+      {
+        "name": "typed-payload-shapes",
+        "optimization": "0",
+        "artifact_sha256": "e363a0126e674f9c5e8a5ec9e2e1a67f256dc7080b419d763153ab09c3ccb1eb",
+        "passed": true
+      },
+      {
+        "name": "typed-payload-shapes",
+        "optimization": "2",
+        "artifact_sha256": "649ce658bbddd1a917d683b61793b2d62ba9cab455a9c262a65deb349918d352",
+        "passed": true
+      },
+      {
+        "name": "deep-ordinary-retirement",
+        "optimization": "0",
+        "artifact_sha256": "fa164f080bcb9f9f51674d184aede2d1e501486877e5e6eb7ed7ba0c24b54436",
+        "passed": true
+      },
+      {
+        "name": "deep-ordinary-retirement",
+        "optimization": "2",
+        "artifact_sha256": "911356b4050f7a95ccfb3c0f3c9d9ba618ae898b1fac0486181088649f9d5ef3",
+        "passed": true
+      },
+      {
+        "name": "deep-source-unwind",
+        "optimization": "0",
+        "artifact_sha256": "1875ab8cf2710d12a38347a0ef87a917be49bbc668aef58275312552a2de08d4",
+        "passed": true
+      },
+      {
+        "name": "deep-source-unwind",
+        "optimization": "2",
+        "artifact_sha256": "75acbd344b1496601aaf5982ee42939c16a938b25bccb23dcae6b32b27c0269a",
+        "passed": true
+      },
+      {
+        "name": "deep-fatal-unwind",
+        "optimization": "0",
+        "artifact_sha256": "e3452d4a8a949713df32326e4a29311f4988f67ec453e4d5b1e5bc62637d52c7",
+        "passed": true
+      },
+      {
+        "name": "deep-fatal-unwind",
+        "optimization": "2",
+        "artifact_sha256": "62d2d4c6549693aa9cc0f3a5ebc69f4199e492f260c4d07d247edd924887d55d",
+        "passed": true
+      },
+      {
+        "name": "030-module-alias-snapshot",
+        "optimization": "0",
+        "artifact_sha256": "9af532b23f2a570f9335c1f184a48777015008e08acc3ce98749b6739a61080c",
+        "passed": true
+      },
+      {
+        "name": "030-module-alias-snapshot",
+        "optimization": "2",
+        "artifact_sha256": "bc3d10a639bffd7e74e2dbc9e90163df6ea601861af40af14430fb6e30e36c1c",
+        "passed": true
+      },
+      {
+        "name": "030-module-partial-type-identities",
+        "optimization": "0",
+        "artifact_sha256": "57b8fec0852bedf29c0292c1c7629946bd46f76a93ce50791c39dec28e43d8f5",
+        "passed": true
+      },
+      {
+        "name": "030-module-partial-type-identities",
+        "optimization": "2",
+        "artifact_sha256": "7e7e8cb652607761f333af4d962c717f28bf1e5c054bc982daeea0045d1fb601",
+        "passed": true
+      },
+      {
+        "name": "030-module-trait-associated-methods",
+        "optimization": "0",
+        "artifact_sha256": "211c7e11456a027c1c5af4d0ee096c99f1e652577f5b84b888bca43ef9000858",
+        "passed": true
+      },
+      {
+        "name": "030-module-trait-associated-methods",
+        "optimization": "2",
+        "artifact_sha256": "f4ddf0160dd10d4f5b5f84d2957dbad29e86d0a5e6efde027191ad3dc57a2ee5",
+        "passed": true
+      },
+      {
+        "name": "030-module-source-error-finally",
+        "optimization": "0",
+        "artifact_sha256": "59eef61dc99ffd7248ba75c5e44dcd69432e1f1818c02853e3eaee650ce26f2c",
+        "passed": true
+      },
+      {
+        "name": "030-module-source-error-finally",
+        "optimization": "2",
+        "artifact_sha256": "8557e78b9779b090dcc3b49ef5194548036cf533f98680ff2d6046d69072d483",
+        "passed": true
+      },
+      {
+        "name": "030-module-cycles-closure-return",
+        "optimization": "0",
+        "artifact_sha256": "e0702175cf20cfda934ab21cd4c478a897e0337abeac0e3eafd91e29a61d2842",
+        "passed": true
+      },
+      {
+        "name": "030-module-cycles-closure-return",
+        "optimization": "2",
+        "artifact_sha256": "b6dc1d526ec5527a75db6a59d63a382592055c36f8bed58e66dc715171dc2a28",
+        "passed": true
+      },
+      {
+        "name": "030-module-defaults-contracts",
+        "optimization": "0",
+        "artifact_sha256": "436d09fbb39949e2b0f8f5be1526583cb927ffedab1f83157dffc4be1e231a2b",
+        "passed": true
+      },
+      {
+        "name": "030-module-defaults-contracts",
+        "optimization": "2",
+        "artifact_sha256": "eb0bc33d7f86e1087d52f37d2c4c9b28f83b16e66d3f8daeea9a90ed651115b2",
+        "passed": true
+      },
+      {
+        "name": "030-module-client-reachability",
+        "optimization": "0",
+        "artifact_sha256": "351f5a2e94dc05bb27d5a2979d7555737f7f105992b93efbb8eade5d5da0a220",
+        "passed": true
+      },
+      {
+        "name": "030-module-client-reachability",
+        "optimization": "2",
+        "artifact_sha256": "05cbb8a991013b76d549026ab895ff56bb8070b94a7f99730a791cdfa1421d92",
+        "passed": true
+      },
+      {
+        "name": "030-module-fatal-cleanup",
+        "optimization": "0",
+        "artifact_sha256": "f08aa15c2bf5752f5e7e63362efef74322a3f3fbb329e331c65dd6481e6c99e6",
+        "passed": true
+      },
+      {
+        "name": "030-module-fatal-cleanup",
+        "optimization": "2",
+        "artifact_sha256": "b572cf4969de14adcb76dca3ac8e64383badc3d4eeed29b0fb0e54ee9a97502e",
+        "passed": true
+      },
+      {
+        "name": "030-module-uncaught-source-cleanup",
+        "optimization": "0",
+        "artifact_sha256": "d9e7fb5cbe7b3bb04ab6cc7b7ab7a8d643c2c2c2f01bcaa6c18185084686f5c2",
+        "passed": true
+      },
+      {
+        "name": "030-module-uncaught-source-cleanup",
+        "optimization": "2",
+        "artifact_sha256": "c9db216e9243363b234f86553efa82ba8f1fb00cc7a14106dd7b2b89c89d71be",
+        "passed": true
+      },
+      {
+        "name": "030-module-import-change",
+        "optimization": "0",
+        "artifact_sha256": "4738a7af6b5208cd30314bc5ebca4b5d24b3fb5f6a66713c165d2f1d4bf1badf",
+        "passed": true
+      },
+      {
+        "name": "030-module-import-change",
+        "optimization": "2",
+        "artifact_sha256": "39df4b359da0484f665f7a23a417e2f9a0384e25b8d912ba7bb568b31b54aefa",
+        "passed": true
+      }
+    ],
+    "migration": [
+      {
+        "name": "plan",
+        "result": {
+          "language": "0.30",
+          "namespace": "0d0afc6d18e965899c293e4fb668fb5c",
+          "ok": true,
+          "origin_revision": "e5e14625b4d5d7d8e487c99db9e846e298a3420fef88980ef0a2fbf3b22e2302",
+          "origin_source_hash": "d6a0a5bbd1aff2ef253b07057867004cb66070a25c78f465e6fe2ba80d715bb3",
+          "origin_verified": true,
+          "source_hash": "d6a0a5bbd1aff2ef253b07057867004cb66070a25c78f465e6fe2ba80d715bb3",
+          "sources": {
+            "entry": "main.nex",
+            "files": {
+              "main.nex": "module origin;fn main()->i64{return 42;}"
+            },
+            "schema": "nex.sources/1"
+          },
+          "target_revision": "bdf49c38aca285b408eb125d8d03b359fbb0b5586c2576d55114c37abea7426a"
+        },
+        "exit_code": 0
+      },
+      {
+        "name": "unguarded",
+        "result": {
+          "code": "E_LANGUAGE_VERSION",
+          "message": "graph HEAD uses another language version; run nex migrate explicitly",
+          "ok": false
+        },
+        "exit_code": 1
+      },
+      {
+        "name": "apply",
+        "result": {
+          "candidate_used": false,
+          "changed": true,
+          "identity_namespace": "0d0afc6d18e965899c293e4fb668fb5c",
+          "language": "0.30",
+          "materialized": false,
+          "ok": true,
+          "origin_language": "0.29",
+          "origin_revision": "e5e14625b4d5d7d8e487c99db9e846e298a3420fef88980ef0a2fbf3b22e2302",
+          "origin_source_hash": "d6a0a5bbd1aff2ef253b07057867004cb66070a25c78f465e6fe2ba80d715bb3",
+          "origin_verified": true,
+          "revision": "bdf49c38aca285b408eb125d8d03b359fbb0b5586c2576d55114c37abea7426a",
+          "schema": "nex.graph-migration/1",
+          "source_hash": "d6a0a5bbd1aff2ef253b07057867004cb66070a25c78f465e6fe2ba80d715bb3"
+        },
+        "exit_code": 0
+      },
+      {
+        "name": "idempotent",
+        "result": {
+          "candidate_used": false,
+          "changed": false,
+          "identity_namespace": "0d0afc6d18e965899c293e4fb668fb5c",
+          "language": "0.30",
+          "materialized": false,
+          "ok": true,
+          "origin_language": "0.30",
+          "origin_revision": "bdf49c38aca285b408eb125d8d03b359fbb0b5586c2576d55114c37abea7426a",
+          "origin_source_hash": "d6a0a5bbd1aff2ef253b07057867004cb66070a25c78f465e6fe2ba80d715bb3",
+          "origin_verified": true,
+          "revision": "bdf49c38aca285b408eb125d8d03b359fbb0b5586c2576d55114c37abea7426a",
+          "schema": "nex.graph-migration/1",
+          "source_hash": "d6a0a5bbd1aff2ef253b07057867004cb66070a25c78f465e6fe2ba80d715bb3"
+        },
+        "exit_code": 0
+      },
+      {
+        "name": "race",
+        "result": {
+          "code": "E_CONFLICT",
+          "message": "graph HEAD changed before migration preflight",
+          "ok": false
+        },
+        "exit_code": 1
+      },
+      {
+        "name": "collision-plan",
+        "result": {
+          "code": "E_DUPLICATE",
+          "message": "duplicate or reserved name 'cell_new'",
+          "ok": false
+        },
+        "exit_code": 1
+      },
+      {
+        "name": "collision-origin",
+        "result": {
+          "language": "0.29",
+          "namespace": "41a336c251e8f3377f980198fac99609",
+          "ok": true,
+          "revision": "597c89c9add660cb552af0ba5038168a407234df3e1ea43454e80c22b3f364f2",
+          "source_hash": "0c00b049c244b3a1b6991c8d026fd29d115ccc93e2bf745e3bf150184728407f",
+          "sources": {
+            "entry": "main.nex",
+            "files": {
+              "main.nex": "module collision;fn cell_new(value:i64)->i64{return value;}fn main()->i64{return cell_new(42);}"
+            },
+            "schema": "nex.sources/1"
+          }
+        },
+        "exit_code": 0
+      },
+      {
+        "name": "collision-reviewed",
+        "result": {
+          "candidate_used": true,
+          "changed": true,
+          "export_roundtrip": true,
+          "exported": "/Users/sae/projects/NEX/build/references030-0.263.0-acceptance/migration-run-f0kt16gq/exported030",
+          "identity_namespace": "41a336c251e8f3377f980198fac99609",
+          "language": "0.30",
+          "materialized": false,
+          "ok": true,
+          "origin_language": "0.29",
+          "origin_revision": "597c89c9add660cb552af0ba5038168a407234df3e1ea43454e80c22b3f364f2",
+          "origin_source_hash": "0c00b049c244b3a1b6991c8d026fd29d115ccc93e2bf745e3bf150184728407f",
+          "origin_verified": true,
+          "revision": "7db66dc4b7d600ea757d22af92600dd6cb4c78503d01583817286f0f444e6ecd",
+          "schema": "nex.graph-migration/1",
+          "source_hash": "8671fab10d8dbac1629ef51b702b113451962ff86a6f87cc89747a875ac95452"
+        },
+        "exit_code": 0
+      }
+    ],
+    "gates": [
+      {
+        "name": "mixed-context",
+        "code": "E_CELL_CONCURRENCY",
+        "passed": true
+      },
+      {
+        "name": "cell-wasm",
+        "code": "E_CELL_TARGET",
+        "passed": true
+      },
+      {
+        "name": "missing-effect",
+        "code": "E_EFFECT",
+        "passed": true
+      }
+    ],
+    "entry_adapter": {
+      "passed": true,
+      "stdout": "9007199254740994\n[1,2]\n{\"text\":\"🧠\\u0000tail\",\"values\":[9007199254740993],\"data\":\"w6k=\"}\n{\"case\":\"Full\",\"fields\":{\"value\":{\"text\":\"🧠\\u0000tail\",\"values\":[9007199254740993],\"data\":\"w6k=\"}}}\n{\"ok\":{\"text\":\"🧠\\u0000tail\",\"values\":[9007199254740993],\"data\":\"w6k=\"}}\n{\"error\":{\"code\":\"E_SAMPLE\",\"message\":\"sample\"}}\nouter\nouter\n",
+      "unicode_newline_path": true
+    },
+    "normal_builds": [
+      {
+        "profile": "debug",
+        "artifact_sha256": "c6e5815b25842705db7d68ee5a3f5b9c18dd9e21f20d3a009ac71ceef5f91e40",
+        "key": "d860ccdbad9fa4e8511b5a4b44cbb8715b673eb53c4dbf3b382696dc789ec533",
+        "library_abi": "3671d294a7146088b937fe1f7c419c2d8aca824cdd6bd9edbbd936a0f6bbc015",
+        "reference_free_cohort_match": true,
+        "runtime_components": [
+          "runtime.cpp",
+          "nex_cells.cpp",
+          "nex_cell_host.cpp"
+        ],
+        "passed": true
+      },
+      {
+        "profile": "release",
+        "artifact_sha256": "25c208a214816535c78eb79a9f77024cdeb611ba7f1e2e453ceb6265b3f8fe66",
+        "key": "70d7df8023742b5520c1d265c5a618ca14017f27ddb72f7f7bb380c4ea50357f",
+        "library_abi": "72f5674e1a1465089cb690aa98202f8add39f83399f244bb6501e994d9fb4929",
+        "reference_free_cohort_match": true,
+        "runtime_components": [
+          "runtime.cpp",
+          "nex_cells.cpp",
+          "nex_cell_host.cpp"
+        ],
+        "passed": true
+      }
+    ],
+    "inherited_tasks": {
+      "reference": 42,
+      "typescript": 42,
+      "native_status": 42,
+      "passed": true
+    },
+    "scalar_device_emission": {
+      "cuda": "838a3d976ad21aba1bf1ca5285adfbe8d1c36289a6853e1a3e5d39ec86132674",
+      "language": "0.30",
+      "metal": "7d03f6ad4a95a3edc2341f5e38bdf67af08a558a1d267e12bf6519a3650d1848",
+      "ok": true,
+      "opencl": "d2e03badab9b33779b7faa036c1aa941116ca1f14070225f0668399d4165897b",
+      "revision": "e5d17fcf6a88c0dbdfe3def457c57e1937c571dc597097315795a4c105afce9a"
+    },
+    "migration_root": "/Users/sae/projects/NEX/build/references030-0.263.0-acceptance/migration-run-f0kt16gq",
+    "origin_compiler": {
+      "path": "/Users/sae/projects/NEX/build/nex",
+      "sha256": "dc700982d81aec9d4ce07963fa49d32b6d27042567b972e67bb92a4030fc1711",
+      "retained_sdk": false,
+      "toolchain": "0.263.0"
+    },
+    "comparisons": 50,
+    "native_comparisons": 96
+  },
+  "normal_installation": {
+    "schema": "nex.reference-library-installed/1",
+    "ok": true,
+    "normal_installation": "/Users/sae/projects/NEX/build/reference-library-v1/SDK moved 🧠",
+    "compiler_sha256": "dc700982d81aec9d4ce07963fa49d32b6d27042567b972e67bb92a4030fc1711",
+    "host_sha256": "403b634b841f4239ee479eac6e488a7369120e5b154145d4d3422967ddf48243",
+    "critical_resources": {
+      "runtime/runtime.cpp": "e59311f5c2a000bb533056750ef7f71c3c5f24fc261fd1b902fcba3aaa7f56d0",
+      "runtime/nex_host.h": "f293383f8a4dfa226549169065e52cde4471e46e422ff5726afc25ce3d4c7fcb",
+      "runtime/nex_cells.cpp": "f009588f1f83dc8b8e5028f98cda518d4aa2c684afe1521ce41906bb7ccdb291",
+      "runtime/nex_cells.h": "8aff8c57bd6ee1b41e1cb8b19ed0b0ea5a3f4b51d2804eec3d72f0d9f5bf9f00",
+      "runtime/nex_cell_host.cpp": "69e95f8be36c3a9cb4d2ef6db2340264bdd814d324d08ffad2e582da1b930692",
+      "runtime/nex_cell_host.h": "642a79af8b68d6b5f367c8e510179490ee1357a00174255c7e0a1c0173a5b522",
+      "tests/reference_library_host.cpp": "f17a91873191e6e4bd617d25fa6bb3a58c74a1d194ad83f54dc5b83d681b39a9",
+      "tests/reference_library.py": "e2ff1d683868315e85dfc4c8c6e71e292f7bf7741b57809997dc85d9db1bc924",
+      "tests/fixtures/managed-references/library.nex": "2dedce3cf3574e357a0bff208f4689641cefd831ddb1aa7d4ffdd475f03f162c",
+      "llm/language-pack.json": "112c803cf0d911a11dadc715fa81a0059e82db3cd9ef035b778bc91cf7e32614",
+      "llm/native-entry-abi.schema.json": "eae35f5bea73527fb438a4f625e0e06429da47a70105b8da1c9072369da7a7ec",
+      "docs/reference-library-abi.md": "8cf57d0da6d2a3994754feb445ff2160729048a22020caf526b776d0ed0c2cec"
+    },
+    "library_report": {
+      "schema": "nex.reference-library-acceptance/1",
+      "source_sha256": "2dedce3cf3574e357a0bff208f4689641cefd831ddb1aa7d4ffdd475f03f162c",
+      "host_sha256": "403b634b841f4239ee479eac6e488a7369120e5b154145d4d3422967ddf48243",
+      "platform": "macOS-27.2.1-arm64-arm-64bit-Mach-O",
+      "profiles": [
+        {
+          "profile": "debug",
+          "library_abi": "4bbb2b481946a8297e703f0d24070fd1c5820f797731463ef9a5c5a8b9b9897f",
+          "archives": {
+            "a": {
+              "artifact_sha256": "fe04adcabc082f90689e469de8f42e10b96f003b290bb7e8910168cc1fa6d595",
+              "key": "d152a0d369efec55e0d76faabdbceaa895a54fe0a3dbb72ebe17736c12aafcec",
+              "native_entry_abi": {
+                "build_key": "d152a0d369efec55e0d76faabdbceaa895a54fe0a3dbb72ebe17736c12aafcec",
+                "cleanup_after_scopes": "nex_runtime_finish",
+                "compiler_build": "d8e9ab20b2cae3ef181e03a9379f490b66be794f4ccaca2d8d349147d888affb",
+                "compiler_target": "arm64-apple-macosx27.0.0",
+                "data_layout": "e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-n32:64-S128-Fn32",
+                "entries": [
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "ptr (ptr)",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_5_alias",
+                    "parameters": [
+                      {
+                        "index": 0,
+                        "llvm_attributes": "",
+                        "llvm_type": "ptr",
+                        "ownership": "same_runtime_handle_valid_for_call",
+                        "role": "source_parameter",
+                        "source_name": "value",
+                        "source_type": "cell<i64>"
+                      }
+                    ],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_scope_managed_handle"
+                    },
+                    "source_effects": [],
+                    "source_function": "reference_library::alias",
+                    "source_function_hash": "00046ff940036f9380863d72dcab3b9dfe00585593d9a5c1ad4bac11d3ce36ae",
+                    "source_result": "cell<i64>",
+                    "variadic": false
+                  },
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "ptr (ptr)",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_7_closure",
+                    "parameters": [
+                      {
+                        "index": 0,
+                        "llvm_attributes": "",
+                        "llvm_type": "ptr",
+                        "ownership": "same_runtime_handle_valid_for_call",
+                        "role": "source_parameter",
+                        "source_name": "value",
+                        "source_type": "cell<i64>"
+                      }
+                    ],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_scope_managed_handle"
+                    },
+                    "source_effects": [],
+                    "source_function": "reference_library::closure",
+                    "source_function_hash": "1613f0252f29c2efe2460252e9fb3870784c5557da7ecdeed3cac83ecd52739c",
+                    "source_result": "fn()->i64!{state}",
+                    "variadic": false
+                  },
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "ptr ()",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_5_cycle",
+                    "parameters": [],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_scope_managed_handle"
+                    },
+                    "source_effects": [
+                      "state"
+                    ],
+                    "source_function": "reference_library::cycle",
+                    "source_function_hash": "1e1dd96e149040ef87c51757abdb0961965078494e2182934bb65e4d7112614e",
+                    "source_result": "cell<reference_library::Node>",
+                    "variadic": false
+                  },
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "ptr (i64)",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_4_make",
+                    "parameters": [
+                      {
+                        "index": 0,
+                        "llvm_attributes": "",
+                        "llvm_type": "i64",
+                        "ownership": "value",
+                        "role": "source_parameter",
+                        "source_name": "value",
+                        "source_type": "i64"
+                      }
+                    ],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_scope_managed_handle"
+                    },
+                    "source_effects": [
+                      "state"
+                    ],
+                    "source_function": "reference_library::make",
+                    "source_function_hash": "752357f7b0f4d65048357d276d2afe512b2d1c25cfca8fdab04d815f80826552",
+                    "source_result": "cell<i64>",
+                    "variadic": false
+                  },
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "i64 (ptr, ptr)",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_11_raise_value",
+                    "parameters": [
+                      {
+                        "index": 0,
+                        "llvm_attributes": "",
+                        "llvm_type": "ptr",
+                        "ownership": "same_runtime_handle_valid_for_call",
+                        "role": "source_parameter",
+                        "source_name": "value",
+                        "source_type": "cell<i64>"
+                      },
+                      {
+                        "index": 1,
+                        "initialize": "null_handle",
+                        "llvm_attributes": "",
+                        "llvm_type": "ptr",
+                        "on_non_null": "nex_source_error_unhandled",
+                        "role": "source_error_out",
+                        "runtime_cpp_type": "nexrt::Handle **"
+                      }
+                    ],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "i64",
+                      "ownership": "value"
+                    },
+                    "source_effects": [
+                      "throw"
+                    ],
+                    "source_function": "reference_library::raise_value",
+                    "source_function_hash": "b14e3321469b3fc6bb021647720f18df4069dc62073e74aa4f4edebfa2d598ef",
+                    "source_result": "i64",
+                    "variadic": false
+                  },
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "ptr (ptr)",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_8_snapshot",
+                    "parameters": [
+                      {
+                        "index": 0,
+                        "llvm_attributes": "",
+                        "llvm_type": "ptr",
+                        "ownership": "same_runtime_handle_valid_for_call",
+                        "role": "source_parameter",
+                        "source_name": "value",
+                        "source_type": "cell<i64>"
+                      }
+                    ],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_scope_managed_handle"
+                    },
+                    "source_effects": [],
+                    "source_function": "reference_library::snapshot",
+                    "source_function_hash": "2d68129eba7f7b6497286779eef5cbac71ddce5594efac179b89ff6d3ffdfd30",
+                    "source_result": "reference_library::Snapshot",
+                    "variadic": false
+                  }
+                ],
+                "language": "0.30",
+                "library_abi": "4bbb2b481946a8297e703f0d24070fd1c5820f797731463ef9a5c5a8b9b9897f",
+                "llvm_sha256": "82652e34d487d45b8c5f778fa3b31531d3d226d995224c840a5af258adcf73b8",
+                "reference_context": {
+                  "code_images": "keep all images loaded until returned callables and captures retire",
+                  "code_only": true,
+                  "context_end": "handles retire; retained cell Values become inert",
+                  "fatal_traps": "unwind and close the enclosing context before further calls",
+                  "guide": "docs/reference-library-abi.md",
+                  "native_host_scope": "one RequestScope spans related calls and their handles",
+                  "runtime_owner": "one enclosing host or compiled application",
+                  "runtime_unload": false,
+                  "schema": "nex.native-reference-context/1",
+                  "source_errors": "same-context owned packets; inspect before using the result",
+                  "thread_affine": true
+                },
+                "runtime_header": "nex_host.h",
+                "schema": "nex.native-entry-abi/1",
+                "stable_public_abi": false,
+                "synchronous_call_scope": "nexrt::RequestScope",
+                "target": "arm64-apple-darwin27.2.0",
+                "task_calls_require_executor": true,
+                "toolchain": "0.263.0"
+              }
+            },
+            "b": {
+              "artifact_sha256": "198aeeb90619a994b67c3a8423e36e3ff1c8c97203861e9b73fe25a0df0aeb9b",
+              "key": "4722535b84da37cab097d6d36020d508dbe7f76171244854229bc53ccf586c51",
+              "native_entry_abi": {
+                "build_key": "4722535b84da37cab097d6d36020d508dbe7f76171244854229bc53ccf586c51",
+                "cleanup_after_scopes": "nex_runtime_finish",
+                "compiler_build": "d8e9ab20b2cae3ef181e03a9379f490b66be794f4ccaca2d8d349147d888affb",
+                "compiler_target": "arm64-apple-macosx27.0.0",
+                "data_layout": "e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-n32:64-S128-Fn32",
+                "entries": [
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "void ()",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_7_collect",
+                    "parameters": [],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "void",
+                      "ownership": "none"
+                    },
+                    "source_effects": [
+                      "state"
+                    ],
+                    "source_function": "reference_library::collect",
+                    "source_function_hash": "b7a6cba804f274cd39f375a325da09201059abeea8d64edb136fa4e47bd73dfd",
+                    "source_result": "unit",
+                    "variadic": false
+                  },
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "i64 (ptr)",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_11_fault_value",
+                    "parameters": [
+                      {
+                        "index": 0,
+                        "llvm_attributes": "",
+                        "llvm_type": "ptr",
+                        "ownership": "same_runtime_handle_valid_for_call",
+                        "role": "source_parameter",
+                        "source_name": "value",
+                        "source_type": "reference_library::Fault"
+                      }
+                    ],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "i64",
+                      "ownership": "value"
+                    },
+                    "source_effects": [
+                      "state"
+                    ],
+                    "source_function": "reference_library::fault_value",
+                    "source_function_hash": "97abd7f27f99900f5144b40fc2125aa0d64064cc2f9c278249127c7a4787ea48",
+                    "source_result": "i64",
+                    "variadic": false
+                  },
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "i64 (ptr)",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_6_invoke",
+                    "parameters": [
+                      {
+                        "index": 0,
+                        "llvm_attributes": "",
+                        "llvm_type": "ptr",
+                        "ownership": "same_runtime_handle_valid_for_call",
+                        "role": "source_parameter",
+                        "source_name": "value",
+                        "source_type": "fn()->i64!{state}"
+                      }
+                    ],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "i64",
+                      "ownership": "value"
+                    },
+                    "source_effects": [
+                      "state"
+                    ],
+                    "source_function": "reference_library::invoke",
+                    "source_function_hash": "5cc8bcdea63a98ba27ccd6d424adb74fe21da8aa66970ea572c7237fe0d4ba2b",
+                    "source_result": "i64",
+                    "variadic": false
+                  },
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "i64 (ptr)",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_8_overflow",
+                    "parameters": [
+                      {
+                        "index": 0,
+                        "llvm_attributes": "",
+                        "llvm_type": "ptr",
+                        "ownership": "same_runtime_handle_valid_for_call",
+                        "role": "source_parameter",
+                        "source_name": "value",
+                        "source_type": "cell<i64>"
+                      }
+                    ],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "i64",
+                      "ownership": "value"
+                    },
+                    "source_effects": [
+                      "state"
+                    ],
+                    "source_function": "reference_library::overflow",
+                    "source_function_hash": "a0c754cecf862e6b3ac9aa8f3be6195c4398a67eda9064317385e05ddc29cc1b",
+                    "source_result": "i64",
+                    "variadic": false
+                  },
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "i64 (ptr)",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_4_read",
+                    "parameters": [
+                      {
+                        "index": 0,
+                        "llvm_attributes": "",
+                        "llvm_type": "ptr",
+                        "ownership": "same_runtime_handle_valid_for_call",
+                        "role": "source_parameter",
+                        "source_name": "value",
+                        "source_type": "cell<i64>"
+                      }
+                    ],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "i64",
+                      "ownership": "value"
+                    },
+                    "source_effects": [
+                      "state"
+                    ],
+                    "source_function": "reference_library::read",
+                    "source_function_hash": "15221f13a2df78a411c0b849c3dd663d4527037ee6c5a3cc6ca89f2cad790751",
+                    "source_result": "i64",
+                    "variadic": false
+                  },
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "void (ptr, i64)",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_5_write",
+                    "parameters": [
+                      {
+                        "index": 0,
+                        "llvm_attributes": "",
+                        "llvm_type": "ptr",
+                        "ownership": "same_runtime_handle_valid_for_call",
+                        "role": "source_parameter",
+                        "source_name": "value",
+                        "source_type": "cell<i64>"
+                      },
+                      {
+                        "index": 1,
+                        "llvm_attributes": "",
+                        "llvm_type": "i64",
+                        "ownership": "value",
+                        "role": "source_parameter",
+                        "source_name": "next",
+                        "source_type": "i64"
+                      }
+                    ],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "void",
+                      "ownership": "none"
+                    },
+                    "source_effects": [
+                      "state"
+                    ],
+                    "source_function": "reference_library::write",
+                    "source_function_hash": "654f0a659dfd8e12b5c84436ab849e3409b41d3e84f16acfcbb09cb930278e86",
+                    "source_result": "unit",
+                    "variadic": false
+                  }
+                ],
+                "language": "0.30",
+                "library_abi": "4bbb2b481946a8297e703f0d24070fd1c5820f797731463ef9a5c5a8b9b9897f",
+                "llvm_sha256": "95d968ac3edd03f59cc766409576ffe07e34b2f6fb97040909b975e69d588e2c",
+                "reference_context": {
+                  "code_images": "keep all images loaded until returned callables and captures retire",
+                  "code_only": true,
+                  "context_end": "handles retire; retained cell Values become inert",
+                  "fatal_traps": "unwind and close the enclosing context before further calls",
+                  "guide": "docs/reference-library-abi.md",
+                  "native_host_scope": "one RequestScope spans related calls and their handles",
+                  "runtime_owner": "one enclosing host or compiled application",
+                  "runtime_unload": false,
+                  "schema": "nex.native-reference-context/1",
+                  "source_errors": "same-context owned packets; inspect before using the result",
+                  "thread_affine": true
+                },
+                "runtime_header": "nex_host.h",
+                "schema": "nex.native-entry-abi/1",
+                "stable_public_abi": false,
+                "synchronous_call_scope": "nexrt::RequestScope",
+                "target": "arm64-apple-darwin27.2.0",
+                "task_calls_require_executor": true,
+                "toolchain": "0.263.0"
+              }
+            }
+          },
+          "images": {
+            "a": "f4480a1fa8b15bdddd59a7c35a9d630ddb1fca6bdc3e1c8b02dac000db0e7ea8",
+            "b": "b30b71899f652b3dbb966da2bdf170cda955098c0ee7257977b5b4067e5f0a11"
+          },
+          "host": {
+            "ok": true,
+            "related_calls": 1346,
+            "cycles": 64,
+            "source_packets": 64,
+            "unrelated_context_rejected": true,
+            "ended_context_rejected": true,
+            "fatal_contexts": 3,
+            "live_delta": 0
+          },
+          "compiled_source_catch_exit": 42,
+          "embedded_runtime_rejected": true
+        },
+        {
+          "profile": "release",
+          "library_abi": "4a18ba508086ed2bb1aa8811686ba5bbdfa199f992b7315968bf4b2ff189b30e",
+          "archives": {
+            "a": {
+              "artifact_sha256": "cf232f069817123679a4c6c302910b1bbaa88151521d2a696eed95a028538641",
+              "key": "3f7d49fa828288356411986c7235850c50af794a36c081ec3d101e7fd9daeb13",
+              "native_entry_abi": {
+                "build_key": "3f7d49fa828288356411986c7235850c50af794a36c081ec3d101e7fd9daeb13",
+                "cleanup_after_scopes": "nex_runtime_finish",
+                "compiler_build": "d8e9ab20b2cae3ef181e03a9379f490b66be794f4ccaca2d8d349147d888affb",
+                "compiler_target": "arm64-apple-macosx27.0.0",
+                "data_layout": "e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-n32:64-S128-Fn32",
+                "entries": [
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "ptr (ptr)",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_5_alias",
+                    "parameters": [
+                      {
+                        "index": 0,
+                        "llvm_attributes": "",
+                        "llvm_type": "ptr",
+                        "ownership": "same_runtime_handle_valid_for_call",
+                        "role": "source_parameter",
+                        "source_name": "value",
+                        "source_type": "cell<i64>"
+                      }
+                    ],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_scope_managed_handle"
+                    },
+                    "source_effects": [],
+                    "source_function": "reference_library::alias",
+                    "source_function_hash": "00046ff940036f9380863d72dcab3b9dfe00585593d9a5c1ad4bac11d3ce36ae",
+                    "source_result": "cell<i64>",
+                    "variadic": false
+                  },
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "ptr (ptr)",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_7_closure",
+                    "parameters": [
+                      {
+                        "index": 0,
+                        "llvm_attributes": "",
+                        "llvm_type": "ptr",
+                        "ownership": "same_runtime_handle_valid_for_call",
+                        "role": "source_parameter",
+                        "source_name": "value",
+                        "source_type": "cell<i64>"
+                      }
+                    ],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_scope_managed_handle"
+                    },
+                    "source_effects": [],
+                    "source_function": "reference_library::closure",
+                    "source_function_hash": "1613f0252f29c2efe2460252e9fb3870784c5557da7ecdeed3cac83ecd52739c",
+                    "source_result": "fn()->i64!{state}",
+                    "variadic": false
+                  },
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "ptr ()",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_5_cycle",
+                    "parameters": [],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_scope_managed_handle"
+                    },
+                    "source_effects": [
+                      "state"
+                    ],
+                    "source_function": "reference_library::cycle",
+                    "source_function_hash": "1e1dd96e149040ef87c51757abdb0961965078494e2182934bb65e4d7112614e",
+                    "source_result": "cell<reference_library::Node>",
+                    "variadic": false
+                  },
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "ptr (i64)",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_4_make",
+                    "parameters": [
+                      {
+                        "index": 0,
+                        "llvm_attributes": "",
+                        "llvm_type": "i64",
+                        "ownership": "value",
+                        "role": "source_parameter",
+                        "source_name": "value",
+                        "source_type": "i64"
+                      }
+                    ],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_scope_managed_handle"
+                    },
+                    "source_effects": [
+                      "state"
+                    ],
+                    "source_function": "reference_library::make",
+                    "source_function_hash": "752357f7b0f4d65048357d276d2afe512b2d1c25cfca8fdab04d815f80826552",
+                    "source_result": "cell<i64>",
+                    "variadic": false
+                  },
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "i64 (ptr, ptr)",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_11_raise_value",
+                    "parameters": [
+                      {
+                        "index": 0,
+                        "llvm_attributes": "",
+                        "llvm_type": "ptr",
+                        "ownership": "same_runtime_handle_valid_for_call",
+                        "role": "source_parameter",
+                        "source_name": "value",
+                        "source_type": "cell<i64>"
+                      },
+                      {
+                        "index": 1,
+                        "initialize": "null_handle",
+                        "llvm_attributes": "",
+                        "llvm_type": "ptr",
+                        "on_non_null": "nex_source_error_unhandled",
+                        "role": "source_error_out",
+                        "runtime_cpp_type": "nexrt::Handle **"
+                      }
+                    ],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "i64",
+                      "ownership": "value"
+                    },
+                    "source_effects": [
+                      "throw"
+                    ],
+                    "source_function": "reference_library::raise_value",
+                    "source_function_hash": "b14e3321469b3fc6bb021647720f18df4069dc62073e74aa4f4edebfa2d598ef",
+                    "source_result": "i64",
+                    "variadic": false
+                  },
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "ptr (ptr)",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_8_snapshot",
+                    "parameters": [
+                      {
+                        "index": 0,
+                        "llvm_attributes": "",
+                        "llvm_type": "ptr",
+                        "ownership": "same_runtime_handle_valid_for_call",
+                        "role": "source_parameter",
+                        "source_name": "value",
+                        "source_type": "cell<i64>"
+                      }
+                    ],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "ptr",
+                      "ownership": "same_runtime_scope_managed_handle"
+                    },
+                    "source_effects": [],
+                    "source_function": "reference_library::snapshot",
+                    "source_function_hash": "2d68129eba7f7b6497286779eef5cbac71ddce5594efac179b89ff6d3ffdfd30",
+                    "source_result": "reference_library::Snapshot",
+                    "variadic": false
+                  }
+                ],
+                "language": "0.30",
+                "library_abi": "4a18ba508086ed2bb1aa8811686ba5bbdfa199f992b7315968bf4b2ff189b30e",
+                "llvm_sha256": "55352efbe899d651efa1cc0597822dd2ed0f9cc5a635850601476e53599836ab",
+                "reference_context": {
+                  "code_images": "keep all images loaded until returned callables and captures retire",
+                  "code_only": true,
+                  "context_end": "handles retire; retained cell Values become inert",
+                  "fatal_traps": "unwind and close the enclosing context before further calls",
+                  "guide": "docs/reference-library-abi.md",
+                  "native_host_scope": "one RequestScope spans related calls and their handles",
+                  "runtime_owner": "one enclosing host or compiled application",
+                  "runtime_unload": false,
+                  "schema": "nex.native-reference-context/1",
+                  "source_errors": "same-context owned packets; inspect before using the result",
+                  "thread_affine": true
+                },
+                "runtime_header": "nex_host.h",
+                "schema": "nex.native-entry-abi/1",
+                "stable_public_abi": false,
+                "synchronous_call_scope": "nexrt::RequestScope",
+                "target": "arm64-apple-darwin27.2.0",
+                "task_calls_require_executor": true,
+                "toolchain": "0.263.0"
+              }
+            },
+            "b": {
+              "artifact_sha256": "7f6ba14d92b8b9e269803ccaff2a8897499c891ac0577d55660456e3eaaae64d",
+              "key": "7a1d4c4260594270d27b2a2f757fd395ac7c754238003e18cc7f942c8506ee76",
+              "native_entry_abi": {
+                "build_key": "7a1d4c4260594270d27b2a2f757fd395ac7c754238003e18cc7f942c8506ee76",
+                "cleanup_after_scopes": "nex_runtime_finish",
+                "compiler_build": "d8e9ab20b2cae3ef181e03a9379f490b66be794f4ccaca2d8d349147d888affb",
+                "compiler_target": "arm64-apple-macosx27.0.0",
+                "data_layout": "e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-n32:64-S128-Fn32",
+                "entries": [
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "void ()",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_7_collect",
+                    "parameters": [],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "void",
+                      "ownership": "none"
+                    },
+                    "source_effects": [
+                      "state"
+                    ],
+                    "source_function": "reference_library::collect",
+                    "source_function_hash": "b7a6cba804f274cd39f375a325da09201059abeea8d64edb136fa4e47bd73dfd",
+                    "source_result": "unit",
+                    "variadic": false
+                  },
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "i64 (ptr)",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_11_fault_value",
+                    "parameters": [
+                      {
+                        "index": 0,
+                        "llvm_attributes": "",
+                        "llvm_type": "ptr",
+                        "ownership": "same_runtime_handle_valid_for_call",
+                        "role": "source_parameter",
+                        "source_name": "value",
+                        "source_type": "reference_library::Fault"
+                      }
+                    ],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "i64",
+                      "ownership": "value"
+                    },
+                    "source_effects": [
+                      "state"
+                    ],
+                    "source_function": "reference_library::fault_value",
+                    "source_function_hash": "97abd7f27f99900f5144b40fc2125aa0d64064cc2f9c278249127c7a4787ea48",
+                    "source_result": "i64",
+                    "variadic": false
+                  },
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "i64 (ptr)",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_6_invoke",
+                    "parameters": [
+                      {
+                        "index": 0,
+                        "llvm_attributes": "",
+                        "llvm_type": "ptr",
+                        "ownership": "same_runtime_handle_valid_for_call",
+                        "role": "source_parameter",
+                        "source_name": "value",
+                        "source_type": "fn()->i64!{state}"
+                      }
+                    ],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "i64",
+                      "ownership": "value"
+                    },
+                    "source_effects": [
+                      "state"
+                    ],
+                    "source_function": "reference_library::invoke",
+                    "source_function_hash": "5cc8bcdea63a98ba27ccd6d424adb74fe21da8aa66970ea572c7237fe0d4ba2b",
+                    "source_result": "i64",
+                    "variadic": false
+                  },
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "i64 (ptr)",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_8_overflow",
+                    "parameters": [
+                      {
+                        "index": 0,
+                        "llvm_attributes": "",
+                        "llvm_type": "ptr",
+                        "ownership": "same_runtime_handle_valid_for_call",
+                        "role": "source_parameter",
+                        "source_name": "value",
+                        "source_type": "cell<i64>"
+                      }
+                    ],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "i64",
+                      "ownership": "value"
+                    },
+                    "source_effects": [
+                      "state"
+                    ],
+                    "source_function": "reference_library::overflow",
+                    "source_function_hash": "a0c754cecf862e6b3ac9aa8f3be6195c4398a67eda9064317385e05ddc29cc1b",
+                    "source_result": "i64",
+                    "variadic": false
+                  },
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "i64 (ptr)",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_4_read",
+                    "parameters": [
+                      {
+                        "index": 0,
+                        "llvm_attributes": "",
+                        "llvm_type": "ptr",
+                        "ownership": "same_runtime_handle_valid_for_call",
+                        "role": "source_parameter",
+                        "source_name": "value",
+                        "source_type": "cell<i64>"
+                      }
+                    ],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "i64",
+                      "ownership": "value"
+                    },
+                    "source_effects": [
+                      "state"
+                    ],
+                    "source_function": "reference_library::read",
+                    "source_function_hash": "15221f13a2df78a411c0b849c3dd663d4527037ee6c5a3cc6ca89f2cad790751",
+                    "source_result": "i64",
+                    "variadic": false
+                  },
+                  {
+                    "calling_convention": 0,
+                    "defined": true,
+                    "direct_host_call": true,
+                    "llvm_function_attributes": "uwtable",
+                    "llvm_function_type": "void (ptr, i64)",
+                    "mode": "synchronous",
+                    "native_symbol": "nex_17_reference_library_5_write",
+                    "parameters": [
+                      {
+                        "index": 0,
+                        "llvm_attributes": "",
+                        "llvm_type": "ptr",
+                        "ownership": "same_runtime_handle_valid_for_call",
+                        "role": "source_parameter",
+                        "source_name": "value",
+                        "source_type": "cell<i64>"
+                      },
+                      {
+                        "index": 1,
+                        "llvm_attributes": "",
+                        "llvm_type": "i64",
+                        "ownership": "value",
+                        "role": "source_parameter",
+                        "source_name": "next",
+                        "source_type": "i64"
+                      }
+                    ],
+                    "return": {
+                      "llvm_attributes": "",
+                      "llvm_type": "void",
+                      "ownership": "none"
+                    },
+                    "source_effects": [
+                      "state"
+                    ],
+                    "source_function": "reference_library::write",
+                    "source_function_hash": "654f0a659dfd8e12b5c84436ab849e3409b41d3e84f16acfcbb09cb930278e86",
+                    "source_result": "unit",
+                    "variadic": false
+                  }
+                ],
+                "language": "0.30",
+                "library_abi": "4a18ba508086ed2bb1aa8811686ba5bbdfa199f992b7315968bf4b2ff189b30e",
+                "llvm_sha256": "dfbe5cb2097f8d22a22270f82bf35641c7a9e38f38d8de1deb00450a34a93432",
+                "reference_context": {
+                  "code_images": "keep all images loaded until returned callables and captures retire",
+                  "code_only": true,
+                  "context_end": "handles retire; retained cell Values become inert",
+                  "fatal_traps": "unwind and close the enclosing context before further calls",
+                  "guide": "docs/reference-library-abi.md",
+                  "native_host_scope": "one RequestScope spans related calls and their handles",
+                  "runtime_owner": "one enclosing host or compiled application",
+                  "runtime_unload": false,
+                  "schema": "nex.native-reference-context/1",
+                  "source_errors": "same-context owned packets; inspect before using the result",
+                  "thread_affine": true
+                },
+                "runtime_header": "nex_host.h",
+                "schema": "nex.native-entry-abi/1",
+                "stable_public_abi": false,
+                "synchronous_call_scope": "nexrt::RequestScope",
+                "target": "arm64-apple-darwin27.2.0",
+                "task_calls_require_executor": true,
+                "toolchain": "0.263.0"
+              }
+            }
+          },
+          "images": {
+            "a": "eafa65589168ac6cc4bd93989b02af7b2afae07e639a8ddbd23f90f7601c317b",
+            "b": "6e5d2613ff1b2b2e2bad7bf3ab0206667470d74edacc7c92df84e09c5df4f026"
+          },
+          "host": {
+            "ok": true,
+            "related_calls": 1346,
+            "cycles": 64,
+            "source_packets": 64,
+            "unrelated_context_rejected": true,
+            "ended_context_rejected": true,
+            "fatal_contexts": 3,
+            "live_delta": 0
+          },
+          "compiled_source_catch_exit": 42,
+          "embedded_runtime_rejected": true
+        }
+      ]
+    },
+    "public_commands": [
+      {
+        "command": [
+          "check",
+          "--json"
+        ],
+        "passed": true
+      },
+      {
+        "command": [
+          "eval",
+          "--json"
+        ],
+        "passed": true
+      },
+      {
+        "command": [
+          "run",
+          "--profile",
+          "release",
+          "--json"
+        ],
+        "passed": true
+      },
+      {
+        "command": [
+          "test",
+          "--json"
+        ],
+        "passed": true
+      }
+    ],
+    "limitations": [
+      "source-built030 probe with installed resources",
+      "normal CMake installation retains host dependencies",
+      "not a portable SDK or ordinary030 CLI qualification"
+    ],
+    "documentation_refresh": "Installed final documentation after body-only edits; qualified production code, runtime, test host and driver unchanged."
+  },
+  "build_logs_sha256": {
+    "build/reference-library-build-final.log": "72d48117d5c9126235da9eb43ef8922ff09e3120186c39594882e46be726cbd6",
+    "build/reference-library-v1/build-complete.log": "41335e0d4e74124b25cfa26252415a3ec1f70bbcbd4fb9cd0b6b1139ec28e783"
+  },
+  "initial_failures": [
+    {
+      "group": "references030_versioned",
+      "reason": "Invocation omitted existing NEX_TSC selection; repository web/node_modules has no TypeScript package. Rechecked only this group with retained pinned TypeScript and selected Node."
+    },
+    {
+      "group": "reference_library_context",
+      "reason": "Test attempted nested RequestScope, which correctly fails E_CONTEXT before foreign-cell access. Replaced with independent-thread live context rejection; final source and installed matrices pass."
+    }
+  ],
+  "hosted_preceding_revision": "core-ci-0.262.0-2026-11-16.json",
+  "limitations": [
+    "sequential matching-runtime C++ development interface; not ordinary030 CLI publication",
+    "fixed code images retained until callables/captures/cleanup retire; no arbitrary live unload",
+    "HTTP and task reference contexts, public foreign ABI, class/nullability layouts and Python protocols remain pending",
+    "normal installation retains host dependencies; immutable public SDK0.246.1 remains unchanged",
+    "focused macOS source/native/TypeScript and relocated normal installation; no full new compiler/platform/portable-SDK release acceptance"
+  ]
+}

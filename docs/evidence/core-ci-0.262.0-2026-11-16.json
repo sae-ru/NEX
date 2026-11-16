@@ -1,0 +1,97 @@
+{
+  "schema": "nex.hosted-core-result/1",
+  "toolchain": "0.262.0",
+  "source_commit": "e95b792f4fdf816f0becad346ff0e9f89452083c",
+  "run_id": 43857022827,
+  "url": "https://github.com/sae-ru/NEX/actions/runs/43857022827",
+  "status": "completed",
+  "conclusion": "failure",
+  "raw_report_sha256": "3a510ddaa00c887bfc760e9526e3080ed0d26b7851ad8abfeaa6b2ff12c88494",
+  "jobs": [
+    {
+      "name": "linux-core",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-16T11:21:30Z",
+      "completed_at": "2026-11-16T11:24:37Z",
+      "runner_name": "GitHub Actions 1000000260",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-16T11:21:31Z",
+          "completed_at": "2026-11-16T11:21:34Z"
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-16T11:21:34Z",
+          "completed_at": "2026-11-16T11:21:38Z"
+        },
+        {
+          "name": "Cache pinned public debugger packages",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-16T11:21:38Z",
+          "completed_at": "2026-11-16T11:21:41Z"
+        },
+        {
+          "name": "Build pinned toolchain and execute core offline",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-16T11:21:41Z",
+          "completed_at": "2026-11-16T11:24:32Z"
+        },
+        {
+          "name": "Retain results including failures",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-16T11:24:32Z",
+          "completed_at": "2026-11-16T11:24:34Z"
+        },
+        {
+          "name": "Post Cache pinned public debugger packages",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-11-16T11:24:34Z",
+          "completed_at": "2026-11-16T11:24:34Z"
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-11-16T11:24:34Z",
+          "completed_at": "2026-11-16T11:24:34Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-11-16T11:24:34Z",
+          "completed_at": "2026-11-16T11:24:34Z"
+        }
+      ]
+    },
+    {
+      "name": "macos-core",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "started_at": "2026-11-16T11:21:27Z",
+      "completed_at": "2026-11-16T11:36:28Z",
+      "runner_name": "",
+      "steps": []
+    }
+  ],
+  "qualified_on_both_platforms": false,
+  "scope": "Linux job passed. macOS job was cancelled with no runner name and no executed steps; this run supplies no macOS compiler/test evidence. Reason not inferred from absent execution."
+}

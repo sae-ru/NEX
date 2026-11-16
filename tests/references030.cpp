@@ -53,10 +53,35 @@ int main(int argc,char **argv){try{
     writeFile((output/"program-wasm.mlir").string(),emitWasmMLIR(p,selected,false));
     std::cout<<json(llvm::json::Object{{"ok",true},{"language",programLanguage(p)},{"revision",rev},{"metal",hash(metal.source)},{"cuda",hash(cuda.source)},{"opencl",hash(opencl.source)}},false)<<'\n';return 0;
   }
-  if(mode=="build"){
+  if(mode=="build"||mode=="library"||mode=="library-app"||mode=="library-embedded"){
     BuildOptions options;options.entry=selected;options.profile=argc>4?argv[4]:"debug";
+    if(mode=="library"||mode=="library-embedded"){
+      if(argc!=6)throw Error("E_OPTION","library mode requires an export specification JSON");
+      auto spec=llvm::json::parse(argv[5]);if(!spec||!spec->getAsObject())throw Error("E_OPTION","invalid library export specification");
+      auto object=spec->getAsObject();auto named=object->getString("entry");auto exports=object->getArray("exports");
+      if(!named||!exports)throw Error("E_OPTION","library specification needs entry/exports");
+      options.entry=p.function(named->str()).name;options.libraryEntry=true;options.codeOnlyLibrary=mode=="library";options.positionIndependent=true;options.projectLibraryABI=true;
+      for(const auto &value:*exports){auto name=value.getAsString();if(!name)throw Error("E_OPTION","export must name a source function");options.libraryExports.push_back(p.function(name->str()).name);}
+    }
+    if(mode=="library-app"){
+      if(argc!=6)throw Error("E_OPTION","library-app requires a dependency specification JSON");
+      auto spec=llvm::json::parse(argv[5]);if(!spec||!spec->getAsObject())throw Error("E_OPTION","invalid dependency specification");
+      auto object=spec->getAsObject();auto named=object->getString("entry");auto libraries=object->getArray("libraries");
+      if(!named||!libraries)throw Error("E_OPTION","dependency specification needs entry/libraries");
+      options.entry=p.function(named->str()).name;options.positionIndependent=true;options.projectLibraryABI=true;
+      for(const auto &value:*libraries){
+        auto library=value.getAsObject();if(!library)throw Error("E_OPTION","invalid library");
+        auto path=library->getString("artifact"),digest=library->getString("artifact_hash"),abi=library->getString("library_abi");
+        auto contracts=library->getObject("function_contracts");if(!path||!digest||!abi||!contracts)throw Error("E_OPTION","incomplete library");
+        NativeLibraryInput input;input.path=path->str();input.digest=digest->str();input.abi=abi->str();
+        for(const auto &field:*contracts){auto text=field.second.getAsString();if(!text)throw Error("E_OPTION","invalid function contract");input.contracts[field.first.str()]=text->str();}
+        options.libraries.push_back(std::move(input));
+      }
+    }
     auto built=build(p,output.string(),options);
-    std::cout<<json(llvm::json::Object{{"ok",true},{"artifact",built.executable},{"key",built.key},{"library_abi",built.libraryABI},{"language",programLanguage(p)},{"revision",rev}},false)<<'\n';return 0;
+    llvm::json::Value abi=nullptr;if(!built.nativeEntryABI.empty()){auto parsed=llvm::json::parse(built.nativeEntryABI);if(!parsed)throw Error("E_TEST","invalid native entry ABI");abi=std::move(*parsed);}
+    llvm::json::Object contracts;for(const auto &[name,digest]:built.functionContracts)contracts[name]=digest;
+    std::cout<<json(llvm::json::Object{{"ok",true},{"artifact",built.executable},{"artifact_hash",hash(readFile(built.executable))},{"function_contracts",std::move(contracts)},{"key",built.key},{"cached",built.cached},{"native_entry_abi",std::move(abi)},{"library_abi",built.libraryABI},{"language",programLanguage(p)},{"revision",rev}},false)<<'\n';return 0;
   }
   if(mode=="mlir") {writeFile(output.string(),emitMLIR(p,selected));return 0;}
   if(mode=="wasm") {writeFile(output.string(),emitWasmMLIR(p,selected,false));return 0;}

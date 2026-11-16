@@ -30,7 +30,9 @@ trusted matching C++ host this particular entry needs a prototype equivalent to:
 extern "C" int64_t ACTUAL_NATIVE_SYMBOL(int64_t, nexrt::Handle **);
 ```
 
-Every synchronous call must be enclosed by `nexrt::RequestScope`. Initialize the
+Every synchronous call must be enclosed by `nexrt::RequestScope`. Related030
+reference-library calls and their handles share one enclosing scope; see the
+[reference-library context contract](reference-library-abi.md). Initialize the
 error slot to `nullptr`; after the call, inspect it before using the return value.
 For a non-null slot, `nex_source_error_unhandled` raises the matching runtime's
 `nexrt::NativeSourceException`. A fatal runtime trap instead unwinds directly.

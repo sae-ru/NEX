@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; explicit030 API development; toolchain 0.262.0"
+applies_to: "language 0.28; explicit030 API development; toolchain 0.263.0"
 owner: repository
 ---
 
@@ -26,6 +26,12 @@ retain their exact source/platform scopes and do not qualify later changes.
 The old implementation worktree has no commits absent from current main.
 
 ## Executable backlog
+
+The0.263 source030 code-only [native reference libraries](reference-library-abi.md)
+share live aliases, returned captures and typed error packets in one enclosing
+host/application context. This is a sequential matching-runtime C++ API step;
+ordinary030 CLI publication, HTTP/task transfer, arbitrary image unload and
+portable SDK/platform acceptance remain open.
 
 The0.262 version-selected030 C++ APIs add canonical reference archives, normal
 backend entry points and guarded retained029 migration. Ordinary CLI publication,

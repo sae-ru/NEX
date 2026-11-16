@@ -20,6 +20,58 @@
     "synchronous_call_scope": {"const": "nexrt::RequestScope"},
     "cleanup_after_scopes": {"const": "nex_runtime_finish"},
     "task_calls_require_executor": {"const": true},
+    "reference_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "runtime_owner",
+        "native_host_scope",
+        "thread_affine",
+        "code_only",
+        "source_errors",
+        "fatal_traps",
+        "context_end",
+        "code_images",
+        "runtime_unload",
+        "guide"
+      ],
+      "properties": {
+        "schema": {
+          "const": "nex.native-reference-context/1"
+        },
+        "runtime_owner": {
+          "type": "string"
+        },
+        "native_host_scope": {
+          "type": "string"
+        },
+        "thread_affine": {
+          "const": true
+        },
+        "code_only": {
+          "const": true
+        },
+        "source_errors": {
+          "type": "string"
+        },
+        "fatal_traps": {
+          "type": "string"
+        },
+        "context_end": {
+          "type": "string"
+        },
+        "code_images": {
+          "type": "string"
+        },
+        "runtime_unload": {
+          "const": false
+        },
+        "guide": {
+          "const": "docs/reference-library-abi.md"
+        }
+      }
+    },
     "entries": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/entry"}}
   },
   "$defs": {

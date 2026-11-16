@@ -301,3 +301,7 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
    overloads of the already reserved builtin; one-argument bytes(list<i64>)
    conversion is unchanged. Language0.28, identities and the public C ABI stay
    unchanged; one private native runtime conversion symbol is used. *)
+
+(* Toolchain0.263 code-only native reference libraries add a matching-runtime
+   context/ownership contract, not source syntax. Explicit030 production
+   additions remain in references030.ebnf; ordinary028/029 are unchanged. *)

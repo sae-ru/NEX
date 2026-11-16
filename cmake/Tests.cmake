@@ -605,6 +605,16 @@ add_test(NAME references030_versioned COMMAND ${Python3_EXECUTABLE} -B
   --native-host $<TARGET_FILE:nex_managed_reference_native_probe> --clang ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
   --output ${CMAKE_CURRENT_BINARY_DIR}/references030-${PROJECT_VERSION}-acceptance)
 set_tests_properties(references030_versioned PROPERTIES TIMEOUT 900)
+add_executable(nex_reference_library_host tests/reference_library_host.cpp
+  runtime/runtime.cpp runtime/nex_cells.cpp runtime/nex_cell_host.cpp)
+target_include_directories(nex_reference_library_host PRIVATE runtime tests)
+target_link_libraries(nex_reference_library_host PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
+set_target_properties(nex_reference_library_host PROPERTIES ENABLE_EXPORTS ON)
+add_test(NAME reference_library_context COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_library.py $<TARGET_FILE:nex_references030_probe>
+  $<TARGET_FILE:nex_reference_library_host> --clang ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
+  --output ${CMAKE_CURRENT_BINARY_DIR}/reference-library-${PROJECT_VERSION}-acceptance)
+set_tests_properties(reference_library_context PROPERTIES TIMEOUT 600)
 add_test(NAME managed_references_typescript COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/managed_reference_typescript.py
   $<TARGET_FILE:nex_managed_reference_typescript_probe> $<TARGET_FILE:nex_managed_reference_native_probe>

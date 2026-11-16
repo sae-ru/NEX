@@ -1435,14 +1435,25 @@ std::string nativeEntryABI(const Program &p,const BuildOptions &options,const Bu
         {"ownership",continuation?"executor":f.result.heap()?"same_runtime_scope_managed_handle":f.result==Type::Unit?"none":"value"}}},
       {"parameters",std::move(parameters)}});
   }
-  return json(llvm::json::Object{{"schema","nex.native-entry-abi/1"},{"toolchain",NEX_VERSION},
+  auto record=llvm::json::Object{{"schema","nex.native-entry-abi/1"},{"toolchain",NEX_VERSION},
     {"language",programLanguage(p)},{"compiler_build",NEX_BUILD_ID},{"build_key",result.key},
     {"library_abi",result.libraryABI},{"target",result.target},{"compiler_target",module->getTargetTriple().str()},
     {"data_layout",module->getDataLayoutStr()},
     {"llvm_sha256",llvm::toHex(llvm::SHA256::hash(llvm::arrayRefFromStringRef(ir)),true)},
     {"stable_public_abi",false},{"runtime_header","nex_host.h"},
     {"synchronous_call_scope","nexrt::RequestScope"},{"cleanup_after_scopes","nex_runtime_finish"},
-    {"task_calls_require_executor",true},{"entries",std::move(entries)}},false);
+    {"task_calls_require_executor",true},{"entries",std::move(entries)}};
+  if(p.sourceLanguage==SourceLanguage::References030&&usesManagedReferences(p,roots))
+    record["reference_context"]=llvm::json::Object{{"schema","nex.native-reference-context/1"},
+      {"runtime_owner","one enclosing host or compiled application"},
+      {"native_host_scope","one RequestScope spans related calls and their handles"},
+      {"thread_affine",true},{"code_only",options.codeOnlyLibrary},
+      {"source_errors","same-context owned packets; inspect before using the result"},
+      {"fatal_traps","unwind and close the enclosing context before further calls"},
+      {"context_end","handles retire; retained cell Values become inert"},
+      {"code_images","keep all images loaded until returned callables and captures retire"},
+      {"runtime_unload",false},{"guide","docs/reference-library-abi.md"}};
+  return json(std::move(record),false);
 }
 std::string lower(const std::string &source,const std::string &sourcePath,const std::string &triple,const std::string &layout) {
   mlir::DialectRegistry registry;
@@ -1758,6 +1769,8 @@ TaskNativeStep emitSourceExceptionTasksPrototypeNativeDebug(const Program &p,con
 std::string emitMLIR(const Program &p,const std::string &entry,bool testEntry,bool libraryEntry){
   if(isTypedSourceErrorLanguage(p.sourceLanguage)){
     BuildOptions options;options.entry=entry;options.testEntry=testEntry;options.libraryEntry=libraryEntry;
+    // An IR-only library projection never embeds a second runtime.
+    if(p.sourceLanguage==SourceLanguage::References030&&libraryEntry)options.codeOnlyLibrary=true;
     validateNativeBuildEntry(p,options);
     if(usesNativeTasks(p,entry))return emitTaskNative(p,entry,!libraryEntry,false,{},false,false,nullptr,false,nexrt::taskCodeTypedSourceExceptionABI).mlir;
     return Emitter(p).run(entry,testEntry,libraryEntry);
@@ -2021,7 +2034,10 @@ void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
   rejectUnloweredTasks(p,"native entry preparation");
   std::set<std::string> referenceEntries(options.libraryExports.begin(),options.libraryExports.end());referenceEntries.insert(options.entry);
   validateManagedReferenceExecution(p,referenceEntries);
-  if(p.sourceLanguage==SourceLanguage::References030&&usesManagedReferences(p,referenceEntries)&&(options.libraryEntry||options.target=="server"))throw Error("E_CELL_TARGET","language0.30 reference library/HTTP entry integration is pending",p.function(options.entry).span);
+  if(p.sourceLanguage==SourceLanguage::References030&&usesManagedReferences(p,referenceEntries)){
+    if(options.target=="server")throw Error("E_CELL_TARGET","language0.30 reference HTTP entry integration is pending",p.function(options.entry).span);
+    if(options.libraryEntry&&!options.codeOnlyLibrary)throw Error("E_CELL_TARGET","reference libraries require code-only output and one enclosing host/application runtime",p.function(options.entry).span);
+  }
   const auto taskMode=effectiveNativeTaskLinkage(options);const bool taskProviders=taskMode!=NativeTaskLinkageMode::None;
   bool server=options.target=="server";
   bool tasks=usesNativeTasks(p,options.entry);

@@ -1,3 +1,27 @@
+# Native reference libraries — development0.263.0
+
+Explicit030 C++ build APIs now produce code-only native libraries whose cell
+handles, snapshots, returned closure captures and typed error packets share one
+enclosing host/application context. Actual verified LLVM metadata describes that
+context and physical entry signatures. Fixed shared images use one runtime;
+fatal exits close the context and ended-context cells remain inert.
+Read the [reference-library contract](docs/reference-library-abi.md).
+
+Sixteen core groups pass. The focused Debug/Release library matrix and moved
+normal installation each observe1346 related calls,64 reclaimed cycles and64
+reference-bearing source packets per profile, with no remaining live values.
+Compiled source callers catch a separately compiled archive's nominal error and
+mutate the same cell. Foreign/ended contexts and runtime-embedding libraries
+are rejected. Matching affected native/ABI/source030 checks are retained in the
+[scoped receipt](docs/evidence/reference-library-0.263.0-2026-11-16.json).
+This normal installation retains host dependencies; portable SDK0.246.1 remains
+immutable and does not acquire these development features.
+
+Ordinary030 CLI/project publication, reference HTTP/task integration, persistent
+UI state, nullable/class layouts, Java/Python numeric/object semantics,
+debugger/profile and full source/platform/portable-SDK gates remain open.
+Converters remain deferred; the original plan below is still required.
+
 # Versioned source030 reference graphs — development0.262.0
 
 Explicit C++ version-selected030 source/archive/backend APIs now use canonical

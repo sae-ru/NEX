@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.262.0; source0.30 development APIs"
+applies_to: "toolchain 0.263.0; source0.30 development APIs"
 owner: repository
 ---
 
@@ -68,8 +68,10 @@ the boxed representation for reference-free task programs.
 
 Execution closures combining references with task/parallel execution currently
 receive `E_CELL_CONCURRENCY`. No cross-thread transfer or shared mutable memory
-model is inferred. Native library/HTTP entries needing a reference heap and Wasm
-references remain explicit `E_CELL_TARGET` boundaries; reference-free entry
+model is inferred. Sequential code-only native libraries share one enclosing
+[host/application context](reference-library-abi.md); runtime-embedding libraries,
+HTTP entries needing a reference heap and Wasm references remain explicit
+`E_CELL_TARGET` boundaries; reference-free entry
 behavior is retained. Device emission can select030's inherited supported
 scalar operations; that version check is not physical device qualification.
 

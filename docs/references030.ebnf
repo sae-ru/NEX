@@ -16,4 +16,6 @@ reference_collect = "cell_collect", "(", ")" ;
    old meaning. All four operations require state; read returns a snapshot T,
    write/collect return unit. The execution closure containing references is
    sequential in this stage; reference-free task/parallel programs retain029
-   behavior. Managed wire/host entry values cannot contain a live cell or callable. *)
+   behavior. TypeScript/wire host values cannot contain a live cell or callable.
+   Native matching-runtime library handles require one enclosing live context;
+   their ownership contract adds no source production. *)
