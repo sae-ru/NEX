@@ -1,0 +1,275 @@
+{
+  "schema": "nex.sdk-reference030-preparation/1",
+  "ok": true,
+  "toolchain": "0.279.0",
+  "source_language": "0.30",
+  "base_commit": "630c73a60d4ee4d2864c1b5814d8f6e79cdf20de",
+  "source_sha256": {
+    "tools/sdk_references.py": "8ec856509b64166ae1b9cde485bc7280ec80bc3cb2147aa2c6e5eeb0547ea2f7",
+    "tools/sdk_acceptance.py": "6f0cf4391f9b704a56434f9f98327593f89dc1d9ee63acf4b0fba682ef10d6fa",
+    "cmake/Install.cmake": "929de670deee3f00a04382b4c6d389167dfa0ea5443047ef4cbbfe6ad1d7c2b9",
+    "cmake/Tests.cmake": "75e5b7fc6f415701c3b6ea9c704fa0bead7349bdde4d329f010345196701370a",
+    "cmake/test-tiers.json": "1307b036662f4bce9e4bf6cb00811303e007835126dbf2044017aa975179d698",
+    "tests/sdk_references.py": "a6f723f7059dbc03c489e28cfcf81bb506fac35890b418c3e4992d5c28804076",
+    "tests/sdk_archives.py": "89932fbb0ca953acdd4434cf33bc11e183401fc2397203b5bd9754332b45abeb"
+  },
+  "build_exit_code": 0,
+  "compiler_matches_source": true,
+  "focused_report": "/Users/sae/projects/NEX/build/sdk-reference030-v1/installed-live-v1/report.json",
+  "focused_report_sha256": "15ce59a69d140e742be0a53350c165c68550bf353a5a39ec3e5b9b0649e1746b",
+  "commands": 34,
+  "provider_modes": [
+    "static",
+    "shared",
+    "mixed"
+  ],
+  "standalone_profile": true,
+  "control_outcomes": [
+    "E_LIMIT",
+    "E_TIMEOUT"
+  ],
+  "source_absent_delivery": {
+    "ok": true,
+    "source_absent": true,
+    "profile": {
+      "report": "/Users/sae/projects/NEX/build/sdk-reference030-v1/installed-live-v1/reference030/capture/artifacts/profile/profile.json",
+      "report_sha256": "0cc9c69f447ebe4d7e30a5287e37a7af1dc27df7d6fb064823d2e9d83aa4c7d9",
+      "schema": "nex.profile/3",
+      "build": {
+        "build_key": "74fa924ffce8abae05c8d616fda71401c4281d83ba3e7fae8479a77793ce4c9d",
+        "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+        "entry": "ref_profile_app::main",
+        "language": "0.30",
+        "revision": "ff5bd5328f9bc180cf0bfceebdab7a978007508e1934bcd52993450d8a079545",
+        "schema": "nex.profile-build/2",
+        "source_hash": "e0b3ecfaf7d1696573d9f3909fdb3262456346c5c322034fe6706d48cdfe6de8",
+        "task_limits": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "task_profile_catalog": "7caf52343deaaf269329d0d548a3a7a240a82a572c17c163300e24bb44215535",
+        "toolchain": "0.279.0"
+      },
+      "exit_code": 0,
+      "executor_workers": 1,
+      "tracked_memory_balanced": true,
+      "terminal_tasks": true,
+      "completeness": {
+        "aggregates": true,
+        "cpu": true,
+        "elapsed": true,
+        "lifetime": true,
+        "memory": true,
+        "timeline": false
+      },
+      "source_counts": {
+        "ref_profile_app::main": {
+          "calls": 1,
+          "completed": 1,
+          "aborted": 0
+        },
+        "ref_profile_app::main::$lambda_0": {
+          "calls": 1,
+          "completed": 1,
+          "aborted": 0
+        },
+        "ref_profile_app::main::$lambda_0::$lambda_1": {
+          "calls": 1,
+          "completed": 1,
+          "aborted": 0
+        },
+        "ref_profile_leaf::make": {
+          "calls": 1,
+          "completed": 1,
+          "aborted": 0
+        },
+        "ref_profile_leaf::work": {
+          "calls": 1,
+          "completed": 0,
+          "aborted": 1
+        },
+        "ref_profile_mid::work": {
+          "calls": 1,
+          "completed": 1,
+          "aborted": 0
+        },
+        "ref_profile_pure::offset": {
+          "calls": 1,
+          "completed": 1,
+          "aborted": 0
+        }
+      }
+    },
+    "receipt_sha256": "7e2fd258d4452fe59e1413c7eb9a58b0d4dbb40934e1c7b2329cb357ee4712e1",
+    "captured_source_sha256": "c13000447dd174544f9d13b6e1f3478356f78886ae64391dad1c0ffccd0a9fc0",
+    "replay_programs_equal": true,
+    "ordinary_package_stdout": "42\n",
+    "profile_package_stdout": "42\n",
+    "raw_profile_sha256": "7b8ae9012a3269c918ced2a2ad950d333f9daf6c550858549794d6fbf3197261",
+    "metadata_rewritten": false
+  },
+  "native_host_sessions": {
+    "ok": true,
+    "kernel_cases": 14,
+    "profiles": [
+      "debug",
+      "release"
+    ],
+    "compiled_cases_per_profile": 13,
+    "live_delta": 0,
+    "report_sha256": "0a9640843f17bad2694e896271f02cc01c9b0107e4c5c7628b417b1b955e4ffc",
+    "host_sha256": "d998850a578b6cd27728fdfd326133c7b014ca7b8e7d4c4d376d44c7f00aab1b"
+  },
+  "persistent_UI": {
+    "ok": true,
+    "controller": {
+      "ok": true,
+      "cases": 13,
+      "results": [
+        {
+          "name": "persistent-identity-snapshots-serial-events",
+          "updates": 147,
+          "heap": {
+            "cells": 2,
+            "nodes": 3,
+            "edges": 2,
+            "collections": 294
+          },
+          "passed": true
+        },
+        {
+          "name": "independent-heaps-and-explicit-close",
+          "passed": true
+        },
+        {
+          "name": "close-before-initialization",
+          "passed": true
+        },
+        {
+          "name": "cancel-active-source-update",
+          "passed": true
+        },
+        {
+          "name": "external-application-cancellation",
+          "passed": true
+        },
+        {
+          "name": "deadline-owned-cleanup",
+          "passed": true
+        },
+        {
+          "name": "budget-owned-cleanup",
+          "passed": true
+        },
+        {
+          "name": "host-completion-failure-owned-cleanup",
+          "passed": true
+        },
+        {
+          "name": "uncaught-cell-packet-and-new-context",
+          "passed": true
+        },
+        {
+          "name": "bounded-pending-event-queue",
+          "passed": true
+        },
+        {
+          "name": "opaque-state-host-boundary",
+          "passed": true
+        },
+        {
+          "name": "queued-input-and-published-view-snapshots",
+          "passed": true
+        },
+        {
+          "name": "invalid-host-options",
+          "passed": true
+        }
+      ]
+    },
+    "map_sha256": "ca98a835d468bfebc044cdbc0be92c95218f3c3f10726bc817e1b7bb3529205d",
+    "browser_build": true
+  },
+  "live_debugger": {
+    "requested": true,
+    "executed": true,
+    "manifest_sha256": "2ca6813309d39a065a29e60d0db7acc783ab2ae00871b1c158813cb9259935bb",
+    "mode": "mixed",
+    "cell_value": "41",
+    "pure_watch": "42",
+    "caller": "ref_profile_mid::work"
+  },
+  "resource_sha256": {
+    "docs/native-task-sessions.md": "c9a0a51e818c4520e634236780a24ca26ac2d4011b691463271557db04a9b737",
+    "docs/persistent-ui.md": "a232edc3718dd724f1c5c6559c738047589d93b253600691757ff1c83f620d46",
+    "docs/reference-task-profiling.md": "3b5049ede316bda0d0cc019d6e5b7d79dc3154d6a9e753de6e5830c6f7f93a53",
+    "examples/native-host-session/README.md": "f6f2df405dbebafee686d40252fb68045ea285edb8afc4410eb35e021dff3148",
+    "examples/native-host-session/app/main.nex": "227936fd798a08bdb0ff70c717ee79a0caffaf952acf8b1b8ab058adb6c51e1b",
+    "examples/native-host-session/core/value.nex": "33359393cf1923430a7a5f21eb00f58031cd8bff3830271b5033c842c263951a",
+    "examples/native-host-session/files/value.nex": "5af2c610950d0b9c453602e3a4a6d7de3466c3f19011b4c1b819526269608898",
+    "examples/native-host-session/mid/value.nex": "2d3c73bb4807cc73725d2e0adc13f09b601225844c60c09204b3a8f3b6c3766f",
+    "examples/native-host-session/nex.build.json": "89b0ec3b5c1181707b6b62dd368f0ff5a374657a0a473bed07c3999e689e4d2b",
+    "examples/native-host-session/nex.json": "4480a42a3fcc15093bafd78ff2148b4cb4a0b696d863e442658abe33115cd2b9",
+    "examples/persistent-ui/README.md": "49de41ab290149236a539de711b728d6c067ebf8b35da1dba57e6689f099612f",
+    "examples/persistent-ui/main.nex": "ca6ba70af9a98c2f41844fd15719d7aa4cbf60981706f08d50ee986d84665e7b",
+    "examples/persistent-ui/nex.json": "677a6ca3cec3fb7acd2f2aa8468af981d3288a256eafb9c041079342cf3ca3fe",
+    "examples/reference-task-profiling/README.md": "65ef284b03c9353d670fa1ec5c1fc4c36107199079f0bd0e2370d1995f5bc3f4",
+    "examples/reference-task-profiling/app/main.nex": "c92c36a33c455da24bf4adc62173047f95eeda4ca1e635113d3756ff97270e36",
+    "examples/reference-task-profiling/leaf/value.nex": "ba59a9d6ce27eda0be230b2ef8870b772f8d8d7b4e99b5d655b8b6721ab42bc4",
+    "examples/reference-task-profiling/mid/value.nex": "142bd5d198b60bc491e272d8218ffc01db6249829ce9053eba954e5bb06f511f",
+    "examples/reference-task-profiling/nex.build.json": "291a9d4ec2545e203c6e37cbf60ed7999019dd6f1afc8ccfbadfab92b84f8718",
+    "examples/reference-task-profiling/nex.json": "205dc91efdf4a393d07caefa8624721b57d018a8b569f81c3254b803d9775233",
+    "examples/reference-task-profiling/pure/value.nex": "dd6e1c9da3842f175afd4a5ce87788d949a056f9282aa38af1547052d9e9aeff",
+    "llm/native-reference-task-provider.schema.json": "49bb454e08f419c5428608303ec050ba341a02c732a53413ebfa88f28efb363d",
+    "llm/project-reference-task-linkage.schema.json": "95008925faae5ee386c23fb97b8139e068693a73b0b9869009e266c44b9b3481",
+    "runtime/nex_cell_host.cpp": "ef85c3ac572a7897cc82104e63bef1fca7b147397d06d2c3bd818cd7f928d8ed",
+    "runtime/nex_cells.cpp": "f009588f1f83dc8b8e5028f98cda518d4aa2c684afe1521ce41906bb7ccdb291",
+    "runtime/nex_cells.h": "8aff8c57bd6ee1b41e1cb8b19ed0b0ea5a3f4b51d2804eec3d72f0d9f5bf9f00",
+    "runtime/nex_external_resource.cpp": "72bdf45f36bca279447b1f48fa4ad56878a925e970177ad0a47f4c0a110592a2",
+    "runtime/nex_files.cpp": "c37f6492f5891db8c017e24d74dbc6e63a705ea629c3604273217fbdd63845d4",
+    "runtime/nex_resource_executor.cpp": "b8cde6d63d934896cf1c16a27061b7fc979e909482936659fd29cba9749f197c",
+    "runtime/nex_resource_region.cpp": "32588dace81f19cf179d14df3d7f86be8bb21b772fd6262bf1ca572625943ba1",
+    "runtime/nex_task_external.cpp": "b1e86bf6a1c503e843b872531798cf46f068fdd1691edf3d25fc94b37e3ca324",
+    "runtime/nex_task_frame.cpp": "818eb6016dd2ebe4a5c24c0d4ea5e544632c12674fac4a000a8b29f3e6216d04",
+    "runtime/nex_task_protocol.h": "00d49cd15cf674989be9bc95b0f8cbba7014c777918790e4ec491876ffffdf8c",
+    "runtime/nex_task_session.cpp": "4a74def0de8ddc0af19e0bece9dcd3d796159956036826706cd351f6500b688e",
+    "runtime/nex_task_session.h": "924219a13e0f2cbd321f1cbbd71fe94913593342af6f70d681eb105c5c47c956",
+    "runtime/nex_value.h": "9ff6da42bbcc437f384f69d11f3b87b4f467991bc9577a0d745f9d2021f4422b",
+    "runtime/runtime.cpp": "712bbef1d2065f0e6002748531b1f25555d9514d07988a6a5ef9ca8e23e4dbf1",
+    "tests/host_test.h": "3b08e0a1037aecb1e9998525a30ee01aafba3960aa9d070d481f0763b77bd02b",
+    "tests/native_task_session.cpp": "5411105b4310e4cbe8b3a2e5ff2308c6a050a277ba94b08c1a72fb02fe9de9c3",
+    "tests/native_task_session_images.cpp": "1e161daad8ff8ab61bc8e85ed8a521ce1ae06afa8717b370798536802dd7c2d2",
+    "tests/native_task_sessions.py": "84dbdaa563d3f61a12f7a46b8f4a86d0ec71d5b76af8289d0b034d72b1f4a44b",
+    "tests/persistent_ui_cases.mjs": "8acac772f3193e81251448fe5d9a528aa436b511f250c73a16f5eda2d1d98596",
+    "tools/sdk_references.py": "8ec856509b64166ae1b9cde485bc7280ec80bc3cb2147aa2c6e5eeb0547ea2f7"
+  },
+  "unit_CTest": {
+    "passed_groups": [
+      "sdk_archives",
+      "sdk_host",
+      "test_tiers"
+    ],
+    "junit_sha256": "642107e5997c55f04d11fa0dc365cbf4c35fc38b0610b34756b7dfebbed983d6"
+  },
+  "phase_count": 42,
+  "configured_source_test_groups": 386,
+  "earlier_attempts": [
+    {
+      "case": "source-live-v1",
+      "reason": "new checker required timeline for captured events=0; corrected explicit timeline scope"
+    },
+    {
+      "case": "source-live-v2",
+      "reason": "new checker tried to read per-invocation segments when timeline was absent; source-call aggregates remain mandatory"
+    },
+    {
+      "case": "unit-v1",
+      "reason": "sandbox denied the existing ::1 socket fixture; SDK unit retry with loopback access passed"
+    }
+  ],
+  "complete_source_regression": false,
+  "portable_SDK": false,
+  "complete_SDK_workflow_claimed": false,
+  "whole_goal_complete": false
+}

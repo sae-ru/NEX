@@ -817,6 +817,11 @@ add_test(NAME mobile_projects COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/mobile_projects.py)
 add_test(NAME sdk_host COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/sdk_host.py $<TARGET_FILE:nex>)
+add_test(NAME sdk_reference030 COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/sdk_references.py $<TARGET_FILE:nex>
+  --resources ${CMAKE_CURRENT_SOURCE_DIR}
+  --output ${CMAKE_CURRENT_BINARY_DIR}/sdk-reference030-${PROJECT_VERSION}-acceptance --browser)
+set_tests_properties(sdk_reference030 PROPERTIES COST 180 TIMEOUT 1800)
 add_test(NAME profiling COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/profiling.py $<TARGET_FILE:nex>)
 add_test(NAME server_workload COMMAND ${Python3_EXECUTABLE}

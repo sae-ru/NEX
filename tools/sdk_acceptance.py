@@ -32,6 +32,9 @@ _host_spec.loader.exec_module(sdk_host)
 _stdlib_spec = _host_import.spec_from_file_location('nex_sdk_stdlib', Path(__file__).with_name('sdk_stdlib.py'))
 sdk_stdlib = _host_import.module_from_spec(_stdlib_spec)
 _stdlib_spec.loader.exec_module(sdk_stdlib)
+_references_spec = _host_import.spec_from_file_location('nex_sdk_references', Path(__file__).with_name('sdk_references.py'))
+sdk_references = _host_import.module_from_spec(_references_spec)
+_references_spec.loader.exec_module(sdk_references)
 
 
 NETWORK_PROFILES = ('full', 'windows-ipv6-denied')
@@ -96,8 +99,12 @@ ACCEPTANCE_PHASES_027 = ACCEPTANCE_PHASES_025[:ACCEPTANCE_PHASES_025.index('sour
 
 ACCEPTANCE_PHASES_028 = ACCEPTANCE_PHASES_027[:ACCEPTANCE_PHASES_027.index('typed-source-errors')+1] + ('source-contracts',) + ACCEPTANCE_PHASES_027[ACCEPTANCE_PHASES_027.index('typed-source-errors')+1:]
 
+ACCEPTANCE_PHASES_030 = ACCEPTANCE_PHASES_028 + ('reference030',)
+
 def acceptance_phases(version):
     parts=version.split('.')
+    if len(parts)==3 and all(part.isascii() and part.isdigit() for part in parts) and tuple(map(int,parts))>=(0,279,0):
+        return ACCEPTANCE_PHASES_030
     if len(parts)==3 and all(part.isascii() and part.isdigit() for part in parts) and tuple(map(int,parts))>=(0,159,0):
         return ACCEPTANCE_PHASES_028
     if len(parts)==3 and all(part.isascii() and part.isdigit() for part in parts) and tuple(map(int,parts))>=(0,151,0):
@@ -1303,6 +1310,8 @@ def validate_completed_report(report, *, expected_network_profile='full'):
     if report.get('version') is not None and doctor_version is not None:
         require(report['version']==doctor_version,'SDK acceptance version identities differ')
     version = (doctor_version or report.get('version', '0.0.0')).split('.')
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,279,0):
+        sdk_references.validate(report)
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,167,0):
         sdk_stdlib.validate(report)
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,166,0):
@@ -2211,6 +2220,8 @@ test fn examples() -> unit {
             resource_names += [source_errors['handler_sdk_helper'], source_errors['handler_test_source'],
                                origin['metadata'], origin['sql']]
         inventory = language_resource_inventory(resources, resource_names, doctor['language'], include_stdlib=True)
+        if tuple(map(int, doctor['version'].split('.'))) >= (0,279,0):
+            inventory.update(language_resource_inventory(resources, sdk_references.resource_names(resources), doctor['language']))
         for kind in ('tasks-runtime', 'browser-worker', 'prompt', 'language', 'grammar', 'protocol', 'web', 'server', 'api',
                      'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'query', 'string-debug', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi', 'editor', 'lsp', 'core', 'wasm', 'project', 'server-workload', 'task-workload'):
             require(cli('guide', '--kind', kind)['text'], 'empty guide: ' + kind)
@@ -5837,6 +5848,13 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                            ('typed-source-errors',typed_source_errors))
         if report['language']=='0.28':
             actions.insert(next(i for i,(name,_) in enumerate(actions) if name=='typed-source-errors')+1,('source-contracts',source_contracts))
+        if tuple(map(int, report['version'].split('.'))) >= (0,279,0):
+            def reference030():
+                report['evidence']['reference030'] = sdk_references.exercise(
+                    cli=cli, run=run, compiler=compiler, resources=resources, root=root,
+                    browser=args.browser, live=args.live, doctor=report['doctor'],
+                    environment=environment, dap_factory=DAP)
+            actions.append(('reference030', reference030))
         require(tuple(name for name, _ in actions) == tuple(report['required_phases']),
                 'SDK action registration differs from its workflow phase contract')
         for name, action in actions:

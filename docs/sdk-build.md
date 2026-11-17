@@ -19,6 +19,16 @@ separate work. The command does not publish a release or call an LLM;
 `release_qualification` stays false because one host archive does not qualify
 every requested platform/device.
 
+## Current030 qualification
+
+Toolchain0.279 adds the mandatory [installed030 phase](sdk-reference030.md).
+The full current workflow has42 phases; older archive receipts keep their
+original phase contracts. The [focused preparation](evidence/sdk-reference030-preparation-0.279.0-2026-11-17.json)
+passes from a moved normal installation with actual live DAP, three provider
+modes, persistent native hosts and the browser controller/build. Full source
+regression, moved/restored distribution and publication are separate gates.
+This SDK-workflow change retains toolchain0.279 and source versions028/029/030.
+
 ## Linux
 
 Install Git, Python3.10+ and Docker. Commit source changes first. On a Unix host

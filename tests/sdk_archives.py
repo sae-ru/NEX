@@ -803,6 +803,38 @@ class LinuxVerifierBudgets(unittest.TestCase):
 
 
 class DistributionWorkflow(unittest.TestCase):
+    def test_reference030_extends_only_current_sdk_workflow(self):
+        self.assertEqual(acceptance.acceptance_phases('0.278.0'), acceptance.ACCEPTANCE_PHASES_028)
+        self.assertEqual(acceptance.acceptance_phases('0.279.0'), acceptance.ACCEPTANCE_PHASES_028 + ('reference030',))
+        incomplete = {'schema': 'nex.sdk-acceptance/1', 'ok': True, 'version': '0.279.0',
+            'doctor': {'version': '0.279.0'}, 'phases': [{'name': n, 'status': 'passed'} for n in acceptance.ACCEPTANCE_PHASES_028],
+            'commands': [{'status': 'passed', 'exit_code': 0}]}
+        with self.assertRaisesRegex(RuntimeError, 'complete workflow phase contract'):
+            acceptance.validate_completed_report(incomplete)
+
+    def test_reference030_capture_requires_aggregates_without_inventing_timeline(self):
+        module = acceptance.sdk_references
+        with tempfile.TemporaryDirectory(prefix='nex030 profile contract ') as directory:
+            path = Path(directory)/'profile.json'
+            data = {'schema': 'nex.profile/3', 'language': '0.30', 'build': {'compiler_build': 'a'*64},
+                'task_execution': {'executor_workers': 1},
+                'completeness': {k: k != 'timeline' for k in ('aggregates','memory','cpu','elapsed','lifetime','timeline')},
+                'tasks': [{'terminal': True, 'active_invocations': 0}],
+                'memory': [{'live': 0, 'live_shallow_bytes': 0, 'allocations': 3, 'frees': 3}],
+                'functions': [{'name': name, 'calls': 1, 'completed': int(name != 'ref_profile_leaf::work'),
+                    'aborted': int(name == 'ref_profile_leaf::work')} for name in module.PROFILE_FUNCTIONS]}
+            data.update({k: 0 for k in ('dropped_tasks','dropped_invocations','dropped_guards','suppressed_hooks',
+                'invalid_transitions','clock_failures','counter_overflows','serialization_overflows','dropped_allocations','untracked_frees')})
+            path.write_text(json.dumps(data))
+            session = {'schema': 'nex.profile-session/3', 'exit_code': 0, 'stdout': '42\n', 'output': str(path)}
+            result = module.profile_summary(session, {'compiler_build': 'a'*64}, timeline=False)
+            self.assertFalse(result['completeness']['timeline'])
+            with self.assertRaisesRegex(RuntimeError, 'lost observations'):
+                module.profile_summary(session, {'compiler_build': 'a'*64})
+            data['completeness']['memory'] = False; path.write_text(json.dumps(data))
+            with self.assertRaisesRegex(RuntimeError, 'lost observations'):
+                module.profile_summary(session, {'compiler_build': 'a'*64}, timeline=False)
+
     def tcp_report(self, profile='full'):
         # Synthetic receipt shapes exercise the validator, not platform execution.
         report={'schema':'nex.sdk-acceptance/1','ok':True,'version':'0.162.0','language':'0.28',

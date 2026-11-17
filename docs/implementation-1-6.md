@@ -6,6 +6,11 @@ owner: repository
 
 # Implementation sequence: items 1–6
 
+The0.279 SDK workflow adds a required [installed030 phase](sdk-reference030.md)
+with live-debug/profile/library delivery, native host sessions and persistent
+browser consumption. Focused normal-install preparation has passed; matching
+full source/distribution/archive acceptance remains next.
+
 Toolchain0.279 adds [native reference task profiling](reference-task-profiling.md)
 for standalone030 and source-backed static/shared/mixed provider builds. ABI8
 profile record19/plan19 preserve source invocation, component/image attribution

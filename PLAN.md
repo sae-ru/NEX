@@ -1,3 +1,12 @@
+# Installed030 SDK qualification — toolchain0.279.0
+
+The maintained SDK workflow adds required phase42 for the current source cohort,
+covering ABI8 profile/debug delivery, persistent native host calls and browser
+state. Its moved normal-install sub-workflow passed; next run the committed
+source/all-target/full-CTest/install/moved/archive/restored sequence and publish
+the exact qualified archive. Compiler/source versions are unchanged.
+[Contract](docs/sdk-reference030.md). All original pending work remains below.
+
 # Native reference task profiling — development0.279.0
 
 Standalone030 and source-backed static/shared/mixed task images now select

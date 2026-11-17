@@ -1,3 +1,24 @@
+# Installed030 SDK workflow preparation — toolchain0.279.0
+
+The SDK workflow now requires a42nd `reference030` phase for0.279 and later;
+old archived SDKs retain their original phase contracts. The new phase uses
+actual SDK resources for ABI8 source tasks/profiles, static/shared/mixed images,
+source-absent ordinary/profile packages and replay, matching-runtime native
+sessions and all13 persistent browser-controller cases. Optional live scope
+uses a real NEX-DAP child with cell expansion, owning-source watches and error
+step-out. Compiler/source versions and runtime ABI are unchanged.
+
+[Preparation evidence](docs/evidence/sdk-reference030-preparation-0.279.0-2026-11-17.json)
+records34 commands from a moved normal installation, three passing SDK unit
+CTest groups,14 host-kernel cases and13 compiled host cases per Debug/Release.
+The contract keeps complete aggregate measurements mandatory while captured
+events0 profiles explicitly omit their timeline. Original checker/sandbox
+failures are retained. [Contract](docs/sdk-reference030.md).
+
+[Hosted0.279 core](docs/evidence/core-ci-0.279.0-2026-11-17.json) passed Linux/macOS
+at630c73a6. Complete current source/portable SDK gates and publication remain
+pending; published SDK0.246.1 is unchanged. The remaining full PLAN is active.
+
 # Native reference task profiling — development0.279.0
 
 Ordinary030 standalone and source-backed static/fixed-shared/mixed native task
