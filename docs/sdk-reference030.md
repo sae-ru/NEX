@@ -9,6 +9,15 @@ owner: repository
 The [focused preparation](evidence/sdk-reference030-preparation-0.279.0-2026-11-17.json)
 records the moved normal installation and original checker failures.
 
+The first full0.279 source attempt at `482f4334` exposed a stale boundary
+fixture in `task_foreign`: its fixed input count omitted the captured
+`program-languages.json` sidecar. The corrected fixture measures a complete
+baseline snapshot, fills the remaining8192-input budget, and verifies8193
+physical files including the index before successful replay. The runtime's
+limits are unchanged. [Focused repair evidence](evidence/sdk-input-limit-0.279.0-2026-11-17.json)
+does not qualify the full source run or a portable archive; the original failed
+attempt remains retained.
+
 The maintained SDK workflow adds a required `reference030` phase starting with
 0.279.0. Earlier versioned SDKs retain their original phase lists and receipts.
 The compiler fallback language remains0.28; this phase creates explicit030

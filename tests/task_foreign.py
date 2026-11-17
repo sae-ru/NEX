@@ -129,15 +129,16 @@ class TaskForeign(harness.ToolchainCase):
         self.assertEqual(self.events(),'')
 
     def test_exact_input_file_limit_preserves_replay_with_the_index_file(self):
-        excluded={'node_modules','.nex','dist','generated','__pycache__','test-results','playwright-report'}
-        resources=0
-        for name in ('runtime','lib','web','debug'):
-            for directory,dirs,files in os.walk(harness.REPO/name):
-                dirs[:]=[n for n in dirs if n not in excluded]
-                resources+=sum((Path(directory)/name).is_file() for name in files)
-        resources+=sum((harness.REPO/name).is_file() for name in ('tools/app_bundle.py','tools/sdk_bundle.py','tools/foreign_bundle.py','tools/server_workload.py','tools/windows_pe.py','tools/windows_files.py'))
-        # Task + program, two catalogue files, and three original bundle members.
-        remaining=8192-resources-7
+        # Measure the complete captured input set rather than duplicating the
+        # compiler's resource list and assuming a fixed number of sidecars.
+        # In particular, version-selected programs carry program-languages.json.
+        self.scaffold()
+        baseline=Path(self.task('run','--directory',self.root/'baseline')['output']).parent
+        baseline_files=json.loads((baseline/'inputs/manifest.json').read_text())['files']
+        self.assertIn('inputs/program-languages.json',baseline_files)
+        self.assertNotIn('inputs/manifest.json',baseline_files)
+        self.assertLess(len(baseline_files),8192)
+        remaining=8192-len(baseline_files)
         original=json.loads((self.root/'bundle/manifest.json').read_text());index=0
         while remaining:
             count=min(129,remaining)
@@ -160,6 +161,7 @@ class TaskForeign(harness.ToolchainCase):
         result=self.task();receipt=Path(result['output'])
         manifest=json.loads((receipt.parent/'inputs/manifest.json').read_text())
         self.assertEqual(len(manifest['files']),8192)
+        self.assertEqual(sum(path.is_file() for path in (receipt.parent/'inputs').rglob('*')),8193)
         replay=self.cli('task',receipt,'--kind','replay','--foreign',self.host,env=self.env,timeout=900)
         self.assertTrue(replay['ok'])
 

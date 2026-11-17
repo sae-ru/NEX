@@ -1,0 +1,47 @@
+{
+  "schema": "nex.sdk-input-limit-repair/1",
+  "ok": true,
+  "toolchain": "0.279.0",
+  "base_commit": "482f433482f353635274e599f6037171695b9ea9",
+  "original_failure": {
+    "source_commit": "482f433482f353635274e599f6037171695b9ea9",
+    "group": "task_foreign",
+    "method": "TaskForeign.test_exact_input_file_limit_preserves_replay_with_the_index_file",
+    "code": "E_TASK",
+    "message": "artifact size/count limit exceeded",
+    "cause": "Fixed seven-file overhead omitted captured inputs/program-languages.json; attempted8193 indexed input members.",
+    "excerpt": "/Users/sae/projects/NEX/build/sdk-input-limit-v1/original-failure.txt",
+    "excerpt_sha256": "86c477f52f4b321f1934d52f3a54b11a9bc73cdc07dff2d96ed94d40c5dcc7f5",
+    "full_source_run_still_in_progress": true
+  },
+  "change": "Measure actual baseline inputs instead of copying the compiler resource inventory and a fixed sidecar count.",
+  "validation": {
+    "command": [
+      "/Users/sae/.hermes/tools/python-3.14.9+20261021-darwin-arm64/bin/python3.14",
+      "-B",
+      "tests/task_foreign.py",
+      "/Users/sae/projects/NEX/build/nex",
+      "TaskForeign.test_exact_input_file_limit_preserves_replay_with_the_index_file"
+    ],
+    "exit_code": 0,
+    "methods": 1,
+    "seconds": 103.729,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_sha256": "cad8180440606d6a65d5dea80624c32c0cc0cb84dbbc91f121d01dbddcf9b488",
+    "compiler_sha256": "de3df775ccc8fbce63fb8763e1356359c5b289e70e96597abedf0c7ca0f326e8",
+    "method_sha256": "ba721f703d53985995fc445a00990b133a6148d8006054923c97157d82373d1d",
+    "asserted_indexed_inputs": 8192,
+    "asserted_physical_input_files_including_index": 8193,
+    "captured_replay_passed": true
+  },
+  "unchanged_contracts": {
+    "src/tasks.cpp": "f6ee1006e05c604a84fa1908b8a2d9f2879002c553f5e4a0a7460740ed84c9bf",
+    "include/nex/language.h": "66242ed84a35e827b4bb6eb04db89020758688e1dff43fb48dce2fa2d982d73a",
+    "llm/language-pack.json": "0976ffe0ff8c66530a2af3dfef52cbf01d754347847ff957783ccec335ce6ff7"
+  },
+  "source_language_changed": false,
+  "compiler_changed": false,
+  "limits_changed": false,
+  "complete_source_acceptance": false,
+  "portable_SDK_qualified": false
+}
