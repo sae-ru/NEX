@@ -50,6 +50,13 @@ manual suffix amendments are not silently adopted.
 
 ## Evidence requirements
 
+Selecting a portable macOS SDK for the NEX compiler also selects its bundled
+native build resources, manifest, compiler, headers and libraries. The freeze
+records the bundle inputs used for compilation and the active Apple SDK settings.
+The Apple SDK path is an explicit native build input. The host's C++ comparison
+driver is selected independently. The paired example check in the README
+exercises the same build and execution sequence as candidate acceptance.
+
 Offline synthetic-provider checks can prove that references reach the reviewer,
 remain outside candidate edits and retain complete call accounting. They do not
 measure model quality or token savings. Check the actual compiler-served guides

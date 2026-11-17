@@ -18,6 +18,15 @@ v2=module('nex_v3_previous_engine',HERE.with_name('llm-campaign-v2')/'collector.
 references=module('nex_v3_references',HERE/'references.py')
 v2.references=references
 engine=v2.engine;acceptance=v2.acceptance;Broker=v2.Broker
+sdk_toolchain=module('nex_v3_sdk_toolchain',HERE/'sdk_toolchain.py')
+original_check=acceptance.check
+
+def check(candidate, task, language, output, **kwargs):
+    if language == 'nex' and kwargs.get('isolate'):
+        kwargs['sandbox_factory'] = sdk_toolchain.MacSDKBuildSandbox
+    return original_check(candidate, task, language, output, **kwargs)
+acceptance.check=check
+
 engine.__doc__=__doc__
 engine.DOCS=list(dict.fromkeys([*engine.DOCS,*references.GUIDE_PATHS.values()]))
 engine.SYSTEM+='''
@@ -54,6 +63,8 @@ def verify(root,*,deep=False):
             raise ValueError('selected runtime/default artifact changed since freeze')
     if engine.sha(root/'resources/review-references.json')!=value['review_reference_sha256']:
         raise ValueError('frozen review references changed')
+    if value.get('portable_sdk') and str(sdk_toolchain.apple_macos_sysroot())!=value['portable_sdk']['apple_sysroot']:
+        raise ValueError('selected Apple macOS SDK changed since freeze')
     return value
 engine.verify=verify
 
@@ -71,10 +82,18 @@ def freeze(output,**kwargs):
         review_system_prompt=engine.REVIEW_SYSTEM,
         context_policy='policy6: version2 full accounting plus public task/bytes/reference guides and canonical document aliases',
         source_review_policy='fresh stateless review with the same frozen per-language public reference packet for every task; all added input tokens counted')
+    portable_inputs=set()
+    descriptor=sdk_toolchain.sdk_manifest(value['compiler'])
+    if descriptor:
+        sdk=sdk_toolchain.PortableSDKToolchain(value['compiler'],descriptor)
+        portable_inputs=sdk.frozen_files()
+        value['portable_sdk']={'manifest':str(descriptor),'sha256':engine.sha(descriptor),
+                               'native_resources':str(sdk.resources),'apple_sysroot':str(sdk.apple_sysroot),
+                               'frozen_files':len(portable_inputs)}
     for slot in value['order']:
         if not slot['id'].startswith('v2-'):raise ValueError('unexpected preparation trial identity')
         slot['id']='v3-'+slot['id'][3:]
-    for item in sorted([*HERE.glob('*.py'),HERE/'protocol.md',HERE/'README.md',path]):
+    for item in sorted(set(HERE.glob('*.py')) | {HERE/'protocol.md',HERE/'README.md',path} | portable_inputs):
         info=item.stat();value['pinned_files'].append({'path':str(item.absolute()),'resolved':str(item.resolve()),
             'symlink':item.is_symlink(),'sha256':engine.sha(item),'dev':info.st_dev,'ino':info.st_ino,
             'bytes':info.st_size,'mtime_ns':info.st_mtime_ns})

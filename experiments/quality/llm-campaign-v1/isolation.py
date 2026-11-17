@@ -63,7 +63,7 @@ class MacSandbox:
         self.roots = {Path('/System'), Path('/usr'), Path('/bin'), Path('/sbin'),
                       Path('/Library/Developer'), Path(sys.base_prefix).resolve()}
         self.images = {Path(sys.executable).resolve()}
-        self.compile_roots, self.compile_images = set(), set()
+        self.compile_roots, self.compile_images, self.compile_files = set(), set(), set()
         if self.compiler: self.images.add(self.compiler.resolve(strict=True))
         if self.cpp:
             self.images.add(self.cpp.resolve(strict=True))
@@ -130,6 +130,7 @@ class MacSandbox:
         executables = {image.absolute(), image.resolve(), Path(sys.executable).resolve(), Path(sys.executable).absolute()}
         if compile_phase:
             reads.update(self.compile_roots)
+            literals.update(self.compile_files)
             literals.update(self.compile_images)
             executables.update(self.compile_images)
             if writable_cache: reads.add(Path(writable_cache).resolve())

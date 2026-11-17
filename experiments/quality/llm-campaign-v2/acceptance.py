@@ -190,14 +190,17 @@ def command(argv, cwd, env, output, name, *, timeout=120, windows_observer=None,
 
 def check(candidate, task, language, output, *, compiler=None, cpp=None,
           resources=RESOURCES, cache=None, trial_id='offline-control', review=None,
-          cpp_args=(), windows_observer=None, visible_only=False, isolate=False, deadline=None):
+          cpp_args=(), windows_observer=None, visible_only=False, isolate=False, deadline=None,
+          sandbox_factory=None):
     item = catalogue()[task]; candidate = Path(candidate).resolve(strict=True)
     files = read_candidate(candidate, task, language); digest = source_digest(files)
     review_raw = source_review(review, candidate, digest, item)
     sandbox = None
     if isolate:
-        isolation = module('nex_campaign_isolation', BASE / 'isolation.py')
-        sandbox = isolation.MacSandbox(compiler=compiler, cpp=cpp, resources=resources)
+        if sandbox_factory is None:
+            isolation = module('nex_campaign_isolation', BASE / 'isolation.py')
+            sandbox_factory = isolation.MacSandbox
+        sandbox = sandbox_factory(compiler=compiler, cpp=cpp, resources=resources)
     cases = item['contract']['visible_cases'] + ([] if visible_only else fixtures.held_out(task))
     expected = drivers.expected(task, cases); output = Path(output).resolve()
     output.mkdir(parents=True, exist_ok=False)
@@ -272,7 +275,8 @@ def check(candidate, task, language, output, *, compiler=None, cpp=None,
                     toolchain = {'schema': 'nex.toolchain/1', 'target': doctor['host'],
                         'compiler': doctor['native_compiler'], 'archiver': doctor['native_archiver'],
                         'debug_packager': doctor['native_debug_packager'], 'linker': str(sandbox.linker)}
-                    if doctor['native_sysroot']: toolchain['sysroot'] = doctor['native_sysroot']
+                    sysroot = doctor['native_sysroot'] or getattr(sandbox, 'native_sysroot', None)
+                    if sysroot: toolchain['sysroot'] = str(sysroot)
                     if doctor['native_sqlite_include'] and doctor['native_sqlite_library']:
                         toolchain['sqlite'] = {'include': doctor['native_sqlite_include'], 'library': doctor['native_sqlite_library']}
                     if doctor['native_openssl_include']:

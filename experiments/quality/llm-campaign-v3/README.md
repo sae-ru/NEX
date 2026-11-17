@@ -13,10 +13,24 @@ Qwen3.8 27B Q8_0 instance. No paid API, automatic source repair, relaxed check,
 free reference request or expanded execution grant is introduced.
 
 The implementation reuses the version1 collection/accounting engine and version2
-source030 acceptance adapter without editing their code. Canonical guide files
+source030 acceptance adapter. Canonical guide files
 are compared with the selected compiler's actual `guide` output. Independent
 review receives the same per-language reference packet for every task and no
 author conversation; its complete request cost remains counted.
+
+On macOS, pass the portable SDK's `bin/nex` to `freeze --compiler`. The runner
+selects its manifest, bundled native compiler, resources and headers. It uses
+the active Xcode macOS SDK and linker for system inputs. Check the installation
+with two trusted examples before running the local model.
+
+```sh
+python3 -B experiments/quality/llm-campaign-v3/check_sdk.py \
+  --sdk /absolute/path/to/nex-sdk --output /absolute/new/sdk-check
+```
+
+The command records interpreter and native observations for an integer program
+and a joined source task. In a source installation, it is available under
+`share/nex/experiments/quality/llm-campaign-v3/`.
 
 Offline controls use a synthetic provider with synthetic token counters. They
 are not model observations. A future observed study must use a new immutable

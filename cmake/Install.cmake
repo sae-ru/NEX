@@ -109,6 +109,7 @@ install(FILES experiments/quality/llm_cost.py DESTINATION share/nex/tools)
 install(FILES experiments/quality/llm_cost.py DESTINATION share/nex/experiments/quality)
 install(DIRECTORY experiments/quality/llm-campaign-v1 DESTINATION share/nex/experiments/quality PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY experiments/quality/llm-campaign-v2 DESTINATION share/nex/experiments/quality PATTERN __pycache__ EXCLUDE)
+install(DIRECTORY experiments/quality/llm-campaign-v3 DESTINATION share/nex/experiments/quality PATTERN __pycache__ EXCLUDE)
 install(FILES tools/windows/job_observer.py DESTINATION share/nex/tools/windows)
 install(FILES experiments/quality/README.md experiments/quality/llm_cost.md
   DESTINATION share/nex/experiments/quality COMPONENT Documentation)

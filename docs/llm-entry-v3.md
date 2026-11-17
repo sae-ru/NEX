@@ -9,7 +9,7 @@ owner: repository
 The [version3 preparation](../experiments/quality/llm-campaign-v3/README.md)
 responds to the [completed local study](llm-cost-qwen38-27b-2026-11-17.en.md).
 It changes reference delivery, not NEX syntax or the study's task contracts.
-No observed version3 model result or token saving is claimed.
+A full version3 comparison remains pending.
 
 Use `nex guide --kind tasks-runtime` for `with_tasks`, `task_spawn`, `task_wait`
 and `task_yield`. The `task` guide describes JSON acceptance contracts. The
@@ -40,10 +40,22 @@ Their results, source-review mistakes, unknown usage and execution amendments
 remain preserved. Synthetic-provider tests and executed guide examples establish
 host/reference behavior; they do not establish an improvement in model output.
 
+The macOS runner supports the published portable SDK as a native compiler input.
+It selects the manifest and resources from the installation and records the Apple
+SDK used for system headers and linking. Follow the
+[installed compiler check](../experiments/quality/llm-campaign-v3/README.md) to
+verify interpretation and native execution before a local model run. The
+[integration record](evidence/llm-portable-sdk-0.280.1-2026-11-17.json) verifies
+12 observations each in the interpreter and in native execution using the
+published SDK. In the three-slot Qwen pilot, C++ and Python passed. The NEX
+slot ran out of requests after nine replies with a missing tool-call closing
+tag. This pilot ended before the NEX candidate reached the compiler.
+
 These source documentation changes were added after the immutable0.280.1 SDK
 snapshot. They do not rewrite the published SDK or its exact qualification.
 
 По-русски: справка по исходным задачам отделена от JSON-заданий приёмки, доступны
 документы по байтам и построению коллекций. Ревьюер получает семантику выбранного
-языка, а её стоимость учитывается. Это подготовка нового протокола; прежний замер
-не пересчитан, новый запуск модели ещё не выполнен.
+языка, а её стоимость учитывается. Проведён пилот на трёх попытках. Эталонные
+примеры NEX прошли на SDK отдельно, а модель исчерпала лимит попытки NEX до
+компиляции. Полное сравнение по протоколу v3 ещё предстоит.
