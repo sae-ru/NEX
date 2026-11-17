@@ -55,7 +55,7 @@ TypeScript / React / Vite клиентом. Устройства подключ�
 
 ## Состояние разработки
 
-Текущие исходники: **toolchain 0.280.1 / язык 0.28 / task ABI 7/8**, в разработке.
+Текущие исходники — **toolchain 0.281.0 / язык 0.28 / task ABI 7/8**, кандидат в бету.
 Компилятор по умолчанию выбирает0.28. Проекты явно задают0.28,0.29 или0.30;
 новые `nex init` выбирают0.30. Старой истории графа нужна явная миграция.
 
@@ -79,8 +79,11 @@ macOS/Linux. [Полный Linux-прогон](docs/evidence/linux-full-profile-
 [постоянное состояние UI](docs/persistent-ui.md), нативные библиотеки и
 [C++-сессии приложения](docs/native-task-sessions.md).
 [Отладка](docs/reference-provider-debugging.md) и
-[профилирование](docs/reference-task-profiling.md) охватывают source-backed
-provider-библиотеки. Обязательный пример SDK [Workboard](examples/workboard/README.md)
+[профилирование](docs/reference-task-profiling.md) охватывают библиотеки с
+исходниками. Задачи самостоятельного HTTP-сервера 0.30 можно отлаживать в
+[LLDB/DAP](docs/server-debugging.md#owner-thread-http-tasks-in-030) и профилировать
+под заданной нагрузкой. [План совместимости 1.0](docs/compatibility.md) описывает
+контракты языка и проектов. Обязательный пример SDK [Workboard](examples/workboard/README.md)
 объединяет браузер, HTTP/задачи, SQLite, экспорт/восстановление файлов и Worker.
 Библиотеки включают [хеш-карту/множество](docs/hash-containers.md),
 [упорядоченные карты](docs/ordered-containers.md),
@@ -92,7 +95,8 @@ provider-библиотеки. Обязательный пример SDK [Workbo
 сохраняет полные правила отдельно. [Завершённый Qwen-замер](docs/llm-cost-qwen38-27b-2026-11-17.ru.md)
 сохраняет все60 исходов, неизвестный расход и явные изменения порядка продолжения.
 [Подготовка следующего протокола](docs/llm-entry-v3.md) добавляет справки по задачам
-и байтам, а также семантику языка для ревьюера. Нового результата модели пока нет.
+и байтам, а также семантику языка для ревьюера. [Пилот на трёх попытках](docs/evidence/llm-response-envelope-v4-0.280.1-2026-11-17.json)
+проверил обработку ответов модели. Все три решения прошли приёмку.
 
 | Платформа | Подтверждённые результаты | Что ещё проверить |
 |---|---|---|
@@ -105,7 +109,7 @@ provider-библиотеки. Обязательный пример SDK [Workbo
 | Android emulator | [signed release APK, запуск и ввод](docs/evidence/mobile-android-release-signed-0.244.0-2026-11-13.json) | Play Store |
 | macOS desktop app | [Автономное приложение и живой ввод](docs/evidence/desktop-macos-interaction-0.244.0-2026-11-13.json) | Developer ID/notarization |
 
-HTTP-отладка/профилирование ссылочных задач, передача ссылок между параллельными
+HTTP-отладка и профилирование задач внутри библиотек-провайдеров, передача ссылок между параллельными
 потоками, общая компиляция GPU/NPU, Apple NPU, полный нативный desktop UI, Studio,
 конвертеры и остальные [условия миграции](docs/migration-readiness.md) остаются
 открытыми. [Пункты1–6](docs/implementation-1-6.md) и [PLAN](PLAN.md) сохраняют их.

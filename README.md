@@ -56,7 +56,7 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.280.1 / language 0.28 / task ABIs 7/8**, in development.
+Current source: **toolchain 0.281.0 / language 0.28 / task ABIs 7/8**, the beta candidate.
 The compiler fallback remains0.28. Projects explicitly select0.28,0.29 or0.30;
 new `nex init` projects select0.30. Existing graphs need an explicit migration.
 
@@ -80,6 +80,9 @@ Source030 supports typed cells, [structured reference tasks](docs/reference-task
 [persistent C++ host sessions](docs/native-task-sessions.md).
 [Native debugging](docs/reference-provider-debugging.md) and
 [profiling](docs/reference-task-profiling.md) cover source-backed provider images.
+Standalone HTTP owner-thread tasks support [LLDB/DAP](docs/server-debugging.md#owner-thread-http-tasks-in-030)
+and pinned-workload profiling. The [compatibility guide](docs/compatibility.md)
+defines the source and project contracts planned for 1.0.
 [Workboard](examples/workboard/README.md) joins a browser UI, HTTP/tasks, SQLite,
 file export/restore and a summary Worker; it is a required SDK consumption phase.
 Ordinary libraries include [hash containers](docs/hash-containers.md),
@@ -90,8 +93,10 @@ the [IEEE kernel](docs/ieee-numeric.md) still has no source types.
 The [bounded LLM entry](docs/llm-entry-v2.md) has a4058-byte common contract and
 preserves the full detailed rules. Its [observed Qwen study](docs/llm-cost-qwen38-27b-2026-11-17.en.md)
 retains all60 outcomes, unknown usage and explicit execution amendments.
-The next [reference-context preparation](docs/llm-entry-v3.md) supplies public
-source-task/byte guides and normative reviewer context; no new model result is claimed.
+[Reference-context preparation](docs/llm-entry-v3.md) supplies public
+source-task/byte guides and normative reviewer context. A subsequent
+[three-slot pilot](docs/evidence/llm-response-envelope-v4-0.280.1-2026-11-17.json)
+checked response framing and completed all three attempts.
 
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|
@@ -105,7 +110,7 @@ source-task/byte guides and normative reviewer context; no new model result is c
 | Android emulator | [signed release APK, launch and add interaction](docs/evidence/mobile-android-release-signed-0.244.0-2026-11-13.json) | Play Store delivery |
 | macOS desktop app | [standalone embedded app, live input](docs/evidence/desktop-macos-interaction-0.244.0-2026-11-13.json) | Developer ID/notarization |
 
-HTTP reference-task debugging/profiling, parallel reference transfer, general
+HTTP task-provider debugging/profiling, parallel reference transfer, general
 GPU/NPU compilation, Apple NPU, native desktop UI, Studio, converters and other
 [migration prerequisites](docs/migration-readiness.md) remain open. The
 [implementation sequence](docs/implementation-1-6.md) and [original PLAN](PLAN.md)
