@@ -18,7 +18,7 @@ def run(name,command,expected=0,**kw):
     if p.returncode!=expected:raise RuntimeError(str(command)+'\n'+p.stdout+'\n'+p.stderr)
     return p
 corpus=out/'corpus';observed=json.loads(run('reference',[reference,corpus]).stdout)
-assert observed=={'ok':True,'cases':21,'owner_cases':7},observed
+assert observed=={'ok':True,'cases':21,'owner_cases':7,'native_session_cases':14},observed
 cases=json.loads((corpus/'cases.json').read_text())['cases'];assert len(cases)==13,len(cases)
 run('target',[compiler,'-x','c','-S','-emit-llvm',os.devnull,'-o',out/'target.ll'])
 text=(out/'target.ll').read_text();triple=re.search(r'target triple = "([^"]+)"',text)[1];layout=re.search(r'target datalayout = "([^"]+)"',text)[1]

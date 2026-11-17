@@ -1,0 +1,2 @@
+module native_session_mid;import "../core/value.nex" as core;
+pub fn twice(value:cell<i64>)->cell<i64>!{task,state}{return core::add(core::add(value,1),1);}

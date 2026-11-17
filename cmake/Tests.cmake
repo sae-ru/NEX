@@ -393,10 +393,10 @@ target_compile_definitions(nex_task_reference_probe PRIVATE NEX_STRUCTURED_WORKE
 target_link_libraries(nex_task_reference_probe PRIVATE nex_frontend Threads::Threads)
 target_compile_options(nex_task_reference_probe PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME task_reference_native COMMAND nex_task_reference_probe)
-add_executable(nex_reference_tasks_probe tests/reference_tasks.cpp tests/owner_task_runtime.cpp
-  runtime/runtime.cpp runtime/nex_cell_host.cpp runtime/nex_task_frame.cpp)
+add_executable(nex_reference_tasks_probe tests/reference_tasks.cpp tests/owner_task_runtime.cpp tests/native_task_session.cpp
+  runtime/runtime.cpp runtime/nex_cell_host.cpp runtime/nex_task_frame.cpp runtime/nex_task_session.cpp)
 target_include_directories(nex_reference_tasks_probe PRIVATE runtime)
-target_compile_definitions(nex_reference_tasks_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS NEX_OWNER_TASK_INLINE)
+target_compile_definitions(nex_reference_tasks_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS NEX_MANAGED_TASKS NEX_OWNER_TASK_INLINE NEX_NATIVE_TASK_SESSION_INLINE)
 target_link_libraries(nex_reference_tasks_probe PRIVATE nex_frontend Threads::Threads)
 target_compile_options(nex_reference_tasks_probe PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME reference_tasks_development COMMAND nex_reference_tasks_probe)
@@ -669,6 +669,19 @@ add_test(NAME reference_library_context COMMAND ${Python3_EXECUTABLE} -B
   $<TARGET_FILE:nex_reference_library_host> --clang ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
   --output ${CMAKE_CURRENT_BINARY_DIR}/reference-library-${PROJECT_VERSION}-acceptance)
 set_tests_properties(reference_library_context PROPERTIES TIMEOUT 600)
+add_executable(nex_native_task_session_host tests/native_task_session.cpp tests/native_task_session_images.cpp
+  runtime/runtime.cpp runtime/nex_cells.cpp runtime/nex_cell_host.cpp runtime/nex_task_session.cpp
+  runtime/nex_task_frame.cpp runtime/nex_task_external.cpp runtime/nex_files.cpp
+  runtime/nex_resource_region.cpp runtime/nex_external_resource.cpp runtime/nex_resource_executor.cpp)
+target_include_directories(nex_native_task_session_host PRIVATE runtime tests)
+target_compile_definitions(nex_native_task_session_host PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS NEX_MANAGED_TASKS)
+target_link_libraries(nex_native_task_session_host PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
+set_target_properties(nex_native_task_session_host PROPERTIES ENABLE_EXPORTS ON)
+add_test(NAME native_task_sessions COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_task_sessions.py $<TARGET_FILE:nex>
+  --host $<TARGET_FILE:nex_native_task_session_host> --clang ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
+  --output ${CMAKE_CURRENT_BINARY_DIR}/native-task-sessions-${PROJECT_VERSION}-acceptance)
+set_tests_properties(native_task_sessions PROPERTIES TIMEOUT 1200)
 add_test(NAME reference_http_context COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_http.py $<TARGET_FILE:nex_references030_probe>
   --output ${CMAKE_CURRENT_BINARY_DIR}/reference-http-${PROJECT_VERSION}-acceptance)

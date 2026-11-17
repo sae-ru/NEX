@@ -11,6 +11,7 @@
 #include <stdexcept>
 using namespace nex;
 int runOwnerTaskRuntime();
+int runNativeTaskSessionKernel();
 namespace {
 unsigned cases=0;
 namespace fs=std::filesystem;
@@ -285,6 +286,7 @@ server fn main()->unit!{state,task,fs,throw}{
     writeFile((corpusDirectory/"cases.json").string(),json(llvm::json::Object{{"schema","nex.reference-task-corpus/1"},{"cases",std::move(corpus)}},true));
   }
   require(runOwnerTaskRuntime()==0,"native owner-thread runtime probe failed");
-  std::cout<<"{\"ok\":true,\"cases\":"<<cases<<",\"owner_cases\":7}\n";
+  require(runNativeTaskSessionKernel()==0,"native persistent session runtime probe failed");
+  std::cout<<"{\"ok\":true,\"cases\":"<<cases<<",\"owner_cases\":7,\"native_session_cases\":14}\n";
 }catch(const Error &error){std::cerr<<"case "<<cases<<": "<<error.code<<": "<<error.message<<" at "<<error.span.line<<'\n';return 1;}
 catch(const std::exception &error){std::cerr<<"case "<<cases<<": "<<error.what()<<'\n';return 1;}}

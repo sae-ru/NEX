@@ -1,3 +1,27 @@
+# Persistent native task sessions — development0.276.0
+
+The matching-runtime C++ `NativeTaskSession` keeps application cells and returned
+file/error owners across serialized checked030 ABI8 calls. Each call receives
+fresh controls and joins its tasks; idle host time does not exhaust later calls.
+Typed source errors keep the session usable; fatal/control exits close it.
+The [contract](docs/native-task-sessions.md) and
+[ordinary source project](examples/native-host-session/README.md) describe image,
+heap, grant and cleanup ownership. Source versions and retained ABIs are unchanged.
+
+[Focused qualification](docs/evidence/native-task-sessions-0.276.0-2026-11-17.json)
+records32 distinct passing core/affected groups,14 kernel cases and13 actual
+compiled cases in each Debug/Release profile. Both profiles also pass through a
+moved normal installation with a C++ host rebuilt from installed runtime sources.
+The existing88-case resource regression passes. Original preflight process-exit,
+callback-error attribution and deadline/heap-acquisition failures are retained
+with their fixes. The17-group core cap remains unchanged.
+
+[Hosted0.275 core](docs/evidence/core-ci-0.275.0-2026-11-17.json) passed Linux/macOS
+at its own exact commit. Native UI controllers, parallel references, logical
+reference debugging/profile, application/library/LLM work and complete current
+source/platform/portable SDK delivery remain open. Published portable SDK0.246.1
+is unchanged; this normal installation is not portable release acceptance.
+
 # Native reference task providers — development0.275.0
 
 Checked030 project components retain cell identity across static archives and

@@ -1,0 +1,2 @@
+module native_session_app;import "../core/value.nex" as core;import "../mid/value.nex" as mid;
+fn main()->unit!{task,state,io}{let value:cell<i64>=core::make(40);assert(mid::twice(value)==value);print(core::get(value));}

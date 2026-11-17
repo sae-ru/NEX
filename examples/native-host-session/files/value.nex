@@ -1,0 +1,10 @@
+module native_session_files;
+pub struct Fault{state:cell<file>;}
+pub server fn open_file()->cell<file>!{task,state,fs}{return cell_new(unwrap(file_open_read("input.txt")));}
+pub server fn read_file(value:cell<file>)->str!{task,state,fs}{task_yield();return unwrap(decode_utf8(unwrap(file_read(cell_read(value),64))));}
+pub server fn seek_file(value:cell<file>)->unit!{task,state,fs}{assert(unwrap(file_seek(cell_read(value),0))==0);}
+pub server fn close_file(value:cell<file>)->unit!{task,state,fs}{assert(file_close(cell_read(value)));}
+pub server fn error_file()->unit!{task,state,fs,throw}{let value:cell<file>=cell_new(unwrap(file_open_read("input.txt")));task_yield();throw(Fault(value));}
+pub server fn empty_stash()->cell<list<file>>!{state}{return cell_new<list<file>>([]);}
+pub server fn stash(value:cell<list<file>>)->unit!{task,state,fs}{cell_write(value,[unwrap(file_open_read("input.txt"))]);task_yield();}
+pub server fn use_stash(value:cell<list<file>>)->bool!{task,state,fs}{task_yield();return file_is_open(cell_read(value)[0]);}

@@ -26,6 +26,8 @@
 #include <vector>
 #include <map>
 #include <cstring>
+#include <mutex>
+#include <thread>
 
 // A link-specific strong definition is emitted for executables/servers. Static
 // NEX libraries retain the weak null fallback and do not collide at host link.
@@ -193,6 +195,8 @@ struct RequestScope::Impl {
   ResourceDomain resources;
   std::map<const void*,std::unique_ptr<ResourceDomain>,std::less<>> resourceBindings;
   std::shared_ptr<Control> control;
+  size_t resourceBindingLimit=64;
+  bool boundPersistentResources=false;
   std::function<bool()> cancellation;
   ReferenceAttachment references;
   ApplicationState *application=currentApplication;
@@ -206,8 +210,50 @@ struct RequestScope::Impl {
 #endif
   explicit Impl(std::shared_ptr<Control> control):control(std::move(control)){}
 };
+struct PersistentRequestContext::Impl {
+  const std::thread::id thread=std::this_thread::get_id();
+  const std::shared_ptr<RequestScope::Impl> request=std::make_shared<RequestScope::Impl>(std::make_shared<RequestScope::Control>(1,1));
+  std::atomic<bool> ended{false};
+  bool busy=false;
+  std::mutex mutex;
+  std::weak_ptr<RequestScope::Control> invocation;
+  explicit Impl(size_t limit){request->resources=ResourceDomain(limit);request->resourceBindingLimit=limit;request->boundPersistentResources=true;request->control->active=false;request->preserveParentProfile=true;}
+  void requireThread()const{if(thread!=std::this_thread::get_id())throw Trap("E_CONTEXT","persistent request context belongs to another thread",0);}
+  void retire()noexcept{
+    request->references.disable();request->resources.revoke();
+    request->resourceBindings.clear();request->references.close();
+  }
+  void close()noexcept{
+    ended=true;
+    {std::lock_guard lock(mutex);if(auto control=invocation.lock())control->cancelled=true;}
+    // Keep the physical heap alive through active task retirement. Its closed
+    // attachment refuses new source acquisition while owner hooks drain.
+    request->references.disable();if(!busy)retire();
+  }
+};
+PersistentRequestContext::PersistentRequestContext(size_t limit):impl(std::make_shared<Impl>(limit)){}
+PersistentRequestContext::~PersistentRequestContext(){
+  if(impl->thread!=std::this_thread::get_id())std::terminate();impl->close();
+}
+void PersistentRequestContext::close(){auto state=impl;state->requireThread();state->close();}
+bool PersistentRequestContext::cancel()noexcept{
+  auto state=impl;std::lock_guard lock(state->mutex);auto control=state->invocation.lock();
+  if(!control||!control->active)return false;control->cancelled=true;return true;
+}
+bool PersistentRequestContext::closed()const noexcept{return impl->ended.load();}
 RequestScope::RequestScope(uint64_t budget,uint64_t timeoutMs):impl(std::make_shared<Impl>(std::make_shared<Control>(budget,timeoutMs))){
   if(currentRequest)throw Trap("E_CONTEXT","nested request scope is not supported",0);
+  currentRequest=this;
+  resource_detail::requestBinder=[](const ResourceDomain &capability){return &currentRequest->bindResources(capability);};
+}
+RequestScope::RequestScope(PersistentRequestContext &context,uint64_t budget,uint64_t timeoutMs):persistent(context.impl){
+  auto state=persistent;state->requireThread();
+  if(currentRequest||state->busy)throw Trap("E_CONTEXT","persistent invocation cannot nest or reenter",0);
+  if(state->ended)throw Trap("E_CONTEXT","persistent request context has ended",0);
+  if(state->request->application!=currentApplication)throw Trap("E_CONTEXT","persistent invocation requires its original application owner",0);
+  auto control=std::make_shared<Control>(budget,timeoutMs);
+  impl=state->request;impl->control=control;impl->functionBaseline=functionOwners.depth;
+  state->busy=true;{std::lock_guard lock(state->mutex);state->invocation=control;}
   currentRequest=this;
   resource_detail::requestBinder=[](const ResourceDomain &capability){return &currentRequest->bindResources(capability);};
 }
@@ -217,20 +263,31 @@ RequestScope::RequestScope(std::shared_ptr<Control> control,const std::atomic<bo
   resource_detail::requestBinder=[](const ResourceDomain &capability){return &currentRequest->bindResources(capability);};
 }
 RequestScope::~RequestScope(){
-  impl->references.disable();
+  const bool ending=!persistent||persistent->ended;
+  if(ending)impl->references.disable();
   if(!impl->worker)impl->control->active=false;
-  if(!impl->preserveParentProfile)profileUnwind();impl->resources.revoke();functionOwners.unwind(impl->functionBaseline);while(!impl->handles.empty())delete *impl->handles.begin();
-  impl->references.close();
+  if(!impl->preserveParentProfile)profileUnwind();if(ending)impl->resources.revoke();functionOwners.unwind(impl->functionBaseline);while(!impl->handles.empty())delete *impl->handles.begin();
+  if(ending)impl->references.close();
   if(impl->worker&&!impl->borrowedReferences)cleanupRuntimeResources();
   currentRequest=nullptr;resource_detail::requestBinder=nullptr;
+  if(persistent){
+    impl->cancellation={};
+    {std::lock_guard lock(persistent->mutex);persistent->invocation.reset();}
+    persistent->busy=false;if(persistent->ended)persistent->retire();
+  }
 }
 void *RequestScope::referenceContext(void *(*create)(void *),void *argument,void (*destroy)(void *)noexcept,bool exclusive){
   // A factory may synchronously end its request. Pin the implementation, then
   // let attachment state detect that end without reading a destroyed scope.
   auto state=impl;
   if(!state->control->active||state->control->cancelled||state->control->exhausted||
-      (state->workerStop&&state->workerStop->load())||std::chrono::steady_clock::now()>=state->control->deadline)
+      (state->workerStop&&state->workerStop->load())||std::chrono::steady_clock::now()>=state->control->deadline){
+    // A deadline/cancel may become visible between the preceding host poll and
+    // heap acquisition. Persistent sessions preserve that control outcome,
+    // rather than misreporting it as an invalid heap context. No step is spent.
+    if(persistent)checkExecution(0,false,false);
     throw DataError("E_CELL_CONTEXT","managed reference request is no longer active");
+  }
   if(state->application!=currentApplication)throw DataError("E_CELL_CONTEXT","use the request entry instead of an application wrapper inside a request");
   return (state->borrowedReferences?*state->borrowedReferences:state->references).get(create,argument,destroy,exclusive);
 }
@@ -239,7 +296,10 @@ void RequestScope::untrack(Handle *p){impl->handles.erase(p);}
 void RequestScope::cancel(){impl->control->cancelled=true;impl->resources.revoke();}
 ResourceDomain &RequestScope::bindResources(const ResourceDomain &capability){
   auto key=capability.scopeKey();auto found=impl->resourceBindings.find(key);
-  if(found==impl->resourceBindings.end())found=impl->resourceBindings.emplace(key,std::make_unique<ResourceDomain>(impl->resources.combine(capability))).first;
+  if(found==impl->resourceBindings.end()){
+    if(impl->boundPersistentResources&&impl->resourceBindings.size()>=impl->resourceBindingLimit)throw DataError("E_RESOURCE_LIMIT","request resource binding capacity exhausted");
+    found=impl->resourceBindings.emplace(key,std::make_unique<ResourceDomain>(impl->resources.combine(capability,impl->resourceBindingLimit))).first;
+  }
   return *found->second;
 }
 void RequestScope::setCancellation(std::function<bool()> check){

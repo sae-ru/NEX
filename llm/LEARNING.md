@@ -98,6 +98,12 @@ emission to a pinned owned NEX task provider; source-only preparation uses
 compiler/descriptor hashes and foreign grant together. Complete immutable SDK
 and hardware acceptance remain separate requirements.
 
+Persistent native hosts use the compiler-private
+[task session API](../docs/native-task-sessions.md), discovered through
+`managed_references.source030_development.native_host_sessions`. Keep one matching
+runtime, explicit file grants and checked code images alive across related calls;
+per-call limits reset without discarding healthy source state.
+
 ## Using the material in a dataset
 
 Keep code, natural-language task, expected behavior, language version and

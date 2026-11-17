@@ -29,6 +29,11 @@ Handle *readHeap(Handle *cell,SourceLocation location){auto result=read(cell,loc
 }
 #ifdef NEX_ASYNC_TASKS
 namespace nexrt {
+void configureManagedCellHeap(CellHeapLimits limits){
+  hostOperation({},[&]{pollHostOperation(0);(void)managedReferenceContext(create,&limits,destroy,true);pollHostOperation(0);});
+}
+CellHeapStats managedCellHeapStats(){return hostOperation({},[]{return heap({}).stats();});}
+CellCollection collectManagedCells(){return hostOperation({},[]{return heap({}).collect();});}
 TaskOwnerExecution managedTaskOwnerExecution(){
   return {[](const Value &value,void *context){(void)static_cast<CellHeap*>(context)->read(value);},
     [](void *context){(void)static_cast<CellHeap*>(context)->collect();},&heap({})};

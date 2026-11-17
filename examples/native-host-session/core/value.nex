@@ -1,0 +1,12 @@
+module native_session_core;
+pub struct Fault{state:cell<i64>;}
+pub struct Snapshot{state:cell<i64>;text:str;}
+pub struct Link{next:list<cell<Link>>;}
+pub fn make(value:i64)->cell<i64>!{state}{return cell_new(value);}
+pub fn get(value:cell<i64>)->i64!{state}{return cell_read(value);}
+pub fn add(value:cell<i64>,amount:i64)->cell<i64>!{task,state}{task_yield();cell_write(value,cell_read(value)+amount);return value;}
+pub fn fail(value:cell<i64>)->unit!{task,state,throw}{task_yield();cell_write(value,cell_read(value)+1);throw(Fault(value));}
+pub fn snapshot(value:cell<i64>)->Snapshot{return Snapshot(value,"Я\u0000🧠");}
+pub fn cycle()->cell<Link>!{state}{let value:cell<Link>=cell_new(Link([]));cell_write(value,Link([value]));return value;}
+pub fn spin(value:cell<i64>)->unit!{task,state}{while true{cell_write(value,cell_read(value)+1);task_yield();}}
+pub fn overflow(value:cell<i64>)->i64!{task,state}{task_yield();cell_write(value,1);return 9223372036854775807+cell_read(value);}

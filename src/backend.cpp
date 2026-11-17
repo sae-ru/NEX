@@ -2110,7 +2110,7 @@ void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
     }
   }
   if(tasks){
-    if(managedReferences&&(options.profile=="profile"||options.taskDebug))throw Error("E_CELL_TARGET","reference tasks currently support standalone and HTTP debug/release builds; provider images and logical debug/profile integration remain pending",p.function(options.entry).span);
+    if(managedReferences&&(options.profile=="profile"||options.taskDebug))throw Error("E_CELL_TARGET","reference tasks support debug/release builds; logical debugging/profiling remains pending",p.function(options.entry).span);
     if(server&&!supportsTaskFileStreams(p))throw Error("E_TASK_TARGET","task HTTP handlers require language0.24; explicitly migrate retained source history",p.function(options.entry).span);
     if(server&&(options.profile=="profile"||options.taskDebug))throw Error("E_OPTION","task HTTP profiling and logical debugging remain pending",p.function(options.entry).span);
     if(!taskProviders&&(options.libraryEntry||options.codeOnlyLibrary||options.deferredLink||options.functionsOnly||!options.libraries.empty()||!options.libraryExports.empty()))
@@ -2397,6 +2397,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   const bool managedCells=p.sourceLanguage==SourceLanguage::References030&&(options.managedTaskABI||usesManagedReferences(p,names));
   std::vector<std::string> components={"runtime.cpp"},headers={"nex_value.h","nex_value_owner.h","nex_bytes.h","nex_file_resource.h","nex_resource.h","nex_external_resource.h","nex_resource_executor.h","nex_resource_region.h","nex_error.h","nex_float.h","nex_host.h","nex_source_error.h","nex_io.h","nex_platform.h","nex_profile.h","third_party/dragonbox/dragonbox.h","third_party/dragonbox/manifest.json","third_party/dragonbox/LICENSE-Apache2-LLVM"};
   if(managedCells)components.insert(components.end(),{"nex_cells.cpp","nex_cell_host.cpp"});
+  if(managedTasks){components.push_back("nex_task_session.cpp");headers.push_back("nex_task_session.h");}
   if(p.sourceLanguage==SourceLanguage::References030)headers.insert(headers.end(),{"nex_cells.h","nex_cell_host.h"});
   if(profiling)components.insert(components.end(),{"nex_profile.cpp","third_party/tracy/public/TracyClient.cpp"});
   if(parallel||tasks)headers.insert(headers.end(),{"nex_parallel.h","nex_parallel_value.h"});

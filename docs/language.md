@@ -1,5 +1,9 @@
 # NEX language specification 0.28
 
+Toolchain0.276 adds [persistent native host task sessions](native-task-sessions.md)
+with an application-owned heap and per-invocation limits. This matching-runtime
+C++ boundary adds no source production, source version, graph identity or ABI.
+
 Toolchain0.275 [native reference task providers](reference-task-providers.md)
 add an explicit connected ABI8 build cohort, without new source productions,
 source versions or graph migration.

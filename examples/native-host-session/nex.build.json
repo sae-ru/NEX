@@ -1,0 +1,63 @@
+{
+  "schema": "nex.project-build/1",
+  "default_configuration": "debug",
+  "configurations": {
+    "debug": {
+      "profile": "debug"
+    },
+    "release": {
+      "profile": "release"
+    }
+  },
+  "components": {
+    "core": {
+      "kind": "shared_library",
+      "root": "core",
+      "entry": "core/value.nex",
+      "entry_function": "make",
+      "exports": [
+        "get",
+        "add",
+        "fail",
+        "snapshot",
+        "cycle",
+        "spin",
+        "overflow"
+      ]
+    },
+    "mid": {
+      "kind": "shared_library",
+      "root": "mid",
+      "entry": "mid/value.nex",
+      "entry_function": "twice",
+      "exports": [],
+      "dependencies": {
+        "core": "dynamic"
+      }
+    },
+    "files": {
+      "kind": "shared_library",
+      "root": "files",
+      "entry": "files/value.nex",
+      "entry_function": "open_file",
+      "exports": [
+        "read_file",
+        "seek_file",
+        "close_file",
+        "error_file",
+        "empty_stash",
+        "stash",
+        "use_stash"
+      ]
+    },
+    "app": {
+      "kind": "executable",
+      "root": "app",
+      "entry": "app/main.nex",
+      "dependencies": {
+        "core": "dynamic",
+        "mid": "dynamic"
+      }
+    }
+  }
+}

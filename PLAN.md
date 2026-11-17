@@ -1,3 +1,12 @@
+# Persistent native host sessions — development0.276.0
+
+Checked030 ABI8 exports now have a matching-runtime C++ session API retaining
+application cells and explicitly returned file/error owners across joined calls.
+Each call receives fresh controls; typed source errors preserve healthy state,
+while fatal/control exits close it. Native UI controllers, parallel references,
+logical reference debugging/profile and full current SDK/platform delivery stay
+open. See [the contract](docs/native-task-sessions.md).
+
 # Native reference task-provider milestone — development0.275.0
 
 [Static/fixed-shared/mixed030 task providers](docs/reference-task-providers.md)

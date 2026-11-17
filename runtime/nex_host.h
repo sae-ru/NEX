@@ -53,17 +53,36 @@ void printNativeTrap(const char *code,const char *message,int64_t line,const std
 void printNativeTrapText(std::string_view code,std::string_view message,int64_t line,const std::string &source,const char *request=nullptr)noexcept;
 void printNativeSourceException(const NativeSourceException &,const char *request=nullptr)noexcept;
 // Trusted runtime boundary. Resource/handle pointers are never NEX source values.
+class RequestScope;
+// Matching-runtime host owner. Invocation controls and temporary handles end at
+// each RequestScope; references and resource bindings live until explicit close.
+// Construction, activation and close are thread-affine; cancel() is thread-safe.
+class PersistentRequestContext {
+  friend class RequestScope;
+  struct Impl;std::shared_ptr<Impl> impl;
+public:
+  explicit PersistentRequestContext(size_t resourceLimit=4096);
+  ~PersistentRequestContext();
+  PersistentRequestContext(const PersistentRequestContext&)=delete;
+  PersistentRequestContext &operator=(const PersistentRequestContext&)=delete;
+  void close();
+  bool cancel()noexcept;
+  bool closed()const noexcept;
+};
 class RequestScope {
+  friend class PersistentRequestContext;
   friend struct ParallelAccess;
   friend struct TaskAccess;
   friend void *managedReferenceContext(void *(*)(void *),void *,void (*)(void *)noexcept,bool);
   struct Control;
   struct Impl;std::shared_ptr<Impl> impl;
+  std::shared_ptr<PersistentRequestContext::Impl> persistent;
   RequestScope(std::shared_ptr<Control> control,const std::atomic<bool> *workerStop);
   void checkExecution(int64_t line,bool forceCancellation,bool consumeStep);
   void *referenceContext(void *(*create)(void *),void *,void (*destroy)(void *)noexcept,bool exclusive);
 public:
   explicit RequestScope(uint64_t budget=1000000,uint64_t timeoutMs=5000);
+  RequestScope(PersistentRequestContext &,uint64_t budget,uint64_t timeoutMs);
   ~RequestScope();
   RequestScope(const RequestScope&)=delete;
   RequestScope &operator=(const RequestScope&)=delete;

@@ -1,6 +1,6 @@
 ---
 status: development
-applies_to: "toolchain 0.275.0; language 0.30; task ABI8"
+applies_to: "toolchain 0.276.0; language 0.30; task ABI8"
 owner: repository
 ---
 
@@ -86,3 +86,7 @@ could not bind in the sandbox; its failed result is retained alongside that
 group's successful loopback-enabled rerun. The registered new-provider CTest
 group remains separate from its direct harness execution. Whole source,
 matching platform and complete SDK/archive acceptance remain required.
+
+Toolchain0.276 adds [persistent C++ host sessions](native-task-sessions.md) for
+checked ABI8 exports, retaining application state with separate per-call controls.
+This does not enable provider logical debugging/profile or hot unload.

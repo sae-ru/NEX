@@ -1,10 +1,16 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.275.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.276.0"
 owner: repository
 ---
 
 # Language prerequisites for Java and Python migration
+
+Toolchain0.276 adds [persistent native task sessions](native-task-sessions.md)
+for matching-runtime C++ hosts: checked030 exports retain application state and
+returned file/error owners across serialized calls, with fresh execution controls
+per call. Native UI controllers, parallel cell transfer, logical debugging/profile
+and complete SDK/platform qualification remain open.
 
 Toolchain0.275 adds [native030 task-provider images](reference-task-providers.md).
 Application-owned state now crosses checked static/shared continuation calls;
@@ -128,7 +134,7 @@ version/history migration remain open; see [value exports](managed-reference-val
 |---|---|---|
 | Java `int`/`long`, casts, bits and shifts | Checked i64 and explicit nominal Java32/Java64 domains with wrapping/cast/bit/shift behavior | Primitive widths/specialized lowering, remaining Java numeric conversions and their SDK/platform qualification |
 | Java `float`/`double` | Finite f64; separate internal binary32/binary64 kernel with IEEE special values, signed zero, primitive operations and Java integral casts | Source types/literal rules, checked binding, all backend/wire/debugger/ABI paths, versioned migration and SDK/platform qualification |
-| Java object references and identity | Immutable values, owned resources; ordinary030 sequential cells, static components and HTTP request contexts | Nullability/class layouts, reference task integration and full SDK/platform qualification |
+| Java object references and identity | Immutable values, owned resources; ordinary030 sequential cells, static components and HTTP request contexts | Nullability/class layouts, parallel reference transfer and full SDK/platform qualification |
 | Java classes and interfaces | Records, enums, generics, coherent static traits | Constructors/class initialization, virtual/interface dispatch, subtyping and runtime type tests; generic erasure/boxing rules |
 | Exceptions | Nominal typed throw/catch, filters, finally, task propagation | Exception subtyping/identity, causes/suppression/stack data and source-specific abrupt-completion rules |
 | Java strings/arrays | Scalar-indexed strict UTF-8 strings; immutable lists/bytes | UTF-16 code-unit representation including lone surrogates; mutable aliased arrays and bounds/error mapping |

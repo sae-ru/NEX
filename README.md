@@ -55,7 +55,7 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.275.0 / language 0.28 / task ABIs 7/8**, in development.
+Current source: **toolchain 0.276.0 / language 0.28 / task ABIs 7/8**, in development.
 The compiler fallback remains0.28. `nex.json` selects0.28,0.29 or0.30 per project;
 new `nex init` projects select0.30. Language0.29 adds partial type lambdas and
 higher-order kinds;0.30 adds typed cells and the `state` effect. Retained projects
@@ -79,9 +79,11 @@ Ordinary values and retained snapshots now use
 reference/native/TypeScript and native HTTP entries.
 [Persistent030 UI](docs/persistent-ui.md) retains state across serialized events.
 [Native reference task providers](docs/reference-task-providers.md) share one
-application context across static/shared images. Persistent host task sessions,
-parallel transfer, live cell inspection and remaining [migration prerequisites](docs/migration-readiness.md)
-stay open. [Focused acceptance](docs/evidence/reference-task-providers-0.275.0-2026-11-17.json)
+application context across static/shared images.
+[Persistent native task sessions](docs/native-task-sessions.md) retain cells and
+returned file owners across serialized C++ host calls with fresh per-call limits.
+Parallel transfer, live cell inspection and remaining [migration prerequisites](docs/migration-readiness.md)
+stay open. [Focused acceptance](docs/evidence/native-task-sessions-0.276.0-2026-11-17.json)
 is separate from full SDK/platform gates.
 The [implementation sequence](docs/implementation-1-6.md) tracks remaining work.
 
@@ -95,15 +97,10 @@ and [install](docs/getting-started.en.md#install-the-macos-arm64-sdk).
 [Core CI](docs/ci.md) passed. The full Linux test step passed; its artifact
 retention fix passed a separate CI check.
 
-Browser applications support workers, `web/app.css`, `web/public/` assets,
-`web/index.html`, application-provided `web/components.tsx` and generated file
-hashes. iOS and Android projects are generated from the same checked web output.
-iOS Debug/Release builds and UI interaction are recorded for the iOS27.1 simulator;
-Android JDK21/API36 builds include signed release installation/UI interaction.
-The macOS `.app` embeds web resources through `nex://app/` and has an executed UI
-check. See the [iOS Release receipt](docs/evidence/mobile-ios-release-0.244.0-2026-11-13.json),
-[Android signed receipt](docs/evidence/mobile-android-release-signed-0.244.0-2026-11-13.json)
-and [desktop interaction receipt](docs/evidence/desktop-macos-interaction-0.244.0-2026-11-13.json).
+Browser applications support workers, custom CSS/assets/HTML/React components
+and generated file hashes. iOS/Android projects share that checked web output;
+macOS embeds it through `nex://app/`. Recorded builds and UI interactions are
+listed below, with delivery gaps kept separate.
 
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|

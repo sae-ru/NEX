@@ -1,10 +1,16 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.275.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.276.0"
 owner: repository
 ---
 
 # Implementation sequence: items 1–6
+
+Toolchain0.276 adds [persistent native task sessions](native-task-sessions.md)
+for matching-runtime C++ hosts: checked030 exports retain application state and
+returned file/error owners across serialized calls, with fresh execution controls
+per call. Native UI controllers, parallel cell transfer, logical debugging/profile
+and complete SDK/platform qualification remain open.
 
 User authorization: 2026-11-15. Continue the language, library, backends,
 developer tools and platform delivery. The original [PLAN](../PLAN.md) remains
@@ -50,8 +56,8 @@ behavior remains mandatory for each advertised migrated subset.
 
 Toolchain0.275 adds [native030 task-provider images](reference-task-providers.md)
 with one application-owned heap and propagated ABI8 across connected static,
-fixed shared and mixed components. Native persistent host sessions, reference
-task debug/profile, full delivery and the remaining application/LLM work stay open.
+fixed shared and mixed components. Native UI lifecycle, reference task
+debug/profile, full delivery and the remaining application/LLM work stay open.
 
 Toolchain0.274 adds [persistent work containers](sequence-containers.md):
 indexed/deque AVL sequences, FIFO queues, linked stacks and leftist heaps. They

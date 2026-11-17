@@ -179,6 +179,13 @@ connected static/fixed-shared/mixed cohort, including pure providers. Keep code
 images loaded through frame/value retirement. Imported callables, external
 authority exports, provider debug/profile and runtime unload remain unsupported.
 
+For repeated native host calls, discover
+`managed_references.source030_development.native_host_sessions` and read its guide.
+The matching-runtime C++ API retains one application heap with fresh per-call
+controls. Typed source errors preserve the session; fatal/control exits close it.
+Retain code images and explicit file grants through value/resource retirement.
+This does not add stable C/Swift/JNI cell transport or native UI controllers.
+
 Evaluate expressions once, left to right; preserve lazy boolean branches and
 the selected match arm. Use checked exhaustive patterns, actual generic bounds,
 traits and exact callable signatures/effects/realms. Retrieve the relevant guide

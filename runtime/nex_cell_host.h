@@ -1,12 +1,16 @@
 #pragma once
 // Compiler-private sequential cell helpers; not a public FFI or module ABI.
 #include "nex_host.h"
+#include "nex_cells.h"
 #ifdef NEX_ASYNC_TASKS
 #include "nex_tasks.h"
 namespace nexrt {
 // Borrow the enclosing request's heap for a joined owner-thread task group.
 // The request and matching runtime must outlive that group and all source work.
 TaskOwnerExecution managedTaskOwnerExecution();
+void configureManagedCellHeap(CellHeapLimits);
+CellHeapStats managedCellHeapStats();
+CellCollection collectManagedCells();
 }
 #endif
 extern "C" {

@@ -1,0 +1,1443 @@
+{
+  "schema": "nex.native-task-session-milestone/1",
+  "ok": true,
+  "toolchain": "0.276.0",
+  "base_commit": "c591875ed79d0381fd15344cf6af9c48f961ea7a",
+  "scope": "Matching-runtime C++ native030 host sessions; no new source production/version or stable ABI.",
+  "platform": "macOS-27.2.1-arm64-arm-64bit-Mach-O",
+  "compiler": {
+    "ok": true,
+    "shared_fields": [
+      "browser_workers",
+      "bytes_construction",
+      "cli_interface",
+      "compute",
+      "device",
+      "diagnostic_catalogue",
+      "dns_provider",
+      "effect_parameters",
+      "features_scope",
+      "foreign_trap_reporting",
+      "generic_features",
+      "gpu_codegen",
+      "http_client_provider",
+      "http_response_streams",
+      "http_storage_transactions",
+      "ieee_numeric_kernel",
+      "language_pack_contract",
+      "list_construction",
+      "llm_cost",
+      "llm_entry",
+      "managed_references",
+      "model",
+      "native_application_lifetime",
+      "native_core",
+      "native_debug_image_binding",
+      "native_debug_pages",
+      "native_debug_session",
+      "native_entry_abi",
+      "native_runtime_search",
+      "native_tool_arguments",
+      "opencl_codegen",
+      "patch_entities",
+      "project_capture_layout",
+      "project_languages",
+      "resource_executor",
+      "resource_regions",
+      "result_propagation",
+      "runtime_contracts",
+      "runtime_diagnostic_messages",
+      "scoped_discovery",
+      "source_concurrency",
+      "source_contracts",
+      "source_contracts_development",
+      "source_exception_prototype",
+      "source_exceptions",
+      "source_formatting",
+      "source_resources",
+      "standard_library",
+      "structured_tasks_runtime",
+      "task_debugging",
+      "task_execution_limits",
+      "task_external_completion",
+      "task_file_reads",
+      "task_file_streams",
+      "task_file_streams_host",
+      "task_file_streams_prototype",
+      "task_file_writes",
+      "task_file_writes_host",
+      "task_file_writes_prototype",
+      "task_foreign_prototype",
+      "task_network_transport",
+      "task_profile_collector",
+      "task_profiling",
+      "task_provider_debugging",
+      "task_provider_profiling",
+      "task_providers",
+      "task_shared_providers",
+      "task_value_retirement",
+      "tcp_provider",
+      "text_construction",
+      "wasm_features"
+    ],
+    "shared_field_count": 71,
+    "compared_JSON_values": 4694,
+    "errors": [],
+    "schema": "nex.language-pack-validation/1",
+    "compiler_sha256": "7cce5683e66b57d19c56c4bcc51e1e79f752f5d85f8a462124b71b2d09b9f7d0",
+    "manifest_sha256": "c57fd34db7369f80f01bc5261340eb4f719d5c65991dd2ffabf7bceaf8b34794",
+    "language": "0.28",
+    "toolchain": "0.276.0",
+    "compiler_build": "666d8025168aede976a067d787eb88eb6e09d88c2b200191b90640802e99887f",
+    "descriptor_hash": "5823725d0ca871b12c637eb2065822496bb68e17cb6738c7df29a75938d5df3e"
+  },
+  "source_files_sha256": {
+    "VERSION": "99eecc9f51aaef5c624054e9f803e5db7eee09ecdbb3b6b2b5adf3dd0639e085",
+    "cmake/Tests.cmake": "0e97bf1af1ea67f910639308995227591874605a5f986fc507c4b5634c89000f",
+    "cmake/Install.cmake": "92109b5ac9507c1e1ea25c515bae6185cf8054d4a9a587a28e4b9e4d9b2829df",
+    "cmake/test-tiers.json": "ea59e2bf3680cdd564bc3c6104e1fd9587111441baeaf9877483ec0812e16cce",
+    "runtime/nex_task_session.cpp": "4a74def0de8ddc0af19e0bece9dcd3d796159956036826706cd351f6500b688e",
+    "runtime/nex_task_session.h": "924219a13e0f2cbd321f1cbbd71fe94913593342af6f70d681eb105c5c47c956",
+    "runtime/nex_host.h": "860c35c9175c0bdfaa1ff25b05d65c5fe000a14eb5df1b401210bf59516e097a",
+    "runtime/runtime.cpp": "712bbef1d2065f0e6002748531b1f25555d9514d07988a6a5ef9ca8e23e4dbf1",
+    "runtime/nex_cell_host.cpp": "ef85c3ac572a7897cc82104e63bef1fca7b147397d06d2c3bd818cd7f928d8ed",
+    "runtime/nex_cell_host.h": "31cf7bad441f1f2ebe6ae44616415f3cc95fc7c175c7c4cfd49b0c660b274944",
+    "src/backend.cpp": "f9e0b844d2bfa83c15868158f8b506abed3a4ce978cd0146ae8d9785b1befee6",
+    "src/managed_references.cpp": "7918e6a1c14f1841d26eb42166fb41f183fdd9e8b3c89515a7c06a963bc4826a",
+    "tests/native_task_session.cpp": "5411105b4310e4cbe8b3a2e5ff2308c6a050a277ba94b08c1a72fb02fe9de9c3",
+    "tests/native_task_session_images.cpp": "1e161daad8ff8ab61bc8e85ed8a521ce1ae06afa8717b370798536802dd7c2d2",
+    "tests/native_task_sessions.py": "84dbdaa563d3f61a12f7a46b8f4a86d0ec71d5b76af8289d0b034d72b1f4a44b",
+    "tests/reference_tasks.cpp": "7c38fcbde0937870ba6f58a2350d477b3a08b1528bfafdc132b9baca62a3625e",
+    "tests/native_reference_tasks.py": "a91db5b525ccc420ddea0340a02cba1d3d43e4ec073db7ade998eb5b3df260da",
+    "tests/typescript_reference_tasks.py": "70c97428e10f6bbd99d63821355c2c6649890c21a99a0b7ae6f32943f7a745de",
+    "tests/reference_tasks_cli.py": "39d7db125ec7f6e25ecf1d8552d6f9d161d4a39f6dc55113862252fa49a45446",
+    "llm/language-pack.json": "c57fd34db7369f80f01bc5261340eb4f719d5c65991dd2ffabf7bceaf8b34794"
+  },
+  "builds": [
+    {
+      "command": "cmake --build build -j 4",
+      "log": "build/native-session-v1/build-all-v2.stdout",
+      "stdout_sha256": "86446e53f8354a8415fc2466b497f97983c07f26d5af4640e0cad5e2a0d6c6fb",
+      "stderr_sha256": "fd6964278e65db925337075cd5d7410da20652568d1bcefd83854aaa54518690",
+      "exit_code": 0
+    }
+  ],
+  "core": {
+    "schema": "nex.ctest-verification/1",
+    "ok": true,
+    "ctest_exit_code": 0,
+    "selected_groups": [
+      "bytes_runtime_native",
+      "ctest_report_validation",
+      "diagnostic_catalogue",
+      "discovery",
+      "float_runtime_native",
+      "frontend_diagnostics_native",
+      "language_pack_contract",
+      "llm_cost_ledger",
+      "llm_local_collector",
+      "managed_reference_native_context",
+      "managed_references_frontend_reference",
+      "reference_tasks_development",
+      "task_frontend_native",
+      "test_tiers",
+      "typed_source_frontend_reference",
+      "value_owner_runtime",
+      "value_retirement_runtime"
+    ],
+    "required_fixture_groups": [],
+    "expected_groups": [
+      "bytes_runtime_native",
+      "ctest_report_validation",
+      "diagnostic_catalogue",
+      "discovery",
+      "float_runtime_native",
+      "frontend_diagnostics_native",
+      "language_pack_contract",
+      "llm_cost_ledger",
+      "llm_local_collector",
+      "managed_reference_native_context",
+      "managed_references_frontend_reference",
+      "reference_tasks_development",
+      "task_frontend_native",
+      "test_tiers",
+      "typed_source_frontend_reference",
+      "value_owner_runtime",
+      "value_retirement_runtime"
+    ],
+    "observed_groups": [
+      "llm_cost_ledger",
+      "llm_local_collector",
+      "ctest_report_validation",
+      "discovery",
+      "language_pack_contract",
+      "task_frontend_native",
+      "reference_tasks_development",
+      "frontend_diagnostics_native",
+      "value_owner_runtime",
+      "value_retirement_runtime",
+      "managed_references_frontend_reference",
+      "managed_reference_native_context",
+      "bytes_runtime_native",
+      "float_runtime_native",
+      "typed_source_frontend_reference",
+      "test_tiers",
+      "diagnostic_catalogue"
+    ],
+    "results": {
+      "passed": [
+        "llm_cost_ledger",
+        "llm_local_collector",
+        "ctest_report_validation",
+        "discovery",
+        "language_pack_contract",
+        "task_frontend_native",
+        "reference_tasks_development",
+        "frontend_diagnostics_native",
+        "value_owner_runtime",
+        "value_retirement_runtime",
+        "managed_references_frontend_reference",
+        "managed_reference_native_context",
+        "bytes_runtime_native",
+        "float_runtime_native",
+        "typed_source_frontend_reference",
+        "test_tiers",
+        "diagnostic_catalogue"
+      ],
+      "failed": [],
+      "skipped": []
+    },
+    "registry_sha256": "154058e4fd6575abafee098a53f140395ab7868c02d28aa6cdb923a7dd3c9891",
+    "junit_sha256": "a737aea65d8775104b05233fff78e2e44306b05df0e8995f89b6110a4126e4a0"
+  },
+  "additional_ctest": [
+    {
+      "name": "affected-v1",
+      "junit_sha256": "e679e84fd6eb0510cc7591f292c1131fadd72906d02040515dde03a1f99d0e36",
+      "log_sha256": "6ec87787b4731e8e06f07c25ec7c1c30b2a4ed8e02c60c3988f5e6248f47d576",
+      "passed_groups": [
+        "owned_resource_executor",
+        "logical_resource_regions",
+        "reference_resource_regions",
+        "reference_request_resources",
+        "language_pack_contract",
+        "task_application_runtime",
+        "task_http_request_host",
+        "task_limits_runtime",
+        "application_ownership_runtime",
+        "reference_library_context",
+        "native_task_sessions",
+        "docs_index"
+      ],
+      "ctest_exit_code": 0
+    },
+    {
+      "name": "agreement-v1",
+      "junit_sha256": "fdf26bbd0008a53c0f7330709efb7554c3c01c2b5233964e61ebf947e5cd15bd",
+      "log_sha256": "e8f9525968d40137e841f5d9e5c3bb106e7f59b79c70aa3cd180e2846bd5f556",
+      "passed_groups": [
+        "typescript_reference_tasks_development",
+        "native_reference_tasks_development",
+        "managed_reference_requests_native",
+        "managed_reference_resources_native"
+      ],
+      "ctest_exit_code": 0
+    }
+  ],
+  "unique_passed_groups": [
+    "application_ownership_runtime",
+    "bytes_runtime_native",
+    "ctest_report_validation",
+    "diagnostic_catalogue",
+    "discovery",
+    "docs_index",
+    "float_runtime_native",
+    "frontend_diagnostics_native",
+    "language_pack_contract",
+    "llm_cost_ledger",
+    "llm_local_collector",
+    "logical_resource_regions",
+    "managed_reference_native_context",
+    "managed_reference_requests_native",
+    "managed_reference_resources_native",
+    "managed_references_frontend_reference",
+    "native_reference_tasks_development",
+    "native_task_sessions",
+    "owned_resource_executor",
+    "reference_library_context",
+    "reference_request_resources",
+    "reference_resource_regions",
+    "reference_tasks_development",
+    "task_application_runtime",
+    "task_frontend_native",
+    "task_http_request_host",
+    "task_limits_runtime",
+    "test_tiers",
+    "typed_source_frontend_reference",
+    "typescript_reference_tasks_development",
+    "value_owner_runtime",
+    "value_retirement_runtime"
+  ],
+  "unique_passed_group_count": 32,
+  "source_qualification": {
+    "schema": "nex.native-task-sessions/1",
+    "compiler_sha256": "7cce5683e66b57d19c56c4bcc51e1e79f752f5d85f8a462124b71b2d09b9f7d0",
+    "host_sha256": "e76a133c1e776d2b19add68666431c89dd1633e29d939c158184d5db302ab5c9",
+    "harness_sha256": "84dbdaa563d3f61a12f7a46b8f4a86d0ec71d5b76af8289d0b034d72b1f4a44b",
+    "platform": "macOS-27.2.1-arm64-arm-64bit-Mach-O",
+    "example_sha256": {
+      "README.md": "f6f2df405dbebafee686d40252fb68045ea285edb8afc4410eb35e021dff3148",
+      "nex.build.json": "89b0ec3b5c1181707b6b62dd368f0ff5a374657a0a473bed07c3999e689e4d2b",
+      "nex.json": "4480a42a3fcc15093bafd78ff2148b4cb4a0b696d863e442658abe33115cd2b9",
+      "core/value.nex": "33359393cf1923430a7a5f21eb00f58031cd8bff3830271b5033c842c263951a",
+      "app/main.nex": "227936fd798a08bdb0ff70c717ee79a0caffaf952acf8b1b8ab058adb6c51e1b",
+      "mid/value.nex": "2d3c73bb4807cc73725d2e0adc13f09b601225844c60c09204b3a8f3b6c3766f",
+      "files/value.nex": "5af2c610950d0b9c453602e3a4a6d7de3466c3f19011b4c1b819526269608898"
+    },
+    "kernel": {
+      "ok": true,
+      "cases": 14,
+      "live_delta": 0,
+      "persistent_contexts": true
+    },
+    "profiles": [
+      {
+        "profile": "debug",
+        "records": {
+          "core": {
+            "provider": {
+              "abi_offset": 40,
+              "artifact_kind": "pic-stage",
+              "code_only": true,
+              "cohort": "42a63b2384154de91cd8043b01be01fe37c0459b85e5d72fcb0500c7554a3c8e",
+              "compiler_build": "666d8025168aede976a067d787eb88eb6e09d88c2b200191b90640802e99887f",
+              "component": "core",
+              "component_file_reads": {
+                "core": false
+              },
+              "component_file_streams": {
+                "core": false
+              },
+              "component_file_writes": {
+                "core": false
+              },
+              "definition_owners": {
+                "native_session_core::add": "core",
+                "native_session_core::cycle": "core",
+                "native_session_core::fail": "core",
+                "native_session_core::get": "core",
+                "native_session_core::make": "core",
+                "native_session_core::overflow": "core",
+                "native_session_core::snapshot": "core",
+                "native_session_core::spin": "core"
+              },
+              "definitions": [
+                "native_session_core::add",
+                "native_session_core::cycle",
+                "native_session_core::fail",
+                "native_session_core::get",
+                "native_session_core::make",
+                "native_session_core::overflow",
+                "native_session_core::snapshot",
+                "native_session_core::spin"
+              ],
+              "descriptor_abi": 5640011226151911432,
+              "descriptor_size": 88,
+              "exports": {
+                "native_session_core::add": {
+                  "accessor": "nex_19_native_session_core_3_add__task_code_address",
+                  "contract": "73c0bffed43ab5c00d4a334225fa915a26b16528cc92562da47ab1b5217f8005",
+                  "requirements": 8193,
+                  "signature": "f59faaae91381edba67b17b0cf24edce3c0297eaa9d8dd3b53dbebbbd7092a73"
+                },
+                "native_session_core::cycle": {
+                  "accessor": "nex_19_native_session_core_5_cycle__task_code_address",
+                  "contract": "4cf504bcf7909d3f73b7409c70296109902ce06f424c34de4f996085e079b2df",
+                  "requirements": 8192,
+                  "signature": "74002a02e33efeefbd2a04de2d6c44026bb0f69d264b361f3fe2f7e162c41e26"
+                },
+                "native_session_core::fail": {
+                  "accessor": "nex_19_native_session_core_4_fail__task_code_address",
+                  "contract": "ce74d2a22aec4a8b0d4ed3289b705a368c6b1e3d4b0c37f9ffd99cb6751e2d71",
+                  "requirements": 12289,
+                  "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+                },
+                "native_session_core::get": {
+                  "accessor": "nex_19_native_session_core_3_get__task_code_address",
+                  "contract": "a3126acbe9732f0d8ff28722861b2f612a74a272f693d2b4fa33f61eb04acf24",
+                  "requirements": 8192,
+                  "signature": "fd97ac2147e1ee2fa7a7aac93dcb400b1c3c58fbc35fb27174b4353398c7caf6"
+                },
+                "native_session_core::make": {
+                  "accessor": "nex_19_native_session_core_4_make__task_code_address",
+                  "contract": "5c2e4be02a07dee80e0978cb213c80320ffe702eafc56e00bc95737a6069df7d",
+                  "requirements": 8192,
+                  "signature": "6b924c1617d9096616a03865f2fccca43b028176e76425d307402a1a2aeeec19"
+                },
+                "native_session_core::overflow": {
+                  "accessor": "nex_19_native_session_core_8_overflow__task_code_address",
+                  "contract": "bef89fe7aff9525cb1ed0223e11919365d227344d3f5c02add066b530c04e0b0",
+                  "requirements": 8193,
+                  "signature": "3a0d2c0683e03572a2e7e88e642fd07976f9f8ecdfe95a6fec833ea3d04450ba"
+                },
+                "native_session_core::snapshot": {
+                  "accessor": "nex_19_native_session_core_8_snapshot__task_code_address",
+                  "contract": "808c87ded443d92efbc2f30a0f210b85a55b52005537dc5c33463bcec8d01506",
+                  "requirements": 0,
+                  "signature": "6bd541b69c4a942cc61e7b1459acbf6be046e510c4c8cac6c0163e997e92e7ed"
+                },
+                "native_session_core::spin": {
+                  "accessor": "nex_19_native_session_core_4_spin__task_code_address",
+                  "contract": "cd82192fc3940117a7fa5d30fc5c42bf2b22d580415b0f0ea12dce9bdc5b136f",
+                  "requirements": 8193,
+                  "signature": "a5c72a94355d68d55086568bc1e25ffe2c4a93db46f92914dcfce255755b0149"
+                }
+              },
+              "image": null,
+              "language": "0.30",
+              "mode": "shared-fixed",
+              "owner_image": null,
+              "schema": "nex.native-task-provider/17",
+              "task_file_reads": false,
+              "task_file_streams": false,
+              "task_file_writes": false
+            },
+            "archive_sha256": "ff1200a7dbf580e80778bb69e04721773ee894f5ff1a4defd80daa12408a95a6",
+            "image_sha256": "43a326d71708a5802f482db2069fbb58159588f292027567efab1248d1f4df88"
+          },
+          "mid": {
+            "provider": {
+              "abi_offset": 40,
+              "artifact_kind": "pic-stage",
+              "code_only": true,
+              "cohort": "42a63b2384154de91cd8043b01be01fe37c0459b85e5d72fcb0500c7554a3c8e",
+              "compiler_build": "666d8025168aede976a067d787eb88eb6e09d88c2b200191b90640802e99887f",
+              "component": "mid",
+              "component_file_reads": {
+                "mid": false
+              },
+              "component_file_streams": {
+                "mid": false
+              },
+              "component_file_writes": {
+                "mid": false
+              },
+              "definition_owners": {
+                "native_session_mid::twice": "mid"
+              },
+              "definitions": [
+                "native_session_mid::twice"
+              ],
+              "descriptor_abi": 5640011226151911432,
+              "descriptor_size": 88,
+              "exports": {
+                "native_session_mid::twice": {
+                  "accessor": "nex_18_native_session_mid_5_twice__task_code_address",
+                  "contract": "8fba57a6da3f39387db14f36d07db4550b57ba15c2044d38518bcddbb4b79cc1",
+                  "requirements": 8193,
+                  "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+                }
+              },
+              "image": null,
+              "language": "0.30",
+              "mode": "shared-fixed",
+              "owner_image": null,
+              "schema": "nex.native-task-provider/17",
+              "task_file_reads": false,
+              "task_file_streams": false,
+              "task_file_writes": false
+            },
+            "archive_sha256": "4035dce236b3634e1ead021feaad1da51113daaffaaf1bd6f3060a1986029af7",
+            "image_sha256": "c08e26984f53f340cb1c94ca848de503c9cdf0eba7d905f1fa67fa67eb15165b"
+          },
+          "files": {
+            "provider": {
+              "abi_offset": 40,
+              "artifact_kind": "pic-stage",
+              "code_only": true,
+              "cohort": "42a63b2384154de91cd8043b01be01fe37c0459b85e5d72fcb0500c7554a3c8e",
+              "compiler_build": "666d8025168aede976a067d787eb88eb6e09d88c2b200191b90640802e99887f",
+              "component": "files",
+              "component_file_reads": {
+                "files": true
+              },
+              "component_file_streams": {
+                "files": true
+              },
+              "component_file_writes": {
+                "files": false
+              },
+              "definition_owners": {
+                "native_session_files::close_file": "files",
+                "native_session_files::empty_stash": "files",
+                "native_session_files::error_file": "files",
+                "native_session_files::open_file": "files",
+                "native_session_files::read_file": "files",
+                "native_session_files::seek_file": "files",
+                "native_session_files::stash": "files",
+                "native_session_files::use_stash": "files"
+              },
+              "definitions": [
+                "native_session_files::close_file",
+                "native_session_files::empty_stash",
+                "native_session_files::error_file",
+                "native_session_files::open_file",
+                "native_session_files::read_file",
+                "native_session_files::seek_file",
+                "native_session_files::stash",
+                "native_session_files::use_stash"
+              ],
+              "descriptor_abi": 5640011226151911432,
+              "descriptor_size": 88,
+              "exports": {
+                "native_session_files::close_file": {
+                  "accessor": "nex_20_native_session_files_10_close_file__task_code_address",
+                  "contract": "43083f17eaf1d51c3ec532734d4689c1bd78eb3127095ec7faeb497bb01f408e",
+                  "requirements": 11551,
+                  "signature": "a7629322bb8d61dceb54223449df1256369e9e0fdb7f250a8913502627b26c74"
+                },
+                "native_session_files::empty_stash": {
+                  "accessor": "nex_20_native_session_files_11_empty_stash__task_code_address",
+                  "contract": "3e4504037d62718c954239917fa19bbb6ddd333947b7dd8664bc4d05d9613810",
+                  "requirements": 10258,
+                  "signature": "7772517c69809e18f4e9cbbed584a8fc64e3b7b1611d530de6f05e5ca9be55a1"
+                },
+                "native_session_files::error_file": {
+                  "accessor": "nex_20_native_session_files_10_error_file__task_code_address",
+                  "contract": "e440cb4ff0b2610369d77e2934cd0a608ef2c439c0c9156b216a545ef3f6c7fa",
+                  "requirements": 15647,
+                  "signature": "cd39bfbe85c8768f4139606f66b0a89bbd41653e796051b9b557bcb55ad9ab9a"
+                },
+                "native_session_files::open_file": {
+                  "accessor": "nex_20_native_session_files_9_open_file__task_code_address",
+                  "contract": "4c5c28171dad3a84932aa31f3d2ef929075755de5bb4a7c20c43fe99100bfd48",
+                  "requirements": 11551,
+                  "signature": "2896ad14c399bd2e32db740d2b7971f3f0644587db45dbff24ddd653467e8905"
+                },
+                "native_session_files::read_file": {
+                  "accessor": "nex_20_native_session_files_9_read_file__task_code_address",
+                  "contract": "c451c7403f701160037a9ebbd62609d2a01d912ac97625c7cf0af0f8013f11c6",
+                  "requirements": 11551,
+                  "signature": "101f3421ff63d6d1fb56a38116935a727cb58559e161bc475a922b4248fe3d12"
+                },
+                "native_session_files::seek_file": {
+                  "accessor": "nex_20_native_session_files_9_seek_file__task_code_address",
+                  "contract": "109e114c2039971f857c3e1dc3678885ed9fa8b32e5791108f467e35934d7626",
+                  "requirements": 11551,
+                  "signature": "a7629322bb8d61dceb54223449df1256369e9e0fdb7f250a8913502627b26c74"
+                },
+                "native_session_files::stash": {
+                  "accessor": "nex_20_native_session_files_5_stash__task_code_address",
+                  "contract": "e2998d41a2d5ed05b94eefc78881e857a413ad9df3c2d0dcfc5039b6c25e1571",
+                  "requirements": 11551,
+                  "signature": "36e8766d14697476e1630bc1488c930775b9bf8976c274e13e3510e697dbb680"
+                },
+                "native_session_files::use_stash": {
+                  "accessor": "nex_20_native_session_files_9_use_stash__task_code_address",
+                  "contract": "c5bc6e3c84b317c622365747c23e06a285c9b0264525ba9ea3291f40e3d5052a",
+                  "requirements": 11551,
+                  "signature": "8b3a5a214ea498a06505bb09a1e209f3ce1347becc91a638b17d80897c98f972"
+                }
+              },
+              "image": null,
+              "language": "0.30",
+              "mode": "shared-fixed",
+              "owner_image": null,
+              "schema": "nex.native-task-provider/17",
+              "task_file_reads": true,
+              "task_file_streams": true,
+              "task_file_writes": false
+            },
+            "archive_sha256": "c776b19b13b2289b06efd38a4a1d5ba508832109d37a784540b334339a6f27ba",
+            "image_sha256": "5a0f5b67db651ef4304601590a428dda5769c951d641cd4a51949e1f9f9d6a0d"
+          }
+        },
+        "host": {
+          "ok": true,
+          "cases": 13,
+          "live_delta": 0,
+          "source_error_continues": true,
+          "file_return_promotion": true,
+          "unreturned_resource_not_promoted": true
+        },
+        "ordinary_project_stdout": "42\n"
+      },
+      {
+        "profile": "release",
+        "records": {
+          "core": {
+            "provider": {
+              "abi_offset": 40,
+              "artifact_kind": "pic-stage",
+              "code_only": true,
+              "cohort": "42a63b2384154de91cd8043b01be01fe37c0459b85e5d72fcb0500c7554a3c8e",
+              "compiler_build": "666d8025168aede976a067d787eb88eb6e09d88c2b200191b90640802e99887f",
+              "component": "core",
+              "component_file_reads": {
+                "core": false
+              },
+              "component_file_streams": {
+                "core": false
+              },
+              "component_file_writes": {
+                "core": false
+              },
+              "definition_owners": {
+                "native_session_core::add": "core",
+                "native_session_core::cycle": "core",
+                "native_session_core::fail": "core",
+                "native_session_core::get": "core",
+                "native_session_core::make": "core",
+                "native_session_core::overflow": "core",
+                "native_session_core::snapshot": "core",
+                "native_session_core::spin": "core"
+              },
+              "definitions": [
+                "native_session_core::add",
+                "native_session_core::cycle",
+                "native_session_core::fail",
+                "native_session_core::get",
+                "native_session_core::make",
+                "native_session_core::overflow",
+                "native_session_core::snapshot",
+                "native_session_core::spin"
+              ],
+              "descriptor_abi": 5640011226151911432,
+              "descriptor_size": 88,
+              "exports": {
+                "native_session_core::add": {
+                  "accessor": "nex_19_native_session_core_3_add__task_code_address",
+                  "contract": "73c0bffed43ab5c00d4a334225fa915a26b16528cc92562da47ab1b5217f8005",
+                  "requirements": 8193,
+                  "signature": "f59faaae91381edba67b17b0cf24edce3c0297eaa9d8dd3b53dbebbbd7092a73"
+                },
+                "native_session_core::cycle": {
+                  "accessor": "nex_19_native_session_core_5_cycle__task_code_address",
+                  "contract": "4cf504bcf7909d3f73b7409c70296109902ce06f424c34de4f996085e079b2df",
+                  "requirements": 8192,
+                  "signature": "74002a02e33efeefbd2a04de2d6c44026bb0f69d264b361f3fe2f7e162c41e26"
+                },
+                "native_session_core::fail": {
+                  "accessor": "nex_19_native_session_core_4_fail__task_code_address",
+                  "contract": "ce74d2a22aec4a8b0d4ed3289b705a368c6b1e3d4b0c37f9ffd99cb6751e2d71",
+                  "requirements": 12289,
+                  "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+                },
+                "native_session_core::get": {
+                  "accessor": "nex_19_native_session_core_3_get__task_code_address",
+                  "contract": "a3126acbe9732f0d8ff28722861b2f612a74a272f693d2b4fa33f61eb04acf24",
+                  "requirements": 8192,
+                  "signature": "fd97ac2147e1ee2fa7a7aac93dcb400b1c3c58fbc35fb27174b4353398c7caf6"
+                },
+                "native_session_core::make": {
+                  "accessor": "nex_19_native_session_core_4_make__task_code_address",
+                  "contract": "5c2e4be02a07dee80e0978cb213c80320ffe702eafc56e00bc95737a6069df7d",
+                  "requirements": 8192,
+                  "signature": "6b924c1617d9096616a03865f2fccca43b028176e76425d307402a1a2aeeec19"
+                },
+                "native_session_core::overflow": {
+                  "accessor": "nex_19_native_session_core_8_overflow__task_code_address",
+                  "contract": "bef89fe7aff9525cb1ed0223e11919365d227344d3f5c02add066b530c04e0b0",
+                  "requirements": 8193,
+                  "signature": "3a0d2c0683e03572a2e7e88e642fd07976f9f8ecdfe95a6fec833ea3d04450ba"
+                },
+                "native_session_core::snapshot": {
+                  "accessor": "nex_19_native_session_core_8_snapshot__task_code_address",
+                  "contract": "808c87ded443d92efbc2f30a0f210b85a55b52005537dc5c33463bcec8d01506",
+                  "requirements": 0,
+                  "signature": "6bd541b69c4a942cc61e7b1459acbf6be046e510c4c8cac6c0163e997e92e7ed"
+                },
+                "native_session_core::spin": {
+                  "accessor": "nex_19_native_session_core_4_spin__task_code_address",
+                  "contract": "cd82192fc3940117a7fa5d30fc5c42bf2b22d580415b0f0ea12dce9bdc5b136f",
+                  "requirements": 8193,
+                  "signature": "a5c72a94355d68d55086568bc1e25ffe2c4a93db46f92914dcfce255755b0149"
+                }
+              },
+              "image": null,
+              "language": "0.30",
+              "mode": "shared-fixed",
+              "owner_image": null,
+              "schema": "nex.native-task-provider/17",
+              "task_file_reads": false,
+              "task_file_streams": false,
+              "task_file_writes": false
+            },
+            "archive_sha256": "ac7fe62ed6f4bb12a43da5bdc99130cc741eb82f08b53ec820aaf80a6fce3fac",
+            "image_sha256": "3be3c9734e56a6755ad8ea157253a6550827993618dd08391aaa2d1c814b62d2"
+          },
+          "mid": {
+            "provider": {
+              "abi_offset": 40,
+              "artifact_kind": "pic-stage",
+              "code_only": true,
+              "cohort": "42a63b2384154de91cd8043b01be01fe37c0459b85e5d72fcb0500c7554a3c8e",
+              "compiler_build": "666d8025168aede976a067d787eb88eb6e09d88c2b200191b90640802e99887f",
+              "component": "mid",
+              "component_file_reads": {
+                "mid": false
+              },
+              "component_file_streams": {
+                "mid": false
+              },
+              "component_file_writes": {
+                "mid": false
+              },
+              "definition_owners": {
+                "native_session_mid::twice": "mid"
+              },
+              "definitions": [
+                "native_session_mid::twice"
+              ],
+              "descriptor_abi": 5640011226151911432,
+              "descriptor_size": 88,
+              "exports": {
+                "native_session_mid::twice": {
+                  "accessor": "nex_18_native_session_mid_5_twice__task_code_address",
+                  "contract": "8fba57a6da3f39387db14f36d07db4550b57ba15c2044d38518bcddbb4b79cc1",
+                  "requirements": 8193,
+                  "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+                }
+              },
+              "image": null,
+              "language": "0.30",
+              "mode": "shared-fixed",
+              "owner_image": null,
+              "schema": "nex.native-task-provider/17",
+              "task_file_reads": false,
+              "task_file_streams": false,
+              "task_file_writes": false
+            },
+            "archive_sha256": "3b24e09c4ff4d8757e3e28d9f60e19d33008788fc9cda77119d8336918e5c12c",
+            "image_sha256": "724d860e5d41c1f5a8fa4d1f78b970086e5de166f87c1509f78a321e836a8566"
+          },
+          "files": {
+            "provider": {
+              "abi_offset": 40,
+              "artifact_kind": "pic-stage",
+              "code_only": true,
+              "cohort": "42a63b2384154de91cd8043b01be01fe37c0459b85e5d72fcb0500c7554a3c8e",
+              "compiler_build": "666d8025168aede976a067d787eb88eb6e09d88c2b200191b90640802e99887f",
+              "component": "files",
+              "component_file_reads": {
+                "files": true
+              },
+              "component_file_streams": {
+                "files": true
+              },
+              "component_file_writes": {
+                "files": false
+              },
+              "definition_owners": {
+                "native_session_files::close_file": "files",
+                "native_session_files::empty_stash": "files",
+                "native_session_files::error_file": "files",
+                "native_session_files::open_file": "files",
+                "native_session_files::read_file": "files",
+                "native_session_files::seek_file": "files",
+                "native_session_files::stash": "files",
+                "native_session_files::use_stash": "files"
+              },
+              "definitions": [
+                "native_session_files::close_file",
+                "native_session_files::empty_stash",
+                "native_session_files::error_file",
+                "native_session_files::open_file",
+                "native_session_files::read_file",
+                "native_session_files::seek_file",
+                "native_session_files::stash",
+                "native_session_files::use_stash"
+              ],
+              "descriptor_abi": 5640011226151911432,
+              "descriptor_size": 88,
+              "exports": {
+                "native_session_files::close_file": {
+                  "accessor": "nex_20_native_session_files_10_close_file__task_code_address",
+                  "contract": "43083f17eaf1d51c3ec532734d4689c1bd78eb3127095ec7faeb497bb01f408e",
+                  "requirements": 11551,
+                  "signature": "a7629322bb8d61dceb54223449df1256369e9e0fdb7f250a8913502627b26c74"
+                },
+                "native_session_files::empty_stash": {
+                  "accessor": "nex_20_native_session_files_11_empty_stash__task_code_address",
+                  "contract": "3e4504037d62718c954239917fa19bbb6ddd333947b7dd8664bc4d05d9613810",
+                  "requirements": 10258,
+                  "signature": "7772517c69809e18f4e9cbbed584a8fc64e3b7b1611d530de6f05e5ca9be55a1"
+                },
+                "native_session_files::error_file": {
+                  "accessor": "nex_20_native_session_files_10_error_file__task_code_address",
+                  "contract": "e440cb4ff0b2610369d77e2934cd0a608ef2c439c0c9156b216a545ef3f6c7fa",
+                  "requirements": 15647,
+                  "signature": "cd39bfbe85c8768f4139606f66b0a89bbd41653e796051b9b557bcb55ad9ab9a"
+                },
+                "native_session_files::open_file": {
+                  "accessor": "nex_20_native_session_files_9_open_file__task_code_address",
+                  "contract": "4c5c28171dad3a84932aa31f3d2ef929075755de5bb4a7c20c43fe99100bfd48",
+                  "requirements": 11551,
+                  "signature": "2896ad14c399bd2e32db740d2b7971f3f0644587db45dbff24ddd653467e8905"
+                },
+                "native_session_files::read_file": {
+                  "accessor": "nex_20_native_session_files_9_read_file__task_code_address",
+                  "contract": "c451c7403f701160037a9ebbd62609d2a01d912ac97625c7cf0af0f8013f11c6",
+                  "requirements": 11551,
+                  "signature": "101f3421ff63d6d1fb56a38116935a727cb58559e161bc475a922b4248fe3d12"
+                },
+                "native_session_files::seek_file": {
+                  "accessor": "nex_20_native_session_files_9_seek_file__task_code_address",
+                  "contract": "109e114c2039971f857c3e1dc3678885ed9fa8b32e5791108f467e35934d7626",
+                  "requirements": 11551,
+                  "signature": "a7629322bb8d61dceb54223449df1256369e9e0fdb7f250a8913502627b26c74"
+                },
+                "native_session_files::stash": {
+                  "accessor": "nex_20_native_session_files_5_stash__task_code_address",
+                  "contract": "e2998d41a2d5ed05b94eefc78881e857a413ad9df3c2d0dcfc5039b6c25e1571",
+                  "requirements": 11551,
+                  "signature": "36e8766d14697476e1630bc1488c930775b9bf8976c274e13e3510e697dbb680"
+                },
+                "native_session_files::use_stash": {
+                  "accessor": "nex_20_native_session_files_9_use_stash__task_code_address",
+                  "contract": "c5bc6e3c84b317c622365747c23e06a285c9b0264525ba9ea3291f40e3d5052a",
+                  "requirements": 11551,
+                  "signature": "8b3a5a214ea498a06505bb09a1e209f3ce1347becc91a638b17d80897c98f972"
+                }
+              },
+              "image": null,
+              "language": "0.30",
+              "mode": "shared-fixed",
+              "owner_image": null,
+              "schema": "nex.native-task-provider/17",
+              "task_file_reads": true,
+              "task_file_streams": true,
+              "task_file_writes": false
+            },
+            "archive_sha256": "0829a8e0efb8ddcfd908d37d5bd33bdf3dee06349c4ca22eea8887360cd9361d",
+            "image_sha256": "afbb3f36e7fb06aaf72aa63e08542ccbd5d1aecc21758b224fb835d22df44f46"
+          }
+        },
+        "host": {
+          "ok": true,
+          "cases": 13,
+          "live_delta": 0,
+          "source_error_continues": true,
+          "file_return_promotion": true,
+          "unreturned_resource_not_promoted": true
+        },
+        "ordinary_project_stdout": "42\n"
+      }
+    ],
+    "portable_SDK": false,
+    "whole_goal_complete": false,
+    "commands": 15
+  },
+  "ordinary_installation": {
+    "portable": false,
+    "host_dependencies_retained": true,
+    "install_exit_code": 0,
+    "moved_compiler_sha256": "7cce5683e66b57d19c56c4bcc51e1e79f752f5d85f8a462124b71b2d09b9f7d0",
+    "host_built_from_installed_runtime_sources": true,
+    "host_compiler": "LLVM22 clang++ -O1",
+    "qualification": {
+      "schema": "nex.native-task-sessions/1",
+      "compiler_sha256": "7cce5683e66b57d19c56c4bcc51e1e79f752f5d85f8a462124b71b2d09b9f7d0",
+      "host_sha256": "e97f3d27acc3beb083f6afd280b25dd25a7e5845fab5cc8319e4302e0ccb0a86",
+      "harness_sha256": "84dbdaa563d3f61a12f7a46b8f4a86d0ec71d5b76af8289d0b034d72b1f4a44b",
+      "platform": "macOS-27.2.1-arm64-arm-64bit-Mach-O",
+      "example_sha256": {
+        "README.md": "f6f2df405dbebafee686d40252fb68045ea285edb8afc4410eb35e021dff3148",
+        "nex.build.json": "89b0ec3b5c1181707b6b62dd368f0ff5a374657a0a473bed07c3999e689e4d2b",
+        "nex.json": "4480a42a3fcc15093bafd78ff2148b4cb4a0b696d863e442658abe33115cd2b9",
+        "core/value.nex": "33359393cf1923430a7a5f21eb00f58031cd8bff3830271b5033c842c263951a",
+        "app/main.nex": "227936fd798a08bdb0ff70c717ee79a0caffaf952acf8b1b8ab058adb6c51e1b",
+        "mid/value.nex": "2d3c73bb4807cc73725d2e0adc13f09b601225844c60c09204b3a8f3b6c3766f",
+        "files/value.nex": "5af2c610950d0b9c453602e3a4a6d7de3466c3f19011b4c1b819526269608898"
+      },
+      "kernel": {
+        "ok": true,
+        "cases": 14,
+        "live_delta": 0,
+        "persistent_contexts": true
+      },
+      "profiles": [
+        {
+          "profile": "debug",
+          "records": {
+            "core": {
+              "provider": {
+                "abi_offset": 40,
+                "artifact_kind": "pic-stage",
+                "code_only": true,
+                "cohort": "42a63b2384154de91cd8043b01be01fe37c0459b85e5d72fcb0500c7554a3c8e",
+                "compiler_build": "666d8025168aede976a067d787eb88eb6e09d88c2b200191b90640802e99887f",
+                "component": "core",
+                "component_file_reads": {
+                  "core": false
+                },
+                "component_file_streams": {
+                  "core": false
+                },
+                "component_file_writes": {
+                  "core": false
+                },
+                "definition_owners": {
+                  "native_session_core::add": "core",
+                  "native_session_core::cycle": "core",
+                  "native_session_core::fail": "core",
+                  "native_session_core::get": "core",
+                  "native_session_core::make": "core",
+                  "native_session_core::overflow": "core",
+                  "native_session_core::snapshot": "core",
+                  "native_session_core::spin": "core"
+                },
+                "definitions": [
+                  "native_session_core::add",
+                  "native_session_core::cycle",
+                  "native_session_core::fail",
+                  "native_session_core::get",
+                  "native_session_core::make",
+                  "native_session_core::overflow",
+                  "native_session_core::snapshot",
+                  "native_session_core::spin"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "native_session_core::add": {
+                    "accessor": "nex_19_native_session_core_3_add__task_code_address",
+                    "contract": "73c0bffed43ab5c00d4a334225fa915a26b16528cc92562da47ab1b5217f8005",
+                    "requirements": 8193,
+                    "signature": "f59faaae91381edba67b17b0cf24edce3c0297eaa9d8dd3b53dbebbbd7092a73"
+                  },
+                  "native_session_core::cycle": {
+                    "accessor": "nex_19_native_session_core_5_cycle__task_code_address",
+                    "contract": "4cf504bcf7909d3f73b7409c70296109902ce06f424c34de4f996085e079b2df",
+                    "requirements": 8192,
+                    "signature": "74002a02e33efeefbd2a04de2d6c44026bb0f69d264b361f3fe2f7e162c41e26"
+                  },
+                  "native_session_core::fail": {
+                    "accessor": "nex_19_native_session_core_4_fail__task_code_address",
+                    "contract": "ce74d2a22aec4a8b0d4ed3289b705a368c6b1e3d4b0c37f9ffd99cb6751e2d71",
+                    "requirements": 12289,
+                    "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+                  },
+                  "native_session_core::get": {
+                    "accessor": "nex_19_native_session_core_3_get__task_code_address",
+                    "contract": "a3126acbe9732f0d8ff28722861b2f612a74a272f693d2b4fa33f61eb04acf24",
+                    "requirements": 8192,
+                    "signature": "fd97ac2147e1ee2fa7a7aac93dcb400b1c3c58fbc35fb27174b4353398c7caf6"
+                  },
+                  "native_session_core::make": {
+                    "accessor": "nex_19_native_session_core_4_make__task_code_address",
+                    "contract": "5c2e4be02a07dee80e0978cb213c80320ffe702eafc56e00bc95737a6069df7d",
+                    "requirements": 8192,
+                    "signature": "6b924c1617d9096616a03865f2fccca43b028176e76425d307402a1a2aeeec19"
+                  },
+                  "native_session_core::overflow": {
+                    "accessor": "nex_19_native_session_core_8_overflow__task_code_address",
+                    "contract": "bef89fe7aff9525cb1ed0223e11919365d227344d3f5c02add066b530c04e0b0",
+                    "requirements": 8193,
+                    "signature": "3a0d2c0683e03572a2e7e88e642fd07976f9f8ecdfe95a6fec833ea3d04450ba"
+                  },
+                  "native_session_core::snapshot": {
+                    "accessor": "nex_19_native_session_core_8_snapshot__task_code_address",
+                    "contract": "808c87ded443d92efbc2f30a0f210b85a55b52005537dc5c33463bcec8d01506",
+                    "requirements": 0,
+                    "signature": "6bd541b69c4a942cc61e7b1459acbf6be046e510c4c8cac6c0163e997e92e7ed"
+                  },
+                  "native_session_core::spin": {
+                    "accessor": "nex_19_native_session_core_4_spin__task_code_address",
+                    "contract": "cd82192fc3940117a7fa5d30fc5c42bf2b22d580415b0f0ea12dce9bdc5b136f",
+                    "requirements": 8193,
+                    "signature": "a5c72a94355d68d55086568bc1e25ffe2c4a93db46f92914dcfce255755b0149"
+                  }
+                },
+                "image": null,
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": null,
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              },
+              "archive_sha256": "a997f136f476a52bc5444a2684a4863637769b15b1629b0499412f72968246fb",
+              "image_sha256": "b17d93edd1efa0668f8586087fe184c022b2bad15c9e8e7a107aeab4e2f80742"
+            },
+            "mid": {
+              "provider": {
+                "abi_offset": 40,
+                "artifact_kind": "pic-stage",
+                "code_only": true,
+                "cohort": "42a63b2384154de91cd8043b01be01fe37c0459b85e5d72fcb0500c7554a3c8e",
+                "compiler_build": "666d8025168aede976a067d787eb88eb6e09d88c2b200191b90640802e99887f",
+                "component": "mid",
+                "component_file_reads": {
+                  "mid": false
+                },
+                "component_file_streams": {
+                  "mid": false
+                },
+                "component_file_writes": {
+                  "mid": false
+                },
+                "definition_owners": {
+                  "native_session_mid::twice": "mid"
+                },
+                "definitions": [
+                  "native_session_mid::twice"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "native_session_mid::twice": {
+                    "accessor": "nex_18_native_session_mid_5_twice__task_code_address",
+                    "contract": "8fba57a6da3f39387db14f36d07db4550b57ba15c2044d38518bcddbb4b79cc1",
+                    "requirements": 8193,
+                    "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+                  }
+                },
+                "image": null,
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": null,
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              },
+              "archive_sha256": "9896e595722f83a82a20478c46ddf7a368b33876772f9866a7f4fd71d52a97b8",
+              "image_sha256": "4c2397466213a25e14a2ed987a7da9b8f94cb335400f67baae660290bd5ea792"
+            },
+            "files": {
+              "provider": {
+                "abi_offset": 40,
+                "artifact_kind": "pic-stage",
+                "code_only": true,
+                "cohort": "42a63b2384154de91cd8043b01be01fe37c0459b85e5d72fcb0500c7554a3c8e",
+                "compiler_build": "666d8025168aede976a067d787eb88eb6e09d88c2b200191b90640802e99887f",
+                "component": "files",
+                "component_file_reads": {
+                  "files": true
+                },
+                "component_file_streams": {
+                  "files": true
+                },
+                "component_file_writes": {
+                  "files": false
+                },
+                "definition_owners": {
+                  "native_session_files::close_file": "files",
+                  "native_session_files::empty_stash": "files",
+                  "native_session_files::error_file": "files",
+                  "native_session_files::open_file": "files",
+                  "native_session_files::read_file": "files",
+                  "native_session_files::seek_file": "files",
+                  "native_session_files::stash": "files",
+                  "native_session_files::use_stash": "files"
+                },
+                "definitions": [
+                  "native_session_files::close_file",
+                  "native_session_files::empty_stash",
+                  "native_session_files::error_file",
+                  "native_session_files::open_file",
+                  "native_session_files::read_file",
+                  "native_session_files::seek_file",
+                  "native_session_files::stash",
+                  "native_session_files::use_stash"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "native_session_files::close_file": {
+                    "accessor": "nex_20_native_session_files_10_close_file__task_code_address",
+                    "contract": "43083f17eaf1d51c3ec532734d4689c1bd78eb3127095ec7faeb497bb01f408e",
+                    "requirements": 11551,
+                    "signature": "a7629322bb8d61dceb54223449df1256369e9e0fdb7f250a8913502627b26c74"
+                  },
+                  "native_session_files::empty_stash": {
+                    "accessor": "nex_20_native_session_files_11_empty_stash__task_code_address",
+                    "contract": "3e4504037d62718c954239917fa19bbb6ddd333947b7dd8664bc4d05d9613810",
+                    "requirements": 10258,
+                    "signature": "7772517c69809e18f4e9cbbed584a8fc64e3b7b1611d530de6f05e5ca9be55a1"
+                  },
+                  "native_session_files::error_file": {
+                    "accessor": "nex_20_native_session_files_10_error_file__task_code_address",
+                    "contract": "e440cb4ff0b2610369d77e2934cd0a608ef2c439c0c9156b216a545ef3f6c7fa",
+                    "requirements": 15647,
+                    "signature": "cd39bfbe85c8768f4139606f66b0a89bbd41653e796051b9b557bcb55ad9ab9a"
+                  },
+                  "native_session_files::open_file": {
+                    "accessor": "nex_20_native_session_files_9_open_file__task_code_address",
+                    "contract": "4c5c28171dad3a84932aa31f3d2ef929075755de5bb4a7c20c43fe99100bfd48",
+                    "requirements": 11551,
+                    "signature": "2896ad14c399bd2e32db740d2b7971f3f0644587db45dbff24ddd653467e8905"
+                  },
+                  "native_session_files::read_file": {
+                    "accessor": "nex_20_native_session_files_9_read_file__task_code_address",
+                    "contract": "c451c7403f701160037a9ebbd62609d2a01d912ac97625c7cf0af0f8013f11c6",
+                    "requirements": 11551,
+                    "signature": "101f3421ff63d6d1fb56a38116935a727cb58559e161bc475a922b4248fe3d12"
+                  },
+                  "native_session_files::seek_file": {
+                    "accessor": "nex_20_native_session_files_9_seek_file__task_code_address",
+                    "contract": "109e114c2039971f857c3e1dc3678885ed9fa8b32e5791108f467e35934d7626",
+                    "requirements": 11551,
+                    "signature": "a7629322bb8d61dceb54223449df1256369e9e0fdb7f250a8913502627b26c74"
+                  },
+                  "native_session_files::stash": {
+                    "accessor": "nex_20_native_session_files_5_stash__task_code_address",
+                    "contract": "e2998d41a2d5ed05b94eefc78881e857a413ad9df3c2d0dcfc5039b6c25e1571",
+                    "requirements": 11551,
+                    "signature": "36e8766d14697476e1630bc1488c930775b9bf8976c274e13e3510e697dbb680"
+                  },
+                  "native_session_files::use_stash": {
+                    "accessor": "nex_20_native_session_files_9_use_stash__task_code_address",
+                    "contract": "c5bc6e3c84b317c622365747c23e06a285c9b0264525ba9ea3291f40e3d5052a",
+                    "requirements": 11551,
+                    "signature": "8b3a5a214ea498a06505bb09a1e209f3ce1347becc91a638b17d80897c98f972"
+                  }
+                },
+                "image": null,
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": null,
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": true,
+                "task_file_streams": true,
+                "task_file_writes": false
+              },
+              "archive_sha256": "0c119015b1222034c2392c9153919e0a850f475ed98e421cfd9ee973abe066b2",
+              "image_sha256": "ca368b09866afb3d8c7c248e8026b0cca95542ad78467a1d86e940dfb9a56dd9"
+            }
+          },
+          "host": {
+            "ok": true,
+            "cases": 13,
+            "live_delta": 0,
+            "source_error_continues": true,
+            "file_return_promotion": true,
+            "unreturned_resource_not_promoted": true
+          },
+          "ordinary_project_stdout": "42\n"
+        },
+        {
+          "profile": "release",
+          "records": {
+            "core": {
+              "provider": {
+                "abi_offset": 40,
+                "artifact_kind": "pic-stage",
+                "code_only": true,
+                "cohort": "42a63b2384154de91cd8043b01be01fe37c0459b85e5d72fcb0500c7554a3c8e",
+                "compiler_build": "666d8025168aede976a067d787eb88eb6e09d88c2b200191b90640802e99887f",
+                "component": "core",
+                "component_file_reads": {
+                  "core": false
+                },
+                "component_file_streams": {
+                  "core": false
+                },
+                "component_file_writes": {
+                  "core": false
+                },
+                "definition_owners": {
+                  "native_session_core::add": "core",
+                  "native_session_core::cycle": "core",
+                  "native_session_core::fail": "core",
+                  "native_session_core::get": "core",
+                  "native_session_core::make": "core",
+                  "native_session_core::overflow": "core",
+                  "native_session_core::snapshot": "core",
+                  "native_session_core::spin": "core"
+                },
+                "definitions": [
+                  "native_session_core::add",
+                  "native_session_core::cycle",
+                  "native_session_core::fail",
+                  "native_session_core::get",
+                  "native_session_core::make",
+                  "native_session_core::overflow",
+                  "native_session_core::snapshot",
+                  "native_session_core::spin"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "native_session_core::add": {
+                    "accessor": "nex_19_native_session_core_3_add__task_code_address",
+                    "contract": "73c0bffed43ab5c00d4a334225fa915a26b16528cc92562da47ab1b5217f8005",
+                    "requirements": 8193,
+                    "signature": "f59faaae91381edba67b17b0cf24edce3c0297eaa9d8dd3b53dbebbbd7092a73"
+                  },
+                  "native_session_core::cycle": {
+                    "accessor": "nex_19_native_session_core_5_cycle__task_code_address",
+                    "contract": "4cf504bcf7909d3f73b7409c70296109902ce06f424c34de4f996085e079b2df",
+                    "requirements": 8192,
+                    "signature": "74002a02e33efeefbd2a04de2d6c44026bb0f69d264b361f3fe2f7e162c41e26"
+                  },
+                  "native_session_core::fail": {
+                    "accessor": "nex_19_native_session_core_4_fail__task_code_address",
+                    "contract": "ce74d2a22aec4a8b0d4ed3289b705a368c6b1e3d4b0c37f9ffd99cb6751e2d71",
+                    "requirements": 12289,
+                    "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+                  },
+                  "native_session_core::get": {
+                    "accessor": "nex_19_native_session_core_3_get__task_code_address",
+                    "contract": "a3126acbe9732f0d8ff28722861b2f612a74a272f693d2b4fa33f61eb04acf24",
+                    "requirements": 8192,
+                    "signature": "fd97ac2147e1ee2fa7a7aac93dcb400b1c3c58fbc35fb27174b4353398c7caf6"
+                  },
+                  "native_session_core::make": {
+                    "accessor": "nex_19_native_session_core_4_make__task_code_address",
+                    "contract": "5c2e4be02a07dee80e0978cb213c80320ffe702eafc56e00bc95737a6069df7d",
+                    "requirements": 8192,
+                    "signature": "6b924c1617d9096616a03865f2fccca43b028176e76425d307402a1a2aeeec19"
+                  },
+                  "native_session_core::overflow": {
+                    "accessor": "nex_19_native_session_core_8_overflow__task_code_address",
+                    "contract": "bef89fe7aff9525cb1ed0223e11919365d227344d3f5c02add066b530c04e0b0",
+                    "requirements": 8193,
+                    "signature": "3a0d2c0683e03572a2e7e88e642fd07976f9f8ecdfe95a6fec833ea3d04450ba"
+                  },
+                  "native_session_core::snapshot": {
+                    "accessor": "nex_19_native_session_core_8_snapshot__task_code_address",
+                    "contract": "808c87ded443d92efbc2f30a0f210b85a55b52005537dc5c33463bcec8d01506",
+                    "requirements": 0,
+                    "signature": "6bd541b69c4a942cc61e7b1459acbf6be046e510c4c8cac6c0163e997e92e7ed"
+                  },
+                  "native_session_core::spin": {
+                    "accessor": "nex_19_native_session_core_4_spin__task_code_address",
+                    "contract": "cd82192fc3940117a7fa5d30fc5c42bf2b22d580415b0f0ea12dce9bdc5b136f",
+                    "requirements": 8193,
+                    "signature": "a5c72a94355d68d55086568bc1e25ffe2c4a93db46f92914dcfce255755b0149"
+                  }
+                },
+                "image": null,
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": null,
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              },
+              "archive_sha256": "96897a136515bc99524e87d51de30e279fad4eeb918053bf79ee56efa37d0f9e",
+              "image_sha256": "db8909abaa17a0df2ac17c204cc78735e69f826bcd89ea0604b44125167f648c"
+            },
+            "mid": {
+              "provider": {
+                "abi_offset": 40,
+                "artifact_kind": "pic-stage",
+                "code_only": true,
+                "cohort": "42a63b2384154de91cd8043b01be01fe37c0459b85e5d72fcb0500c7554a3c8e",
+                "compiler_build": "666d8025168aede976a067d787eb88eb6e09d88c2b200191b90640802e99887f",
+                "component": "mid",
+                "component_file_reads": {
+                  "mid": false
+                },
+                "component_file_streams": {
+                  "mid": false
+                },
+                "component_file_writes": {
+                  "mid": false
+                },
+                "definition_owners": {
+                  "native_session_mid::twice": "mid"
+                },
+                "definitions": [
+                  "native_session_mid::twice"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "native_session_mid::twice": {
+                    "accessor": "nex_18_native_session_mid_5_twice__task_code_address",
+                    "contract": "8fba57a6da3f39387db14f36d07db4550b57ba15c2044d38518bcddbb4b79cc1",
+                    "requirements": 8193,
+                    "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+                  }
+                },
+                "image": null,
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": null,
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              },
+              "archive_sha256": "bb108caa6d4d9618bf8c1a346eeca418aff16907a63939c971d0ea5ae1c3c389",
+              "image_sha256": "da2b6aea140ac90974bdbc1aeaa107199d056c0207a603cc3143572aa3dc3fae"
+            },
+            "files": {
+              "provider": {
+                "abi_offset": 40,
+                "artifact_kind": "pic-stage",
+                "code_only": true,
+                "cohort": "42a63b2384154de91cd8043b01be01fe37c0459b85e5d72fcb0500c7554a3c8e",
+                "compiler_build": "666d8025168aede976a067d787eb88eb6e09d88c2b200191b90640802e99887f",
+                "component": "files",
+                "component_file_reads": {
+                  "files": true
+                },
+                "component_file_streams": {
+                  "files": true
+                },
+                "component_file_writes": {
+                  "files": false
+                },
+                "definition_owners": {
+                  "native_session_files::close_file": "files",
+                  "native_session_files::empty_stash": "files",
+                  "native_session_files::error_file": "files",
+                  "native_session_files::open_file": "files",
+                  "native_session_files::read_file": "files",
+                  "native_session_files::seek_file": "files",
+                  "native_session_files::stash": "files",
+                  "native_session_files::use_stash": "files"
+                },
+                "definitions": [
+                  "native_session_files::close_file",
+                  "native_session_files::empty_stash",
+                  "native_session_files::error_file",
+                  "native_session_files::open_file",
+                  "native_session_files::read_file",
+                  "native_session_files::seek_file",
+                  "native_session_files::stash",
+                  "native_session_files::use_stash"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "native_session_files::close_file": {
+                    "accessor": "nex_20_native_session_files_10_close_file__task_code_address",
+                    "contract": "43083f17eaf1d51c3ec532734d4689c1bd78eb3127095ec7faeb497bb01f408e",
+                    "requirements": 11551,
+                    "signature": "a7629322bb8d61dceb54223449df1256369e9e0fdb7f250a8913502627b26c74"
+                  },
+                  "native_session_files::empty_stash": {
+                    "accessor": "nex_20_native_session_files_11_empty_stash__task_code_address",
+                    "contract": "3e4504037d62718c954239917fa19bbb6ddd333947b7dd8664bc4d05d9613810",
+                    "requirements": 10258,
+                    "signature": "7772517c69809e18f4e9cbbed584a8fc64e3b7b1611d530de6f05e5ca9be55a1"
+                  },
+                  "native_session_files::error_file": {
+                    "accessor": "nex_20_native_session_files_10_error_file__task_code_address",
+                    "contract": "e440cb4ff0b2610369d77e2934cd0a608ef2c439c0c9156b216a545ef3f6c7fa",
+                    "requirements": 15647,
+                    "signature": "cd39bfbe85c8768f4139606f66b0a89bbd41653e796051b9b557bcb55ad9ab9a"
+                  },
+                  "native_session_files::open_file": {
+                    "accessor": "nex_20_native_session_files_9_open_file__task_code_address",
+                    "contract": "4c5c28171dad3a84932aa31f3d2ef929075755de5bb4a7c20c43fe99100bfd48",
+                    "requirements": 11551,
+                    "signature": "2896ad14c399bd2e32db740d2b7971f3f0644587db45dbff24ddd653467e8905"
+                  },
+                  "native_session_files::read_file": {
+                    "accessor": "nex_20_native_session_files_9_read_file__task_code_address",
+                    "contract": "c451c7403f701160037a9ebbd62609d2a01d912ac97625c7cf0af0f8013f11c6",
+                    "requirements": 11551,
+                    "signature": "101f3421ff63d6d1fb56a38116935a727cb58559e161bc475a922b4248fe3d12"
+                  },
+                  "native_session_files::seek_file": {
+                    "accessor": "nex_20_native_session_files_9_seek_file__task_code_address",
+                    "contract": "109e114c2039971f857c3e1dc3678885ed9fa8b32e5791108f467e35934d7626",
+                    "requirements": 11551,
+                    "signature": "a7629322bb8d61dceb54223449df1256369e9e0fdb7f250a8913502627b26c74"
+                  },
+                  "native_session_files::stash": {
+                    "accessor": "nex_20_native_session_files_5_stash__task_code_address",
+                    "contract": "e2998d41a2d5ed05b94eefc78881e857a413ad9df3c2d0dcfc5039b6c25e1571",
+                    "requirements": 11551,
+                    "signature": "36e8766d14697476e1630bc1488c930775b9bf8976c274e13e3510e697dbb680"
+                  },
+                  "native_session_files::use_stash": {
+                    "accessor": "nex_20_native_session_files_9_use_stash__task_code_address",
+                    "contract": "c5bc6e3c84b317c622365747c23e06a285c9b0264525ba9ea3291f40e3d5052a",
+                    "requirements": 11551,
+                    "signature": "8b3a5a214ea498a06505bb09a1e209f3ce1347becc91a638b17d80897c98f972"
+                  }
+                },
+                "image": null,
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": null,
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": true,
+                "task_file_streams": true,
+                "task_file_writes": false
+              },
+              "archive_sha256": "44a379120805ce16ebae6fc4499adabd7c175efd310585fb23bd97325a5bc4a9",
+              "image_sha256": "2dce045e5905ff8a2919a400504ea7aa07828b42591d35b2afdbfa1a74e821ff"
+            }
+          },
+          "host": {
+            "ok": true,
+            "cases": 13,
+            "live_delta": 0,
+            "source_error_continues": true,
+            "file_return_promotion": true,
+            "unreturned_resource_not_promoted": true
+          },
+          "ordinary_project_stdout": "42\n"
+        }
+      ],
+      "portable_SDK": false,
+      "whole_goal_complete": false,
+      "commands": 15
+    }
+  },
+  "resource_regression": {
+    "cases": 88,
+    "report_sha256": "34ec05cba9ee10cf81be69cba2a119090bc8625684c7502b6efb3fe248051b2d",
+    "scope": "Existing application/request resource semantics, 22 cases x O0/O2 x two ownership contexts"
+  },
+  "retained_failures": [
+    {
+      "stage": "configure-v1",
+      "stderr_sha256": "05d17a9efaadf2696c7e69cdba913ccc02cbd013ff4dbac6165f2a263b9ccc26",
+      "stderr_tail": "CMake Error at cmake/TestTiers.cmake:12 (message):\n  Invalid test-tier policy: {\"ok\": false, \"error\": \"keep the explicit core\n  tier small (1..17 groups)\"}\n\nCall Stack (most recent call first):\n  CMakeLists.txt:204 (include)\n\n\n"
+    },
+    {
+      "stage": "kernel-v1",
+      "stderr_sha256": "34db62e82971d886137585763ca75cfe1db768a075e87a0e9b99300c55be49e0",
+      "stderr_tail": "E_TASK_STATE: invalid compiled task slot write at source line 0\n"
+    },
+    {
+      "stage": "kernel-v2",
+      "stderr_sha256": "d08984f7c05ce5222bb816cff01d4bf0ffe645b3bc7b8f5df84db6ad1a3513ea",
+      "stderr_tail": "wrong session error: E_CANCELLED\n"
+    },
+    {
+      "stage": "kernel-v3",
+      "stderr_sha256": "ed86f1d79cf2298704b089bf988eddef01bbd61a845cd89bf20df374811251f3",
+      "stderr_tail": "expected E_RUNTIME, got E_CANCELLED: worker group was cancelled\n"
+    },
+    {
+      "stage": "qualification-v1",
+      "stderr_sha256": "5b3b839ac3d088a841f9ce02d676603666023682dbfd3a2fb84aa43bec1e0e76",
+      "stderr_tail": "Traceback (most recent call last):\n  File \"/Users/sae/projects/NEX/tests/native_task_sessions.py\", line 96, in <module>\n    observed = json.loads(run([host, *images.values(), *accessors], folder,\n                          ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n                              {'NEX_FILES_ROOT': str(data), 'NEX_FILES_WRITE': '1', 'NEX_FILES_LIMIT': '256'}).stdout)\n                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/sae/projects/NEX/tests/native_task_sessions.py\", line 37, in run\n    assert result.returncode == 0, row\n           ^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: {'command': ['/Users/sae/projects/NEX/build/nex_native_task_session_host', '/Users/sae/projects/NEX/build/native-session-v1/qualification-v1/release/session-core.dylib', '/Users/sae/projects/NEX/build/native-session-v1/qualification-v1/release/session-mid.dylib', '/Users/sae/projects/NEX/build/native-session-v1/qualification-v1/release/session-files.dylib', 'nex_19_native_session_core_4_make__task_code_address', 'nex_19_native_session_core_3_get__task_code_address', 'nex_19_native_session_core_3_add__task_code_address', 'nex_19_native_session_core_4_fail__task_code_address', 'nex_19_native_session_core_8_snapshot__task_code_address', 'nex_19_native_session_core_5_cycle__task_code_address', 'nex_19_native_session_core_4_spin__task_code_address', 'nex_19_native_session_core_8_overflow__task_code_address', 'nex_18_native_session_mid_5_twice__task_code_address', 'nex_20_native_session_files_9_open_file__task_code_address', 'nex_20_native_session_files_9_read_file__task_code_address', 'nex_20_native_session_files_9_seek_file__task_code_address', 'nex_20_native_session_files_10_close_file__task_code_address', 'nex_20_native_session_files_10_error_file__task_code_address', 'nex_20_native_session_files_11_empty_stash__task_code_address', 'nex_20_native_session_files_5_stash__task_code_address', 'nex_20_native_session_files_9_use_stash__task_code_address'], 'cwd': '/Users/sae/projects/NEX/build/native-session-v1/qualification-v1/release', 'exit_code': 1, 'stdout': '', 'stderr': 'expected E_TIMEOUT, got E_CELL_CONTEXT: managed reference request is no longer active\\n'}\n"
+    }
+  ],
+  "corrections": [
+    "Preflight host boundary throws owned C++ diagnostics instead of process exit70.",
+    "Cancellation-observer exceptions drain tasks and retain E_RUNTIME/E_MEMORY rather than cleanup E_CANCELLED.",
+    "An expired persistent deadline between poll and heap acquisition preserves E_TIMEOUT instead of E_CELL_CONTEXT.",
+    "Native session kernel joins the existing core probe;17-group core cap is retained."
+  ],
+  "complete_source_regression": false,
+  "portable_SDK": false,
+  "published_portable_SDK": "0.246.1 unchanged",
+  "platform_qualification": {
+    "macOS_ARM64_focused": true,
+    "Windows_current_session": false,
+    "Linux_current_session": false
+  },
+  "pending": [
+    "Native UI controller and event pump",
+    "Parallel reference transfer and memory model",
+    "Reference-task logical debugger/profile",
+    "Coherent server/browser/database/background application",
+    "Current complete source/platform/portable SDK release",
+    "Java/Python migration prerequisites and converters"
+  ],
+  "whole_goal_complete": false
+}

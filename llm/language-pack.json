@@ -5965,6 +5965,31 @@
         "stable_public_ABI": false,
         "SDK_delivery_accepted": false,
         "full_platform_acceptance": false
+      },
+      "native_host_sessions": {
+        "API": "nexrt::NativeTaskSession",
+        "SDK_delivery_accepted": false,
+        "cancel_thread_safe": true,
+        "checked_source_exports": true,
+        "controls": "fresh step budget, deadline and cancellation callback per invocation; idle time is excluded",
+        "execution_task_ABI": 8,
+        "fatal_exit": "close the application context before host retry",
+        "full_platform_acceptance": false,
+        "guide": "docs/native-task-sessions.md",
+        "header": "runtime/nex_task_session.h",
+        "heap": "one application-owned heap across serialized joined invocations",
+        "introduced_toolchain": "0.276.0",
+        "matching_runtime_CXX": true,
+        "native_UI_controller": false,
+        "new_source_syntax": false,
+        "parallel_transfer": false,
+        "public_source_enabled": false,
+        "resources": "explicit persistent host grants; promote returned result/error owners only",
+        "runtime_unload": false,
+        "source_workers": 1,
+        "stable_public_ABI": false,
+        "test": "tests/native_task_sessions.py",
+        "typed_source_error": "retain returned payload and keep session usable"
       }
     }
   },
