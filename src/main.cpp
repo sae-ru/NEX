@@ -179,8 +179,9 @@ void migrate(const Options &o,const fs::path &root){
     bundle=graphSources(*object);
     if(archive&&archive->containsRevision(original)){
       if(archive->revisionLanguage(original)!=originLanguage)throw Error("E_REVISION","graph origin language differs from the retained revision");
-      verified=verifyMigrationOrigin(archive->bundle(original),root,originLanguage,original);
-    }else verified=verifyMigrationOrigin(bundle,root,originLanguage,original,target);
+      if(archive->bundle(original)!=bundle)throw Error("E_REVISION","exported graph source differs from the retained revision; use a reviewed migration candidate to change source");
+    }
+    verified=verifyMigrationOrigin(bundle,root,originLanguage,original,target);
   }
   // No writable Store, schema upgrade or destination creation before both the
   // origin integrity check and complete current-language target preflight.

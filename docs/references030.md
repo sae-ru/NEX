@@ -93,9 +93,12 @@ map3. Snapshot/history/archive identities are unchanged.
 
 `parallel_map` in a reference graph still receives `E_CELL_CONCURRENCY`.
 [Persistent browser UI state](persistent-ui.md) now retains one application
-heap across serialized events. Task-provider images, logical task reference
-debugging/profiling and worker reference transfer remain open. Sequential code-only native
-libraries retain their enclosing [host/application context](reference-library-abi.md).
+heap across serialized events. Native [task-provider images](reference-task-providers.md)
+support checked static, fixed shared and mixed components. Standalone and
+source-backed native applications support [logical debugging](reference-provider-debugging.md)
+and [profiling](reference-task-profiling.md). HTTP task debugging/profiling and
+live reference transfer across parallel workers remain open. Sequential code-only
+native libraries retain their enclosing [host/application context](reference-library-abi.md).
 Runtime-embedding reference libraries and Wasm references retain explicit
 `E_CELL_TARGET` boundaries. Reference-free entry behavior is preserved.
 Device emission can select030's inherited supported
@@ -151,10 +154,11 @@ files, compiler identities, initial fixture failures and qualification bounds
 are retained; this is not a full SDK/platform release receipt.
 
 Ordinary030 CLI authoring, static components, task capture/replay and API source
-projection have focused development acceptance. Complete debugger/profile,
-full source regression and SDK/platform qualification remain separate gates.
-Live cell payload inspection is not qualified. The separate persistent browser
-adapter owns its longer-lived context; per-call exports keep separate heaps. Nullable
+projection have focused development acceptance. Live read-only cell inspection
+has [native debugger coverage](reference-task-debugging.md). Full source and
+portable SDK qualification are needed for each supported release platform.
+The persistent browser adapter owns its longer-lived context. Per-call exports
+keep separate heaps. Nullable
 object layouts, class/interface dispatch, mutable arrays, memory visibility,
 Java numerics/exception hierarchies and Python dynamic protocols/big integers
 remain in [migration readiness](migration-readiness.md). Converters remain

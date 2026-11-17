@@ -179,18 +179,25 @@ run(api/'generated/client', 'emit', '--kind', 'typescript', '--entry', 'request_
 assert 'server-only-marker' not in (api/'typescript/program.ts').read_text()+(api/'typescript/nex-map.json').read_text()
 report['api_projection'] = True
 
-for conflict in [False, True]:
-    folder = out/('collision' if conflict else 'migration')
+for old_language, conflict in [('0.28', False), ('0.29', False), ('0.29', True)]:
+    folder = out/f'migration-{old_language}{"-collision" if conflict else ""}'
     folder.mkdir()
-    old_manifest = {'schema': 'nex.project/1', 'language': '0.29', 'entry': 'main.nex'}
+    old_manifest = {'schema': 'nex.project/1', 'language': old_language, 'entry': 'main.nex'}
     (folder/'nex.json').write_text(json.dumps(old_manifest))
     original = 'module origin;'+('struct cell<T>{value:T;}' if conflict else '')+'fn main()->unit!{io}{print(42);}'
+    (folder/'main.nex').write_text(original.replace('42', '41'))
+    previous = run(folder, 'check', compiler=origin)['revision']
     (folder/'main.nex').write_text(original)
     head = run(folder, 'check', compiler=origin)['revision']
     before = snapshot(folder)
     plan = run(folder, 'migrate', '--language-version', '0.30', '--kind', 'plan')
     assert plan['origin_verified'] and plan['target_language'] == '0.30' and snapshot(folder) == before
+    assert plan['origin_language'] == old_language and plan['origin_revision'] == head != previous
     assert plan['target_valid'] != conflict
+    graph = run(folder, 'graph')
+    graph_path = folder/'origin.json'
+    graph_path.write_text(json.dumps(graph))
+    assert run(folder, 'migrate', graph_path, '--language-version', '0.30', '--kind', 'plan') == plan
     args = []
     if conflict:
         candidate = plan['candidate']
@@ -198,8 +205,9 @@ for conflict in [False, True]:
         candidate_file = folder/'candidate.json'
         candidate_file.write_text(json.dumps(candidate))
         args = ['--candidate', candidate_file]
-    applied = run(folder, 'migrate', '--language-version', '0.30', '--expected-revision', head, *args)
+    applied = run(folder, 'migrate', graph_path, '--language-version', '0.30', '--expected-revision', head, *args)
     assert applied['language'] == '0.30' and applied['identity_namespace'] == plan['identity_namespace']
+    assert applied['origin_verified'] and applied['origin_source_hash'] == plan['candidate']['origin_source_hash']
     after = snapshot(folder)
     assert after[0] == before[0]
     for table, rows in before[1].items():
@@ -214,7 +222,19 @@ for conflict in [False, True]:
     target = folder/'materialized'
     run(folder, 'export', '--directory', target)
     assert run(target, 'check')['revision'] == applied['revision']
-    report['gates'].append({'migration_collision': conflict, 'old_rows_preserved': True, 'namespace_preserved': True})
+    assert run(target, 'eval')['stdout'] == '42\n'
+
+    current = run(folder, 'graph')
+    current_path = folder/'current.json'
+    current_path.write_text(json.dumps(current))
+    unchanged = run(folder, 'migrate', current_path, '--language-version', '0.30', '--expected-revision', applied['revision'])
+    assert unchanged['origin_verified'] and not unchanged['changed'] and snapshot(folder) == after
+    current['bundle']['files']['main.nex'] = current['bundle']['files']['main.nex'].replace('42', '43')
+    current_path.write_text(json.dumps(current))
+    assert run(folder, 'migrate', current_path, '--language-version', '0.30', ok=False)['code'] == 'E_REVISION'
+    assert snapshot(folder) == after
+    report['gates'].append({'migration_from': old_language, 'migration_collision': conflict,
+                            'old_rows_preserved': True, 'namespace_preserved': True, 'same_version_retry': True})
 
 report['ok'] = True
 save()

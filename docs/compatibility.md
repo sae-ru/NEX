@@ -1,23 +1,25 @@
 # Versions, compatibility and explicit migration
 
-Development toolchain0.134.0 uses source language0.24, graph schema 4 and the canonical
-formats recorded in docs/language.md. Discover `project_features` and retrieve this guide with
-`nex guide --kind compatibility --json`. The language pack indexes
-`llm/project.schema.json` for authoring current project manifests.
+The ordinary CLI supports projects declaring source language 0.28, 0.29 or
+0.30. New projects created with `nex init` declare 0.30. Without a declared
+language the compiler uses its 0.28 fallback. Discover the installed toolchain's
+choices with `nex describe --field project_languages --json` and retrieve this
+guide with `nex guide --kind compatibility --json`. The current graph schema is
+4. See [the language specification](language.md) for the canonical formats.
 
 ## Physical projects and libraries
 
 ```json
 {
   "schema": "nex.project/1",
-  "language": "0.24",
+  "language": "0.30",
   "entry": "main.nex",
   "libraries": { "numbers": "./vendor/numbers" }
 }
 ```
 
-An explicit project `language` must match the installed compiler's source
-language. Older, future and unknown versions return `E_LANGUAGE_VERSION` before
+An explicit project `language` selects one of the compiler's supported ordinary
+project versions. Unsupported versions return `E_LANGUAGE_VERSION` before
 physical source is parsed. Ordinary file commands validate root metadata before
 opening or upgrading the graph database, so a rejected old root project remains
 available to its matching SDK. Task initialization also checks source before
@@ -38,37 +40,41 @@ An explicit `schema` must be `nex.project/1`. Invalid schema/metadata types,
 empty version/entry strings and NUL return `E_MANIFEST`. A declared language is
 limited to 32 UTF-8 bytes. `libraries` maps identifier names to nonempty paths.
 The compiler still accepts legacy omitted schema/language fields; omitted
-language means the current compiler's language, not automatic detection of an
-older language. New projects should always declare both. Extra editor metadata
+language selects the compiler fallback. New projects should always declare
+schema and language. Extra editor metadata
 is permitted. An entry is required when a command does not receive a source
 file. Normal source-root/import containment and dependency locks still apply.
 
 ## Archived source and the physical projection
 
 `graph`, `history`, `changes`, archived context, explicit `--revision` execution,
-restore, snapshot and recovery select stored data rather than rechecking a stale
-physical declaration. Their own revision/schema checks remain active. An older
-archive still cannot execute as a current-language program without explicit
-migration. `migrate` rechecks the archived source with the current checker and
-retains original revisions/IDs; it does not overwrite physical files or rewrite
-the old `nex.json`. Export a separate current-language project afterward.
+restore, snapshot and recovery read retained data. Each command applies its own
+revision, schema and language checks. To execute a 0.28 or 0.29 revision, select
+its matching project language. To use that project as 0.30, explicitly migrate
+the archived source. Migration appends the checked target revision and preserves
+the original revisions, local IDs, namespace and physical files. Export the
+result to materialize the 0.30 source, manifest and dependency lock.
 
-Use the matching old SDK to establish an actual old source graph when needed:
+Use a matching SDK to establish the source graph if it has never been checked.
+From the existing project, review the migration before applying it.
 
 ```sh
-/path/to/old-sdk/bin/nex check --json
-/path/to/old-sdk/bin/nex graph --json > archived-graph.json
-/path/to/current-sdk/bin/nex snapshot --directory ../before-migration --json
-/path/to/current-sdk/bin/nex migrate --json
-/path/to/current-sdk/bin/nex test --revision HEAD --json
-/path/to/current-sdk/bin/nex export --revision HEAD --directory ../current-source --json
+nex snapshot --directory ../before-migration --json
+nex migrate --language-version 0.30 --kind plan --json
+nex migrate --language-version 0.30 --expected-revision OLD_HEAD --json
+nex export --revision HEAD --directory ../project030 --json
+cd ../project030
+nex check --json
+nex test --json
 ```
 
-If the old project has no retained database at the destination, use
-`nex migrate archived-graph.json`. Keep the original SDK and a complete graph
-snapshot separately before migration. A schema-4 database is not readable by
-older schema-3 compilers. `snapshot` preserves the original supported schema
-without upgrading it; see [its scope and limits](snapshots.md).
+The plan reports the expected HEAD, the origin's checked identity and any target
+diagnostic. For a reserved-name conflict, edit the sources in the returned
+candidate and apply with `--candidate FILE`. A graph export can also be supplied
+as `nex migrate archived-graph.json --language-version 0.30`. When the destination
+already retains that revision, the export must agree with its stored source
+snapshot. See [0.30 migration](references030.md#guarded-migration) and
+[snapshot and recovery](snapshots.md).
 
 Migration is an explicit recheck under current semantics, not proof of semantic
 equivalence for every historical program. Review diagnostics and acceptance
@@ -80,7 +86,7 @@ new revision; do not weaken requirements to make a migration pass.
 
 | Artifact | Current policy |
 | --- | --- |
-| Source language | Explicit declared version; current0.24. Old archived source requires matching SDK or explicit recheck/migration. |
+| Source language | Ordinary project versions 0.28, 0.29 and 0.30. Use explicit versioned migration for updates. |
 | Project manifest | `nex.project/1`; legacy omitted metadata accepted; unknown declared schema rejected. |
 | Local graph database | Current schema 4; supported schema 1–3 upgrades retain rows/IDs and an explicit journal base. Old tools must use their original compatible database. |
 | Graph/source export | Versioned JSON with source language and exact bundle. Import derives destination-local IDs; complete graph recovery preserves lineage. |
@@ -93,6 +99,31 @@ Never infer compatibility from a shared major/minor number alone. JSON Schema
 checks document shape; the installed compiler enforces version, graph and
 semantic rules. Broader stable-ABI, platform/device and reproducible-distribution
 validation remains pending as recorded in `STATUS.md` and `PLAN.md`.
+
+## Compatibility target for 1.0
+
+The beta qualifies the documented 0.30 source behavior and supported SDK
+platforms. The 1.x compatibility promise starts with the 1.0 release. A program
+using documented 0.30 syntax and stable standard-library APIs should continue
+to check and retain its specified behavior on later 1.x toolchains. It can be
+rebuilt with the SDK for its target. The promise covers explicit 0.30 project
+selection, graph export and snapshot recovery, with retained revision IDs and
+source versions. A later language mode that changes meaning must be opt-in and
+offer an explicit, guarded migration.
+
+The 1.0 release notes identify the stable APIs, CLI and JSON schemas covered by
+that promise. Native components, task/debugger records and external providers
+keep their own versioned compatibility contracts. Use their matching SDK and
+runtime when the release notes require them. GPU and NPU support is listed by
+qualified provider and device.
+
+Before promoting the beta, run the 0.30 agreement and migration corpus on the
+proposed 1.0 SDKs. Check and execute the published beta examples with the new
+compiler. Recover beta snapshots and rerun their selected revisions. Record
+which preserved source, archive, CLI and platform contracts passed. Include any
+intended compatibility exception in the release notes before making the promise.
+
+## Historical source migrations
 
 Language0.17 result propagation is additive syntax with an appended AST kind15;
 existing function/structure/enum/program formats retain old kind numbering.
