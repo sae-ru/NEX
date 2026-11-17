@@ -1,5 +1,9 @@
 # NEX language specification 0.28
 
+Toolchain0.275 [native reference task providers](reference-task-providers.md)
+add an explicit connected ABI8 build cohort, without new source productions,
+source versions or graph migration.
+
 Toolchain0.274 adds ordinary [sequence/queue/stack/heap libraries](sequence-containers.md)
 with immutable sharing. Retained list-container layouts and checked arithmetic
 remain unchanged. No source grammar/version, graph format or runtime ABI changes.

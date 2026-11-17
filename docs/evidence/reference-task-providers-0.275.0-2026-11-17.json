@@ -1,0 +1,2614 @@
+{
+  "schema": "nex.reference-task-provider-development/1",
+  "ok": true,
+  "toolchain": "0.275.0",
+  "compiler_fallback": "0.28",
+  "source_language": "0.30",
+  "source_version_changed": false,
+  "canonical_format_changed": false,
+  "public_task_ABIs_unchanged": [
+    7,
+    8
+  ],
+  "public_C_ABI": 1,
+  "base_commit": "d64f82472bbb4d514dcc3b21717c48d4380b4eee",
+  "qualification_local_date": "2026-11-17",
+  "timezone": "Europe/Moscow",
+  "compiler_sha256": "8a5552a5dddca9e713aabe9d5b56b6596c06562fb559aa4910645887ce0eec1c",
+  "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+  "descriptor_hash": "3f63c4e6aa4c7e4e7e33608f2bfda481e1e0e11a1bc32d7f1e8f982b4afec14d",
+  "source_files_sha256": {
+    "PLAN.md": "0d147714ca35fa373ab3ef175f40401b8d82a06e8fa9e628d326a830ff56f72a",
+    "README.md": "ee128a9c8722125b84f96269a9cae8213d57f104fb0e90605a4e3a8c6ee3ab00",
+    "README.ru.md": "2c4c07d5836f2ea1cbe2f6a68fcce245895f778ec09e1fa9dd3e7bbb8a96c5af",
+    "STATUS.md": "c9b56343e590b6d5bd1f73cf9469b8d7d6f4298d97971aff8d8bbb54e1ba28cb",
+    "VERSION": "36f0d12b5b32a51cf4c14f5077faf6b65bb133be941f4eed15221ba728ad5711",
+    "cmake/Install.cmake": "e5ce9115fe1ca6d75f5225f15fceb36213531c6bf644d1bd4f63fe2206b34b83",
+    "cmake/Tests.cmake": "40745607f44a7559f2cf8b14efa451b6631d73487761b8faccd6ea8ab50568b1",
+    "cmake/test-tiers.json": "5d2e046c6b9a8b78806b283032d057c701433feb2ff41ed827770b90a02abd8f",
+    "docs/INDEX.md": "36ae67e0466d2a952f984215575e4929cc1bcdd5b2b69e7a454c349d2b4d08aa",
+    "docs/STATUS.current.md": "693d0cf83dc6430424b6553735055baa7f388845bcc7b270a80827875c0dc57a",
+    "docs/ci.md": "240ace2f5fd6faec1294392c4c1d705e20b8087603787c6f60a8446a1ff22ee0",
+    "docs/evidence/core-ci-0.274.0-2026-11-17.json": "0551ef0ccc8a87750418f9687d2be0d824fe3af3d16fea8023c80d7d3dcc69a5",
+    "docs/grammar.ebnf": "8fac8e6da317c17f46bb118d3a73cf8e68e2ba3a18c09694cc66db2a4df7898c",
+    "docs/implementation-1-6.md": "d7b538caaae39245bcc5913091dac39ae71dd8d1031fa1056a189df223c99bb8",
+    "docs/language.md": "2bc64ba2509f1cd5a0511e64cfc23adcebc63a8e7a4d30a0ece4801167c8883b",
+    "docs/migration-readiness.md": "dfe142692e0e191c2f2e32652dfd0159822ab918e0ea05481404246ac5c4bab5",
+    "docs/reference-library-abi.md": "77158df8336fae060a490e24c5c4afc364250453d18087807a8184275cd72339",
+    "docs/reference-task-providers.md": "7cf1d38f0ac4834ec5376182c48d0228a8613baa61c6395bee6fc24385730653",
+    "docs/reference-tasks.md": "40215562f478a28667f931933a58cf880a9d0f83a907283e543bfca5576d052c",
+    "docs/task-providers.md": "290ebc192fbc3133c16d8d5afffb5eb21b676f24faf761ff1a6d66c4005ac548",
+    "docs/task-shared-providers.md": "081420acea86dd3001d1fba4a4ba15b57f6c4ea7c28a00bf0d617be65a2b9e79",
+    "examples/reference-task-providers/README.md": "877dc100e1484584735abbdb89d5522e50b5012b0301b36f08ccc243b5e0cc61",
+    "examples/reference-task-providers/app/main.nex": "21c9dcb466d157a951205de02d14b85cd755c9517176d67312b3335f2884c6cb",
+    "examples/reference-task-providers/leaf/value.nex": "63df94d175e586462b6cc812c858d00de9ba31a4b3640abe33ef4ba02b683d32",
+    "examples/reference-task-providers/mid/value.nex": "5d61971f2a02bea102a3990091de88229b3458928622b6c3e0b00e5e5367d018",
+    "examples/reference-task-providers/nex.build.json": "a4241f91f50cdde80442e8fa2da48306f888864b4e58554b390373ee27eff0c1",
+    "examples/reference-task-providers/nex.json": "4480a42a3fcc15093bafd78ff2148b4cb4a0b696d863e442658abe33115cd2b9",
+    "examples/reference-task-providers/pure/value.nex": "ad8b29f0be488353b2b1ef22923ba47d2bef3980cecf717e86afc6ef86367b99",
+    "include/nex/backend.h": "aa7c974e783af4044684b55ed9440769791bf31ebb0520a4b46bb272397b123d",
+    "include/nex/task_limits.h": "820c7f34a685c2d04fc46ac7892e31476bf5daa78706322b9e8e06fac6045e3e",
+    "llm/SYSTEM_PROMPT.md": "f5af015fa03618252ccd28c71f0038ad6fe39d932781fb7d182a673dea6943f4",
+    "llm/language-pack.json": "b4237f0d9b819eb93fe29172c7b55716086fa20e583e9bcfa4a49e9a2edf929f",
+    "llm/native-reference-task-provider.schema.json": "0c5fe019c6706e84f479bf79e067194503d61c3995c8f2e5ac43d244b7bda594",
+    "llm/project-reference-task-linkage.schema.json": "79f27265c685540ef6c183a2d1bfa36acf0588ae829b18a5a7645469c75d8e99",
+    "runtime/nex_task_protocol.h": "00d49cd15cf674989be9bc95b0f8cbba7014c777918790e4ec491876ffffdf8c",
+    "src/backend.cpp": "b971f86ba3adca0f969bcd295c91e9c74d457c9c5e45a13467b7ac2d7d6926c3",
+    "src/main.cpp": "fdd2da46ed6a4c7d182f7901409a4164be4a108e27846907f938cfba62322d41",
+    "src/managed_references.cpp": "f3d97b0b3862933a9b25b8bed7282d90e4dee12732f6cab6f410734d44aed002",
+    "src/native_diagnostics.cpp": "95b831c5881e694528d344ae397d8946ce7fdf551abd57776a778fd3d3e53cf1",
+    "src/native_images.cpp": "3ae7d4d541ea39082cee7eff4a815703e93253687409323ee7947d1b26ed52ce",
+    "src/project_build.cpp": "38e2fe1e24edb0168936ca3aa2b3ad715dc8e7de356fed6f3040033abd5b490c",
+    "src/project_capture.cpp": "1089e4591c8a7450ecade4496e680acdab0ca13f95e842eee12b9e103d7d6aa7",
+    "src/tasks.cpp": "296a56141860e339a3827085efc79a87cacd20fd4a955fe7f085b713b1ecd64a",
+    "tests/reference_task_providers.py": "47316e0b0ec81be82ba4e928fd7b93afd8293ef4b08d7dbe0f25ac0b83a9d4c7",
+    "tests/task_static_provider_boundary.cpp": "5e6c9dd578f1a6cf2caa7f1f740d9fc138985bea47e833577a33e95f74ce065a"
+  },
+  "build": {
+    "command": "cmake --build build -j 4",
+    "exit_code": 0,
+    "stdout_sha256": "1dbfe6eafc52d9945db2af5d4568043598a7f3090e9201ca03e2ab7da0140b17",
+    "stderr_sha256": "1e27425e5b974622147dbf51a903c93c5a054bf04343e2af0b0dd74e768c3a4d"
+  },
+  "discovery": {
+    "exact_match": true,
+    "shared_fields": 71,
+    "compared_JSON_values": 4670,
+    "manifest_sha256": "b4237f0d9b819eb93fe29172c7b55716086fa20e583e9bcfa4a49e9a2edf929f"
+  },
+  "ctest": {
+    "core": {
+      "schema": "nex.ctest-verification/1",
+      "ok": true,
+      "ctest_exit_code": 0,
+      "selected_groups": [
+        "bytes_runtime_native",
+        "ctest_report_validation",
+        "diagnostic_catalogue",
+        "discovery",
+        "float_runtime_native",
+        "frontend_diagnostics_native",
+        "language_pack_contract",
+        "llm_cost_ledger",
+        "llm_local_collector",
+        "managed_reference_native_context",
+        "managed_references_frontend_reference",
+        "reference_tasks_development",
+        "task_frontend_native",
+        "test_tiers",
+        "typed_source_frontend_reference",
+        "value_owner_runtime",
+        "value_retirement_runtime"
+      ],
+      "required_fixture_groups": [],
+      "expected_groups": [
+        "bytes_runtime_native",
+        "ctest_report_validation",
+        "diagnostic_catalogue",
+        "discovery",
+        "float_runtime_native",
+        "frontend_diagnostics_native",
+        "language_pack_contract",
+        "llm_cost_ledger",
+        "llm_local_collector",
+        "managed_reference_native_context",
+        "managed_references_frontend_reference",
+        "reference_tasks_development",
+        "task_frontend_native",
+        "test_tiers",
+        "typed_source_frontend_reference",
+        "value_owner_runtime",
+        "value_retirement_runtime"
+      ],
+      "observed_groups": [
+        "llm_cost_ledger",
+        "llm_local_collector",
+        "ctest_report_validation",
+        "discovery",
+        "language_pack_contract",
+        "task_frontend_native",
+        "reference_tasks_development",
+        "frontend_diagnostics_native",
+        "value_owner_runtime",
+        "value_retirement_runtime",
+        "managed_references_frontend_reference",
+        "managed_reference_native_context",
+        "bytes_runtime_native",
+        "float_runtime_native",
+        "typed_source_frontend_reference",
+        "test_tiers",
+        "diagnostic_catalogue"
+      ],
+      "results": {
+        "passed": [
+          "llm_cost_ledger",
+          "llm_local_collector",
+          "ctest_report_validation",
+          "discovery",
+          "language_pack_contract",
+          "task_frontend_native",
+          "reference_tasks_development",
+          "frontend_diagnostics_native",
+          "value_owner_runtime",
+          "value_retirement_runtime",
+          "managed_references_frontend_reference",
+          "managed_reference_native_context",
+          "bytes_runtime_native",
+          "float_runtime_native",
+          "typed_source_frontend_reference",
+          "test_tiers",
+          "diagnostic_catalogue"
+        ],
+        "failed": [],
+        "skipped": []
+      },
+      "registry_sha256": "1f0818c4ce07c592333197fed94d2244bd90f7aa06dbc56bb51f294a241c865b",
+      "junit_sha256": "b29e9e65d785a6b37037aadd835ee5dd7a4a4e9c4c8733f59db2c9673c4b69a1"
+    },
+    "affected_initial": {
+      "schema": "nex.ctest-verification/1",
+      "ok": false,
+      "ctest_exit_code": 8,
+      "selected_groups": [
+        "docs_index",
+        "native_diagnostics",
+        "reference_library_context",
+        "references030_cli",
+        "task_provider_debug_boundary_native",
+        "task_provider_profile_boundary_native",
+        "task_shared_provider_boundary_native",
+        "task_static_provider_boundary_native",
+        "task_stream_provider_boundary",
+        "task_write_provider_boundary"
+      ],
+      "required_fixture_groups": [],
+      "expected_groups": [
+        "docs_index",
+        "native_diagnostics",
+        "reference_library_context",
+        "references030_cli",
+        "task_provider_debug_boundary_native",
+        "task_provider_profile_boundary_native",
+        "task_shared_provider_boundary_native",
+        "task_static_provider_boundary_native",
+        "task_stream_provider_boundary",
+        "task_write_provider_boundary"
+      ],
+      "observed_groups": [
+        "task_static_provider_boundary_native",
+        "task_provider_profile_boundary_native",
+        "task_provider_debug_boundary_native",
+        "task_shared_provider_boundary_native",
+        "native_diagnostics",
+        "references030_cli",
+        "reference_library_context",
+        "task_stream_provider_boundary",
+        "task_write_provider_boundary",
+        "docs_index"
+      ],
+      "results": {
+        "passed": [
+          "task_static_provider_boundary_native",
+          "task_provider_profile_boundary_native",
+          "task_provider_debug_boundary_native",
+          "task_shared_provider_boundary_native",
+          "references030_cli",
+          "reference_library_context",
+          "task_stream_provider_boundary",
+          "task_write_provider_boundary",
+          "docs_index"
+        ],
+        "failed": [
+          "native_diagnostics"
+        ],
+        "skipped": []
+      },
+      "registry_sha256": "1f0818c4ce07c592333197fed94d2244bd90f7aa06dbc56bb51f294a241c865b",
+      "junit_sha256": "12edd9e9b3b5ec20d4ec9cee4960383f277b14cc729b032f832589086d65d8b9"
+    },
+    "failed_group_rerun": {
+      "schema": "nex.ctest-verification/1",
+      "ok": true,
+      "ctest_exit_code": 0,
+      "selected_groups": [
+        "native_diagnostics"
+      ],
+      "required_fixture_groups": [],
+      "expected_groups": [
+        "native_diagnostics"
+      ],
+      "observed_groups": [
+        "native_diagnostics"
+      ],
+      "results": {
+        "passed": [
+          "native_diagnostics"
+        ],
+        "failed": [],
+        "skipped": []
+      },
+      "registry_sha256": "1f0818c4ce07c592333197fed94d2244bd90f7aa06dbc56bb51f294a241c865b",
+      "junit_sha256": "9cf0e5d9021f531d33b2ee9e15d7e539125908b4de45a60b5e75d319949c5e49"
+    },
+    "current_passed_groups": [
+      "bytes_runtime_native",
+      "ctest_report_validation",
+      "diagnostic_catalogue",
+      "discovery",
+      "docs_index",
+      "float_runtime_native",
+      "frontend_diagnostics_native",
+      "language_pack_contract",
+      "llm_cost_ledger",
+      "llm_local_collector",
+      "managed_reference_native_context",
+      "managed_references_frontend_reference",
+      "native_diagnostics",
+      "reference_library_context",
+      "reference_tasks_development",
+      "references030_cli",
+      "task_frontend_native",
+      "task_provider_debug_boundary_native",
+      "task_provider_profile_boundary_native",
+      "task_shared_provider_boundary_native",
+      "task_static_provider_boundary_native",
+      "task_stream_provider_boundary",
+      "task_write_provider_boundary",
+      "test_tiers",
+      "typed_source_frontend_reference",
+      "value_owner_runtime",
+      "value_retirement_runtime"
+    ],
+    "distinct_passed_groups": 27,
+    "original_HTTP_bind_failure_retained": true,
+    "full_source_regression": false,
+    "direct_log_sha256": {
+      "core-v2/ctest.log": "9575970f84a0ce0caa7488fff3e462241de614feccda98f5f4f0949b2cd62817",
+      "affected-v2.log": "318b9911b1f72c5868ed8381b695df2c7341078a35632a6dc5170ee550bc8861",
+      "native-diagnostics-v3.log": "fe999f498967ae7d50925adf6f31b9b023343680e7c95888842fcb90573195d3"
+    }
+  },
+  "new_provider_harness": {
+    "execution": "direct script with fresh output; separate from registered CTest group",
+    "report": {
+      "schema": "nex.reference-task-providers/1",
+      "ok": true,
+      "compiler_sha256": "8a5552a5dddca9e713aabe9d5b56b6596c06562fb559aa4910645887ce0eec1c",
+      "harness_sha256": "47316e0b0ec81be82ba4e928fd7b93afd8293ef4b08d7dbe0f25ac0b83a9d4c7",
+      "example_sha256": {
+        "README.md": "877dc100e1484584735abbdb89d5522e50b5012b0301b36f08ccc243b5e0cc61",
+        "nex.build.json": "a4241f91f50cdde80442e8fa2da48306f888864b4e58554b390373ee27eff0c1",
+        "nex.json": "4480a42a3fcc15093bafd78ff2148b4cb4a0b696d863e442658abe33115cd2b9",
+        "leaf/value.nex": "63df94d175e586462b6cc812c858d00de9ba31a4b3640abe33ef4ba02b683d32",
+        "app/main.nex": "21c9dcb466d157a951205de02d14b85cd755c9517176d67312b3335f2884c6cb",
+        "mid/value.nex": "5d61971f2a02bea102a3990091de88229b3458928622b6c3e0b00e5e5367d018",
+        "pure/value.nex": "ad8b29f0be488353b2b1ef22923ba47d2bef3980cecf717e86afc6ef86367b99"
+      },
+      "rows": [
+        {
+          "mode": "static",
+          "profile": "debug",
+          "reference": {
+            "ok": true,
+            "stdout": "42\n",
+            "steps": 410,
+            "task_execution": {
+              "backend": "reference",
+              "configured": {
+                "steps": 1000000,
+                "timeout_ms": 5000,
+                "workers": 16
+              },
+              "cooperative_deadline": true,
+              "effective": {
+                "steps": 1000000,
+                "timeout_ms": 5000,
+                "workers": 16
+              },
+              "executor_workers": 1,
+              "identical_step_thresholds": false,
+              "step_model": "checked AST actions and atoms"
+            },
+            "value": null
+          },
+          "observation": {
+            "exit_code": 0,
+            "interrupted": 0,
+            "native_diagnostics": {
+              "diagnostics": [],
+              "ignored": 0,
+              "limit": 32,
+              "omitted": 0,
+              "schema": "nex.native-diagnostics/1",
+              "total": 0
+            },
+            "ok": true,
+            "output_limit": false,
+            "stderr": "",
+            "stdout": "42\n",
+            "task_execution": {
+              "backend": "native",
+              "configured": {
+                "steps": 1000000,
+                "timeout_ms": 10000,
+                "workers": 2
+              },
+              "cooperative_deadline": true,
+              "effective": {
+                "steps": 1000000,
+                "timeout_ms": 10000,
+                "workers": 2
+              },
+              "executor_workers": 1,
+              "identical_step_thresholds": false,
+              "step_model": "native resume and runtime polls",
+              "supervisor_timeout_seconds": 30
+            },
+            "timed_out": false
+          },
+          "records": {
+            "pure": {
+              "artifact_sha256": "f48c74a392a31999578ced5487589596d97717c2d00aaa3d495a92652ac2d023",
+              "record": {
+                "abi_offset": 40,
+                "code_only": true,
+                "cohort": "567a8926b04ed3021c3d42278fd56244fb125dd0ccae46e6aa6e2e3b1037dfc4",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "pure",
+                "definitions": [
+                  "provider_pure::next"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "provider_pure::next": {
+                    "accessor": "nex_13_provider_pure_4_next__task_code_address",
+                    "contract": "ff932c3c138d2ebe5a93786a3fbc8bbe3f78993be868fd829261831cbf8e4300",
+                    "requirements": 0,
+                    "signature": "72c895a04d31a6a20f9316becabd25a5c6568758b23aecf7f140fdf70f1559e3"
+                  }
+                },
+                "language": "0.30",
+                "mode": "static",
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            },
+            "leaf": {
+              "artifact_sha256": "987ba4e916545a7f07048bafa20a61cbbb56de53329723307537e450d0e2f4e3",
+              "record": {
+                "abi_offset": 40,
+                "code_only": true,
+                "cohort": "567a8926b04ed3021c3d42278fd56244fb125dd0ccae46e6aa6e2e3b1037dfc4",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "leaf",
+                "definitions": [
+                  "provider_leaf::bump",
+                  "provider_leaf::cycle",
+                  "provider_leaf::fail",
+                  "provider_leaf::make",
+                  "provider_leaf::pure"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "provider_leaf::bump": {
+                    "accessor": "nex_13_provider_leaf_4_bump__task_code_address",
+                    "contract": "6b7ff47abdc11a958e8c0372b5dcedb2524918650a53f90f82780fd26532b6e9",
+                    "requirements": 8193,
+                    "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+                  },
+                  "provider_leaf::cycle": {
+                    "accessor": "nex_13_provider_leaf_5_cycle__task_code_address",
+                    "contract": "982b3ad9a5660ff15b36fd8192282fa881547425d3566da806dd565b775fe3d1",
+                    "requirements": 8192,
+                    "signature": "44a60dda846020955bbfd1bfa0c1cbe900d04443d3ece7c5dc646cba93afcdbe"
+                  },
+                  "provider_leaf::fail": {
+                    "accessor": "nex_13_provider_leaf_4_fail__task_code_address",
+                    "contract": "bfdf79c1536f1b92564f4da6d10b8a8f4997455d3d4c648166b7c11c544332fc",
+                    "requirements": 12289,
+                    "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+                  },
+                  "provider_leaf::make": {
+                    "accessor": "nex_13_provider_leaf_4_make__task_code_address",
+                    "contract": "ffd2804f30b00d369e8cf4d683d5bab37600237e9097a73fd399fb1a6f507e0d",
+                    "requirements": 8192,
+                    "signature": "6b924c1617d9096616a03865f2fccca43b028176e76425d307402a1a2aeeec19"
+                  },
+                  "provider_leaf::pure": {
+                    "accessor": "nex_13_provider_leaf_4_pure__task_code_address",
+                    "contract": "2e47712247f8ea903f999e9919b247f5876f2d1029c233f2a9908b9dcbe7df6b",
+                    "requirements": 0,
+                    "signature": "72c895a04d31a6a20f9316becabd25a5c6568758b23aecf7f140fdf70f1559e3"
+                  }
+                },
+                "language": "0.30",
+                "mode": "static",
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            },
+            "mid": {
+              "artifact_sha256": "87f658fc932e49e82da7c9a0e5a7b235a76b052ece69c37e3dd686071aec8ee1",
+              "record": {
+                "abi_offset": 40,
+                "code_only": true,
+                "cohort": "567a8926b04ed3021c3d42278fd56244fb125dd0ccae46e6aa6e2e3b1037dfc4",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "mid",
+                "definitions": [
+                  "provider_mid::fail",
+                  "provider_mid::twice"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "provider_mid::fail": {
+                    "accessor": "nex_12_provider_mid_4_fail__task_code_address",
+                    "contract": "f9cde35fd1a1447791df4e659481e6a3bc5b8a61cee81ef5af370e289a5e2097",
+                    "requirements": 12289,
+                    "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+                  },
+                  "provider_mid::twice": {
+                    "accessor": "nex_12_provider_mid_5_twice__task_code_address",
+                    "contract": "edd5f988424b4a1705bdea5794b9817c90edfa2e495c9d84ec561e1bd6ee8fdb",
+                    "requirements": 8193,
+                    "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+                  }
+                },
+                "language": "0.30",
+                "mode": "static",
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            },
+            "app": {
+              "artifact_sha256": "44c23bcbe30db7b1691ac599f1fc82f54d0b7d11a86be5f32ccee48131add170",
+              "record": {
+                "abi_offset": 40,
+                "code_only": false,
+                "cohort": "567a8926b04ed3021c3d42278fd56244fb125dd0ccae46e6aa6e2e3b1037dfc4",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "app",
+                "definitions": [
+                  "provider_app::main",
+                  "provider_app::main::$lambda_0",
+                  "provider_app::main::$lambda_0::$lambda_1"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {},
+                "language": "0.30",
+                "mode": "static",
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            }
+          },
+          "warm_reused": true
+        },
+        {
+          "mode": "static",
+          "profile": "release",
+          "reference": {
+            "ok": true,
+            "stdout": "42\n",
+            "steps": 410,
+            "task_execution": {
+              "backend": "reference",
+              "configured": {
+                "steps": 1000000,
+                "timeout_ms": 5000,
+                "workers": 16
+              },
+              "cooperative_deadline": true,
+              "effective": {
+                "steps": 1000000,
+                "timeout_ms": 5000,
+                "workers": 16
+              },
+              "executor_workers": 1,
+              "identical_step_thresholds": false,
+              "step_model": "checked AST actions and atoms"
+            },
+            "value": null
+          },
+          "observation": {
+            "exit_code": 0,
+            "interrupted": 0,
+            "native_diagnostics": {
+              "diagnostics": [],
+              "ignored": 0,
+              "limit": 32,
+              "omitted": 0,
+              "schema": "nex.native-diagnostics/1",
+              "total": 0
+            },
+            "ok": true,
+            "output_limit": false,
+            "stderr": "",
+            "stdout": "42\n",
+            "task_execution": {
+              "backend": "native",
+              "configured": {
+                "steps": 1000000,
+                "timeout_ms": 10000,
+                "workers": 2
+              },
+              "cooperative_deadline": true,
+              "effective": {
+                "steps": 1000000,
+                "timeout_ms": 10000,
+                "workers": 2
+              },
+              "executor_workers": 1,
+              "identical_step_thresholds": false,
+              "step_model": "native resume and runtime polls",
+              "supervisor_timeout_seconds": 30
+            },
+            "timed_out": false
+          },
+          "records": {
+            "pure": {
+              "artifact_sha256": "2a3a59dd672d683b504f46e10b371489e6885bea26ac45bedbdca4323d9ff081",
+              "record": {
+                "abi_offset": 40,
+                "code_only": true,
+                "cohort": "567a8926b04ed3021c3d42278fd56244fb125dd0ccae46e6aa6e2e3b1037dfc4",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "pure",
+                "definitions": [
+                  "provider_pure::next"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "provider_pure::next": {
+                    "accessor": "nex_13_provider_pure_4_next__task_code_address",
+                    "contract": "ff932c3c138d2ebe5a93786a3fbc8bbe3f78993be868fd829261831cbf8e4300",
+                    "requirements": 0,
+                    "signature": "72c895a04d31a6a20f9316becabd25a5c6568758b23aecf7f140fdf70f1559e3"
+                  }
+                },
+                "language": "0.30",
+                "mode": "static",
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            },
+            "leaf": {
+              "artifact_sha256": "88a58171530adab7e970fc16232c5e0622225fa380475ee9862727f33656b90d",
+              "record": {
+                "abi_offset": 40,
+                "code_only": true,
+                "cohort": "567a8926b04ed3021c3d42278fd56244fb125dd0ccae46e6aa6e2e3b1037dfc4",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "leaf",
+                "definitions": [
+                  "provider_leaf::bump",
+                  "provider_leaf::cycle",
+                  "provider_leaf::fail",
+                  "provider_leaf::make",
+                  "provider_leaf::pure"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "provider_leaf::bump": {
+                    "accessor": "nex_13_provider_leaf_4_bump__task_code_address",
+                    "contract": "6b7ff47abdc11a958e8c0372b5dcedb2524918650a53f90f82780fd26532b6e9",
+                    "requirements": 8193,
+                    "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+                  },
+                  "provider_leaf::cycle": {
+                    "accessor": "nex_13_provider_leaf_5_cycle__task_code_address",
+                    "contract": "982b3ad9a5660ff15b36fd8192282fa881547425d3566da806dd565b775fe3d1",
+                    "requirements": 8192,
+                    "signature": "44a60dda846020955bbfd1bfa0c1cbe900d04443d3ece7c5dc646cba93afcdbe"
+                  },
+                  "provider_leaf::fail": {
+                    "accessor": "nex_13_provider_leaf_4_fail__task_code_address",
+                    "contract": "bfdf79c1536f1b92564f4da6d10b8a8f4997455d3d4c648166b7c11c544332fc",
+                    "requirements": 12289,
+                    "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+                  },
+                  "provider_leaf::make": {
+                    "accessor": "nex_13_provider_leaf_4_make__task_code_address",
+                    "contract": "ffd2804f30b00d369e8cf4d683d5bab37600237e9097a73fd399fb1a6f507e0d",
+                    "requirements": 8192,
+                    "signature": "6b924c1617d9096616a03865f2fccca43b028176e76425d307402a1a2aeeec19"
+                  },
+                  "provider_leaf::pure": {
+                    "accessor": "nex_13_provider_leaf_4_pure__task_code_address",
+                    "contract": "2e47712247f8ea903f999e9919b247f5876f2d1029c233f2a9908b9dcbe7df6b",
+                    "requirements": 0,
+                    "signature": "72c895a04d31a6a20f9316becabd25a5c6568758b23aecf7f140fdf70f1559e3"
+                  }
+                },
+                "language": "0.30",
+                "mode": "static",
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            },
+            "mid": {
+              "artifact_sha256": "ccd3b9e84af2a98b6030dfd649fe877c98c7579fdeebfd30688d93942c54f6e5",
+              "record": {
+                "abi_offset": 40,
+                "code_only": true,
+                "cohort": "567a8926b04ed3021c3d42278fd56244fb125dd0ccae46e6aa6e2e3b1037dfc4",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "mid",
+                "definitions": [
+                  "provider_mid::fail",
+                  "provider_mid::twice"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "provider_mid::fail": {
+                    "accessor": "nex_12_provider_mid_4_fail__task_code_address",
+                    "contract": "f9cde35fd1a1447791df4e659481e6a3bc5b8a61cee81ef5af370e289a5e2097",
+                    "requirements": 12289,
+                    "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+                  },
+                  "provider_mid::twice": {
+                    "accessor": "nex_12_provider_mid_5_twice__task_code_address",
+                    "contract": "edd5f988424b4a1705bdea5794b9817c90edfa2e495c9d84ec561e1bd6ee8fdb",
+                    "requirements": 8193,
+                    "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+                  }
+                },
+                "language": "0.30",
+                "mode": "static",
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            },
+            "app": {
+              "artifact_sha256": "ab4495f94b7ae97071f0f39c939484980f74df97ac5110d6ee1c5d2dc2d6405d",
+              "record": {
+                "abi_offset": 40,
+                "code_only": false,
+                "cohort": "567a8926b04ed3021c3d42278fd56244fb125dd0ccae46e6aa6e2e3b1037dfc4",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "app",
+                "definitions": [
+                  "provider_app::main",
+                  "provider_app::main::$lambda_0",
+                  "provider_app::main::$lambda_0::$lambda_1"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {},
+                "language": "0.30",
+                "mode": "static",
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            }
+          },
+          "warm_reused": true
+        },
+        {
+          "mode": "shared",
+          "profile": "debug",
+          "reference": {
+            "ok": true,
+            "stdout": "42\n",
+            "steps": 410,
+            "task_execution": {
+              "backend": "reference",
+              "configured": {
+                "steps": 1000000,
+                "timeout_ms": 5000,
+                "workers": 16
+              },
+              "cooperative_deadline": true,
+              "effective": {
+                "steps": 1000000,
+                "timeout_ms": 5000,
+                "workers": 16
+              },
+              "executor_workers": 1,
+              "identical_step_thresholds": false,
+              "step_model": "checked AST actions and atoms"
+            },
+            "value": null
+          },
+          "observation": {
+            "exit_code": 0,
+            "interrupted": 0,
+            "native_diagnostics": {
+              "diagnostics": [],
+              "ignored": 0,
+              "limit": 32,
+              "omitted": 0,
+              "schema": "nex.native-diagnostics/1",
+              "total": 0
+            },
+            "ok": true,
+            "output_limit": false,
+            "stderr": "",
+            "stdout": "42\n",
+            "task_execution": {
+              "backend": "native",
+              "configured": {
+                "steps": 1000000,
+                "timeout_ms": 10000,
+                "workers": 2
+              },
+              "cooperative_deadline": true,
+              "effective": {
+                "steps": 1000000,
+                "timeout_ms": 10000,
+                "workers": 2
+              },
+              "executor_workers": 1,
+              "identical_step_thresholds": false,
+              "step_model": "native resume and runtime polls",
+              "supervisor_timeout_seconds": 30
+            },
+            "timed_out": false
+          },
+          "records": {
+            "pure": {
+              "artifact_sha256": "2d22e8ef872dfc8f890b971cd9ef570318303aa194413e74ad41e9c266c9b9d0",
+              "record": {
+                "abi_offset": 40,
+                "artifact_kind": "shared-image",
+                "code_only": true,
+                "cohort": "cc41be5aa3320f35933b97381996dc6b5940e160829b8c77284db343b87ddaf3",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "pure",
+                "component_file_reads": {
+                  "pure": false
+                },
+                "component_file_streams": {
+                  "pure": false
+                },
+                "component_file_writes": {
+                  "pure": false
+                },
+                "definition_owners": {
+                  "provider_pure::next": "pure"
+                },
+                "definitions": [
+                  "provider_pure::next"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "provider_pure::next": {
+                    "accessor": "nex_13_provider_pure_4_next__task_code_address",
+                    "contract": "ff932c3c138d2ebe5a93786a3fbc8bbe3f78993be868fd829261831cbf8e4300",
+                    "requirements": 0,
+                    "signature": "72c895a04d31a6a20f9316becabd25a5c6568758b23aecf7f140fdf70f1559e3"
+                  }
+                },
+                "image": {
+                  "hash": "364cf4897e07fe96103ebeaf860722197f955d5f5fd5da3b9244bb3516dd8703",
+                  "key": "8760ce6d7c5bbb076e8dd779052ad9c751f9e1dd423b874bedcca8a9a7819bb0",
+                  "runtime_hash": "33c305c95c4e9028e686c146ac04cc1656ee47765c62e2d55ea18671ec81b6ac",
+                  "runtime_key": "0f25a612ecdf0cf185a8969aed3c6a53eef98dd351e56a76696d94392ff3b981",
+                  "sha256": "2d22e8ef872dfc8f890b971cd9ef570318303aa194413e74ad41e9c266c9b9d0",
+                  "uuid": "2b04d0c60c38372b8609522db428736e"
+                },
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": "pure",
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            },
+            "leaf": {
+              "artifact_sha256": "2b35380ddbb3ddeb7107dd0c80f7b79ac287e45784f13533b346fcb43584e467",
+              "record": {
+                "abi_offset": 40,
+                "artifact_kind": "shared-image",
+                "code_only": true,
+                "cohort": "cc41be5aa3320f35933b97381996dc6b5940e160829b8c77284db343b87ddaf3",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "leaf",
+                "component_file_reads": {
+                  "leaf": false
+                },
+                "component_file_streams": {
+                  "leaf": false
+                },
+                "component_file_writes": {
+                  "leaf": false
+                },
+                "definition_owners": {
+                  "provider_leaf::bump": "leaf",
+                  "provider_leaf::cycle": "leaf",
+                  "provider_leaf::fail": "leaf",
+                  "provider_leaf::make": "leaf",
+                  "provider_leaf::pure": "leaf"
+                },
+                "definitions": [
+                  "provider_leaf::bump",
+                  "provider_leaf::cycle",
+                  "provider_leaf::fail",
+                  "provider_leaf::make",
+                  "provider_leaf::pure"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "provider_leaf::bump": {
+                    "accessor": "nex_13_provider_leaf_4_bump__task_code_address",
+                    "contract": "6b7ff47abdc11a958e8c0372b5dcedb2524918650a53f90f82780fd26532b6e9",
+                    "requirements": 8193,
+                    "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+                  },
+                  "provider_leaf::cycle": {
+                    "accessor": "nex_13_provider_leaf_5_cycle__task_code_address",
+                    "contract": "982b3ad9a5660ff15b36fd8192282fa881547425d3566da806dd565b775fe3d1",
+                    "requirements": 8192,
+                    "signature": "44a60dda846020955bbfd1bfa0c1cbe900d04443d3ece7c5dc646cba93afcdbe"
+                  },
+                  "provider_leaf::fail": {
+                    "accessor": "nex_13_provider_leaf_4_fail__task_code_address",
+                    "contract": "bfdf79c1536f1b92564f4da6d10b8a8f4997455d3d4c648166b7c11c544332fc",
+                    "requirements": 12289,
+                    "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+                  },
+                  "provider_leaf::make": {
+                    "accessor": "nex_13_provider_leaf_4_make__task_code_address",
+                    "contract": "ffd2804f30b00d369e8cf4d683d5bab37600237e9097a73fd399fb1a6f507e0d",
+                    "requirements": 8192,
+                    "signature": "6b924c1617d9096616a03865f2fccca43b028176e76425d307402a1a2aeeec19"
+                  },
+                  "provider_leaf::pure": {
+                    "accessor": "nex_13_provider_leaf_4_pure__task_code_address",
+                    "contract": "2e47712247f8ea903f999e9919b247f5876f2d1029c233f2a9908b9dcbe7df6b",
+                    "requirements": 0,
+                    "signature": "72c895a04d31a6a20f9316becabd25a5c6568758b23aecf7f140fdf70f1559e3"
+                  }
+                },
+                "image": {
+                  "hash": "4d6cfed6237031015a877373bf6e4d0de112599f64b72c4ea4fff84d9a19ca34",
+                  "key": "e6d313d1ff7384061a6964c5b8b7d0707ede6b37f944913dbde4d86b8681fb51",
+                  "runtime_hash": "33c305c95c4e9028e686c146ac04cc1656ee47765c62e2d55ea18671ec81b6ac",
+                  "runtime_key": "0f25a612ecdf0cf185a8969aed3c6a53eef98dd351e56a76696d94392ff3b981",
+                  "sha256": "2b35380ddbb3ddeb7107dd0c80f7b79ac287e45784f13533b346fcb43584e467",
+                  "uuid": "9c03373874b1342482ecbec80c54e6ff"
+                },
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": "leaf",
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            },
+            "mid": {
+              "artifact_sha256": "ac10c93230c007c3443ae9d35d36769cb9166eafd3287cb291f70bed94959bc3",
+              "record": {
+                "abi_offset": 40,
+                "artifact_kind": "shared-image",
+                "code_only": true,
+                "cohort": "cc41be5aa3320f35933b97381996dc6b5940e160829b8c77284db343b87ddaf3",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "mid",
+                "component_file_reads": {
+                  "mid": false
+                },
+                "component_file_streams": {
+                  "mid": false
+                },
+                "component_file_writes": {
+                  "mid": false
+                },
+                "definition_owners": {
+                  "provider_mid::fail": "mid",
+                  "provider_mid::twice": "mid"
+                },
+                "definitions": [
+                  "provider_mid::fail",
+                  "provider_mid::twice"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "provider_mid::fail": {
+                    "accessor": "nex_12_provider_mid_4_fail__task_code_address",
+                    "contract": "f9cde35fd1a1447791df4e659481e6a3bc5b8a61cee81ef5af370e289a5e2097",
+                    "requirements": 12289,
+                    "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+                  },
+                  "provider_mid::twice": {
+                    "accessor": "nex_12_provider_mid_5_twice__task_code_address",
+                    "contract": "edd5f988424b4a1705bdea5794b9817c90edfa2e495c9d84ec561e1bd6ee8fdb",
+                    "requirements": 8193,
+                    "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+                  }
+                },
+                "image": {
+                  "hash": "e76bcbffa8418a5d37ab9b5340ba92859ab19048be0fc6d7f1a3601879cd25f1",
+                  "key": "19f4ced7b5fd3d108e407001306a66219cfe8ba64a379966bc0d60c2f6d6253e",
+                  "runtime_hash": "33c305c95c4e9028e686c146ac04cc1656ee47765c62e2d55ea18671ec81b6ac",
+                  "runtime_key": "0f25a612ecdf0cf185a8969aed3c6a53eef98dd351e56a76696d94392ff3b981",
+                  "sha256": "ac10c93230c007c3443ae9d35d36769cb9166eafd3287cb291f70bed94959bc3",
+                  "uuid": "58dde5bbfc3e3a35aab500216b157556"
+                },
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": "mid",
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            },
+            "app": {
+              "artifact_sha256": "b4791944548a8d5a3e485cef7d3b2cc7719aeaf3f1597c6dca3f3fab688c059b",
+              "record": {
+                "abi_offset": 40,
+                "artifact_kind": "application",
+                "code_only": false,
+                "cohort": "cc41be5aa3320f35933b97381996dc6b5940e160829b8c77284db343b87ddaf3",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "app",
+                "component_file_reads": {
+                  "app": false
+                },
+                "component_file_streams": {
+                  "app": false
+                },
+                "component_file_writes": {
+                  "app": false
+                },
+                "definition_owners": {
+                  "provider_app::main": "app",
+                  "provider_app::main::$lambda_0": "app",
+                  "provider_app::main::$lambda_0::$lambda_1": "app"
+                },
+                "definitions": [
+                  "provider_app::main",
+                  "provider_app::main::$lambda_0",
+                  "provider_app::main::$lambda_0::$lambda_1"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {},
+                "image": {
+                  "hash": "afbfedf1051312f07d154371bfcddad9ccf602e7cc896cb8a03c109c06df210d",
+                  "key": "610a06189c4a493f15894fbd52110d14d494d9129ef818707b3b1c2922ebe06a",
+                  "runtime_hash": "33c305c95c4e9028e686c146ac04cc1656ee47765c62e2d55ea18671ec81b6ac",
+                  "runtime_key": "0f25a612ecdf0cf185a8969aed3c6a53eef98dd351e56a76696d94392ff3b981",
+                  "sha256": "b4791944548a8d5a3e485cef7d3b2cc7719aeaf3f1597c6dca3f3fab688c059b",
+                  "uuid": "3be4516834d7383b94a1949bb3ccee10"
+                },
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": "app",
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            }
+          },
+          "warm_reused": true
+        },
+        {
+          "mode": "shared",
+          "profile": "release",
+          "reference": {
+            "ok": true,
+            "stdout": "42\n",
+            "steps": 410,
+            "task_execution": {
+              "backend": "reference",
+              "configured": {
+                "steps": 1000000,
+                "timeout_ms": 5000,
+                "workers": 16
+              },
+              "cooperative_deadline": true,
+              "effective": {
+                "steps": 1000000,
+                "timeout_ms": 5000,
+                "workers": 16
+              },
+              "executor_workers": 1,
+              "identical_step_thresholds": false,
+              "step_model": "checked AST actions and atoms"
+            },
+            "value": null
+          },
+          "observation": {
+            "exit_code": 0,
+            "interrupted": 0,
+            "native_diagnostics": {
+              "diagnostics": [],
+              "ignored": 0,
+              "limit": 32,
+              "omitted": 0,
+              "schema": "nex.native-diagnostics/1",
+              "total": 0
+            },
+            "ok": true,
+            "output_limit": false,
+            "stderr": "",
+            "stdout": "42\n",
+            "task_execution": {
+              "backend": "native",
+              "configured": {
+                "steps": 1000000,
+                "timeout_ms": 10000,
+                "workers": 2
+              },
+              "cooperative_deadline": true,
+              "effective": {
+                "steps": 1000000,
+                "timeout_ms": 10000,
+                "workers": 2
+              },
+              "executor_workers": 1,
+              "identical_step_thresholds": false,
+              "step_model": "native resume and runtime polls",
+              "supervisor_timeout_seconds": 30
+            },
+            "timed_out": false
+          },
+          "records": {
+            "pure": {
+              "artifact_sha256": "8265576d01373d7aab14d392d7ef92a7bee7e826101c1316469ad2604d8ca63a",
+              "record": {
+                "abi_offset": 40,
+                "artifact_kind": "shared-image",
+                "code_only": true,
+                "cohort": "cc41be5aa3320f35933b97381996dc6b5940e160829b8c77284db343b87ddaf3",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "pure",
+                "component_file_reads": {
+                  "pure": false
+                },
+                "component_file_streams": {
+                  "pure": false
+                },
+                "component_file_writes": {
+                  "pure": false
+                },
+                "definition_owners": {
+                  "provider_pure::next": "pure"
+                },
+                "definitions": [
+                  "provider_pure::next"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "provider_pure::next": {
+                    "accessor": "nex_13_provider_pure_4_next__task_code_address",
+                    "contract": "ff932c3c138d2ebe5a93786a3fbc8bbe3f78993be868fd829261831cbf8e4300",
+                    "requirements": 0,
+                    "signature": "72c895a04d31a6a20f9316becabd25a5c6568758b23aecf7f140fdf70f1559e3"
+                  }
+                },
+                "image": {
+                  "hash": "59c6da76b620beb027e2c7edfbd139b0bc84fe50ef4617944f42000516f8c11a",
+                  "key": "9d5aa52ed4ed6bae5e08e095cd2e419c814af6ae794ae5265b99bd8b2f79f81a",
+                  "runtime_hash": "a219fab91dae94129a5909867f2d3054e1effbb86cf8b15de7ed826f8ac5a78b",
+                  "runtime_key": "ebefb716d230309c51101166a8fb8a5f403779224db2f70fbd6fe0c83ee5cb01",
+                  "sha256": "8265576d01373d7aab14d392d7ef92a7bee7e826101c1316469ad2604d8ca63a",
+                  "uuid": "f0f1f4927d823c80a704185c5913c6b9"
+                },
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": "pure",
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            },
+            "leaf": {
+              "artifact_sha256": "256e79241db32f473499dd3b4b20f1f88569e59e7c2f6f100893ecdbf0ff3989",
+              "record": {
+                "abi_offset": 40,
+                "artifact_kind": "shared-image",
+                "code_only": true,
+                "cohort": "cc41be5aa3320f35933b97381996dc6b5940e160829b8c77284db343b87ddaf3",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "leaf",
+                "component_file_reads": {
+                  "leaf": false
+                },
+                "component_file_streams": {
+                  "leaf": false
+                },
+                "component_file_writes": {
+                  "leaf": false
+                },
+                "definition_owners": {
+                  "provider_leaf::bump": "leaf",
+                  "provider_leaf::cycle": "leaf",
+                  "provider_leaf::fail": "leaf",
+                  "provider_leaf::make": "leaf",
+                  "provider_leaf::pure": "leaf"
+                },
+                "definitions": [
+                  "provider_leaf::bump",
+                  "provider_leaf::cycle",
+                  "provider_leaf::fail",
+                  "provider_leaf::make",
+                  "provider_leaf::pure"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "provider_leaf::bump": {
+                    "accessor": "nex_13_provider_leaf_4_bump__task_code_address",
+                    "contract": "6b7ff47abdc11a958e8c0372b5dcedb2524918650a53f90f82780fd26532b6e9",
+                    "requirements": 8193,
+                    "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+                  },
+                  "provider_leaf::cycle": {
+                    "accessor": "nex_13_provider_leaf_5_cycle__task_code_address",
+                    "contract": "982b3ad9a5660ff15b36fd8192282fa881547425d3566da806dd565b775fe3d1",
+                    "requirements": 8192,
+                    "signature": "44a60dda846020955bbfd1bfa0c1cbe900d04443d3ece7c5dc646cba93afcdbe"
+                  },
+                  "provider_leaf::fail": {
+                    "accessor": "nex_13_provider_leaf_4_fail__task_code_address",
+                    "contract": "bfdf79c1536f1b92564f4da6d10b8a8f4997455d3d4c648166b7c11c544332fc",
+                    "requirements": 12289,
+                    "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+                  },
+                  "provider_leaf::make": {
+                    "accessor": "nex_13_provider_leaf_4_make__task_code_address",
+                    "contract": "ffd2804f30b00d369e8cf4d683d5bab37600237e9097a73fd399fb1a6f507e0d",
+                    "requirements": 8192,
+                    "signature": "6b924c1617d9096616a03865f2fccca43b028176e76425d307402a1a2aeeec19"
+                  },
+                  "provider_leaf::pure": {
+                    "accessor": "nex_13_provider_leaf_4_pure__task_code_address",
+                    "contract": "2e47712247f8ea903f999e9919b247f5876f2d1029c233f2a9908b9dcbe7df6b",
+                    "requirements": 0,
+                    "signature": "72c895a04d31a6a20f9316becabd25a5c6568758b23aecf7f140fdf70f1559e3"
+                  }
+                },
+                "image": {
+                  "hash": "8f2d12442e71cc810e7ffba052789ee55261c2d625a56ee1dfc7f71dc29536f6",
+                  "key": "f67241d06527fe8b02ae7cfeb8c95f618d6e30413d14198e10c02eaaf3ec3efa",
+                  "runtime_hash": "a219fab91dae94129a5909867f2d3054e1effbb86cf8b15de7ed826f8ac5a78b",
+                  "runtime_key": "ebefb716d230309c51101166a8fb8a5f403779224db2f70fbd6fe0c83ee5cb01",
+                  "sha256": "256e79241db32f473499dd3b4b20f1f88569e59e7c2f6f100893ecdbf0ff3989",
+                  "uuid": "3662e8004e453daa95cff5b2bd057f2f"
+                },
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": "leaf",
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            },
+            "mid": {
+              "artifact_sha256": "df7cc9507c98f9dcb0d970682ca979e7c5cf2f0389c72322c9edb892d06a7c2b",
+              "record": {
+                "abi_offset": 40,
+                "artifact_kind": "shared-image",
+                "code_only": true,
+                "cohort": "cc41be5aa3320f35933b97381996dc6b5940e160829b8c77284db343b87ddaf3",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "mid",
+                "component_file_reads": {
+                  "mid": false
+                },
+                "component_file_streams": {
+                  "mid": false
+                },
+                "component_file_writes": {
+                  "mid": false
+                },
+                "definition_owners": {
+                  "provider_mid::fail": "mid",
+                  "provider_mid::twice": "mid"
+                },
+                "definitions": [
+                  "provider_mid::fail",
+                  "provider_mid::twice"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "provider_mid::fail": {
+                    "accessor": "nex_12_provider_mid_4_fail__task_code_address",
+                    "contract": "f9cde35fd1a1447791df4e659481e6a3bc5b8a61cee81ef5af370e289a5e2097",
+                    "requirements": 12289,
+                    "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+                  },
+                  "provider_mid::twice": {
+                    "accessor": "nex_12_provider_mid_5_twice__task_code_address",
+                    "contract": "edd5f988424b4a1705bdea5794b9817c90edfa2e495c9d84ec561e1bd6ee8fdb",
+                    "requirements": 8193,
+                    "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+                  }
+                },
+                "image": {
+                  "hash": "a3fb63fe8eebb5e7351603a85ca2c8843c0f2fd58a9e37a19659f1ee2011b95a",
+                  "key": "2ba5dc5b2ad48ba4f63e3782b330aa6fcd89f0e232ab3144fd0bceb9d53808ff",
+                  "runtime_hash": "a219fab91dae94129a5909867f2d3054e1effbb86cf8b15de7ed826f8ac5a78b",
+                  "runtime_key": "ebefb716d230309c51101166a8fb8a5f403779224db2f70fbd6fe0c83ee5cb01",
+                  "sha256": "df7cc9507c98f9dcb0d970682ca979e7c5cf2f0389c72322c9edb892d06a7c2b",
+                  "uuid": "ab88df70990f34c38a7d48243b690278"
+                },
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": "mid",
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            },
+            "app": {
+              "artifact_sha256": "62f3f3362b85cd409134e4ccf86a51a8363e5d3a933a386524bbc4e4ca67c938",
+              "record": {
+                "abi_offset": 40,
+                "artifact_kind": "application",
+                "code_only": false,
+                "cohort": "cc41be5aa3320f35933b97381996dc6b5940e160829b8c77284db343b87ddaf3",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "app",
+                "component_file_reads": {
+                  "app": false
+                },
+                "component_file_streams": {
+                  "app": false
+                },
+                "component_file_writes": {
+                  "app": false
+                },
+                "definition_owners": {
+                  "provider_app::main": "app",
+                  "provider_app::main::$lambda_0": "app",
+                  "provider_app::main::$lambda_0::$lambda_1": "app"
+                },
+                "definitions": [
+                  "provider_app::main",
+                  "provider_app::main::$lambda_0",
+                  "provider_app::main::$lambda_0::$lambda_1"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {},
+                "image": {
+                  "hash": "878202487dc97c926622965801f40476ee2c7075109526044969abdc8919072b",
+                  "key": "e53d292fb89024a284a3b26debc7b49164c733af76d8c71eb8852ebfac4e3d5a",
+                  "runtime_hash": "a219fab91dae94129a5909867f2d3054e1effbb86cf8b15de7ed826f8ac5a78b",
+                  "runtime_key": "ebefb716d230309c51101166a8fb8a5f403779224db2f70fbd6fe0c83ee5cb01",
+                  "sha256": "62f3f3362b85cd409134e4ccf86a51a8363e5d3a933a386524bbc4e4ca67c938",
+                  "uuid": "2b6ff90272a63554a9737d80af4bee23"
+                },
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": "app",
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            }
+          },
+          "warm_reused": true
+        },
+        {
+          "mode": "mixed",
+          "profile": "debug",
+          "reference": {
+            "ok": true,
+            "stdout": "42\n",
+            "steps": 410,
+            "task_execution": {
+              "backend": "reference",
+              "configured": {
+                "steps": 1000000,
+                "timeout_ms": 5000,
+                "workers": 16
+              },
+              "cooperative_deadline": true,
+              "effective": {
+                "steps": 1000000,
+                "timeout_ms": 5000,
+                "workers": 16
+              },
+              "executor_workers": 1,
+              "identical_step_thresholds": false,
+              "step_model": "checked AST actions and atoms"
+            },
+            "value": null
+          },
+          "observation": {
+            "exit_code": 0,
+            "interrupted": 0,
+            "native_diagnostics": {
+              "diagnostics": [],
+              "ignored": 0,
+              "limit": 32,
+              "omitted": 0,
+              "schema": "nex.native-diagnostics/1",
+              "total": 0
+            },
+            "ok": true,
+            "output_limit": false,
+            "stderr": "",
+            "stdout": "42\n",
+            "task_execution": {
+              "backend": "native",
+              "configured": {
+                "steps": 1000000,
+                "timeout_ms": 10000,
+                "workers": 2
+              },
+              "cooperative_deadline": true,
+              "effective": {
+                "steps": 1000000,
+                "timeout_ms": 10000,
+                "workers": 2
+              },
+              "executor_workers": 1,
+              "identical_step_thresholds": false,
+              "step_model": "native resume and runtime polls",
+              "supervisor_timeout_seconds": 30
+            },
+            "timed_out": false
+          },
+          "records": {
+            "pure": {
+              "artifact_sha256": "99b23b12eba5421a9d04b853a406b22501558342519fea9d989d9e1003e55b73",
+              "record": {
+                "abi_offset": 40,
+                "artifact_kind": "pic-stage",
+                "code_only": true,
+                "cohort": "cc41be5aa3320f35933b97381996dc6b5940e160829b8c77284db343b87ddaf3",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "pure",
+                "component_file_reads": {
+                  "pure": false
+                },
+                "component_file_streams": {
+                  "pure": false
+                },
+                "component_file_writes": {
+                  "pure": false
+                },
+                "definition_owners": {
+                  "provider_pure::next": "pure"
+                },
+                "definitions": [
+                  "provider_pure::next"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "provider_pure::next": {
+                    "accessor": "nex_13_provider_pure_4_next__task_code_address",
+                    "contract": "ff932c3c138d2ebe5a93786a3fbc8bbe3f78993be868fd829261831cbf8e4300",
+                    "requirements": 0,
+                    "signature": "72c895a04d31a6a20f9316becabd25a5c6568758b23aecf7f140fdf70f1559e3"
+                  }
+                },
+                "image": null,
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": null,
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            },
+            "leaf": {
+              "artifact_sha256": "49e88e4a1d8ad6889078ef2dbddf3f5b37f4a541456ce6aea1f1a0620c5891db",
+              "record": {
+                "abi_offset": 40,
+                "artifact_kind": "shared-image",
+                "code_only": true,
+                "cohort": "cc41be5aa3320f35933b97381996dc6b5940e160829b8c77284db343b87ddaf3",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "leaf",
+                "component_file_reads": {
+                  "leaf": false,
+                  "pure": false
+                },
+                "component_file_streams": {
+                  "leaf": false,
+                  "pure": false
+                },
+                "component_file_writes": {
+                  "leaf": false,
+                  "pure": false
+                },
+                "definition_owners": {
+                  "provider_leaf::bump": "leaf",
+                  "provider_leaf::cycle": "leaf",
+                  "provider_leaf::fail": "leaf",
+                  "provider_leaf::make": "leaf",
+                  "provider_leaf::pure": "leaf",
+                  "provider_pure::next": "pure"
+                },
+                "definitions": [
+                  "provider_leaf::bump",
+                  "provider_leaf::cycle",
+                  "provider_leaf::fail",
+                  "provider_leaf::make",
+                  "provider_leaf::pure",
+                  "provider_pure::next"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "provider_leaf::bump": {
+                    "accessor": "nex_13_provider_leaf_4_bump__task_code_address",
+                    "contract": "6b7ff47abdc11a958e8c0372b5dcedb2524918650a53f90f82780fd26532b6e9",
+                    "requirements": 8193,
+                    "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+                  },
+                  "provider_leaf::cycle": {
+                    "accessor": "nex_13_provider_leaf_5_cycle__task_code_address",
+                    "contract": "982b3ad9a5660ff15b36fd8192282fa881547425d3566da806dd565b775fe3d1",
+                    "requirements": 8192,
+                    "signature": "44a60dda846020955bbfd1bfa0c1cbe900d04443d3ece7c5dc646cba93afcdbe"
+                  },
+                  "provider_leaf::fail": {
+                    "accessor": "nex_13_provider_leaf_4_fail__task_code_address",
+                    "contract": "bfdf79c1536f1b92564f4da6d10b8a8f4997455d3d4c648166b7c11c544332fc",
+                    "requirements": 12289,
+                    "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+                  },
+                  "provider_leaf::make": {
+                    "accessor": "nex_13_provider_leaf_4_make__task_code_address",
+                    "contract": "ffd2804f30b00d369e8cf4d683d5bab37600237e9097a73fd399fb1a6f507e0d",
+                    "requirements": 8192,
+                    "signature": "6b924c1617d9096616a03865f2fccca43b028176e76425d307402a1a2aeeec19"
+                  },
+                  "provider_leaf::pure": {
+                    "accessor": "nex_13_provider_leaf_4_pure__task_code_address",
+                    "contract": "2e47712247f8ea903f999e9919b247f5876f2d1029c233f2a9908b9dcbe7df6b",
+                    "requirements": 0,
+                    "signature": "72c895a04d31a6a20f9316becabd25a5c6568758b23aecf7f140fdf70f1559e3"
+                  },
+                  "provider_pure::next": {
+                    "accessor": "nex_13_provider_pure_4_next__task_code_address",
+                    "contract": "ff932c3c138d2ebe5a93786a3fbc8bbe3f78993be868fd829261831cbf8e4300",
+                    "requirements": 0,
+                    "signature": "72c895a04d31a6a20f9316becabd25a5c6568758b23aecf7f140fdf70f1559e3"
+                  }
+                },
+                "image": {
+                  "hash": "bce1ed615a220dcf2c5f914f27efd38b20fab359bd919337f4810784f13f9b2c",
+                  "key": "6f8a0933f62eab6dab0d44136cceac702dbce30263d95a31b67577fae3714e2a",
+                  "runtime_hash": "d83ae4dd20a1e1275edceac25bcd7d3216eb2f2175c810e155d8b201c36755e2",
+                  "runtime_key": "fc28a71c49ad160613d7909354622285381eb6bf0ba828ef13793fa6e6e2d18b",
+                  "sha256": "49e88e4a1d8ad6889078ef2dbddf3f5b37f4a541456ce6aea1f1a0620c5891db",
+                  "uuid": "782e13c94665344289d639fd5b69edc0"
+                },
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": "leaf",
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            },
+            "mid": {
+              "artifact_sha256": "e7e1aa714f07f66e8a3b793aa591655ce7fd17e31077d87b0fdb6fbc43abb1d2",
+              "record": {
+                "abi_offset": 40,
+                "artifact_kind": "pic-stage",
+                "code_only": true,
+                "cohort": "cc41be5aa3320f35933b97381996dc6b5940e160829b8c77284db343b87ddaf3",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "mid",
+                "component_file_reads": {
+                  "mid": false
+                },
+                "component_file_streams": {
+                  "mid": false
+                },
+                "component_file_writes": {
+                  "mid": false
+                },
+                "definition_owners": {
+                  "provider_mid::fail": "mid",
+                  "provider_mid::twice": "mid"
+                },
+                "definitions": [
+                  "provider_mid::fail",
+                  "provider_mid::twice"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "provider_mid::fail": {
+                    "accessor": "nex_12_provider_mid_4_fail__task_code_address",
+                    "contract": "f9cde35fd1a1447791df4e659481e6a3bc5b8a61cee81ef5af370e289a5e2097",
+                    "requirements": 12289,
+                    "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+                  },
+                  "provider_mid::twice": {
+                    "accessor": "nex_12_provider_mid_5_twice__task_code_address",
+                    "contract": "edd5f988424b4a1705bdea5794b9817c90edfa2e495c9d84ec561e1bd6ee8fdb",
+                    "requirements": 8193,
+                    "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+                  }
+                },
+                "image": null,
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": null,
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            },
+            "app": {
+              "artifact_sha256": "5784d8777d86d50cf5ec2383c040977afb8acdda637a6bfe658a86c19c8ca60c",
+              "record": {
+                "abi_offset": 40,
+                "artifact_kind": "application",
+                "code_only": false,
+                "cohort": "cc41be5aa3320f35933b97381996dc6b5940e160829b8c77284db343b87ddaf3",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "app",
+                "component_file_reads": {
+                  "app": false,
+                  "mid": false
+                },
+                "component_file_streams": {
+                  "app": false,
+                  "mid": false
+                },
+                "component_file_writes": {
+                  "app": false,
+                  "mid": false
+                },
+                "definition_owners": {
+                  "provider_app::main": "app",
+                  "provider_app::main::$lambda_0": "app",
+                  "provider_app::main::$lambda_0::$lambda_1": "app",
+                  "provider_mid::fail": "mid",
+                  "provider_mid::twice": "mid"
+                },
+                "definitions": [
+                  "provider_app::main",
+                  "provider_app::main::$lambda_0",
+                  "provider_app::main::$lambda_0::$lambda_1",
+                  "provider_mid::fail",
+                  "provider_mid::twice"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "provider_mid::fail": {
+                    "accessor": "nex_12_provider_mid_4_fail__task_code_address",
+                    "contract": "f9cde35fd1a1447791df4e659481e6a3bc5b8a61cee81ef5af370e289a5e2097",
+                    "requirements": 12289,
+                    "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+                  },
+                  "provider_mid::twice": {
+                    "accessor": "nex_12_provider_mid_5_twice__task_code_address",
+                    "contract": "edd5f988424b4a1705bdea5794b9817c90edfa2e495c9d84ec561e1bd6ee8fdb",
+                    "requirements": 8193,
+                    "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+                  }
+                },
+                "image": {
+                  "hash": "bb6b650b7e22767ae92c46f7e8639c342332013e6d1d4e0d13162e3fa3e32903",
+                  "key": "346cce34f37e23ca2d34ecb72085e787438cb228debe7ecf0510b6edc168793a",
+                  "runtime_hash": "d83ae4dd20a1e1275edceac25bcd7d3216eb2f2175c810e155d8b201c36755e2",
+                  "runtime_key": "fc28a71c49ad160613d7909354622285381eb6bf0ba828ef13793fa6e6e2d18b",
+                  "sha256": "5784d8777d86d50cf5ec2383c040977afb8acdda637a6bfe658a86c19c8ca60c",
+                  "uuid": "d10f4b467ba836d79de79f9271b52d7d"
+                },
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": "app",
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            }
+          },
+          "warm_reused": true
+        },
+        {
+          "mode": "mixed",
+          "profile": "release",
+          "reference": {
+            "ok": true,
+            "stdout": "42\n",
+            "steps": 410,
+            "task_execution": {
+              "backend": "reference",
+              "configured": {
+                "steps": 1000000,
+                "timeout_ms": 5000,
+                "workers": 16
+              },
+              "cooperative_deadline": true,
+              "effective": {
+                "steps": 1000000,
+                "timeout_ms": 5000,
+                "workers": 16
+              },
+              "executor_workers": 1,
+              "identical_step_thresholds": false,
+              "step_model": "checked AST actions and atoms"
+            },
+            "value": null
+          },
+          "observation": {
+            "exit_code": 0,
+            "interrupted": 0,
+            "native_diagnostics": {
+              "diagnostics": [],
+              "ignored": 0,
+              "limit": 32,
+              "omitted": 0,
+              "schema": "nex.native-diagnostics/1",
+              "total": 0
+            },
+            "ok": true,
+            "output_limit": false,
+            "stderr": "",
+            "stdout": "42\n",
+            "task_execution": {
+              "backend": "native",
+              "configured": {
+                "steps": 1000000,
+                "timeout_ms": 10000,
+                "workers": 2
+              },
+              "cooperative_deadline": true,
+              "effective": {
+                "steps": 1000000,
+                "timeout_ms": 10000,
+                "workers": 2
+              },
+              "executor_workers": 1,
+              "identical_step_thresholds": false,
+              "step_model": "native resume and runtime polls",
+              "supervisor_timeout_seconds": 30
+            },
+            "timed_out": false
+          },
+          "records": {
+            "pure": {
+              "artifact_sha256": "0d7e6a670b1191d0eb83b27514eabd06f15a428297fc954d2896ddb22607e332",
+              "record": {
+                "abi_offset": 40,
+                "artifact_kind": "pic-stage",
+                "code_only": true,
+                "cohort": "cc41be5aa3320f35933b97381996dc6b5940e160829b8c77284db343b87ddaf3",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "pure",
+                "component_file_reads": {
+                  "pure": false
+                },
+                "component_file_streams": {
+                  "pure": false
+                },
+                "component_file_writes": {
+                  "pure": false
+                },
+                "definition_owners": {
+                  "provider_pure::next": "pure"
+                },
+                "definitions": [
+                  "provider_pure::next"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "provider_pure::next": {
+                    "accessor": "nex_13_provider_pure_4_next__task_code_address",
+                    "contract": "ff932c3c138d2ebe5a93786a3fbc8bbe3f78993be868fd829261831cbf8e4300",
+                    "requirements": 0,
+                    "signature": "72c895a04d31a6a20f9316becabd25a5c6568758b23aecf7f140fdf70f1559e3"
+                  }
+                },
+                "image": null,
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": null,
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            },
+            "leaf": {
+              "artifact_sha256": "eb78be90881fce8b765110fdde5d13c7c625995ecb040b064fb4b4899b9e2244",
+              "record": {
+                "abi_offset": 40,
+                "artifact_kind": "shared-image",
+                "code_only": true,
+                "cohort": "cc41be5aa3320f35933b97381996dc6b5940e160829b8c77284db343b87ddaf3",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "leaf",
+                "component_file_reads": {
+                  "leaf": false,
+                  "pure": false
+                },
+                "component_file_streams": {
+                  "leaf": false,
+                  "pure": false
+                },
+                "component_file_writes": {
+                  "leaf": false,
+                  "pure": false
+                },
+                "definition_owners": {
+                  "provider_leaf::bump": "leaf",
+                  "provider_leaf::cycle": "leaf",
+                  "provider_leaf::fail": "leaf",
+                  "provider_leaf::make": "leaf",
+                  "provider_leaf::pure": "leaf",
+                  "provider_pure::next": "pure"
+                },
+                "definitions": [
+                  "provider_leaf::bump",
+                  "provider_leaf::cycle",
+                  "provider_leaf::fail",
+                  "provider_leaf::make",
+                  "provider_leaf::pure",
+                  "provider_pure::next"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "provider_leaf::bump": {
+                    "accessor": "nex_13_provider_leaf_4_bump__task_code_address",
+                    "contract": "6b7ff47abdc11a958e8c0372b5dcedb2524918650a53f90f82780fd26532b6e9",
+                    "requirements": 8193,
+                    "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+                  },
+                  "provider_leaf::cycle": {
+                    "accessor": "nex_13_provider_leaf_5_cycle__task_code_address",
+                    "contract": "982b3ad9a5660ff15b36fd8192282fa881547425d3566da806dd565b775fe3d1",
+                    "requirements": 8192,
+                    "signature": "44a60dda846020955bbfd1bfa0c1cbe900d04443d3ece7c5dc646cba93afcdbe"
+                  },
+                  "provider_leaf::fail": {
+                    "accessor": "nex_13_provider_leaf_4_fail__task_code_address",
+                    "contract": "bfdf79c1536f1b92564f4da6d10b8a8f4997455d3d4c648166b7c11c544332fc",
+                    "requirements": 12289,
+                    "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+                  },
+                  "provider_leaf::make": {
+                    "accessor": "nex_13_provider_leaf_4_make__task_code_address",
+                    "contract": "ffd2804f30b00d369e8cf4d683d5bab37600237e9097a73fd399fb1a6f507e0d",
+                    "requirements": 8192,
+                    "signature": "6b924c1617d9096616a03865f2fccca43b028176e76425d307402a1a2aeeec19"
+                  },
+                  "provider_leaf::pure": {
+                    "accessor": "nex_13_provider_leaf_4_pure__task_code_address",
+                    "contract": "2e47712247f8ea903f999e9919b247f5876f2d1029c233f2a9908b9dcbe7df6b",
+                    "requirements": 0,
+                    "signature": "72c895a04d31a6a20f9316becabd25a5c6568758b23aecf7f140fdf70f1559e3"
+                  },
+                  "provider_pure::next": {
+                    "accessor": "nex_13_provider_pure_4_next__task_code_address",
+                    "contract": "ff932c3c138d2ebe5a93786a3fbc8bbe3f78993be868fd829261831cbf8e4300",
+                    "requirements": 0,
+                    "signature": "72c895a04d31a6a20f9316becabd25a5c6568758b23aecf7f140fdf70f1559e3"
+                  }
+                },
+                "image": {
+                  "hash": "ca3db201501b370e57c12a02a8ea56494214523386e19094cbca68443cb0ee4a",
+                  "key": "6fbbbeef08e9659999b9311fcee7c5e6410bfe8e6b3f46a08894cd2a83758764",
+                  "runtime_hash": "09ae7d3403613ee7e4ec1ff46847c31ac3c1c85e6f6b1599d5d5d595dc39ac27",
+                  "runtime_key": "6321ea1710baa740dc0005f7f8a828d47d0883852ff4a04bae86830c318b7f34",
+                  "sha256": "eb78be90881fce8b765110fdde5d13c7c625995ecb040b064fb4b4899b9e2244",
+                  "uuid": "f370cccdf18433a98e68639f7c65e662"
+                },
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": "leaf",
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            },
+            "mid": {
+              "artifact_sha256": "80368b5fd786bfd762a8103c04a88dea90e847f04ccd73b1730362bb58fd6646",
+              "record": {
+                "abi_offset": 40,
+                "artifact_kind": "pic-stage",
+                "code_only": true,
+                "cohort": "cc41be5aa3320f35933b97381996dc6b5940e160829b8c77284db343b87ddaf3",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "mid",
+                "component_file_reads": {
+                  "mid": false
+                },
+                "component_file_streams": {
+                  "mid": false
+                },
+                "component_file_writes": {
+                  "mid": false
+                },
+                "definition_owners": {
+                  "provider_mid::fail": "mid",
+                  "provider_mid::twice": "mid"
+                },
+                "definitions": [
+                  "provider_mid::fail",
+                  "provider_mid::twice"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "provider_mid::fail": {
+                    "accessor": "nex_12_provider_mid_4_fail__task_code_address",
+                    "contract": "f9cde35fd1a1447791df4e659481e6a3bc5b8a61cee81ef5af370e289a5e2097",
+                    "requirements": 12289,
+                    "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+                  },
+                  "provider_mid::twice": {
+                    "accessor": "nex_12_provider_mid_5_twice__task_code_address",
+                    "contract": "edd5f988424b4a1705bdea5794b9817c90edfa2e495c9d84ec561e1bd6ee8fdb",
+                    "requirements": 8193,
+                    "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+                  }
+                },
+                "image": null,
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": null,
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            },
+            "app": {
+              "artifact_sha256": "d6c88176d53475cc4f6a126a75d3ce8b443ee34d91d9db753a611cc518f28b99",
+              "record": {
+                "abi_offset": 40,
+                "artifact_kind": "application",
+                "code_only": false,
+                "cohort": "cc41be5aa3320f35933b97381996dc6b5940e160829b8c77284db343b87ddaf3",
+                "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+                "component": "app",
+                "component_file_reads": {
+                  "app": false,
+                  "mid": false
+                },
+                "component_file_streams": {
+                  "app": false,
+                  "mid": false
+                },
+                "component_file_writes": {
+                  "app": false,
+                  "mid": false
+                },
+                "definition_owners": {
+                  "provider_app::main": "app",
+                  "provider_app::main::$lambda_0": "app",
+                  "provider_app::main::$lambda_0::$lambda_1": "app",
+                  "provider_mid::fail": "mid",
+                  "provider_mid::twice": "mid"
+                },
+                "definitions": [
+                  "provider_app::main",
+                  "provider_app::main::$lambda_0",
+                  "provider_app::main::$lambda_0::$lambda_1",
+                  "provider_mid::fail",
+                  "provider_mid::twice"
+                ],
+                "descriptor_abi": 5640011226151911432,
+                "descriptor_size": 88,
+                "exports": {
+                  "provider_mid::fail": {
+                    "accessor": "nex_12_provider_mid_4_fail__task_code_address",
+                    "contract": "f9cde35fd1a1447791df4e659481e6a3bc5b8a61cee81ef5af370e289a5e2097",
+                    "requirements": 12289,
+                    "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+                  },
+                  "provider_mid::twice": {
+                    "accessor": "nex_12_provider_mid_5_twice__task_code_address",
+                    "contract": "edd5f988424b4a1705bdea5794b9817c90edfa2e495c9d84ec561e1bd6ee8fdb",
+                    "requirements": 8193,
+                    "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+                  }
+                },
+                "image": {
+                  "hash": "a181aacbbdbbbf9ab09ed48449646c50a70a6b4cbae5631ae8c06d06b263edbe",
+                  "key": "0efad3c3500c95818f499db924cd5d78fb96b8075fb2261f4aba088769e91e66",
+                  "runtime_hash": "09ae7d3403613ee7e4ec1ff46847c31ac3c1c85e6f6b1599d5d5d595dc39ac27",
+                  "runtime_key": "6321ea1710baa740dc0005f7f8a828d47d0883852ff4a04bae86830c318b7f34",
+                  "sha256": "d6c88176d53475cc4f6a126a75d3ce8b443ee34d91d9db753a611cc518f28b99",
+                  "uuid": "35ff4321f4b036d6b2c9548b5007740e"
+                },
+                "language": "0.30",
+                "mode": "shared-fixed",
+                "owner_image": "app",
+                "schema": "nex.native-task-provider/17",
+                "task_file_reads": false,
+                "task_file_streams": false,
+                "task_file_writes": false
+              }
+            }
+          },
+          "warm_reused": true
+        }
+      ],
+      "capture_replay_without_original_source": true,
+      "rejections": [
+        {
+          "name": "profile",
+          "code": "E_CELL_TARGET"
+        },
+        {
+          "name": "debugger",
+          "code": "E_CELL_TARGET"
+        },
+        {
+          "name": "imported-callable",
+          "code": "E_TASK_PROVIDER"
+        }
+      ],
+      "command_count": 36,
+      "portable_SDK": false,
+      "whole_goal_complete": false
+    },
+    "report_sha256": "08009b071eac2b7a15a007f662d1ebd62eb29315ffc24c2dc86ed4b22beb56da",
+    "registered_CTest_group": "reference_task_providers",
+    "new_group_run_through_CTest": false
+  },
+  "retained_ABI7": {
+    "static_source_chain": {
+      "methods": 1,
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "de0da45f295cb10e031cac3c377eab9e06b1148607234a5ba91874dbe0d1122e"
+    },
+    "shared_source_chain_diamond": {
+      "methods": 1,
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "ea47e96c794c6c7b6d896629b299f21053e26676cecb5fba38e487bb60ea512e"
+    }
+  },
+  "moved_normal_installation": {
+    "schema": "nex.moved-reference-provider-installation/1",
+    "ok": true,
+    "compiler_sha256": "8a5552a5dddca9e713aabe9d5b56b6596c06562fb559aa4910645887ce0eec1c",
+    "commands": 4,
+    "normal_CMake_installation": true,
+    "moved": true,
+    "host_dependencies_remain": true,
+    "portable_SDK": false,
+    "example_hashes": {
+      "examples/reference-task-providers/README.md": "877dc100e1484584735abbdb89d5522e50b5012b0301b36f08ccc243b5e0cc61",
+      "examples/reference-task-providers/nex.build.json": "a4241f91f50cdde80442e8fa2da48306f888864b4e58554b390373ee27eff0c1",
+      "examples/reference-task-providers/nex.json": "4480a42a3fcc15093bafd78ff2148b4cb4a0b696d863e442658abe33115cd2b9",
+      "examples/reference-task-providers/leaf/value.nex": "63df94d175e586462b6cc812c858d00de9ba31a4b3640abe33ef4ba02b683d32",
+      "examples/reference-task-providers/app/main.nex": "21c9dcb466d157a951205de02d14b85cd755c9517176d67312b3335f2884c6cb",
+      "examples/reference-task-providers/mid/value.nex": "5d61971f2a02bea102a3990091de88229b3458928622b6c3e0b00e5e5367d018",
+      "examples/reference-task-providers/pure/value.nex": "ad8b29f0be488353b2b1ef22923ba47d2bef3980cecf717e86afc6ef86367b99"
+    },
+    "doctor": {
+      "cpu": "apple-m4",
+      "host": "arm64-apple-darwin27.2.0",
+      "language": "0.28",
+      "llvm": "22.1.8",
+      "native_archiver": "/opt/homebrew/Cellar/llvm@22/22.1.8/bin/llvm-ar",
+      "native_compiler": "/opt/homebrew/Cellar/llvm@22/22.1.8/bin/clang++",
+      "native_debug_packager": "/opt/homebrew/Cellar/llvm@22/22.1.8/bin/dsymutil",
+      "native_linker": "",
+      "native_openssl_crypto": "/opt/homebrew/Cellar/openssl@3/3.6.3/lib/libcrypto.3.dylib",
+      "native_openssl_include": "/opt/homebrew/Cellar/openssl@3/3.6.3/include",
+      "native_openssl_ssl": "/opt/homebrew/Cellar/openssl@3/3.6.3/lib/libssl.3.dylib",
+      "native_sqlite_include": "/opt/local/include",
+      "native_sqlite_library": "/opt/local/lib/libsqlite3.3.53.1.dylib",
+      "native_sysroot": "",
+      "native_windows_notices": "",
+      "native_windows_runtime": "",
+      "runtime": "/Users/sae/projects/NEX/build/reference-providers-v1/moved SDK 🧠/share/nex/runtime/runtime.cpp",
+      "runtime_available": true,
+      "schema": "nex.doctor/1",
+      "sdk_manifest": "",
+      "verifier": "Z3",
+      "verifier_version": "5.3.1.0 ac9156f97cb44e56472e1c841f7a2beb1e976b24",
+      "version": "0.275.0",
+      "wasm_compiler": "/opt/homebrew/Cellar/llvm@22/22.1.8/bin/clang++",
+      "wasm_linker": "/Users/sae/projects/NEX/build/deps/lld-wasm-22.1.8-macos/wasm-ld"
+    },
+    "capability": {
+      "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+      "descriptor_hash": "3f63c4e6aa4c7e4e7e33608f2bfda481e1e0e11a1bc32d7f1e8f982b4afec14d",
+      "field": "managed_references.source030_development.native_providers",
+      "kind": "field",
+      "language": "0.28",
+      "schema": "nex.discovery/1",
+      "toolchain": "0.275.0",
+      "value": {
+        "HTTP_project_providers": false,
+        "SDK_delivery_accepted": false,
+        "callable_exports": false,
+        "checked_capture_replay": true,
+        "execution": "one application-owned heap and owner-thread executor across checked code-only images",
+        "execution_task_ABI": 8,
+        "external_authority_exports": false,
+        "fixed_shared": true,
+        "full_platform_acceptance": false,
+        "guide": "docs/reference-task-providers.md",
+        "imported_function_values": false,
+        "introduced_toolchain": "0.275.0",
+        "logical_debug_profile": false,
+        "mixed": true,
+        "ordinary_CLI": true,
+        "parallel_transfer": false,
+        "plan_schema_file": "llm/project-reference-task-linkage.schema.json",
+        "profiles": [
+          "debug",
+          "release"
+        ],
+        "public_source_enabled": true,
+        "record_schema": "nex.native-task-provider/17",
+        "record_schema_file": "llm/native-reference-task-provider.schema.json",
+        "requirements_mask": 16159,
+        "retained_ABI7": true,
+        "runtime_unload": false,
+        "selection": "propagate ABI8 across every connected binary component when reachable030 source uses references",
+        "shared_plan_schema": "nex.project-task-linkage/17",
+        "source_language": "0.30",
+        "source_required": true,
+        "source_workers": 1,
+        "stable_public_ABI": false,
+        "static": true,
+        "static_plan_schema": "nex.project-static-task-linkage/6",
+        "test": "tests/reference_task_providers.py"
+      }
+    },
+    "observations": [
+      {
+        "mode": "static",
+        "profile": "debug",
+        "observation": {
+          "exit_code": 0,
+          "interrupted": 0,
+          "native_diagnostics": {
+            "diagnostics": [],
+            "ignored": 0,
+            "limit": 32,
+            "omitted": 0,
+            "schema": "nex.native-diagnostics/1",
+            "total": 0
+          },
+          "ok": true,
+          "output_limit": false,
+          "stderr": "",
+          "stdout": "42\n",
+          "task_execution": {
+            "backend": "native",
+            "configured": {
+              "steps": 1000000,
+              "timeout_ms": 10000,
+              "workers": 2
+            },
+            "cooperative_deadline": true,
+            "effective": {
+              "steps": 1000000,
+              "timeout_ms": 10000,
+              "workers": 2
+            },
+            "executor_workers": 1,
+            "identical_step_thresholds": false,
+            "step_model": "native resume and runtime polls",
+            "supervisor_timeout_seconds": 30
+          },
+          "timed_out": false
+        },
+        "records": {
+          "pure": {
+            "abi_offset": 40,
+            "code_only": true,
+            "cohort": "567a8926b04ed3021c3d42278fd56244fb125dd0ccae46e6aa6e2e3b1037dfc4",
+            "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+            "component": "pure",
+            "definitions": [
+              "provider_pure::next"
+            ],
+            "descriptor_abi": 5640011226151911432,
+            "descriptor_size": 88,
+            "exports": {
+              "provider_pure::next": {
+                "accessor": "nex_13_provider_pure_4_next__task_code_address",
+                "contract": "ff932c3c138d2ebe5a93786a3fbc8bbe3f78993be868fd829261831cbf8e4300",
+                "requirements": 0,
+                "signature": "72c895a04d31a6a20f9316becabd25a5c6568758b23aecf7f140fdf70f1559e3"
+              }
+            },
+            "language": "0.30",
+            "mode": "static",
+            "schema": "nex.native-task-provider/17",
+            "task_file_reads": false,
+            "task_file_streams": false,
+            "task_file_writes": false
+          },
+          "leaf": {
+            "abi_offset": 40,
+            "code_only": true,
+            "cohort": "567a8926b04ed3021c3d42278fd56244fb125dd0ccae46e6aa6e2e3b1037dfc4",
+            "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+            "component": "leaf",
+            "definitions": [
+              "provider_leaf::bump",
+              "provider_leaf::cycle",
+              "provider_leaf::fail",
+              "provider_leaf::make",
+              "provider_leaf::pure"
+            ],
+            "descriptor_abi": 5640011226151911432,
+            "descriptor_size": 88,
+            "exports": {
+              "provider_leaf::bump": {
+                "accessor": "nex_13_provider_leaf_4_bump__task_code_address",
+                "contract": "6b7ff47abdc11a958e8c0372b5dcedb2524918650a53f90f82780fd26532b6e9",
+                "requirements": 8193,
+                "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+              },
+              "provider_leaf::cycle": {
+                "accessor": "nex_13_provider_leaf_5_cycle__task_code_address",
+                "contract": "982b3ad9a5660ff15b36fd8192282fa881547425d3566da806dd565b775fe3d1",
+                "requirements": 8192,
+                "signature": "44a60dda846020955bbfd1bfa0c1cbe900d04443d3ece7c5dc646cba93afcdbe"
+              },
+              "provider_leaf::fail": {
+                "accessor": "nex_13_provider_leaf_4_fail__task_code_address",
+                "contract": "bfdf79c1536f1b92564f4da6d10b8a8f4997455d3d4c648166b7c11c544332fc",
+                "requirements": 12289,
+                "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+              },
+              "provider_leaf::make": {
+                "accessor": "nex_13_provider_leaf_4_make__task_code_address",
+                "contract": "ffd2804f30b00d369e8cf4d683d5bab37600237e9097a73fd399fb1a6f507e0d",
+                "requirements": 8192,
+                "signature": "6b924c1617d9096616a03865f2fccca43b028176e76425d307402a1a2aeeec19"
+              },
+              "provider_leaf::pure": {
+                "accessor": "nex_13_provider_leaf_4_pure__task_code_address",
+                "contract": "2e47712247f8ea903f999e9919b247f5876f2d1029c233f2a9908b9dcbe7df6b",
+                "requirements": 0,
+                "signature": "72c895a04d31a6a20f9316becabd25a5c6568758b23aecf7f140fdf70f1559e3"
+              }
+            },
+            "language": "0.30",
+            "mode": "static",
+            "schema": "nex.native-task-provider/17",
+            "task_file_reads": false,
+            "task_file_streams": false,
+            "task_file_writes": false
+          },
+          "mid": {
+            "abi_offset": 40,
+            "code_only": true,
+            "cohort": "567a8926b04ed3021c3d42278fd56244fb125dd0ccae46e6aa6e2e3b1037dfc4",
+            "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+            "component": "mid",
+            "definitions": [
+              "provider_mid::fail",
+              "provider_mid::twice"
+            ],
+            "descriptor_abi": 5640011226151911432,
+            "descriptor_size": 88,
+            "exports": {
+              "provider_mid::fail": {
+                "accessor": "nex_12_provider_mid_4_fail__task_code_address",
+                "contract": "f9cde35fd1a1447791df4e659481e6a3bc5b8a61cee81ef5af370e289a5e2097",
+                "requirements": 12289,
+                "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+              },
+              "provider_mid::twice": {
+                "accessor": "nex_12_provider_mid_5_twice__task_code_address",
+                "contract": "edd5f988424b4a1705bdea5794b9817c90edfa2e495c9d84ec561e1bd6ee8fdb",
+                "requirements": 8193,
+                "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+              }
+            },
+            "language": "0.30",
+            "mode": "static",
+            "schema": "nex.native-task-provider/17",
+            "task_file_reads": false,
+            "task_file_streams": false,
+            "task_file_writes": false
+          },
+          "app": {
+            "abi_offset": 40,
+            "code_only": false,
+            "cohort": "567a8926b04ed3021c3d42278fd56244fb125dd0ccae46e6aa6e2e3b1037dfc4",
+            "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+            "component": "app",
+            "definitions": [
+              "provider_app::main",
+              "provider_app::main::$lambda_0",
+              "provider_app::main::$lambda_0::$lambda_1"
+            ],
+            "descriptor_abi": 5640011226151911432,
+            "descriptor_size": 88,
+            "exports": {},
+            "language": "0.30",
+            "mode": "static",
+            "schema": "nex.native-task-provider/17",
+            "task_file_reads": false,
+            "task_file_streams": false,
+            "task_file_writes": false
+          }
+        }
+      },
+      {
+        "mode": "shared",
+        "profile": "release",
+        "observation": {
+          "exit_code": 0,
+          "interrupted": 0,
+          "native_diagnostics": {
+            "diagnostics": [],
+            "ignored": 0,
+            "limit": 32,
+            "omitted": 0,
+            "schema": "nex.native-diagnostics/1",
+            "total": 0
+          },
+          "ok": true,
+          "output_limit": false,
+          "stderr": "",
+          "stdout": "42\n",
+          "task_execution": {
+            "backend": "native",
+            "configured": {
+              "steps": 1000000,
+              "timeout_ms": 10000,
+              "workers": 2
+            },
+            "cooperative_deadline": true,
+            "effective": {
+              "steps": 1000000,
+              "timeout_ms": 10000,
+              "workers": 2
+            },
+            "executor_workers": 1,
+            "identical_step_thresholds": false,
+            "step_model": "native resume and runtime polls",
+            "supervisor_timeout_seconds": 30
+          },
+          "timed_out": false
+        },
+        "records": {
+          "pure": {
+            "abi_offset": 40,
+            "artifact_kind": "shared-image",
+            "code_only": true,
+            "cohort": "cc41be5aa3320f35933b97381996dc6b5940e160829b8c77284db343b87ddaf3",
+            "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+            "component": "pure",
+            "component_file_reads": {
+              "pure": false
+            },
+            "component_file_streams": {
+              "pure": false
+            },
+            "component_file_writes": {
+              "pure": false
+            },
+            "definition_owners": {
+              "provider_pure::next": "pure"
+            },
+            "definitions": [
+              "provider_pure::next"
+            ],
+            "descriptor_abi": 5640011226151911432,
+            "descriptor_size": 88,
+            "exports": {
+              "provider_pure::next": {
+                "accessor": "nex_13_provider_pure_4_next__task_code_address",
+                "contract": "ff932c3c138d2ebe5a93786a3fbc8bbe3f78993be868fd829261831cbf8e4300",
+                "requirements": 0,
+                "signature": "72c895a04d31a6a20f9316becabd25a5c6568758b23aecf7f140fdf70f1559e3"
+              }
+            },
+            "image": {
+              "hash": "298aac8e11607dcfa0ff5bc8215827cbdda77131b474810f31e4c23e5f30894d",
+              "key": "3bc4e83834ea2c70b6cc1fa4de48ff9dcd4b36b33f4e5412a9dc44050b8e5d2f",
+              "runtime_hash": "dab6363af781925bafc9f490e69da7515b7ec2f755f4969baf2827e643acd7e3",
+              "runtime_key": "415ff5e623f86240f40c96ea1879b24860066d6c67195d53ee70ce73fd4a713c",
+              "sha256": "e304cb9d8a2f50782e81c6211f4f37f248c350db897c83ee7bc2de3fabc48e95",
+              "uuid": "5973843ce05f31ca977cbaef65fb235b"
+            },
+            "language": "0.30",
+            "mode": "shared-fixed",
+            "owner_image": "pure",
+            "schema": "nex.native-task-provider/17",
+            "task_file_reads": false,
+            "task_file_streams": false,
+            "task_file_writes": false
+          },
+          "leaf": {
+            "abi_offset": 40,
+            "artifact_kind": "shared-image",
+            "code_only": true,
+            "cohort": "cc41be5aa3320f35933b97381996dc6b5940e160829b8c77284db343b87ddaf3",
+            "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+            "component": "leaf",
+            "component_file_reads": {
+              "leaf": false
+            },
+            "component_file_streams": {
+              "leaf": false
+            },
+            "component_file_writes": {
+              "leaf": false
+            },
+            "definition_owners": {
+              "provider_leaf::bump": "leaf",
+              "provider_leaf::cycle": "leaf",
+              "provider_leaf::fail": "leaf",
+              "provider_leaf::make": "leaf",
+              "provider_leaf::pure": "leaf"
+            },
+            "definitions": [
+              "provider_leaf::bump",
+              "provider_leaf::cycle",
+              "provider_leaf::fail",
+              "provider_leaf::make",
+              "provider_leaf::pure"
+            ],
+            "descriptor_abi": 5640011226151911432,
+            "descriptor_size": 88,
+            "exports": {
+              "provider_leaf::bump": {
+                "accessor": "nex_13_provider_leaf_4_bump__task_code_address",
+                "contract": "6b7ff47abdc11a958e8c0372b5dcedb2524918650a53f90f82780fd26532b6e9",
+                "requirements": 8193,
+                "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+              },
+              "provider_leaf::cycle": {
+                "accessor": "nex_13_provider_leaf_5_cycle__task_code_address",
+                "contract": "982b3ad9a5660ff15b36fd8192282fa881547425d3566da806dd565b775fe3d1",
+                "requirements": 8192,
+                "signature": "44a60dda846020955bbfd1bfa0c1cbe900d04443d3ece7c5dc646cba93afcdbe"
+              },
+              "provider_leaf::fail": {
+                "accessor": "nex_13_provider_leaf_4_fail__task_code_address",
+                "contract": "bfdf79c1536f1b92564f4da6d10b8a8f4997455d3d4c648166b7c11c544332fc",
+                "requirements": 12289,
+                "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+              },
+              "provider_leaf::make": {
+                "accessor": "nex_13_provider_leaf_4_make__task_code_address",
+                "contract": "ffd2804f30b00d369e8cf4d683d5bab37600237e9097a73fd399fb1a6f507e0d",
+                "requirements": 8192,
+                "signature": "6b924c1617d9096616a03865f2fccca43b028176e76425d307402a1a2aeeec19"
+              },
+              "provider_leaf::pure": {
+                "accessor": "nex_13_provider_leaf_4_pure__task_code_address",
+                "contract": "2e47712247f8ea903f999e9919b247f5876f2d1029c233f2a9908b9dcbe7df6b",
+                "requirements": 0,
+                "signature": "72c895a04d31a6a20f9316becabd25a5c6568758b23aecf7f140fdf70f1559e3"
+              }
+            },
+            "image": {
+              "hash": "3aedb8e7e1c090c6addfed913a17b064fe535f3d3356b35807c8c54e2a2f9d8d",
+              "key": "13cf9e9d63340166a1b6c7e38f82a2e0c7ee64a0376013bf41bd5ab53fd0a253",
+              "runtime_hash": "dab6363af781925bafc9f490e69da7515b7ec2f755f4969baf2827e643acd7e3",
+              "runtime_key": "415ff5e623f86240f40c96ea1879b24860066d6c67195d53ee70ce73fd4a713c",
+              "sha256": "baf6367e3b073840ffa149ec16e88506750f42761e8277becfd3276de0490bbf",
+              "uuid": "dfe95995c2303fb0894ee428338b6ef9"
+            },
+            "language": "0.30",
+            "mode": "shared-fixed",
+            "owner_image": "leaf",
+            "schema": "nex.native-task-provider/17",
+            "task_file_reads": false,
+            "task_file_streams": false,
+            "task_file_writes": false
+          },
+          "mid": {
+            "abi_offset": 40,
+            "artifact_kind": "shared-image",
+            "code_only": true,
+            "cohort": "cc41be5aa3320f35933b97381996dc6b5940e160829b8c77284db343b87ddaf3",
+            "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+            "component": "mid",
+            "component_file_reads": {
+              "mid": false
+            },
+            "component_file_streams": {
+              "mid": false
+            },
+            "component_file_writes": {
+              "mid": false
+            },
+            "definition_owners": {
+              "provider_mid::fail": "mid",
+              "provider_mid::twice": "mid"
+            },
+            "definitions": [
+              "provider_mid::fail",
+              "provider_mid::twice"
+            ],
+            "descriptor_abi": 5640011226151911432,
+            "descriptor_size": 88,
+            "exports": {
+              "provider_mid::fail": {
+                "accessor": "nex_12_provider_mid_4_fail__task_code_address",
+                "contract": "f9cde35fd1a1447791df4e659481e6a3bc5b8a61cee81ef5af370e289a5e2097",
+                "requirements": 12289,
+                "signature": "cbe29230559de89455fc594dafa8ba3ecde82b688220adf015ec88be2b9e55df"
+              },
+              "provider_mid::twice": {
+                "accessor": "nex_12_provider_mid_5_twice__task_code_address",
+                "contract": "edd5f988424b4a1705bdea5794b9817c90edfa2e495c9d84ec561e1bd6ee8fdb",
+                "requirements": 8193,
+                "signature": "023a538ebdff008d5124537b789c862858324f205d79ef488f2e9147229c52b2"
+              }
+            },
+            "image": {
+              "hash": "1f56521fa22c6798d8cdade16aeba26befefd0929631828d4b30b87addb18c30",
+              "key": "3ad110f3f668e803413eac34a6264c19b038b3d4f6ce50dc799a6336806c6e68",
+              "runtime_hash": "dab6363af781925bafc9f490e69da7515b7ec2f755f4969baf2827e643acd7e3",
+              "runtime_key": "415ff5e623f86240f40c96ea1879b24860066d6c67195d53ee70ce73fd4a713c",
+              "sha256": "1205dcd972107d7a348c976fc1841f6b0025c54d137aea2b766028a75e873f51",
+              "uuid": "449959c30dea342787a99362240181df"
+            },
+            "language": "0.30",
+            "mode": "shared-fixed",
+            "owner_image": "mid",
+            "schema": "nex.native-task-provider/17",
+            "task_file_reads": false,
+            "task_file_streams": false,
+            "task_file_writes": false
+          },
+          "app": {
+            "abi_offset": 40,
+            "artifact_kind": "application",
+            "code_only": false,
+            "cohort": "cc41be5aa3320f35933b97381996dc6b5940e160829b8c77284db343b87ddaf3",
+            "compiler_build": "9afafee594ff5b17565f4b80bcc181e50e48ee1287f4c107ba8ad8568310f84f",
+            "component": "app",
+            "component_file_reads": {
+              "app": false
+            },
+            "component_file_streams": {
+              "app": false
+            },
+            "component_file_writes": {
+              "app": false
+            },
+            "definition_owners": {
+              "provider_app::main": "app",
+              "provider_app::main::$lambda_0": "app",
+              "provider_app::main::$lambda_0::$lambda_1": "app"
+            },
+            "definitions": [
+              "provider_app::main",
+              "provider_app::main::$lambda_0",
+              "provider_app::main::$lambda_0::$lambda_1"
+            ],
+            "descriptor_abi": 5640011226151911432,
+            "descriptor_size": 88,
+            "exports": {},
+            "image": {
+              "hash": "30f51b18bf73af0322155d0d47d02cc5946ac4ae467d53ba1821beb603dbf251",
+              "key": "969ced728ad05b8151ca5688ee1b1f8030162b6d782e758a30e1bcf3be12edc4",
+              "runtime_hash": "dab6363af781925bafc9f490e69da7515b7ec2f755f4969baf2827e643acd7e3",
+              "runtime_key": "415ff5e623f86240f40c96ea1879b24860066d6c67195d53ee70ce73fd4a713c",
+              "sha256": "bee22223a7133e10c7135dd1672a7722b27b70929ca49b04dc0c73a4252dbffc",
+              "uuid": "cb304aa93def3dbf803c318b223515f2"
+            },
+            "language": "0.30",
+            "mode": "shared-fixed",
+            "owner_image": "app",
+            "schema": "nex.native-task-provider/17",
+            "task_file_reads": false,
+            "task_file_streams": false,
+            "task_file_writes": false
+          }
+        }
+      }
+    ]
+  },
+  "original_observations": [
+    {
+      "file": "build/reference-providers-v1/smoke-shared/run-debug-v1.stdout",
+      "sha256": "d367ce008225d013f4353771ad24c635c85e63cab72aa1d342ce1e971b4258e8",
+      "result": "E_TASK_PROVIDER",
+      "explanation": "Final shared provider construction initially lost the owner-thread cohort and produced ABI7 metadata for ABI8 code. Propagate the checked cohort into the final image record."
+    },
+    {
+      "file": "build/reference-providers-v1/build-all-v3.stderr",
+      "sha256": "fa895c5e126e55a4b6b3bda094d333266256ae7ae3ce9352c5e17df009772c75",
+      "result": "C++ compile failure",
+      "explanation": "Worker-attribution calls in main.cpp needed the managed-reference declaration header; added it before the successful all-target build."
+    },
+    {
+      "file": "build/reference-providers-v1/qualification-v1.stderr",
+      "sha256": "561e6cec1c97011b0f81e3db00990d6f3895e4e6c6eaf574feefb71456c519a9",
+      "result": "harness assertion",
+      "explanation": "The new budget check incorrectly expected exit1; native fatal control correctly uses70. Keep its original result."
+    },
+    {
+      "file": "build/reference-providers-v1/qualification-v2.stderr",
+      "sha256": "8a42eefcf4ea25a2139c7af1bac01579001c23f23fb6ca2b80e407b374c0f2d4",
+      "result": "unmapped diagnostic and harness shape error",
+      "explanation": "The mapper compared a selected030 program with the default028 language. Bind it to programLanguage(p), and check the actual report/status wrapper shape."
+    },
+    {
+      "file": "build/reference-providers-v1/qualification-v3.stderr",
+      "sha256": "9ccc7b72d10bb6a6be22ac90b094a6c0aa62d9cec7fac918a087ea40ec6b31bf",
+      "result": "E_OPTION in new fixture",
+      "explanation": "A test attempted to raise a compiled step limit. Configure its large budget before building, then lower only the requested budget/deadline; the original argument gate remains enforced."
+    },
+    {
+      "file": "build/reference-providers-v1/affected-v2.log",
+      "sha256": "318b9911b1f72c5868ed8381b695df2c7341078a35632a6dc5170ee550bc8861",
+      "result": "local HTTP bind failed in sandbox",
+      "explanation": "Retain the initial failed group. Only native_diagnostics was rerun with loopback access; other passed groups were not repeated."
+    }
+  ],
+  "published_SDK_0_246_1_unchanged": true,
+  "whole_goal_complete": false,
+  "pending": [
+    "persistent external native host task sessions",
+    "reference task live-cell debugging/profiling and parallel transfer",
+    "full matching source/platform/portable SDK qualification",
+    "remaining application libraries, LLM workflow/cost and manual Java migration pilot",
+    "remaining original PLAN"
+  ],
+  "scope": "Ordinary source030 owner-thread task-provider linking and lifetime through static, fixed shared and mixed images; focused current-source/installed checks."
+}

@@ -38,10 +38,11 @@ inline nexrt::TaskExecutionLimits taskEffectiveLimits(const nexrt::TaskExecution
 }
 inline llvm::json::Object taskExecutionJSON(const nexrt::TaskExecutionLimits &configured,
                                           const nexrt::TaskExecutionLimits &effective,
-                                          const std::string &backend,unsigned supervisorSeconds=0) {
+                                          const std::string &backend,unsigned supervisorSeconds=0,
+                                          bool ownerThread=false) {
   llvm::json::Object result{{"configured",taskLimitsJSON(configured)},
     {"effective",taskLimitsJSON(effective)},{"backend",backend},
-    {"executor_workers",int64_t(backend=="native"?effective.workers:1)},
+    {"executor_workers",int64_t(backend=="native"&&!ownerThread?effective.workers:1)},
     {"step_model",backend=="native"?"native resume and runtime polls":
       backend=="reference"?"checked AST actions and atoms":"generator and checkpoint work"},
     {"cooperative_deadline",true},{"identical_step_thresholds",false}};

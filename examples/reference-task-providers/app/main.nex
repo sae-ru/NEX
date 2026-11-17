@@ -1,0 +1,12 @@
+module provider_app;import "../leaf/value.nex" as leaf;import "../mid/value.nex" as mid;
+fn main()->unit!{task,state,throw,io}{
+ let value:cell<i64>=leaf::make(40);let alias:cell<i64>=mid::twice(value);assert(alias==value&&cell_read(value)==42);
+ let answer:i64=with_tasks(2,fn(scope:task_scope)->i64!{task,state,throw}{
+  let child:task<cell<i64>>=task_spawn(scope,fn()->cell<i64>!{task,state}{return mid::twice(value);});
+  let result:cell<i64>=task_wait(child);assert(result==value);return cell_read(result);
+ });assert(answer==44);
+ try{mid::fail(value);}catch(error:leaf::Fault){assert(error.value==value&&cell_read(error.value)==45);}
+ if true{let node:cell<leaf::Link>=leaf::cycle();assert(cell_read(node).next[0]==node);}
+ assert(leaf::pure(41)==42);cell_collect();assert(cell_read(value)==45);print(42);
+}
+test fn aliases()->unit!{task,state}{let value:cell<i64>=leaf::make(40);assert(mid::twice(value)==value);assert(cell_read(value)==42);}

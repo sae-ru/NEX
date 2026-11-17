@@ -33,6 +33,7 @@ install(FILES tests/references030.cpp tests/references030.py DESTINATION share/n
 install(FILES tests/references030_cli.py DESTINATION share/nex/tests)
 install(FILES tests/reference_tasks.cpp tests/reference_tasks_boundaries.py tests/host_file_observers.h DESTINATION share/nex/tests)
 install(FILES tests/reference_tasks_cli.py DESTINATION share/nex/tests)
+install(FILES tests/reference_task_providers.py DESTINATION share/nex/tests)
 install(FILES tests/persistent_ui.py tests/persistent_ui_cases.mjs DESTINATION share/nex/tests)
 install(FILES tests/hash_containers.py tests/hash_containers_cases.py DESTINATION share/nex/tests)
 install(FILES tests/sequence_containers.py tests/sequence_containers_cases.py DESTINATION share/nex/tests)

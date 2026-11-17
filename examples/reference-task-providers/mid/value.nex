@@ -1,0 +1,3 @@
+module provider_mid;import "../leaf/value.nex" as leaf;
+pub fn twice(value:cell<i64>)->cell<i64>!{task,state}{let alias:cell<i64>=leaf::bump(value);return leaf::bump(alias);}
+pub fn fail(value:cell<i64>)->unit!{task,state,throw}{leaf::fail(value);}

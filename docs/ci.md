@@ -85,6 +85,9 @@ checks belong to their subsequent source cohort.
 
 ## Dependencies and provenance
 
+The [0.274 run](evidence/core-ci-0.274.0-2026-11-17.json) passed Linux and
+macOS at `d64f8247`. Native reference-provider changes are a subsequent cohort.
+
 The [0.273 run](evidence/core-ci-0.273.0-2026-11-17.json) passed both macOS and
 Linux at `8ac8941b`. Its17-group core receipt retains that source cohort; the
 work-container and installed-consumption changes belong to0.274.

@@ -36,8 +36,9 @@ managed returns are independently owned handles, even when they alias the same
 cell. Release an owned handle exactly once, or let the enclosing scope retire
 it. Source-level identity remains distinct from a handle pointer's identity.
 
-The contract is sequential and thread-affine. It does not make cells task or
-worker payloads, define a shared mutable memory model or permit an unrelated
+This synchronous-entry contract is sequential and thread-affine. The separate
+[ABI8 task-provider contract](reference-task-providers.md) handles suspended
+calls across checked images. Neither defines a shared mutable memory model or permits an unrelated
 request's cells. Source/reference/TypeScript semantics remain unchanged.
 `RequestScope` instances cannot nest; a context for a related sequence belongs
 to the outer host boundary, rather than each exported function.

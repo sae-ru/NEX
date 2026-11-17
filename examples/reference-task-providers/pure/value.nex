@@ -1,0 +1,2 @@
+module provider_pure;
+pub fn next(value:i64)->i64{return value+1;}

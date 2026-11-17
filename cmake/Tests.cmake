@@ -423,6 +423,10 @@ add_test(NAME reference_tasks_cli COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_tasks_cli.py $<TARGET_FILE:nex>
   $<TARGET_FILE:nex_reference_tasks_probe> --output-parent ${CMAKE_CURRENT_BINARY_DIR})
 set_tests_properties(reference_tasks_cli PROPERTIES TIMEOUT 1200)
+add_test(NAME reference_task_providers COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_task_providers.py $<TARGET_FILE:nex>
+  --output-parent ${CMAKE_CURRENT_BINARY_DIR})
+set_tests_properties(reference_task_providers PROPERTIES TIMEOUT 1800)
 add_test(NAME persistent_ui COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/persistent_ui.py $<TARGET_FILE:nex>
   --output-parent ${CMAKE_CURRENT_BINARY_DIR})

@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.274.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.275.0"
 owner: repository
 ---
 
@@ -47,6 +47,11 @@ This orders the work; it does not mark the original PLAN complete or discard
 its remaining requirements. Full Java/Python runtime emulation, reflection and
 metaclass compatibility are later, project-driven requirements. Exact source
 behavior remains mandatory for each advertised migrated subset.
+
+Toolchain0.275 adds [native030 task-provider images](reference-task-providers.md)
+with one application-owned heap and propagated ABI8 across connected static,
+fixed shared and mixed components. Native persistent host sessions, reference
+task debug/profile, full delivery and the remaining application/LLM work stay open.
 
 Toolchain0.274 adds [persistent work containers](sequence-containers.md):
 indexed/deque AVL sequences, FIFO queues, linked stacks and leftist heaps. They

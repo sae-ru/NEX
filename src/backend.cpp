@@ -1843,7 +1843,7 @@ NativeTaskExport nativeTaskExportInterface(const Program &p,const std::string &n
     throw Error("E_TASK_PROVIDER","static task exports require an explicit public concrete task function without captures",f.span);
   if(unsupportedStaticTaskValue(p,f.result)||std::any_of(f.params.begin(),f.params.end(),[&](const auto &v){return unsupportedStaticTaskValue(p,v.type);}))
     throw Error("E_TASK_PROVIDER",supportsTaskFileStreams(p)?"static task export values cannot contain external resources, task/scope/channel authority or callable types":"static task export values cannot contain File, task/scope/channel authority or callable types",f.span);
-  validateNativeTaskFunction(p,f);
+  validateNativeTaskFunction(p,f,p.sourceLanguage==SourceLanguage::References030);
   if(f.effects.contains("ffi"))throw Error("E_TASK_PROVIDER","task provider FFI authorization and suspension contracts remain unsupported",f.span);
   llvm::json::Array parameters,kinds,effects;
   for(const auto &v:f.params){parameters.push_back(typeName(v.type));kinds.push_back(v.type==Type::Unit?4:v.type.heap()?3:scalarTag(v.type));}
@@ -1852,6 +1852,7 @@ NativeTaskExport nativeTaskExportInterface(const Program &p,const std::string &n
     {"result",typeName(f.result)},{"result_kind",f.result==Type::Unit?4:f.result.heap()?3:scalarTag(f.result)},{"realm",f.realm},{"effects",std::move(effects)},{"captures",0}},false));
   int64_t requirements=f.effects.contains("task")?nexrt::taskCodeDeclaredTask:0;
   if(supportsSourceExceptionTasks(p)&&f.effects.contains("throw"))requirements|=nexrt::taskCodeDeclaredThrow;
+  if(p.sourceLanguage==SourceLanguage::References030&&f.effects.contains("state"))requirements|=nexrt::taskCodeDeclaredState;
   if(f.realm=="server")requirements|=nexrt::taskCodeServer;
   if(f.effects.contains("fs"))requirements|=nexrt::taskCodeDeclaredFs;
   if(supportsTaskFileReads(p)&&(requirements&7)==7)requirements|=nexrt::taskCodeFileRead;
@@ -1943,12 +1944,13 @@ NativeTaskApplicationStage parseNativeTaskApplicationStage(const llvm::json::Val
   result.enabled=true;result.entry=entry->str();result.descriptorAccessor=accessor->str();result.fileReads=*reads;return result;
 }
 llvm::json::Object nativeTaskProviderJSON(const NativeTaskProviderInfo &info){
-  const bool shared=info.mode==NativeTaskLinkageMode::SharedFixed,typed=isTypedSourceErrorVersion(info.language),exceptions=typed||(info.language=="0.25"||info.language=="0.26"),streams=exceptions||info.language=="0.24",writes=streams||info.language=="0.23";
+  const bool managed=info.managedReferences,shared=info.mode==NativeTaskLinkageMode::SharedFixed,typed=isTypedSourceErrorVersion(info.language),exceptions=typed||(info.language=="0.25"||info.language=="0.26"),streams=exceptions||info.language=="0.24",writes=streams||info.language=="0.23";
+  if(managed&&(info.language!="0.30"||info.profiling||info.debugging))throw Error("E_TASK_PROVIDER","reference task providers require030 uninstrumented owner-thread images");
   if(!writes&&(info.taskFileWrites||!info.componentFileWrites.empty()))throw Error("E_TASK_PROVIDER","retained provider records cannot acquire write requirements");
   if(!streams&&(info.taskFileStreams||!info.componentFileStreams.empty()))throw Error("E_TASK_PROVIDER","retained provider records cannot acquire stream requirements");
   llvm::json::Array definitions;for(const auto &name:info.definitions)definitions.push_back(name);
   llvm::json::Object exports;for(const auto &[name,f]:info.exports)exports[name]=llvm::json::Object{{"contract",f.contract},{"signature",f.signature},{"accessor",f.accessor},{"requirements",f.requirements}};
-  llvm::json::Object result{{"schema",typed?"nex.native-task-provider/14":exceptions?"nex.native-task-provider/11":streams?"nex.native-task-provider/8":writes?"nex.native-task-provider/5":shared?"nex.native-task-provider/2":"nex.native-task-provider/1"},{"mode",shared?"shared-fixed":"static"},{"descriptor_abi",typed?nexrt::taskCodeTypedSourceExceptionABI:exceptions?nexrt::taskCodeSourceExceptionABI:streams?nexrt::taskCodeStreamABI:writes?nexrt::taskCodeWriteABI:nexrt::taskCodeABI},{"descriptor_size",88},{"abi_offset",40},
+  llvm::json::Object result{{"schema",managed?"nex.native-task-provider/17":typed?"nex.native-task-provider/14":exceptions?"nex.native-task-provider/11":streams?"nex.native-task-provider/8":writes?"nex.native-task-provider/5":shared?"nex.native-task-provider/2":"nex.native-task-provider/1"},{"mode",shared?"shared-fixed":"static"},{"descriptor_abi",managed?nexrt::taskCodeManagedReferencesABI:typed?nexrt::taskCodeTypedSourceExceptionABI:exceptions?nexrt::taskCodeSourceExceptionABI:streams?nexrt::taskCodeStreamABI:writes?nexrt::taskCodeWriteABI:nexrt::taskCodeABI},{"descriptor_size",88},{"abi_offset",40},
     {"compiler_build",NEX_BUILD_ID},{"language",info.language},{"component",info.component},{"cohort",info.cohort},{"code_only",info.codeOnly},{"task_file_reads",info.taskFileReads},{"definitions",std::move(definitions)},{"exports",std::move(exports)}};
   if(shared){
     result["artifact_kind"]=info.artifact==NativeTaskArtifactKind::PicStage?"pic-stage":info.artifact==NativeTaskArtifactKind::SharedImage?"shared-image":info.artifact==NativeTaskArtifactKind::Application?"application":"invalid";
@@ -1967,7 +1969,8 @@ llvm::json::Object nativeTaskProviderJSON(const NativeTaskProviderInfo &info){
 NativeTaskProviderInfo parseNativeTaskProvider(const llvm::json::Value &value){
   auto invalid=[](){throw Error("E_TASK_PROVIDER","invalid or incompatible native task provider record");};
   const auto *o=value.getAsObject();if(!o)invalid();auto schema=o->getString("schema");
-  const bool typed=schema=="nex.native-task-provider/14"||schema=="nex.native-task-provider/15"||schema=="nex.native-task-provider/16";
+  const bool managed=schema=="nex.native-task-provider/17";
+  const bool typed=managed||schema=="nex.native-task-provider/14"||schema=="nex.native-task-provider/15"||schema=="nex.native-task-provider/16";
   const bool exceptions=typed||schema=="nex.native-task-provider/11"||schema=="nex.native-task-provider/12"||schema=="nex.native-task-provider/13";
   const bool streams=exceptions||schema=="nex.native-task-provider/8"||schema=="nex.native-task-provider/9"||schema=="nex.native-task-provider/10";
   const bool writes=streams||schema=="nex.native-task-provider/5"||schema=="nex.native-task-provider/6"||schema=="nex.native-task-provider/7";
@@ -1991,13 +1994,13 @@ NativeTaskProviderInfo parseNativeTaskProvider(const llvm::json::Value &value){
     for(const auto &[component,count]:expected){(void)count;if(!present.contains(component))invalid();}
     if((shared||result.codeOnly)&&present.size()!=expected.size())invalid();return result;
   }
-  if(o->size()!=baseSize||schema!=(typed?"nex.native-task-provider/14":exceptions?"nex.native-task-provider/11":streams?"nex.native-task-provider/8":writes?"nex.native-task-provider/5":shared?"nex.native-task-provider/2":"nex.native-task-provider/1")||o->getString("mode")!=(shared?"shared-fixed":"static")||
-    o->getInteger("descriptor_abi")!=(typed?nexrt::taskCodeTypedSourceExceptionABI:exceptions?nexrt::taskCodeSourceExceptionABI:streams?nexrt::taskCodeStreamABI:writes?nexrt::taskCodeWriteABI:nexrt::taskCodeABI)||o->getInteger("descriptor_size")!=88||o->getInteger("abi_offset")!=40||o->getString("compiler_build")!=NEX_BUILD_ID)invalid();
+  if(o->size()!=baseSize||schema!=(managed?"nex.native-task-provider/17":typed?"nex.native-task-provider/14":exceptions?"nex.native-task-provider/11":streams?"nex.native-task-provider/8":writes?"nex.native-task-provider/5":shared?"nex.native-task-provider/2":"nex.native-task-provider/1")||o->getString("mode")!=(shared?"shared-fixed":"static")||
+    o->getInteger("descriptor_abi")!=(managed?nexrt::taskCodeManagedReferencesABI:typed?nexrt::taskCodeTypedSourceExceptionABI:exceptions?nexrt::taskCodeSourceExceptionABI:streams?nexrt::taskCodeStreamABI:writes?nexrt::taskCodeWriteABI:nexrt::taskCodeABI)||o->getInteger("descriptor_size")!=88||o->getInteger("abi_offset")!=40||o->getString("compiler_build")!=NEX_BUILD_ID)invalid();
   auto component=o->getString("component"),cohort=o->getString("cohort"),language=o->getString("language");auto codeOnly=o->getBoolean("code_only"),reads=o->getBoolean("task_file_reads");
   auto definitions=o->getArray("definitions");auto exports=o->getObject("exports");
   if(!component||component->empty()||component->size()>256||component->contains('\0')||!cohort||!digestText(*cohort)||!language||
-    (typed?!isTypedSourceErrorVersion(*language):exceptions?(*language!="0.25"&&*language!="0.26"):streams?*language!="0.24":writes?*language!="0.23":(*language!="0.19"&&*language!="0.20"&&*language!="0.21"&&*language!="0.22"))||!codeOnly||!reads||!definitions||definitions->empty()||definitions->size()>65536||!exports||exports->size()>65536)invalid();
-  NativeTaskProviderInfo result;result.enabled=true;result.codeOnly=*codeOnly;result.taskFileReads=*reads;result.component=component->str();result.cohort=cohort->str();result.language=language->str();
+    (managed?*language!="0.30":typed?!isTypedSourceErrorVersion(*language):exceptions?(*language!="0.25"&&*language!="0.26"):streams?*language!="0.24":writes?*language!="0.23":(*language!="0.19"&&*language!="0.20"&&*language!="0.21"&&*language!="0.22"))||!codeOnly||!reads||!definitions||definitions->empty()||definitions->size()>65536||!exports||exports->size()>65536)invalid();
+  NativeTaskProviderInfo result;result.enabled=true;result.managedReferences=managed;result.codeOnly=*codeOnly;result.taskFileReads=*reads;result.component=component->str();result.cohort=cohort->str();result.language=language->str();
   if(exceptions&&!taskComponentName(result.component))invalid();
   if(writes){auto flag=o->getBoolean("task_file_writes");if(!flag)invalid();result.taskFileWrites=*flag;}
   if(streams){auto flag=o->getBoolean("task_file_streams");if(!flag)invalid();result.taskFileStreams=*flag;}
@@ -2025,7 +2028,7 @@ NativeTaskProviderInfo parseNativeTaskProvider(const llvm::json::Value &value){
       result.ownerImage=from->str();result.image=NativeTaskImageIdentity{key->str(),digest->str(),sha->str(),uuid->str(),runtimeKey->str(),runtimeHash->str()};
     }
   }
-  const auto mask=exceptions?nexrt::taskSourceExceptionProviderRequirementsMask:streams?nexrt::taskStreamProviderRequirementsMask:writes?nexrt::taskWriteProviderRequirementsMask:nexrt::taskProviderRequirementsMask;
+  const auto mask=managed?nexrt::taskManagedReferenceProviderRequirementsMask:exceptions?nexrt::taskSourceExceptionProviderRequirementsMask:streams?nexrt::taskStreamProviderRequirementsMask:writes?nexrt::taskWriteProviderRequirementsMask:nexrt::taskProviderRequirementsMask;
   for(const auto &[name,entry]:*exports){const auto *f=entry.getAsObject();if(!f||f->size()!=4||!result.definitions.contains(name.str()))invalid();
     auto contract=f->getString("contract"),signature=f->getString("signature"),accessor=f->getString("accessor");auto requirements=f->getInteger("requirements");
     const bool componentReads=shared?result.componentFileReads.at(result.definitionOwners.at(name.str())):result.taskFileReads;
@@ -2054,7 +2057,10 @@ void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
   bool tasks=usesNativeTasks(p,options.entry);
   for(const auto &entry:options.libraryExports)tasks|=usesNativeTasks(p,entry);
   auto names=reachable(p,options.entry);for(const auto &entry:options.libraryExports){auto more=reachable(p,entry);names.insert(more.begin(),more.end());}
-  if(tasks&&managedReferences&&taskProviders)throw Error("E_CELL_TARGET","reference task-provider image lifetimes and linking remain pending",p.function(options.entry).span);
+  if(options.managedTaskABI&&(!taskProviders||p.sourceLanguage!=SourceLanguage::References030))throw Error("E_TASK_PROVIDER","owner-thread provider selection requires a checked030 provider cohort");
+  if(taskProviders&&managedReferences&&!options.managedTaskABI)throw Error("E_TASK_PROVIDER","reference provider images require an explicit connected owner-thread cohort",p.function(options.entry).span);
+  if(options.managedTaskABI&&(options.profile=="profile"||options.taskDebug))throw Error("E_CELL_TARGET","reference provider logical debugging/profiling remains pending",p.function(options.entry).span);
+  if(options.managedTaskABI)for(const auto &name:names)if(usesParallelMap(p.function(name)))throw Error("E_CELL_CONCURRENCY","reference provider continuations require one owner thread",p.function(name).span);
   if(taskProviders){
     if(!isPublicTaskLanguage(p)||!options.projectLibraryABI||options.taskComponent.empty()||options.taskComponent.size()>256||options.taskComponent.find('\0')!=std::string::npos||
        (options.taskDebug&&options.profile!="debug")||server||!options.foreignCatalogue.empty()||(options.libraryEntry&&!options.codeOnlyLibrary)||
@@ -2104,7 +2110,7 @@ void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
     }
   }
   if(tasks){
-    if(managedReferences&&(taskProviders||options.profile=="profile"||options.taskDebug))throw Error("E_CELL_TARGET","reference tasks currently support standalone and HTTP debug/release builds; provider images and logical debug/profile integration remain pending",p.function(options.entry).span);
+    if(managedReferences&&(options.profile=="profile"||options.taskDebug))throw Error("E_CELL_TARGET","reference tasks currently support standalone and HTTP debug/release builds; provider images and logical debug/profile integration remain pending",p.function(options.entry).span);
     if(server&&!supportsTaskFileStreams(p))throw Error("E_TASK_TARGET","task HTTP handlers require language0.24; explicitly migrate retained source history",p.function(options.entry).span);
     if(server&&(options.profile=="profile"||options.taskDebug))throw Error("E_OPTION","task HTTP profiling and logical debugging remain pending",p.function(options.entry).span);
     if(!taskProviders&&(options.libraryEntry||options.codeOnlyLibrary||options.deferredLink||options.functionsOnly||!options.libraries.empty()||!options.libraryExports.empty()))
@@ -2268,7 +2274,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       auto bytes=readFile(library.path);if(hash(bytes)!=library.digest)throw Error("E_PROJECT_INPUT_CHANGED","native dependency archive changed: "+library.path);capturedLibraries.push_back(std::move(bytes));
       auto record=readFile(library.taskProviderPath);if(record.size()>16*1048576||hash(record)!=library.taskProviderDigest)throw Error("E_PROJECT_INPUT_CHANGED","static task provider record changed: "+library.taskProviderPath);
       auto parsed=llvm::json::parse(record);if(!parsed)throw Error("E_TASK_PROVIDER","invalid static task provider JSON");auto provider=parseNativeTaskProvider(*parsed);
-      if(provider.mode!=taskMode||(taskMode==NativeTaskLinkageMode::SharedFixed&&provider.artifact!=NativeTaskArtifactKind::PicStage)||!provider.codeOnly||provider.language!=programLanguage(p)||provider.cohort!=library.abi||provider.component==options.taskComponent||!components.insert(provider.component).second)
+      if(provider.mode!=taskMode||(taskMode==NativeTaskLinkageMode::SharedFixed&&provider.artifact!=NativeTaskArtifactKind::PicStage)||!provider.codeOnly||provider.language!=programLanguage(p)||provider.managedReferences!=options.managedTaskABI||provider.cohort!=library.abi||provider.component==options.taskComponent||!components.insert(provider.component).second)
         throw Error("E_TASK_PROVIDER","static task provider cohort, owner or source language differs");
       if(bool(provider.profiling)!=(options.profile=="profile")||bool(provider.debugging)!=options.taskDebug)throw Error("E_TASK_PROVIDER","instrumented and uninstrumented task providers cannot be mixed");
       if(provider.profiling){auto bytes=readFile((std::filesystem::path(library.taskProviderPath).parent_path()/provider.profiling->catalogFile).string());
@@ -2378,7 +2384,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   // ABI5 uses the same checked operation classification as emitted descriptors.
   const bool taskFileReads=tasks&&(supportsTaskFileStreams(p)?taskFiles.reads:files);
   const bool taskFileWrites=tasks&&taskFiles.writes;
-  const bool managedTasks=tasks&&p.sourceLanguage==SourceLanguage::References030&&usesManagedReferences(p,names);
+  const bool managedTasks=tasks&&p.sourceLanguage==SourceLanguage::References030&&(options.managedTaskABI||usesManagedReferences(p,names));
   const auto taskExecutionABI=managedTasks?nexrt::taskCodeManagedReferencesABI:isTypedSourceErrorLanguage(p.sourceLanguage)?nexrt::taskCodeTypedSourceExceptionABI:isPublicSourceExceptionLanguage(p.sourceLanguage)?nexrt::taskCodeSourceExceptionABI:supportsTaskFileStreams(p)?nexrt::taskCodeStreamABI:supportsTaskFileWrites(p)?nexrt::taskCodeWriteABI:nexrt::taskCodeABI;
   if(configuredABI.getOS()==llvm::Triple::IOS&&foreign)
     throw Error("E_TARGET","iOS source foreign-library loading is not configured");
@@ -2388,7 +2394,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(server&&(toolchain.opensslInclude.empty()||toolchain.opensslSSL.empty()||toolchain.opensslCrypto.empty()))throw Error("E_TARGET_LIBRARY","target server requires openssl include/ssl/crypto paths in --toolchain FILE");
   if(foreign&&(toolchain.opensslInclude.empty()||toolchain.opensslCrypto.empty()))throw Error("E_TARGET_LIBRARY","foreign calls require target OpenSSL Crypto include/library paths");
   bool profiling=options.profile=="profile";
-  const bool managedCells=p.sourceLanguage==SourceLanguage::References030&&usesManagedReferences(p,names);
+  const bool managedCells=p.sourceLanguage==SourceLanguage::References030&&(options.managedTaskABI||usesManagedReferences(p,names));
   std::vector<std::string> components={"runtime.cpp"},headers={"nex_value.h","nex_value_owner.h","nex_bytes.h","nex_file_resource.h","nex_resource.h","nex_external_resource.h","nex_resource_executor.h","nex_resource_region.h","nex_error.h","nex_float.h","nex_host.h","nex_source_error.h","nex_io.h","nex_platform.h","nex_profile.h","third_party/dragonbox/dragonbox.h","third_party/dragonbox/manifest.json","third_party/dragonbox/LICENSE-Apache2-LLVM"};
   if(managedCells)components.insert(components.end(),{"nex_cells.cpp","nex_cell_host.cpp"});
   if(p.sourceLanguage==SourceLanguage::References030)headers.insert(headers.end(),{"nex_cells.h","nex_cell_host.h"});
@@ -2636,7 +2642,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   std::set<std::string> taskExportNames;
   std::string taskProviderText;
   if(taskProviders){
-    auto &info=result.taskProvider;info.enabled=true;info.mode=taskMode;info.artifact=taskMode==NativeTaskLinkageMode::SharedFixed?NativeTaskArtifactKind::PicStage:NativeTaskArtifactKind::CodeArchive;info.codeOnly=taskMode==NativeTaskLinkageMode::SharedFixed||options.codeOnlyLibrary;info.component=options.taskComponent;info.cohort=result.libraryABI;info.language=programLanguage(p);info.definitions=localNames;info.taskFileReads=taskFileReads;info.taskFileWrites=taskFileWrites;info.taskFileStreams=taskFiles.streams;
+    auto &info=result.taskProvider;info.enabled=true;info.managedReferences=options.managedTaskABI;info.mode=taskMode;info.artifact=taskMode==NativeTaskLinkageMode::SharedFixed?NativeTaskArtifactKind::PicStage:NativeTaskArtifactKind::CodeArchive;info.codeOnly=taskMode==NativeTaskLinkageMode::SharedFixed||options.codeOnlyLibrary;info.component=options.taskComponent;info.cohort=result.libraryABI;info.language=programLanguage(p);info.definitions=localNames;info.taskFileReads=taskFileReads;info.taskFileWrites=taskFileWrites;info.taskFileStreams=taskFiles.streams;
     auto exports=options.libraryExports;if(options.libraryEntry)exports.push_back(options.entry);
     for(const auto &entry:exports){const auto &f=p.function(entry);if(f.effects.contains("task")||supportsSourceExceptionTasks(p)){
       if(!localNames.contains(f.name))throw Error("E_TASK_PROVIDER","a task export must be physically owned by this component: "+f.name,f.span);

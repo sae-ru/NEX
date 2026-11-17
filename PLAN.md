@@ -1,3 +1,11 @@
+# Native reference task-provider milestone — development0.275.0
+
+[Static/fixed-shared/mixed030 task providers](docs/reference-task-providers.md)
+share one application-owned heap and owner-thread ABI8. Source versions, graph
+history and retained ABI7 stay unchanged. Persistent native host sessions, task
+debug/profile, full SDK/platform delivery and the remaining original objective
+below stay open.
+
 # Current library/application milestone — development0.274.0
 
 [Persistent030 UI](docs/persistent-ui.md) owns state across serialized source

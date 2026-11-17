@@ -57,4 +57,5 @@ inline constexpr int64_t taskStreamProviderRequirementsMask=taskWriteProviderReq
 // Public025 source providers add only the declared source-error requirement.
 // Foreign adapter authority remains outside the source-provider contract.
 inline constexpr int64_t taskSourceExceptionProviderRequirementsMask=taskStreamProviderRequirementsMask|taskCodeDeclaredThrow;
+inline constexpr int64_t taskManagedReferenceProviderRequirementsMask=taskSourceExceptionProviderRequirementsMask|taskCodeDeclaredState;
 }

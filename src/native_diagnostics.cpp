@@ -30,7 +30,7 @@ JSON mapReport(const Program &p,const JSON &manifest,Store *store,JSON report){
   if(*raw->getInteger("reported_line")<0||!raw->getBoolean("code_truncated")||!raw->getBoolean("message_truncated"))return result;
   if(raw->get("request_id")&&(!raw->getString("request_id")||raw->getString("request_id")->size()>768))return result;
   if(!build->getString("build_key")||!digest(*build->getString("build_key")))return result;
-  if(build->getString("schema")!="nex.debug/1"||build->getString("compiler_build")!=NEX_BUILD_ID||build->getString("language")!=languageVersion||build->getString("toolchain")!=NEX_VERSION)return result;
+  if(build->getString("schema")!="nex.debug/1"||build->getString("compiler_build")!=NEX_BUILD_ID||build->getString("language")!=programLanguage(p)||build->getString("toolchain")!=NEX_VERSION)return result;
   if(build->getString("revision")!=revision(p)||build->getString("source_hash")!=hash(json(sourceBundle(p),false)))return result;
   for(auto key:{"toolchain","language","revision","source_hash","build_key","compiler_build"})if(!same(*app,*build,key))return result;
   if(!same(*site,*build,"compiler_build"))return result;

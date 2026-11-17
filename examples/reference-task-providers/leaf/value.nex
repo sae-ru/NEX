@@ -1,0 +1,9 @@
+module provider_leaf;
+import "../pure/value.nex" as pure;
+pub struct Fault{value:cell<i64>;}
+pub fn make(value:i64)->cell<i64>!{state}{return cell_new(value);}
+pub fn bump(value:cell<i64>)->cell<i64>!{task,state}{task_yield();cell_write(value,cell_read(value)+1);return value;}
+pub fn fail(value:cell<i64>)->unit!{task,state,throw}{task_yield();cell_write(value,cell_read(value)+1);throw(Fault(value));}
+pub fn pure(value:i64)->i64{return pure::next(value);}
+pub struct Link{next:list<cell<Link>>;}
+pub fn cycle()->cell<Link>!{state}{let node:cell<Link>=cell_new(Link([]));cell_write(node,Link([node]));return node;}

@@ -1,3 +1,11 @@
+# Source030 reference provider integration
+
+Toolchain0.275 adds [owner-thread ABI8 providers](reference-task-providers.md)
+for connected030 static/fixed shared/mixed project components. Shared images
+import one application runtime and preserve cell identity across continuations.
+Independent reference-free ABI7 cohorts remain supported. Historical notes below
+retain their own scope; full current SDK/platform qualification remains separate.
+
 # Public025 provider integration candidate
 
 Ordinary025 providers use ABI6 and records11/12/13; project plans use static4

@@ -1,4 +1,5 @@
 #include "nex/project_build.h"
+#include "nex/managed_references.h"
 #include "nex/task_ir.h"
 #include "nex/task_provider_debug.h"
 #include "nex/task_limits.h"
@@ -363,6 +364,23 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       include(item.name);
     }
   }
+  // An owner-thread030 application and every connected binary component
+  // share ABI8, even a provider whose own source contains no cell operations.
+  std::set<std::string> managedTaskABI;
+  for(const auto &item:prepared)if(taskABI.contains(item.name)){
+    std::set<std::string> entries(item.options.libraryExports.begin(),item.options.libraryExports.end());entries.insert(item.options.entry);
+    if(usesManagedReferences(item.program,entries))managedTaskABI.insert(item.name);
+  }
+  for(bool changed=true;changed;){
+    changed=false;
+    for(const auto &item:prepared)if(taskABI.contains(item.name)){
+      bool connected=managedTaskABI.contains(item.name);
+      for(const auto &dependency:binaryClosures[item.name])connected|=managedTaskABI.contains(dependency);
+      if(!connected)continue;
+      changed|=managedTaskABI.insert(item.name).second;
+      for(const auto &dependency:binaryClosures[item.name])if(taskABI.contains(dependency))changed|=managedTaskABI.insert(dependency).second;
+    }
+  }
   std::set<std::string> sharedTaskABI;
   for(const auto &item:prepared)if(taskABI.contains(item.name)&&
       (components.at(item.name).kind=="shared_library"||dynamicClosure.at(item.name)))sharedTaskABI.insert(item.name);
@@ -388,7 +406,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
     if(c.kind=="executable"&&!usesTaskEffects(item.program,item.options.entry))
       fail("a pure application cannot consume a task-provider cohort; no implicit task executor is created","E_TASK_PROVIDER");
     const bool shared=sharedTaskABI.contains(item.name);
-    item.options.staticTaskABI=!shared;item.options.taskComponent=item.name;
+    item.options.staticTaskABI=!shared;item.options.taskComponent=item.name;item.options.managedTaskABI=managedTaskABI.contains(item.name);
     item.options.taskLinkageMode=shared?NativeTaskLinkageMode::SharedFixed:NativeTaskLinkageMode::Static;
     if(options.kind=="debug"||options.taskDebug)item.options.taskDebug=true;
     if(shared){
@@ -490,7 +508,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
         const auto &function=item.program.function(name);
         if(item.options.taskImportedFunctions.contains(name)){
           auto provider=supplied.find(name);if(provider==supplied.end())fail("task import has no actual provider definition: "+name,"E_TASK_PROVIDER");
-          imports.push_back(Object{{"function",name},{"provider",provider->second.first},{"contract",contract},{"calling_mode",isTypedSourceErrorLanguage(item.program.sourceLanguage)?"task-code/7":supportsSourceExceptionTasks(item.program)?"task-code/6":function.effects.contains("task")?(supportsTaskFileStreams(item.program)?"task-code/5":supportsTaskFileWrites(item.program)?"task-code/4":"task-code/3"):"sync/1"}});
+          imports.push_back(Object{{"function",name},{"provider",provider->second.first},{"contract",contract},{"calling_mode",item.options.managedTaskABI?"task-code/8":isTypedSourceErrorLanguage(item.program.sourceLanguage)?"task-code/7":supportsSourceExceptionTasks(item.program)?"task-code/6":function.effects.contains("task")?(supportsTaskFileStreams(item.program)?"task-code/5":supportsTaskFileWrites(item.program)?"task-code/4":"task-code/3"):"sync/1"}});
         }else{definitions.push_back(Object{{"function",name},{"contract",contract}});taskDefinitions[item.name][name]=contract;}
       }
       if(c.kind=="static_library"||c.kind=="shared_library"){
@@ -501,7 +519,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
         }
       }
       auto &description=*item.description.getAsObject();description["code_only_library"]=item.options.codeOnlyLibrary;
-      description["task_linkage"]=Object{{"schema",isTypedSourceErrorLanguage(item.program.sourceLanguage)?"nex.project-static-task-linkage/5":supportsSourceExceptionTasks(item.program)?"nex.project-static-task-linkage/4":supportsTaskFileStreams(item.program)?"nex.project-static-task-linkage/3":supportsTaskFileWrites(item.program)?"nex.project-static-task-linkage/2":"nex.project-static-task-linkage/1"},{"component",item.name},{"execution_abi",isTypedSourceErrorLanguage(item.program.sourceLanguage)?7:supportsSourceExceptionTasks(item.program)?6:supportsTaskFileStreams(item.program)?5:supportsTaskFileWrites(item.program)?4:3},
+      description["task_linkage"]=Object{{"schema",item.options.managedTaskABI?"nex.project-static-task-linkage/6":isTypedSourceErrorLanguage(item.program.sourceLanguage)?"nex.project-static-task-linkage/5":supportsSourceExceptionTasks(item.program)?"nex.project-static-task-linkage/4":supportsTaskFileStreams(item.program)?"nex.project-static-task-linkage/3":supportsTaskFileWrites(item.program)?"nex.project-static-task-linkage/2":"nex.project-static-task-linkage/1"},{"component",item.name},{"execution_abi",item.options.managedTaskABI?8:isTypedSourceErrorLanguage(item.program.sourceLanguage)?7:supportsSourceExceptionTasks(item.program)?6:supportsTaskFileStreams(item.program)?5:supportsTaskFileWrites(item.program)?4:3},
         {"definitions",std::move(definitions)},{"imports",std::move(imports)},{"exports",std::move(exports)}};
       if(supportsTaskFileWrites(item.program)&&!supportsTaskFileStreams(item.program)){std::set<std::string> selected;for(const auto &[name,contract]:contracts.at(item.name)){(void)contract;selected.insert(name);}(*description.getObject("task_linkage"))["task_file_writes"]=nativeTaskFileWrites(item.program,selected);}
       if(supportsTaskFileStreams(item.program)){
@@ -514,7 +532,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   for(auto &item:prepared)if(effectiveNativeTaskLinkage(item.options)==NativeTaskLinkageMode::SharedFixed||(effectiveNativeTaskLinkage(item.options)!=NativeTaskLinkageMode::None&&(configuration.profile=="profile"||item.options.taskDebug))){
     const bool shared=effectiveNativeTaskLinkage(item.options)==NativeTaskLinkageMode::SharedFixed;
     auto &linkage=*item.description.getAsObject()->getObject("task_linkage");
-    linkage["schema"]=isTypedSourceErrorLanguage(item.program.sourceLanguage)?(item.options.taskDebug?"nex.project-task-linkage/16":configuration.profile=="profile"?"nex.project-task-linkage/15":"nex.project-task-linkage/14"):supportsSourceExceptionTasks(item.program)?(item.options.taskDebug?"nex.project-task-linkage/13":configuration.profile=="profile"?"nex.project-task-linkage/12":"nex.project-task-linkage/11"):supportsTaskFileStreams(item.program)?(item.options.taskDebug?"nex.project-task-linkage/10":configuration.profile=="profile"?"nex.project-task-linkage/9":"nex.project-task-linkage/8"):supportsTaskFileWrites(item.program)?(item.options.taskDebug?"nex.project-task-linkage/7":configuration.profile=="profile"?"nex.project-task-linkage/6":"nex.project-task-linkage/5"):(item.options.taskDebug?"nex.project-task-linkage/4":configuration.profile=="profile"?"nex.project-task-linkage/3":"nex.project-task-linkage/2");linkage["mode"]=shared?"shared-fixed":"static";linkage["load_closure"]=nullptr;
+    linkage["schema"]=item.options.managedTaskABI?"nex.project-task-linkage/17":isTypedSourceErrorLanguage(item.program.sourceLanguage)?(item.options.taskDebug?"nex.project-task-linkage/16":configuration.profile=="profile"?"nex.project-task-linkage/15":"nex.project-task-linkage/14"):supportsSourceExceptionTasks(item.program)?(item.options.taskDebug?"nex.project-task-linkage/13":configuration.profile=="profile"?"nex.project-task-linkage/12":"nex.project-task-linkage/11"):supportsTaskFileStreams(item.program)?(item.options.taskDebug?"nex.project-task-linkage/10":configuration.profile=="profile"?"nex.project-task-linkage/9":"nex.project-task-linkage/8"):supportsTaskFileWrites(item.program)?(item.options.taskDebug?"nex.project-task-linkage/7":configuration.profile=="profile"?"nex.project-task-linkage/6":"nex.project-task-linkage/5"):(item.options.taskDebug?"nex.project-task-linkage/4":configuration.profile=="profile"?"nex.project-task-linkage/3":"nex.project-task-linkage/2");linkage["mode"]=shared?"shared-fixed":"static";linkage["load_closure"]=nullptr;
     if(item.options.taskDebug){llvm::json::Array sites;bool retained=supportsSourceExceptionTasks(item.program)||usesTaskEffects(item.program,item.options.entry);for(const auto &entry:item.options.libraryExports)retained|=usesTaskEffects(item.program,entry);
       for(const auto &[name,contract]:taskDefinitions.at(item.name)){const auto &function=item.program.function(name);auto unit=item.program.units.find(function.unit);auto source=unit==item.program.units.end()?item.program.source:unit->second.source;
         sites.push_back(Object{{"name",name},{"function_hash",hash(json(canonical(function),false))},{"function_source_hash",hash(item.program.definition(function))},{"source_unit_hash",hash(source)},{"contract",contract},{"line",int64_t(function.span.line)},{"retained",retained},{"task_debug",retained?llvm::json::Value(taskDebugFunctionMetadata(item.program,function,function.unit)):llvm::json::Value(nullptr)}});
@@ -762,7 +780,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
         row["typescript_observation"]=Object{{"exit_code",child.code},{"stdout",child.output},{"stderr",child.errors}};
         ok&=child.code==0&&child.output==expected;
       }
-      if(usesTaskEffects(program,test.function))row["task_execution"]=taskExecutionJSON(configuration.taskLimits,configuration.taskLimits,test.web?"typescript":"native",options.timeout);
+      if(usesTaskEffects(program,test.function))row["task_execution"]=taskExecutionJSON(configuration.taskLimits,configuration.taskLimits,test.web?"typescript":"native",options.timeout,test.item->options.managedTaskABI||usesManagedReferences(program,{test.function}));
       row["ok"]=ok;row["observation"]=std::move(observation);success&=ok;boundTestResult(row,cache);results.push_back(std::move(row));
     }
     return Object{{"schema","nex.project-test/1"},{"ok",success},{"exit_code",success?0:1},{"plan_hash",planHash},{"configuration",configuration.name},
@@ -856,7 +874,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
         }else{auto code=runInteractive(arguments,root);observation=Object{{"ok",code==0},{"exit_code",code}};}
       }
     }
-    if(effectiveTaskLimits&&options.kind!="profile")(*observation.getAsObject())["task_execution"]=taskExecutionJSON(configuration.taskLimits,*effectiveTaskLimits,"native",options.kind=="debug"?0:options.machine?options.timeout:0);
+    if(effectiveTaskLimits&&options.kind!="profile")(*observation.getAsObject())["task_execution"]=taskExecutionJSON(configuration.taskLimits,*effectiveTaskLimits,"native",options.kind=="debug"?0:options.machine?options.timeout:0,item.options.managedTaskABI||usesManagedReferences(item.program,{item.options.entry}));
     verifyGrant();auto code=observation.getAsObject()->getInteger("exit_code").value_or(0);
     return Object{{"schema","nex.project-session/1"},{"ok",code==0},{"exit_code",code},{"action",options.kind},{"component",selectedComponent},
       {"plan_hash",planHash},{"plan",std::move(plan)},{"artifacts",std::move(artifacts)},{"native_runtime_image",runtimeByComponent.contains(selectedComponent)?llvm::json::Value(runtimeByComponent.at(selectedComponent)):llvm::json::Value(nullptr)},

@@ -98,8 +98,9 @@ When `managed_references.public_source_enabled` and the selected project0.30
 are advertised, retrieve `nex guide --kind references --json`. `cell<T>` has
 identity and aliased mutation; `cell_read` returns an immutable snapshot and
 cell operations require `state`. Ordinary aggregates/captures keep snapshot
-semantics, while captured cells keep their reference identity. Reference-bearing
-task/parallel paths, Wasm references and persistent UI cell state remain pending.
+semantics, while captured cells keep their reference identity. Discover ordinary
+reference tasks and persistent UI separately. Shared-memory parallel cells and
+Wasm references remain pending.
 For an old graph, inspect `nex migrate --language-version 0.30 --kind plan` and
 apply with its exact expected revision and reviewed conflict candidate. Preserve
 the graph namespace, old source and rows; changing nex.json alone is not migration.
@@ -169,8 +170,14 @@ cells with tasks. When advertised, source uses one cooperative heap owner;
 ordinary immutable values remain snapshots and cell identity stays within that
 execution/request. Native reference tasks select ABI8; reference-free providers
 retain ABI7. Async TypeScript wire-value exports use Promise results and map4.
-Do not infer shared-memory parallel cells, task-provider image support, persistent
+Do not infer shared-memory parallel cells, native provider support, persistent
 UI state or Worker reference transport from this standalone/HTTP capability.
+For native reference providers, discover
+`managed_references.source030_development.native_providers`. Ordinary project
+components use one application-owned heap and propagated ABI8 across the
+connected static/fixed-shared/mixed cohort, including pure providers. Keep code
+images loaded through frame/value retirement. Imported callables, external
+authority exports, provider debug/profile and runtime unload remain unsupported.
 
 Evaluate expressions once, left to right; preserve lazy boolean branches and
 the selected match arm. Use checked exhaustive patterns, actual generic bounds,

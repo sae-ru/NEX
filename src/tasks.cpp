@@ -1,3 +1,4 @@
+#include "nex_task_protocol.h"
 #include "nex/tasks.h"
 #include "nex/task_limits.h"
 #include "nex/task_frontend.h"
@@ -640,7 +641,7 @@ struct Runner {
       std::vector<std::string> arguments{text(built,"artifact")};if(p.foreignChecks.contains(id))arguments.insert(arguments.end(),{"--nex-foreign",(directory/"inputs/foreign/host.json").string()});
       auto metadata=readJSON(text(built,"metadata"),16*1048576);
       if(auto limits=object(metadata).get("task_limits");limits&&limits->getAsObject()){
-        auto configured=parseTaskLimitsJSON(*limits,"E_TASK_INTEGRITY");row["task_execution"]=taskExecutionJSON(configured,configured,"native",timeout);
+        auto configured=parseTaskLimitsJSON(*limits,"E_TASK_INTEGRITY");row["task_execution"]=taskExecutionJSON(configured,configured,"native",timeout,object(metadata).getInteger("task_execution_abi")==nexrt::taskCodeManagedReferencesABI);
       }
       verifyToolchain(id);verifyForeign(id);verifyProject(program);
       auto value=observeCommand(id,program,arguments,remaining(),label,false,&scope,text(built,"debug_manifest"));

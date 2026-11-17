@@ -55,7 +55,7 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.274.0 / language 0.28 / task ABIs 7/8**, in development.
+Current source: **toolchain 0.275.0 / language 0.28 / task ABIs 7/8**, in development.
 The compiler fallback remains0.28. `nex.json` selects0.28,0.29 or0.30 per project;
 new `nex init` projects select0.30. Language0.29 adds partial type lambdas and
 higher-order kinds;0.30 adds typed cells and the `state` effect. Retained projects
@@ -78,8 +78,10 @@ Ordinary values and retained snapshots now use
 [Reference tasks](docs/reference-tasks.md) now use one owner-thread heap in
 reference/native/TypeScript and native HTTP entries.
 [Persistent030 UI](docs/persistent-ui.md) retains state across serialized events.
-Native task-provider lifetimes, parallel transfer, live cell inspection and remaining [migration prerequisites](docs/migration-readiness.md)
-stay open. [Focused acceptance](docs/evidence/sequence-containers-0.274.0-2026-11-17.json)
+[Native reference task providers](docs/reference-task-providers.md) share one
+application context across static/shared images. Persistent host task sessions,
+parallel transfer, live cell inspection and remaining [migration prerequisites](docs/migration-readiness.md)
+stay open. [Focused acceptance](docs/evidence/reference-task-providers-0.275.0-2026-11-17.json)
 is separate from full SDK/platform gates.
 The [implementation sequence](docs/implementation-1-6.md) tracks remaining work.
 

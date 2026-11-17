@@ -1,10 +1,16 @@
 ---
 status: development
-applies_to: "toolchain 0.272.0; source0.30; ordinary owned tasks and retained development APIs"
+applies_to: "toolchain 0.275.0; source0.30; ordinary owned tasks and retained development APIs"
 owner: repository
 ---
 
 # References in structured tasks
+
+Toolchain0.275 adds [native provider images](reference-task-providers.md): one
+owner-thread ABI8 cohort across connected static, fixed shared and mixed project
+components. Retained ABI7 providers remain separate. Native provider debug/
+profile, persistent external host sessions and full SDK/platform acceptance stay
+open.
 
 Toolchain0.272 adds [persistent browser applications](persistent-ui.md).
 This is a separate application-owned context; ordinary async value exports
@@ -23,8 +29,8 @@ Native reference tasks use public descriptor ABI`0x4e45585400000008` and staged
 application schema`nex.native-task-application/6`. Retained ABI7 and private
 ABI`0x4e45585400003001` are unchanged. Separate runtime compilation identities
 include the owner-task mode, so a cached reference-free runtime cannot be reused
-with the owner-thread descriptor. Native providers, logical reference task debug/
-profile and persistent UI contexts remain pending. Source versions, canonical
+with the owner-thread descriptor. Logical reference task debug/profile and native
+persistent host contexts remain pending. Source versions, canonical
 formats, graph namespaces and public C ABI1 are unchanged.
 
 Public TypeScript async exports accept/return checked copied immutable wire

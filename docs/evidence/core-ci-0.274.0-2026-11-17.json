@@ -1,0 +1,21 @@
+{
+  "schema": "nex.hosted-core-result/1",
+  "ok": true,
+  "toolchain": "0.274.0",
+  "source_commit": "d64f82472bbb4d514dcc3b21717c48d4380b4eee",
+  "workflow": "Core development checks",
+  "run_id": 43979089043,
+  "url": "https://github.com/sae-ru/NEX/actions/runs/43979089043",
+  "status": "completed",
+  "conclusion": "success",
+  "observed_at": "2026-11-16 23:46:39 UTC",
+  "authority": "GitHub Actions exact-commit REST run list and connector jobs",
+  "jobs": [
+    {"id": 133690580233, "name": "linux-core", "status": "completed", "conclusion": "success"},
+    {"id": 133690580654, "name": "macos-core", "status": "completed", "conclusion": "success"}
+  ],
+  "core_groups": 17,
+  "complete_source_regression": false,
+  "portable_SDK": false,
+  "scope": "Hosted17-group core checks at this exact source cohort; not a full source/platform or portable SDK release qualification."
+}

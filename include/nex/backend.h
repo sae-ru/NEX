@@ -87,6 +87,7 @@ NativeTaskDebugInfo nativeTaskDebugInfo(const NativeTaskDebugCatalog &,const Nat
   const std::string &catalogFile="task-debug-catalog.json",const std::string &sourceUnionFile="task-debug-sources.json");
 struct NativeTaskProviderInfo {
   bool enabled=false, codeOnly=false, taskFileReads=false, taskFileWrites=false,taskFileStreams=false;
+  bool managedReferences=false;
   std::string component, cohort, language;
   std::set<std::string> definitions;
   std::map<std::string,NativeTaskExport> exports;
@@ -151,6 +152,9 @@ struct BuildOptions {
   std::string taskComponent{};
   std::set<std::string> taskImportedFunctions{};
   NativeTaskLinkageMode taskLinkageMode=NativeTaskLinkageMode::None;
+  // Propagated across a checked connected provider cohort, including pure
+  // images. Every continuation then borrows the application's030 heap.
+  bool managedTaskABI=false;
 };
 NativeTaskLinkageMode effectiveNativeTaskLinkage(const BuildOptions &);
 struct BuildResult {

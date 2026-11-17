@@ -1,10 +1,15 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.274.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.275.0"
 owner: repository
 ---
 
 # Language prerequisites for Java and Python migration
+
+Toolchain0.275 adds [native030 task-provider images](reference-task-providers.md).
+Application-owned state now crosses checked static/shared continuation calls;
+this does not provide Java/Python class dispatch, nullable object layouts, dynamic
+protocols or their library compatibility.
 
 Toolchain0.274 adds [persistent work containers](sequence-containers.md):
 indexed sequences/deques, FIFO queues, linked stacks and priority heaps using

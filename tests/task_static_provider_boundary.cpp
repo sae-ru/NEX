@@ -1,5 +1,6 @@
 #include "nex/backend.h"
 #include "nex/incremental.h"
+#include "nex_task_protocol.h"
 #include <filesystem>
 #include <functional>
 #include <iostream>
@@ -32,6 +33,20 @@ int main(){std::filesystem::path root;try{
  // the image bit must agree with the component read requirement.
  auto fs=info;fs.exports[name].requirements=15;require(parseNativeTaskProvider(llvm::json::Value(nativeTaskProviderJSON(fs))).exports.at(name).requirements==15,"valid raw task/fs bits rejected");
  fs.language="0.19";rejected([&]{(void)parseNativeTaskProvider(llvm::json::Value(nativeTaskProviderJSON(fs)));},"E_TASK_PROVIDER");
+ // ABI8 metadata must retain its execution owner and explicit state effect;
+ // an old typed-error label must never reinterpret those continuations.
+ auto managed=info;managed.language="0.30";managed.managedReferences=true;
+ managed.exports[name].requirements=nexrt::taskCodeDeclaredState|nexrt::taskCodeDeclaredTask;
+ auto ownerRecord=nativeTaskProviderJSON(managed);
+ require(ownerRecord.getString("schema")=="nex.native-task-provider/17","reference provider schema differs");
+ require(parseNativeTaskProvider(llvm::json::Value(llvm::json::Object(ownerRecord))).managedReferences,"reference provider lost owner cohort");
+ for(const auto &field:{"schema","descriptor_abi","language"}){
+   auto wrong=llvm::json::Object(ownerRecord);
+   if(std::string(field)=="schema")wrong[field]="nex.native-task-provider/14";
+   else if(std::string(field)=="descriptor_abi")wrong[field]=nexrt::taskCodeTypedSourceExceptionABI;
+   else wrong[field]="0.29";
+   rejected([&]{(void)parseNativeTaskProvider(llvm::json::Value(std::move(wrong)));},"E_TASK_PROVIDER");
+ }
  // The pure helper ABI is synchronous, but a callable must never escape it
  // into a task cohort and fail later when task_spawn needs a descriptor.
  for(const auto &source:std::vector<std::string>{

@@ -1,3 +1,11 @@
+# Source030 reference provider integration
+
+Toolchain0.275 adds [owner-thread ABI8 providers](reference-task-providers.md)
+for connected030 static/fixed shared/mixed project components. One application
+owns their heap and task execution. Reference-free independent cohorts retain
+ABI7. Discover the selected compiler; historical provider notes below retain
+their own language/ABI scopes.
+
 # Public025 provider integration candidate
 
 Ordinary025 providers use ABI6 and records11/12/13; project plans use static4

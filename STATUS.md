@@ -1,3 +1,20 @@
+# Native reference task providers — development0.275.0
+
+Checked030 project components retain cell identity across static archives and
+fixed shared/mixed image continuations. One application owns the runtime, heap,
+source executor and limits; pure connected providers join ABI8. Retained ABI7 and
+source/graph versions stay unchanged. Read [the contract](docs/reference-task-providers.md).
+[Focused qualification](docs/evidence/reference-task-providers-0.275.0-2026-11-17.json)
+records27 passing core/affected groups, six Debug/Release linkage combinations,
+36 ordinary CLI commands, source-absent capture/replay and real ABI7 static/shared
+source regressions. Two modes also run from a relocated normal installation;
+its host dependencies remain. The original sandbox HTTP-bind failure is retained
+beside the successful loopback-enabled rerun of that group. Fatal diagnostic
+mapping now uses the selected source language, and task observations report the
+actual single source executor for ABI8. Native persistent
+host sessions, reference task debug/profile and complete SDK/platform delivery
+remain open; published SDK0.246.1 remains immutable.
+
 # Persistent work containers — development0.274.0
 
 Ordinary checked `std/sequence`, `std/fifo`, `std/lifo` and `std/heap` add indexed
