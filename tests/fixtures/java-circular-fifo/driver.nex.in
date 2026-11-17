@@ -1,0 +1,127 @@
+module circular_fifo_oracle;
+import "./circular_fifo.nex" as fifo;
+
+struct Command { operation: str; values: list<i64>; }
+struct Trace { name: str; commands: list<Command>; }
+struct Machine {
+  queue: fifo::Queue<i64>; alias: fifo::Queue<i64>;
+  cursor: fifo::Iterator<i64>; cursor_alias: fifo::Iterator<i64>; saved: list<i64>;
+}
+struct Outcome { machine: Machine; kind: str; values: list<str>; }
+struct Observation {
+  trace: str; step: i64; operation: str; outcome: str; values: list<str>;
+  size: i64; capacity: i64; empty: bool; full: bool; at_capacity: bool; contents: list<str>;
+}
+fn formatted(values: list<i64>) -> list<str> {
+  return list(values, fn(value: i64) -> str { return str(value); });
+}
+fn apply(machine: Machine, command: Command) -> Outcome !{state,throw} {
+  var queue: fifo::Queue<i64> = machine.queue;
+  var alias: fifo::Queue<i64> = machine.alias;
+  var cursor: fifo::Iterator<i64> = machine.cursor;
+  var cursor_alias: fifo::Iterator<i64> = machine.cursor_alias;
+  var saved: list<i64> = machine.saved;
+  var kind: str = "unit"; var values: list<str> = [];
+  let op: str = command.operation;
+  if op == "new" { queue = fifo::create<i64>(command.values[0]); }
+  else if op == "default" { queue = fifo::create_default<i64>(); }
+  else if op == "from" { queue = fifo::from_items(command.values); }
+  else if op == "from_null" { queue = fifo::from_maybe_items<i64>(fifo::Maybe<list<i64>>::None()); }
+  else if op == "copy" { queue = fifo::from_items(fifo::items(queue)); }
+  else if op == "alias" { alias = queue; }
+  else if op == "add" { kind = "bool"; values = [str(fifo::add(queue, command.values[0]))]; }
+  else if op == "offer" { kind = "bool"; values = [str(fifo::offer(queue, command.values[0]))]; }
+  else if op == "add_alias" { kind = "bool"; values = [str(fifo::add(alias, command.values[0]))]; }
+  else if op == "add_null" { kind = "bool"; values = [str(fifo::add_maybe<i64>(queue, fifo::Maybe<i64>::None()))]; }
+  else if op == "offer_null" { kind = "bool"; values = [str(fifo::offer_maybe<i64>(queue, fifo::Maybe<i64>::None()))]; }
+  else if op == "clear" { fifo::clear(queue); }
+  else if op == "peek" || op == "poll" {
+    var value: fifo::Maybe<i64> = fifo::Maybe<i64>::None();
+    if op == "peek" { value = fifo::peek(queue); } else { value = fifo::poll(queue); }
+    match value {
+      fifo::Maybe::None() => { kind = "none"; },
+      fifo::Maybe::Some(item) => { kind = "number"; values = [str(item)]; }
+    }
+  }
+  else if op == "remove" { kind = "number"; values = [str(fifo::remove(queue))]; }
+  else if op == "element" { kind = "number"; values = [str(fifo::element(queue))]; }
+  else if op == "get" { kind = "number"; values = [str(fifo::get(queue, command.values[0]))]; }
+  else if op == "size" { kind = "number"; values = [str(fifo::size(queue))]; }
+  else if op == "max_size" { kind = "number"; values = [str(fifo::max_size(queue))]; }
+  else if op == "empty" { kind = "bool"; values = [str(fifo::is_empty(queue))]; }
+  else if op == "full" { kind = "bool"; values = [str(fifo::is_full(queue))]; }
+  else if op == "at_capacity" { kind = "bool"; values = [str(fifo::is_at_full_capacity(queue))]; }
+  else if op == "iterator" { cursor = fifo::iterator(queue); }
+  else if op == "iterator_alias" { cursor_alias = cursor; }
+  else if op == "has_next" { kind = "bool"; values = [str(fifo::has_next(cursor))]; }
+  else if op == "next" { kind = "number"; values = [str(fifo::next(cursor))]; }
+  else if op == "next_alias" { kind = "number"; values = [str(fifo::next(cursor_alias))]; }
+  else if op == "iterator_remove" { fifo::iterator_remove(cursor); }
+  else if op == "iterator_remove_alias" { fifo::iterator_remove(cursor_alias); }
+  else if op == "snapshot" { saved = fifo::items(queue); }
+  else if op == "saved" { kind = "items"; values = formatted(saved); }
+  else if op == "alias_items" { kind = "items"; values = formatted(fifo::items(alias)); }
+  else if op == "same_queue" { kind = "bool"; values = [str(queue.owner == alias.owner)]; }
+  else if op == "same_iterator" { kind = "bool"; values = [str(cursor.owner == cursor_alias.owner)]; }
+  else { assert(false); }
+  return Outcome(Machine(queue, alias, cursor, cursor_alias, saved), kind, values);
+}
+fn run_trace(trace: Trace) -> unit !{state,throw,io} {
+  let initial: fifo::Queue<i64> = fifo::create<i64>(1);
+  let cursor: fifo::Iterator<i64> = fifo::iterator(initial);
+  var machine: Machine = Machine(initial, initial, cursor, cursor, []);
+  var index: i64 = 0;
+  while index < len(trace.commands) {
+    let command: Command = trace.commands[index];
+    var kind: str = "unit"; var values: list<str> = [];
+    try {
+      let result: Outcome = apply(machine, command);
+      machine = result.machine; kind = result.kind; values = result.values;
+    }
+    catch (error: fifo::CapacityError) { kind = "IllegalArgumentException"; }
+    catch (error: fifo::NullError) { kind = "NullPointerException"; }
+    catch (error: fifo::EmptyError) { kind = "NoSuchElementException"; }
+    catch (error: fifo::IndexError) { kind = "NoSuchElementException"; }
+    catch (error: fifo::ArrayIndexError) { kind = "ArrayIndexOutOfBoundsException"; }
+    catch (error: fifo::IteratorStateError) { kind = "IllegalStateException"; }
+    let queue: fifo::Queue<i64> = machine.queue;
+    print(encode_json(Observation(trace.name, index, command.operation, kind, values,
+      fifo::size(queue), fifo::max_size(queue), fifo::is_empty(queue), fifo::is_full(queue),
+      fifo::is_at_full_capacity(queue), formatted(fifo::items(queue)))));
+    index = index + 1;
+  }
+}
+struct Counter { value: i64; }
+fn generic_identity() -> unit !{state,throw} {
+  let value: cell<Counter> = cell_new(Counter(41));
+  let queue: fifo::Queue<cell<Counter>> = fifo::create<cell<Counter>>(1);
+  fifo::add(queue, value);
+  let old: list<cell<Counter>> = fifo::items(queue);
+  let other: cell<Counter> = cell_new(Counter(7));
+  fifo::add(queue, other);
+  cell_write(value, Counter(42));
+  assert(old[0] == value && cell_read(old[0]).value == 42);
+  assert(fifo::get(queue, 0) == other && fifo::get(queue, 0) != value);
+  let text: fifo::Queue<str> = fifo::from_items(["Я", "🌍"]);
+  fifo::offer(text, "é");
+  assert(fifo::items(text) == ["🌍", "é"]);
+}
+fn cooperative_state() -> unit !{state,task,throw} {
+  let queue: fifo::Queue<i64> = fifo::create<i64>(2);
+  let first: i64 = with_tasks(1, fn(scope: task_scope) -> i64 !{state,task,throw} {
+    let job: task<i64> = task_spawn(scope, fn() -> i64 !{state,task} {
+      fifo::add(queue, 41); task_yield(); fifo::offer(queue, 42);
+      return fifo::size(queue);
+    });
+    assert(task_wait(job) == 2);
+    return fifo::remove(queue);
+  });
+  assert(first == 41 && fifo::items(queue) == [42]);
+}
+fn main() -> unit !{state,task,throw,io} {
+  generic_identity(); cooperative_state();
+  let traces: list<Trace> = [@CASES@];
+  var index: i64 = 0;
+  while index < len(traces) { run_trace(traces[index]); index = index + 1; }
+  print("java-circular-fifo-oracle-ok");
+}

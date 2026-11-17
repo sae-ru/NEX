@@ -99,7 +99,8 @@ def main():
     parser.add_argument('--output',type=Path)
     parser.add_argument('--arch',choices=('arm64','amd64'),default='arm64' if platform.machine() in ('arm64','aarch64') else 'amd64')
     parser.add_argument('--jobs',type=int,default=2)
-    parser.add_argument('--tier',choices=('core','full'),default='full',help='Core skips web hydration and SDK stages; full keeps the complete workflow')
+    parser.add_argument('--tier',choices=('core','full','selected'),default='full',help='Core is the small baseline; selected diagnoses named groups; full retains SDK stages')
+    parser.add_argument('--select',action='append',help='Exact CTest group; repeat with --tier selected')
     parser.add_argument('--skip-image-build',action='store_true')
     parser.add_argument('--image',help='Explicit toolchain image/tag; recorded with its immutable image ID')
     parser.add_argument('--live',action='store_true',help='Also run real LLDB/DAP tests; requires native ptrace support')
@@ -107,7 +108,8 @@ def main():
     source=args.source.resolve();output=(args.output or source/'build'/('linux-'+args.arch)).resolve()
     if not (source/'CMakeLists.txt').is_file():parser.error('--source must name a NEX source checkout')
     if not 1<=args.jobs<=8:parser.error('--jobs must be 1..8')
-    if args.live and args.tier=='core':parser.error('--live requires --tier full')
+    if args.live and args.tier!='full':parser.error('--live requires --tier full')
+    if (args.tier=='selected') != bool(args.select):parser.error('--tier selected requires --select; other tiers reject it')
     output.mkdir(parents=True,exist_ok=True);image=args.image or 'nex-linux-toolchain:'+args.arch
     if not args.skip_image_build:
         lock=source/'tools/linux/debugger-packages.json'
@@ -127,15 +129,16 @@ def main():
     if inspected['Architecture']!=args.arch:raise RuntimeError('toolchain image architecture differs from selection')
     server=json.loads(subprocess.check_output(['docker','version','--format','{{json .Server}}']))
     image_id=inspected['Id']
-    metadata={'image':image,'image_id':image_id,'tier':args.tier,'target_arch':args.arch,'docker_server_arch':server['Arch'],'emulated':server['Arch']!=args.arch}
+    metadata={'image':image,'image_id':image_id,'tier':args.tier,'selected_groups':args.select or [],'target_arch':args.arch,'docker_server_arch':server['Arch'],'emulated':server['Arch']!=args.arch}
     (output/'environment.json').write_text(json.dumps(metadata,indent=2)+'\n')
     command=['docker','run','--rm','--platform','linux/'+args.arch,'--network','none',
         *mount(source, '/src'), *mount(output, '/build', readonly=False), '--workdir', '/build']
     # The full source tier contains real LLDB/DAP tests independently of --live.
     # Match the existing debugger container settings: without them logical
     # breakpoint setup fails at configurationDone in the pinned LLDB cohort.
-    if args.tier=='full':command+=['--cap-add=SYS_PTRACE','--security-opt','seccomp=unconfined']
+    if args.tier in ('full','selected'):command+=['--cap-add=SYS_PTRACE','--security-opt','seccomp=unconfined']
     command += [image_id,'python3','/src/tools/linux/verify.py','--jobs',str(args.jobs),'--tier',args.tier]
+    for name in args.select or []:command+=['--select',name]
     if args.live:command.append('--live')
     subprocess.run(command,check=True)
     if args.tier=='full':verify_installed_sdk(output,image_id,args.arch,args.live)

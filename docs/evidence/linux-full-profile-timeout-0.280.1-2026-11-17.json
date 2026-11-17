@@ -1,0 +1,68 @@
+{
+  "schema": "nex.linux-full-timeout-diagnostic/1",
+  "utc": "2026-11-17T18:17:29.388420+00:00",
+  "full_CI_ok": false,
+  "source_commit": "b02514eb31c7255b97dea7b3a1e06c832c6e23bc",
+  "toolchain": "0.280.1",
+  "run": 44100526679,
+  "url": "https://github.com/sae-ru/NEX/actions/runs/44100526679",
+  "artifact": {
+    "id": 14349969110,
+    "bytes": 141500,
+    "sha256": "fa57e41ad17c9ee896c45f6411908329a94990f2d2a5d5326fca42d3a70572e6"
+  },
+  "registry_sha256": "fd28e47975aaf651a5e8330742ecddb10d4d15a18e5ab6a6c64afef4303746d4",
+  "junit_sha256": "d538e22d73ff36f561216af098b11eb8588be4dd1f8ef6447b60f6e96d262777",
+  "groups": {
+    "expected": 381,
+    "observed": 381,
+    "passed": 380,
+    "failed": [
+      "task_provider_profile_native"
+    ],
+    "skipped": 0
+  },
+  "failure": {
+    "kind": "CTest aggregate timeout",
+    "seconds": 1200.08,
+    "original_test_output": "empty",
+    "root_cause_established": false
+  },
+  "installed_SDK_checks_reached": false,
+  "original_failed_reports_retained": true,
+  "separate_controls": {
+    "Fedora45_Release": {
+      "selected_methods": 4,
+      "passed": 4,
+      "receipt_sha256": "62ebb8e2e4417e35314d564e456c7a0e210dd4d6cffed68f49a6c409bd7db408",
+      "not_Ubuntu_Debug": true
+    },
+    "macOS_ARM64_Debug": {
+      "complete_profile_group_methods": 14,
+      "passed": 14,
+      "seconds": 528.038,
+      "junit_sha256": "676f874a91b68179294ca33f980872a48d854054009ac03bd00ac29a8ca9e591",
+      "not_Ubuntu_Debug": true
+    }
+  },
+  "changes": {
+    "test_timeout_increased": false,
+    "tests_disabled": false,
+    "profile_test_progress": "unbuffered verbose unittest methods",
+    "selected_CI": "explicit exact names, actual fixture closure, raw registry/JUnit receipt; default full source and installed workflow retained",
+    "runner_checks": {
+      "groups": [
+        "test_tiers",
+        "ci_ctest_receipts",
+        "docs_index"
+      ],
+      "ok": true,
+      "receipt_sha256": "208b78e240bd7763196afae94ed9839969aa2cd37c867964558bda30a571a097"
+    }
+  },
+  "pending": [
+    "run the original profile group alone on the pinned Ubuntu Debug CI environment",
+    "diagnose timing or behavioral failure from its retained method output",
+    "complete full Linux source and installed acceptance after the cause is fixed"
+  ]
+}

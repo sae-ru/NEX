@@ -28,7 +28,7 @@ advertised project source languages and toolchain by the same script.
 | [Inferred effect parameters](effect-parameters.md) | toolchain 0.180; language 0.28 | repository |
 | [Installed Workboard SDK workflow](sdk-workboard.md) | toolchain 0.280.0; language 0.30 | repository |
 | [Installed030 SDK consumption](sdk-reference030.md) | toolchain 0.279.0; language 0.30 | repository |
-| [Language prerequisites for Java and Python migration](migration-readiness.md) | language 0.28; language 0.29; language 0.30; toolchain 0.279.0 | repository |
+| [Language prerequisites for Java and Python migration](migration-readiness.md) | language 0.28; language 0.29; language 0.30; toolchain 0.280.1 | repository |
 | [Managed references: runtime foundation and remaining language work](managed-references-design.md) | toolchain 0.268.0; source0.30; historical private-kernel introductions | repository |
 | [Managed TypeScript host-value entries](managed-reference-value-exports.md) | toolchain 0.261.0; private 0.30-refs-prototype candidate | repository |
 | [Map and set containers](containers.md) | toolchain 0.247.0; language 0.28 and 0.29 | repository |
@@ -70,7 +70,7 @@ advertised project source languages and toolchain by the same script.
 | [Architecture decisions for the implemented core](history/architecture-before-2026-11-10.md) | mixed earlier milestones | repository |
 | [Приоритеты улучшения NEX](development-priorities.md) | language 0.28; toolchain 0.246.0 | repository |
 
-## Reference and history (165)
+## Reference and history (167)
 
 | Document | Applies to | Owner |
 |---|---|---|
@@ -133,6 +133,7 @@ advertised project source languages and toolchain by the same script.
 | [Language023 static/shared whole-file write providers](task-write-providers.md) | — | — |
 | [Language025 source-error providers](source-exception-providers.md) | — | — |
 | [Linux compiler and development chain](linux.md) | — | — |
+| [Local Qwen3.8 27B comparison, version2 — 2026-11-17](llm-cost-qwen38-27b-2026-11-17.en.md) | — | — |
 | [Local Qwen3.8 27B task comparison — 2026-11-11](llm-cost-qwen38-27b-2026-11-11.en.md) | — | — |
 | [Logical native task debugging](task-debugging.md) | — | — |
 | [Logical resource regions and dependent FFI resources](resource-regions.md) | — | — |
@@ -239,7 +240,8 @@ advertised project source languages and toolchain by the same script.
 | [Промпт для продолжения NEX в Codex на Windows](WINDOWS-CODEX-PROMPT.md) | — | — |
 | [Сборка отдельного Windows-отладчика](windows-debugger-build.md) | — | — |
 | [Сравнение на локальной Qwen3.8 27B — 2026-11-11](llm-cost-qwen38-27b-2026-11-11.ru.md) | — | — |
+| [Сравнение на локальной Qwen3.8 27B, версия2 — 2026-11-17](llm-cost-qwen38-27b-2026-11-17.ru.md) | — | — |
 
 ## Totals
 
-215 documents: 43 current, 1 deferred, 2 historical, 165 reference/unclassified.
+217 documents: 43 current, 1 deferred, 2 historical, 167 reference/unclassified.

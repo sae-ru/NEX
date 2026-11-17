@@ -109,6 +109,13 @@ demonstrated. Other-model/workload comparisons remain unmeasured. The
 [quality protocol](quality.md) counts full context/tools/retries/correctness;
 the project's30% reduction objective is not an achieved result.
 
+The [version2 study on0.280.1](llm-cost-qwen38-27b-2026-11-17.en.md) completed
+60 slots: NEX6/20, C++18/20 and Python20/20 accepted. Its known token totals are
+890724,278472 and128922 respectively, but two NEX calls have unknown usage;
+an exact NEX total or ratio is unavailable. Source-review limitations and
+explicit suffix-only execution amendments are retained. Runtime, source language
+and references changed from version1, so a prompt-only causal claim is invalid.
+
 The [0.162 SDK measurement](releases/0.162.0.json) repeats the checked recurrence
 for 100 million steps and five samples per language. Median wall times on this
 Mac were 0.295775 s for NEX, 0.278295 s for checked C++ and 7.366667 s for Python.

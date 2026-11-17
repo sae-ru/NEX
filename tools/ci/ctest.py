@@ -8,6 +8,7 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import time
@@ -18,18 +19,27 @@ tiers = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(tiers)
 
 
-def run(build, output, *, tier='core', jobs=1, ctest='ctest', policy=None):
+def run(build, output, *, tier='core', selected=None, jobs=1, ctest='ctest', policy=None):
     build = Path(build).resolve(strict=True)
     output = Path(output).resolve()
-    if tier not in ('core', 'full') or type(jobs) is not int or not 1 <= jobs <= 8:
-        raise ValueError('select core/full and 1..8 jobs')
+    if tier not in ('core', 'full', 'selected') or type(jobs) is not int or not 1 <= jobs <= 8:
+        raise ValueError('select core/full/selected and 1..8 jobs')
+    if tier == 'selected':
+        if (not isinstance(selected, (list, tuple)) or not selected
+            or any(not isinstance(name, str) or not re.fullmatch('[A-Za-z_][A-Za-z_0-9]*', name)
+                   for name in selected) or len(set(selected)) != len(selected)):
+            raise ValueError('selected requires distinct explicit registered group names')
+        selected = list(selected)
+    elif selected is not None:
+        raise ValueError('--select requires --tier selected')
     if not (build / 'CMakeCache.txt').is_file():
         raise ValueError('configure and build the selected directory first')
     # A previous JUnit file or receipt must never satisfy a new invocation.
     output.mkdir(parents=True, exist_ok=False)
     started = time.monotonic()
     report = {'schema': 'nex.ci-ctest/1', 'ok': False, 'tier': tier,
-              'build': str(build), 'phases': [], 'release_qualification': False}
+              'build': str(build), 'requested_groups': selected or [],
+              'phases': [], 'release_qualification': False}
 
     def save():
         (output / 'report.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
@@ -55,12 +65,19 @@ def run(build, output, *, tier='core', jobs=1, ctest='ctest', policy=None):
         registry = output / 'registry.stdout'
         inventory = tiers.inspect(declared, tiers.decode(registry.read_bytes()))
         (output / 'tiers.json').write_text(json.dumps(inventory, indent=2) + '\n', encoding='utf-8')
-        selected = inventory['tiers']['core']['selected_groups'] if tier == 'core' else None
+        if tier == 'core':
+            selected = inventory['tiers']['core']['selected_groups']
+        elif tier == 'selected':
+            # Resolve against the complete actual registry before executing.
+            # CTest will add the selected groups' real fixture setup/cleanup.
+            tiers.fixtures.fixture_closure(tiers.decode(registry.read_bytes()), selected)
         argv = [str(ctest), '--test-dir', str(build), '--output-on-failure',
                 '--no-tests=error', '-j', str(jobs), '--output-log', str(output / 'ctest.log'),
                 '--output-junit', str(output / 'results.xml')]
         if tier == 'core':
             argv += ['-L', '^core$']
+        elif tier == 'selected':
+            argv += ['-R', '^(' + '|'.join(re.escape(name) for name in selected) + ')$']
         code = command('ctest', argv)
         receipt = tiers.fixtures.inspect_files(registry, output / 'results.xml',
                                                ctest_exit_code=code, selected=selected)
@@ -87,12 +104,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--build', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--tier', choices=('core', 'full'), default='core')
+    parser.add_argument('--tier', choices=('core', 'full', 'selected'), default='core')
+    parser.add_argument('--select', action='append', help='Exact registered group; repeat with --tier selected')
     parser.add_argument('--jobs', type=int, choices=range(1, 9), default=1)
     parser.add_argument('--ctest', default='ctest')
     args = parser.parse_args()
     try:
-        result = run(args.build, args.output, tier=args.tier, jobs=args.jobs, ctest=args.ctest)
+        result = run(args.build, args.output, tier=args.tier, selected=args.select,
+                     jobs=args.jobs, ctest=args.ctest)
     except (OSError, ValueError) as error:
         print(json.dumps({'ok': False, 'error': str(error)}))
         return 2

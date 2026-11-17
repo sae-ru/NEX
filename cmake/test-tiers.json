@@ -263,6 +263,7 @@
     "ordered_containers": ["extended", "browser", "platform", "sdk"],
     "java_int": ["extended", "browser", "platform", "sdk"],
     "java_long": ["extended", "browser", "platform", "sdk"],
+    "java_circular_fifo": ["extended", "browser", "platform"],
     "managed_cells_runtime": ["extended", "platform"],
     "value_retirement_runtime": ["core"],
     "value_owner_runtime": ["core"],

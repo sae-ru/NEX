@@ -1,9 +1,16 @@
 name: Complete Linux source and installed checks
+run-name: ${{ inputs.test_group && format('Linux diagnostic - {0}', inputs.test_group) || 'Complete Linux source and installed checks' }}
 
 on:
   schedule:
     - cron: '23 3 * * *'
   workflow_dispatch:
+    inputs:
+      test_group:
+        description: 'Optional exact CTest group for diagnosis; empty runs the complete source and SDK workflow'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -18,6 +25,7 @@ concurrency:
 
 jobs:
   linux-full:
+    name: ${{ inputs.test_group && 'linux-selected' || 'linux-full' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     steps:
@@ -29,10 +37,17 @@ jobs:
         with:
           path: build/linux-debugger-packages
           key: nex-lldb-debs-v1-amd64-${{ hashFiles('tools/linux/debugger-packages.json') }}
-      - name: Build and execute the complete offline workflow
+      - name: Build and execute the selected or complete offline workflow
         # Containers write root-owned receipts into the mounted output. The
         # host orchestrator appends the installed SDK result to those receipts.
-        run: sudo python3 -B tools/linux/check.py --arch amd64 --tier full --jobs 4 --output build/ci-linux-full
+        env:
+          NEX_CI_TEST_GROUP: ${{ inputs.test_group }}
+        run: |
+          if [[ -n "$NEX_CI_TEST_GROUP" ]]; then
+            sudo python3 -B tools/linux/check.py --arch amd64 --tier selected --select "$NEX_CI_TEST_GROUP" --jobs 4 --output build/ci-linux-full
+          else
+            sudo python3 -B tools/linux/check.py --arch amd64 --tier full --jobs 4 --output build/ci-linux-full
+          fi
       - name: Export readable diagnostics without traversing test projects
         if: always()
         run: sudo python3 -B tools/ci/export_evidence.py --input build/ci-linux-full --output build/ci-linux-full-artifact
@@ -40,7 +55,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: linux-full-${{ github.run_id }}-${{ github.run_attempt }}
+          name: linux-${{ inputs.test_group && 'selected' || 'full' }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: build/ci-linux-full-artifact/
           retention-days: 14
           if-no-files-found: warn

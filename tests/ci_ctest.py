@@ -39,8 +39,9 @@ class Receipts(unittest.TestCase):
         path.write_text(json.dumps(policy))
         return path
 
-    def run_ci(self, root, policy, tier='core'):
-        return ci.run(root / 'build', root / 'evidence', policy=policy, tier=tier, ctest=args.ctest)
+    def run_ci(self, root, policy, tier='core', selected=None):
+        return ci.run(root / 'build', root / 'evidence', policy=policy, tier=tier,
+                      selected=selected, ctest=args.ctest)
 
     def test_core_excludes_extended_and_preserves_exact_receipt(self):
         with tempfile.TemporaryDirectory(prefix='nex-ci-core-') as temporary:
@@ -62,6 +63,44 @@ class Receipts(unittest.TestCase):
             result = self.run_ci(root, policy, 'full')
             self.assertTrue(result['ok'], result)
             self.assertEqual(set(result['ctest']['observed_groups']), {'quick', 'extended'})
+
+    def test_selected_exact_group_keeps_setup_cleanup_and_excludes_other_failures(self):
+        with tempfile.TemporaryDirectory(prefix='nex-ci-selected-') as temporary:
+            root = Path(temporary)
+            def q(path):return '[[' + str(path).replace('\\', '/') + ']]'
+            policy = self.fixture(root,
+                'set_tests_properties(quick PROPERTIES FIXTURES_SETUP ready)\n'
+                'set_tests_properties(extended PROPERTIES FIXTURES_REQUIRED ready)\n'
+                'add_test(NAME cleanup COMMAND ' + q(args.cmake) + ' -E true)\n'
+                'set_tests_properties(cleanup PROPERTIES LABELS extended FIXTURES_CLEANUP ready)\n'
+                'add_test(NAME extended_extra COMMAND ' + q(args.cmake) + ' -E false)\n'
+                'set_tests_properties(extended_extra PROPERTIES LABELS extended)\n')
+            declared = json.loads(policy.read_text())
+            declared['tests'].update(cleanup=['extended'], extended_extra=['extended'])
+            policy.write_text(json.dumps(declared))
+            result = self.run_ci(root, policy, 'selected', ['extended'])
+            self.assertTrue(result['ok'], result)
+            self.assertEqual(result['tier'], 'selected')
+            self.assertEqual(result['requested_groups'], ['extended'])
+            self.assertEqual(set(result['ctest']['observed_groups']), {'quick', 'extended', 'cleanup'})
+            self.assertEqual(result['ctest']['selected_groups'], ['extended'])
+            self.assertFalse(result['release_qualification'])
+
+    def test_selected_missing_duplicate_and_unknown_groups_cannot_run_a_different_scope(self):
+        for tier, selected in [('selected', None), ('selected', []),
+                               ('selected', ['quick', 'quick']), ('selected', ['quick|extended']),
+                               ('core', ['extended']), ('full', ['extended'])]:
+            with self.subTest(tier=tier, selected=selected), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary);policy = self.fixture(root)
+                with self.assertRaises(ValueError):
+                    self.run_ci(root, policy, tier, selected)
+                self.assertFalse((root / 'evidence').exists())
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary);policy = self.fixture(root)
+            result = self.run_ci(root, policy, 'selected', ['unknown'])
+            self.assertFalse(result['ok'], result)
+            self.assertEqual([row['name'] for row in result['phases']], ['registry'])
+            self.assertFalse((root / 'evidence/results.xml').exists())
 
     def test_nested_inventory_keeps_the_runs_direct_log(self):
         with tempfile.TemporaryDirectory(prefix='nex-ci-nested-') as temporary:

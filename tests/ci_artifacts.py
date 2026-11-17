@@ -69,6 +69,17 @@ class ExportEvidence(unittest.TestCase):
             self.assertEqual((root/'export/configure.log').read_bytes(), b'original configure failure\n')
             self.assertEqual(len(report['files']), 1)
 
+    def test_selected_diagnostics_export_their_own_tier_without_an_sdk(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary);source = root/'input';tier = source/'ci-selected'
+            tier.mkdir(parents=True)
+            (tier/'ctest-receipt.json').write_text('{"selected_groups":["profile"]}\n')
+            (tier/'results.xml').write_text('<testsuite name="selected"/>\n')
+            report = module.export_evidence(source, root/'export')
+            self.assertEqual(len(report['files']), 2)
+            self.assertEqual((root/'export/ci-selected/results.xml').read_bytes(), (tier/'results.xml').read_bytes())
+            self.assertFalse((root/'export/sdk-acceptance').exists())
+
     def test_existing_evidence_is_not_overwritten(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

@@ -718,4 +718,4 @@ test fn answer()->unit!{task,io}{assert(leaf::answer()==42);print("selected-test
             self.assertEqual((executed.returncode,executed.stdout),(0,'selected-test42\n'),executed.stderr)
 
 
-if __name__=='__main__':unittest.main()
+if __name__=='__main__':unittest.main(verbosity=2)

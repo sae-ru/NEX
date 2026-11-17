@@ -27,8 +27,9 @@ locked production browser builds, full networking and live LLDB/DAP debugging.
 [Download](https://github.com/sae-ru/NEX/releases/tag/v0.280.1) ·
 [Install](getting-started.en.md#install-the-macos-arm64-sdk).
 [Core CI](evidence/core-ci-0.280.1-2026-11-17.json) passed17 groups each on
-macOS/Linux at the qualification main; the full Linux source/installed run has
-its own scope. [SDK0.246.1](releases/0.246.1.json) retains its original bytes.
+macOS/Linux at the qualification main. The [full Linux attempt](evidence/linux-full-profile-timeout-0.280.1-2026-11-17.json)
+passed380/381 groups; profiling hit its aggregate timeout, before installed
+checks. [SDK0.246.1](releases/0.246.1.json) retains its original bytes.
 
 Source030 supports typed cells, [structured reference tasks](reference-tasks.md),
 [persistent UI](persistent-ui.md), native libraries and
@@ -43,8 +44,8 @@ Ordinary libraries include [hash containers](hash-containers.md),
 the [IEEE kernel](ieee-numeric.md) still has no source types.
 
 The [bounded LLM entry](llm-entry-v2.md) has a4058-byte common contract and
-preserves the full detailed rules. A separately frozen local Qwen study is next;
-no new observed model result or comparative token saving is claimed.
+preserves the full detailed rules. Its [observed Qwen study](llm-cost-qwen38-27b-2026-11-17.en.md)
+retains all60 outcomes, unknown usage and explicit execution amendments.
 
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|

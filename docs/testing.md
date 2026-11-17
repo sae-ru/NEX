@@ -17,7 +17,22 @@ ctest --test-dir build -L '^core$' -j 1 --output-on-failure
 The [development presets](development-build.md) also provide
 `cmake --workflow --preset dev-core` for configure/build/core-test orchestration.
 The [CI receipt runner](ci.md) also saves and validates the actual registry,
-JUnit, exit code and logs for core/full selections.
+JUnit, exit code and logs for core/full selections. For a failed group, use an
+explicit diagnostic selection with a fresh evidence directory:
+
+```sh
+python3 tools/ci/ctest.py --build build --tier selected \
+  --select task_provider_profile_native --output build/profile-diagnostic
+```
+
+Names are exact registered groups; repeat `--select` for several groups. The
+receipt includes their actual fixture setup/cleanup and rejects unknown names,
+missing results, failed or skipped groups. A selected receipt does not qualify
+the full suite or an SDK. The Linux wrapper accepts the same selection, and the
+manual full-workflow input `test_group` runs that diagnostic scope on the pinned
+Ubuntu Debug toolchain. Scheduled runs and empty manual inputs retain the full
+source and installed-SDK workflow. Profile tests print method progress without
+buffering so a timeout retains the last active scenario.
 
 The selected 17 groups cover frontend checking, typed reference evaluation,
 checked float/byte runtimes, discovery/language-pack contracts and offline tool

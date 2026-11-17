@@ -6,6 +6,13 @@ owner: repository
 
 # Implementation sequence: items 1–6
 
+The [bounded real Java port](../examples/java-circular-fifo/README.md) implements
+the selected CircularFifoQueue API with existing030 language features. The
+[functional record](evidence/java-circular-fifo-0.280.1-2026-11-17.json) covers
+995 original-Java observations in48 traces, including native Debug/Release,
+reference and strict executed TypeScript. Broader Java migration, converters,
+Windows/Linux portable delivery and the original PLAN remain open.
+
 The0.280 source SDK attempt exposed a deadline/context diagnostic race in the
 native host-session phase. The0.280.1 runtime correction retains the original
 deadline/cancellation outcome in temporary owner-thread continuation scopes.

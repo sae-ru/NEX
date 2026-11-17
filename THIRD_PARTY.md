@@ -37,6 +37,13 @@ and driver remain operator-selected external platform dependencies.
 | TypeScript 7.0.2 | Checks generated browser source | Apache-2.0; npm development dependency |
 | Vite 8.3.4 | Browser dev/preview server and bundler | MIT; npm development dependency |
 | Playwright 1.64.1 | Browser acceptance tests | Apache-2.0; npm development dependency and separately installed browser engines |
+| Apache Commons Collections 4.6.0 | Manual ring queue example and two unmodified Java oracle sources | Apache-2.0; source archive provenance, full license and original notice in `tests/fixtures/java-circular-fifo`; adapted source/license/notice in `examples/java-circular-fifo` |
+
+The optional [manual Java queue port](examples/java-circular-fifo/README.md)
+retains the Apache source attribution and marks the NEX adaptation. Its Java
+oracle uses an external JDK only for optional regeneration. No JVM, JDK or
+Commons binary is linked into NEX or required by the adapted NEX application.
+The example was added after the frozen0.280.1 SDK archive.
 
 LLVM/MLIR, SQLite and OpenSSL are found from installed development packages. The JSON/HTTP single-header libraries above are copied unmodified into `runtime/third_party`; `manifest.json` records exact versions, source URLs, SHA256 header hashes and license filenames. Tests verify the pinned header bytes. Compiler installation copies NEX's executable and resource files, including these headers/licenses, but does not bundle the external shared libraries or platform SDK. Their configured locations remain prerequisites.
 

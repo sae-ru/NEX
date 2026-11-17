@@ -31,7 +31,7 @@ def export_evidence(source, output):
         path = source / relative
         if path.is_file():
             selected.add(path)
-    for tier in ('ci-core', 'ci-full'):
+    for tier in ('ci-core', 'ci-full', 'ci-selected'):
         direct(source / tier)
     sdk = source / 'sdk-acceptance'
     if sdk.is_dir():

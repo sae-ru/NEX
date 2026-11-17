@@ -37,8 +37,9 @@ The repository includes [measurements and limitations](docs/overview.en.md#measu
 A [recorded 0.162.2 checked-integer benchmark](docs/evidence/macos-e63-sdk-complete-0.162.2-2026-11-09.json)
 measured median wall times of 0.296170 s for NEX, 0.290189 s for checked C++ and
 7.610111 s for Python on one Mac. These are one-workload observations.
-The [first local Qwen3.8 27B task comparison](docs/llm-cost-qwen38-27b-2026-11-11.en.md)
-found no NEX token saving. Other models/workloads remain unmeasured.
+The [latest local Qwen3.8 27B task comparison](docs/llm-cost-qwen38-27b-2026-11-17.en.md)
+accepted6/20 NEX,18/20 C++ and20/20 Python attempts. Two NEX calls have unknown
+usage; no NEX token saving is established. Other models/workloads remain unmeasured.
 
 ## What you can build
 
@@ -70,8 +71,9 @@ locked production browser builds, full networking and live LLDB/DAP debugging.
 [Download](https://github.com/sae-ru/NEX/releases/tag/v0.280.1) ·
 [Install](docs/getting-started.en.md#install-the-macos-arm64-sdk).
 [Core CI](docs/evidence/core-ci-0.280.1-2026-11-17.json) passed17 groups each on
-macOS/Linux at the qualification main; the full Linux source/installed run has
-its own scope. [SDK0.246.1](docs/releases/0.246.1.json) retains its original bytes.
+macOS/Linux at the qualification main. The [full Linux attempt](docs/evidence/linux-full-profile-timeout-0.280.1-2026-11-17.json)
+passed380/381 groups; profiling hit its aggregate timeout, before installed
+checks. [SDK0.246.1](docs/releases/0.246.1.json) retains its original bytes.
 
 Source030 supports typed cells, [structured reference tasks](docs/reference-tasks.md),
 [persistent UI](docs/persistent-ui.md), native libraries and
@@ -86,8 +88,8 @@ Ordinary libraries include [hash containers](docs/hash-containers.md),
 the [IEEE kernel](docs/ieee-numeric.md) still has no source types.
 
 The [bounded LLM entry](docs/llm-entry-v2.md) has a4058-byte common contract and
-preserves the full detailed rules. A separately frozen local Qwen study is next;
-no new observed model result or comparative token saving is claimed.
+preserves the full detailed rules. Its [observed Qwen study](docs/llm-cost-qwen38-27b-2026-11-17.en.md)
+retains all60 outcomes, unknown usage and explicit execution amendments.
 
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|

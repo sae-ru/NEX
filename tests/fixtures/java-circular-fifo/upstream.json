@@ -1,0 +1,34 @@
+{
+  "schema": "nex.upstream-source-capture/1",
+  "project": "Apache Commons Collections",
+  "version": "4.6.0",
+  "artifact": "org.apache.commons:commons-collections4:4.6.0:sources",
+  "url": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-collections4/4.6.0/commons-collections4-4.6.0-sources.jar",
+  "published_sha1": "4f00aa6cc4f98bd9c5430a4b94fa515a2db10735",
+  "sha256": "2caf7d2e94b12b3433f9f12ab3b37b7d16626deb2ed4ed13d401ac53d2f5d5c5",
+  "bytes": 830635,
+  "selected_files": [
+    {
+      "path": "org/apache/commons/collections4/BoundedCollection.java",
+      "sha256": "22aebf6e2649df119b224589b5629752580016c046338dca534e1be51ca3e4c7",
+      "bytes": 1704
+    },
+    {
+      "path": "org/apache/commons/collections4/queue/CircularFifoQueue.java",
+      "sha256": "d455d399425c40e2c98c8dab0f6d6b2de58b0df3225cecd1f212f13d5173da1e",
+      "bytes": 12657
+    },
+    {
+      "path": "META-INF/LICENSE.txt",
+      "sha256": "b1d2870f1a00e4d7f56576e5f0870cba109e041f8af66866cf5b499478e654e7",
+      "bytes": 11359
+    },
+    {
+      "path": "META-INF/NOTICE.txt",
+      "sha256": "b02ca2cac4b96fa1a9829573fbc61b2603e5325b5e72b22993921e98bf06aa54",
+      "bytes": 181
+    }
+  ],
+  "license": "Apache-2.0",
+  "captured_utc": "2026-11-17T16:42:46.631500+00:00"
+}

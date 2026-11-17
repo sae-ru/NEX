@@ -1,0 +1,822 @@
+{
+  "schema": "nex.llm-local-study-evidence/2",
+  "ok": true,
+  "utc": "2026-11-17T18:02:48.067886+00:00",
+  "data_kind": "observed",
+  "study_protocol_version": 2,
+  "source_commit": "bfb3492814acf33e9fd62c5d10a70895eac6d1b0",
+  "toolchain": "0.280.1",
+  "language": "0.30",
+  "compiler_sha256": "0d2559bf5df1e15200e6c78013835e95f661ae2512c02fc7b6112fdd863debba",
+  "compiler_scope": "source-build compiler from the qualified SDK source cohort; not bundled SDK binary",
+  "model": "qwen/qwen3.8-27b",
+  "quantization": "Q8_0",
+  "model_revision": "f0fc43cfd802bd87bc7b95f2120553a6407848e3229126b623cc397427857e8a",
+  "runtime": "llama.cpp-mac-arm64-apple-metal-advsimd-2.73.0",
+  "historical_runtime": "2.60.0",
+  "same_model_weights_as_historical": true,
+  "freeze_sha256": "b1800840dafadce3fe59802ed34fb13025b71045e43eb366dd123be120d9f51d",
+  "ledger_sha256": "9a073c459e57f6a66ffbf0c17b44f9ad5913282b47a784649a4b74928d25c47e",
+  "summary_sha256": "2cebc4dfa551cbb158c5166fbbdc339be0828954dc9468f48ac6d2ff01e43b1a",
+  "trials": 60,
+  "matrix_complete": true,
+  "calls": 396,
+  "calls_with_raw_request_response_stats_agreement": 394,
+  "calls_with_unknown_usage": 2,
+  "unknown_calls": [
+    {
+      "trial": "v2-qwen-associated-value-adapter-0-nex",
+      "call": "call-0",
+      "error": "timed out",
+      "raw_call_sha256": "2592c7346218a43502f3824fc2e9e2b7e28d449c22bc64e71a8a7a0e537d9b91",
+      "normalized_request_sha256": "0b873efdedfb45fd471cb936f253d8e670a5a0a4d8c59a893f3ee61719b11777",
+      "usage": null
+    },
+    {
+      "trial": "v2-qwen-associated-value-adapter-1-nex",
+      "call": "call-0",
+      "error": "timed out",
+      "raw_call_sha256": "a1532d3e9c0fd6483150366c3d6f6d66d555ce6a9ff81db4e1d1d34d29fff2fe",
+      "normalized_request_sha256": "0b873efdedfb45fd471cb936f253d8e670a5a0a4d8c59a893f3ee61719b11777",
+      "usage": null
+    }
+  ],
+  "known_total_tokens": 1298118,
+  "statuses": {
+    "accepted": 44,
+    "failed": 6,
+    "budget_exhausted": 10
+  },
+  "results": {
+    "nex": {
+      "attempted_trials": 20,
+      "accepted_trials": 6,
+      "terminal_statuses": {
+        "accepted": 6,
+        "failed": 4,
+        "timeout": 0,
+        "budget_exhausted": 10
+      },
+      "matrix_complete": true,
+      "calls": 174,
+      "calls_without_usage": 2,
+      "usage_complete": false,
+      "calls_without_cache_usage": 174,
+      "cache_usage_complete": false,
+      "known_input_tokens": 880230,
+      "known_cached_input_tokens": 0,
+      "known_uncached_input_tokens": 0,
+      "known_output_tokens": 10494,
+      "known_total_tokens": 890724,
+      "all_tokens_per_accepted_trial": null,
+      "median_trial_tokens": null,
+      "p95_trial_tokens": null,
+      "total_wall_ms": 1708405,
+      "confirmed_costs": {},
+      "calls_without_confirmed_cost": 174
+    },
+    "cpp": {
+      "attempted_trials": 20,
+      "accepted_trials": 18,
+      "terminal_statuses": {
+        "accepted": 18,
+        "failed": 2,
+        "timeout": 0,
+        "budget_exhausted": 0
+      },
+      "matrix_complete": true,
+      "calls": 128,
+      "calls_without_usage": 0,
+      "usage_complete": true,
+      "calls_without_cache_usage": 128,
+      "cache_usage_complete": false,
+      "known_input_tokens": 257844,
+      "known_cached_input_tokens": 0,
+      "known_uncached_input_tokens": 0,
+      "known_output_tokens": 20628,
+      "known_total_tokens": 278472,
+      "all_tokens_per_accepted_trial": {
+        "numerator": 46412,
+        "denominator": 3
+      },
+      "median_trial_tokens": {
+        "numerator": 22213,
+        "denominator": 2
+      },
+      "p95_trial_tokens": 48600,
+      "total_wall_ms": 1749820,
+      "confirmed_costs": {},
+      "calls_without_confirmed_cost": 128
+    },
+    "python": {
+      "attempted_trials": 20,
+      "accepted_trials": 20,
+      "terminal_statuses": {
+        "accepted": 20,
+        "failed": 0,
+        "timeout": 0,
+        "budget_exhausted": 0
+      },
+      "matrix_complete": true,
+      "calls": 94,
+      "calls_without_usage": 0,
+      "usage_complete": true,
+      "calls_without_cache_usage": 94,
+      "cache_usage_complete": false,
+      "known_input_tokens": 119632,
+      "known_cached_input_tokens": 0,
+      "known_uncached_input_tokens": 0,
+      "known_output_tokens": 9290,
+      "known_total_tokens": 128922,
+      "all_tokens_per_accepted_trial": {
+        "numerator": 64461,
+        "denominator": 10
+      },
+      "median_trial_tokens": {
+        "numerator": 6189,
+        "denominator": 1
+      },
+      "p95_trial_tokens": 12149,
+      "total_wall_ms": 805473,
+      "confirmed_costs": {},
+      "calls_without_confirmed_cost": 94
+    }
+  },
+  "comparisons": {
+    "qwen38-27b-q8": {
+      "cpp": {
+        "nex_to_baseline_tokens_per_accepted_trial": null,
+        "nex_success_rate_at_least_baseline": null
+      },
+      "python": {
+        "nex_to_baseline_tokens_per_accepted_trial": null,
+        "nex_success_rate_at_least_baseline": null
+      }
+    }
+  },
+  "owned_instances_unloaded": true,
+  "original_provider_stop_preserved": true,
+  "original_execution_sha256": "acbc2506016fa612b9aaa38cde5e483dad1d86016301f54fb58bdafe3a9627e0",
+  "execution_protocol_amended": true,
+  "failed_trials_retried": 0,
+  "amendment": "After each inspected terminal provider timeout, collect only the never-started suffix; unchanged frozen engine/budgets, chunked model loads; two failures and unknown usage retained.",
+  "recoveries": [
+    {
+      "path": "recovery/017/execution.json",
+      "sha256": "9f34edcc215b0088d14cc69f392a436ed6ba35eb901e6d838dae239fb4b9211b",
+      "phase": "generation_complete",
+      "trials_collected": 27
+    },
+    {
+      "path": "recovery/027/execution.json",
+      "sha256": "99174f3fdfe098079ffca698ab5a9e780926580548ef8feec3eb6969aa03b686",
+      "phase": "generation_complete",
+      "trials_collected": 37
+    },
+    {
+      "path": "recovery/037/execution.json",
+      "sha256": "bc4f8585ddf4ca004179607ac04fead5f583ceddb328d53ca14fd13d548c5854",
+      "phase": "stopped",
+      "trials_collected": 46
+    },
+    {
+      "path": "recovery/046/execution.json",
+      "sha256": "8dfa95029ec0a581195fb86c0d13ae12e8bb34d120d1c424b0e30d82a648f3f1",
+      "phase": "generation_complete",
+      "trials_collected": 56
+    },
+    {
+      "path": "recovery/056/execution.json",
+      "sha256": "f88e9cef1f77b1d5da1905b138c6e63d3c1eccfac9f245db21e88e6c00607fcb",
+      "phase": "generation_complete",
+      "trials_collected": 60
+    }
+  ],
+  "operator_hashes": {
+    "recover-unmeasured.py": "e7908cbae1abf550674307b0eb88d13040449a053f683e35c175ce345573f37c",
+    "recover-unmeasured-after46.py": "76644ab265b91b3865e3613f662849597d50d658d0168a95ffea42f756cde277",
+    "finish.py": "594a64e49c4241e111e9241227bfa9fd489bb4277257e4ad7118078c0276e7ea"
+  },
+  "source_review_is_model_assisted_not_formal_or_human": true,
+  "independent_stochastic_repeats_claimed": false,
+  "complete_NEX_token_total": null,
+  "NEX_token_cost_per_accepted_trial": null,
+  "cached_token_split": null,
+  "paid_API_calls": 0,
+  "confirmed_monetary_cost": null,
+  "broad_NEX_token_savings_demonstrated": false,
+  "runtime_performance_claimed": false,
+  "latency_is_exclusive_host_benchmark": false,
+  "pilots_included": false,
+  "trials_detail": [
+    {
+      "id": "v2-qwen-bounded-total-0-nex",
+      "task": "bounded-total",
+      "language": "nex",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 6,
+      "acceptance_sha256": "9de56bbd09a30044c73a67be1fc5e4f73768f9ece97835ca884cdb5fc343af8f"
+    },
+    {
+      "id": "v2-qwen-bounded-total-0-cpp",
+      "task": "bounded-total",
+      "language": "cpp",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 7,
+      "acceptance_sha256": "f0f4fcfd1f2ddda7c24873830c261025e3f2e8fa328fae03b36ffabe4cd404a4"
+    },
+    {
+      "id": "v2-qwen-bounded-total-0-python",
+      "task": "bounded-total",
+      "language": "python",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 4,
+      "acceptance_sha256": "700037d0c4b9c2bc622a32cbfc59eb389625746619c153a960f575d668fa10ac"
+    },
+    {
+      "id": "v2-qwen-recoverable-selection-0-cpp",
+      "task": "recoverable-selection",
+      "language": "cpp",
+      "repeat": 0,
+      "status": "failed",
+      "stop_reason": "independent_source_review_rejected",
+      "calls": 4,
+      "acceptance_sha256": "2ce908fd1709f040bf1c4334a3e9ff298b19d0398513594ea3dca2849724a650"
+    },
+    {
+      "id": "v2-qwen-recoverable-selection-0-python",
+      "task": "recoverable-selection",
+      "language": "python",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 4,
+      "acceptance_sha256": "f52ee2fdebf768ec14ec8e611c1c8ebc27e8e3290d1907572ed3a6fabdeeb30d"
+    },
+    {
+      "id": "v2-qwen-recoverable-selection-0-nex",
+      "task": "recoverable-selection",
+      "language": "nex",
+      "repeat": 0,
+      "status": "budget_exhausted",
+      "stop_reason": "request_limit",
+      "calls": 11,
+      "acceptance_sha256": "5ebcae29eacd06916618db65d687e186961b87fb3a6d8b7ad763a4077724235c"
+    },
+    {
+      "id": "v2-qwen-unicode-window-0-python",
+      "task": "unicode-window",
+      "language": "python",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 4,
+      "acceptance_sha256": "ab10f2d53912455b0f7ef575af037088339a22a97509f585ccd6905c59d59ca1"
+    },
+    {
+      "id": "v2-qwen-unicode-window-0-nex",
+      "task": "unicode-window",
+      "language": "nex",
+      "repeat": 0,
+      "status": "failed",
+      "stop_reason": "independent_source_review_rejected",
+      "calls": 8,
+      "acceptance_sha256": "b643719375a4e163ec53bae59ed52c161f4e853051fe7403fd09fb3c16174380"
+    },
+    {
+      "id": "v2-qwen-unicode-window-0-cpp",
+      "task": "unicode-window",
+      "language": "cpp",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 6,
+      "acceptance_sha256": "782dc996680e727b506b6736db9789ad5f504e9b0213c325116f57a61f7f1bd6"
+    },
+    {
+      "id": "v2-qwen-immutable-byte-update-0-nex",
+      "task": "immutable-byte-update",
+      "language": "nex",
+      "repeat": 0,
+      "status": "budget_exhausted",
+      "stop_reason": "request_limit",
+      "calls": 11,
+      "acceptance_sha256": "e391495eb9d05fb256e34927a3f4118913781b08029127f6404b8d597d962c1b"
+    },
+    {
+      "id": "v2-qwen-immutable-byte-update-0-cpp",
+      "task": "immutable-byte-update",
+      "language": "cpp",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 10,
+      "acceptance_sha256": "45113c04416dc6eaf0defeb113fb10797139bb0d4ba875c7f0d7f2c729d264ab"
+    },
+    {
+      "id": "v2-qwen-immutable-byte-update-0-python",
+      "task": "immutable-byte-update",
+      "language": "python",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 5,
+      "acceptance_sha256": "9b25bbd565997c1e755ba1a5eb2b0fa088120f409f2d21921525b7a4b082e4c0"
+    },
+    {
+      "id": "v2-qwen-generic-projection-0-cpp",
+      "task": "generic-projection",
+      "language": "cpp",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 6,
+      "acceptance_sha256": "5f2dd2c0306edc9df9614ff55f310901844ef1d48e5f0f8033b85f91d7f65cd8"
+    },
+    {
+      "id": "v2-qwen-generic-projection-0-python",
+      "task": "generic-projection",
+      "language": "python",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 4,
+      "acceptance_sha256": "8b13b1f36b7b16d80aadb16c23029ec11d50f42672c97442bd940fd78e212563"
+    },
+    {
+      "id": "v2-qwen-generic-projection-0-nex",
+      "task": "generic-projection",
+      "language": "nex",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 12,
+      "acceptance_sha256": "2a9d23d94136644b4e3ddb5b0b40d28096cfef742a97c695ce0b7943d37b1962"
+    },
+    {
+      "id": "v2-qwen-associated-value-adapter-0-python",
+      "task": "associated-value-adapter",
+      "language": "python",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 7,
+      "acceptance_sha256": "aa204ca888fffc6ea9e143f2df3d9f256c6558ec45a6f0bb2b9f4a55e9d3c141"
+    },
+    {
+      "id": "v2-qwen-associated-value-adapter-0-nex",
+      "task": "associated-value-adapter",
+      "language": "nex",
+      "repeat": 0,
+      "status": "failed",
+      "stop_reason": "provider_failure_or_unknown_usage",
+      "calls": 1,
+      "acceptance_sha256": "af19ca9345e77abfad99e9da81953703507f32980d108b0225ed81ce8b94a76c"
+    },
+    {
+      "id": "v2-qwen-associated-value-adapter-0-cpp",
+      "task": "associated-value-adapter",
+      "language": "cpp",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 6,
+      "acceptance_sha256": "33351479b91b2b919060281e9cf066a8863d6683dd60e58a395cc3aa68de4efa"
+    },
+    {
+      "id": "v2-qwen-module-interface-change-0-nex",
+      "task": "module-interface-change",
+      "language": "nex",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 5,
+      "acceptance_sha256": "1ffe97e1f4f8676ed0ef122dd8bd4b4a55c293146f767f2c118e9162531c2497"
+    },
+    {
+      "id": "v2-qwen-module-interface-change-0-cpp",
+      "task": "module-interface-change",
+      "language": "cpp",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 7,
+      "acceptance_sha256": "2e3a1b7f64cf83026634df63b5e00566d0be991f4bf01cb1bdc01cefde8527f7"
+    },
+    {
+      "id": "v2-qwen-module-interface-change-0-python",
+      "task": "module-interface-change",
+      "language": "python",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 5,
+      "acceptance_sha256": "3b3d412d96e656f11ebcd3a6f00daeb0959357b38eeb676d94c970c1c64e2c17"
+    },
+    {
+      "id": "v2-qwen-ordered-bounded-map-0-cpp",
+      "task": "ordered-bounded-map",
+      "language": "cpp",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 7,
+      "acceptance_sha256": "efa9ba06b3feef3998be4e0b9f156db4ba05e75973f0bffe79b447078bfd1a55"
+    },
+    {
+      "id": "v2-qwen-ordered-bounded-map-0-python",
+      "task": "ordered-bounded-map",
+      "language": "python",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 5,
+      "acceptance_sha256": "cbdc3bb150893da923e8fc5599d9a41ea8585b8cf85086d68f677fa4b743adad"
+    },
+    {
+      "id": "v2-qwen-ordered-bounded-map-0-nex",
+      "task": "ordered-bounded-map",
+      "language": "nex",
+      "repeat": 0,
+      "status": "budget_exhausted",
+      "stop_reason": "review_token_budget",
+      "calls": 11,
+      "acceptance_sha256": "c5f5826178653972ea17e273ed4c748b198e7ce135959933f0ef83222ffc99e0"
+    },
+    {
+      "id": "v2-qwen-typed-error-finally-0-python",
+      "task": "typed-error-finally",
+      "language": "python",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 4,
+      "acceptance_sha256": "49b5b1c5f376de7378376082007791df39426b7bfd373c9af71985726f8afb13"
+    },
+    {
+      "id": "v2-qwen-typed-error-finally-0-nex",
+      "task": "typed-error-finally",
+      "language": "nex",
+      "repeat": 0,
+      "status": "budget_exhausted",
+      "stop_reason": "request_limit",
+      "calls": 11,
+      "acceptance_sha256": "3be84642a41e96ca98dc43575846ac03718e687e588fa642310d645f8e2c9662"
+    },
+    {
+      "id": "v2-qwen-typed-error-finally-0-cpp",
+      "task": "typed-error-finally",
+      "language": "cpp",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 4,
+      "acceptance_sha256": "8dd9e0cc1cff714c54b6875ad3202497b13c3e82a6d2a9cba3bc9b923ec8b3c9"
+    },
+    {
+      "id": "v2-qwen-joined-yielding-child-0-nex",
+      "task": "joined-yielding-child",
+      "language": "nex",
+      "repeat": 0,
+      "status": "budget_exhausted",
+      "stop_reason": "request_limit",
+      "calls": 11,
+      "acceptance_sha256": "8a790affc00042c9ba57199cd9b179c1656a253e103adffdbcdeafe1aae7f71b"
+    },
+    {
+      "id": "v2-qwen-joined-yielding-child-0-cpp",
+      "task": "joined-yielding-child",
+      "language": "cpp",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 7,
+      "acceptance_sha256": "82af3386783ead650650f1638bdae9bdc8a696a5344a244f96408e85de41b981"
+    },
+    {
+      "id": "v2-qwen-joined-yielding-child-0-python",
+      "task": "joined-yielding-child",
+      "language": "python",
+      "repeat": 0,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 5,
+      "acceptance_sha256": "0d24a0cd0ee00b58b8132e043a29dfadd5a6581c8374cbff07d94e2b59e37ad2"
+    },
+    {
+      "id": "v2-qwen-bounded-total-1-cpp",
+      "task": "bounded-total",
+      "language": "cpp",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 7,
+      "acceptance_sha256": "147e8cbf140e5c7e57083ea161f42f676039ade7d7e9655b32bf541727262bc0"
+    },
+    {
+      "id": "v2-qwen-bounded-total-1-python",
+      "task": "bounded-total",
+      "language": "python",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 4,
+      "acceptance_sha256": "8733d494204c9558ce6aaa3be320c4304ee8fb21b5bf83aa1a23de2e09aaad70"
+    },
+    {
+      "id": "v2-qwen-bounded-total-1-nex",
+      "task": "bounded-total",
+      "language": "nex",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 6,
+      "acceptance_sha256": "1eef374b43f68bde12e94e9875f1bc559330fef3c97055f4e56c6e66d140be00"
+    },
+    {
+      "id": "v2-qwen-recoverable-selection-1-python",
+      "task": "recoverable-selection",
+      "language": "python",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 4,
+      "acceptance_sha256": "c7bfc68977121720c970666b423e142e7cd8d4bf6b033e060d1299bd750d7d32"
+    },
+    {
+      "id": "v2-qwen-recoverable-selection-1-nex",
+      "task": "recoverable-selection",
+      "language": "nex",
+      "repeat": 1,
+      "status": "budget_exhausted",
+      "stop_reason": "request_limit",
+      "calls": 11,
+      "acceptance_sha256": "947be347a96934087c2df3b75ffc07cda04cc8891bd824be871f675c7db3da47"
+    },
+    {
+      "id": "v2-qwen-recoverable-selection-1-cpp",
+      "task": "recoverable-selection",
+      "language": "cpp",
+      "repeat": 1,
+      "status": "failed",
+      "stop_reason": "independent_source_review_rejected",
+      "calls": 4,
+      "acceptance_sha256": "c997ca541d2bfa42da35b22ecb1b6fa321514f93a43c8a6e1fa2d193499f3a0a"
+    },
+    {
+      "id": "v2-qwen-unicode-window-1-nex",
+      "task": "unicode-window",
+      "language": "nex",
+      "repeat": 1,
+      "status": "failed",
+      "stop_reason": "independent_source_review_rejected",
+      "calls": 8,
+      "acceptance_sha256": "c376bdb92ba535554056fe2649f99fc80bc5ca97bf0b08e387d090c8bf302642"
+    },
+    {
+      "id": "v2-qwen-unicode-window-1-cpp",
+      "task": "unicode-window",
+      "language": "cpp",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 6,
+      "acceptance_sha256": "0485517fa4e6be52bd0fe792c3004cdde1c44f28d0fb4737b3491072a310f6a6"
+    },
+    {
+      "id": "v2-qwen-unicode-window-1-python",
+      "task": "unicode-window",
+      "language": "python",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 4,
+      "acceptance_sha256": "f5e15c3d84318f048eaf21d7319048651065d354d8c80078cbc8fe67cec66a81"
+    },
+    {
+      "id": "v2-qwen-immutable-byte-update-1-cpp",
+      "task": "immutable-byte-update",
+      "language": "cpp",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 10,
+      "acceptance_sha256": "74d79f4dca6086042865eb806773628414126aa619250746112690232130859a"
+    },
+    {
+      "id": "v2-qwen-immutable-byte-update-1-python",
+      "task": "immutable-byte-update",
+      "language": "python",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 5,
+      "acceptance_sha256": "3d1376cca5b0b9fc762ec0481ec2f9efa3a93753e13c7e4f9fc82be4eb92ddd3"
+    },
+    {
+      "id": "v2-qwen-immutable-byte-update-1-nex",
+      "task": "immutable-byte-update",
+      "language": "nex",
+      "repeat": 1,
+      "status": "budget_exhausted",
+      "stop_reason": "request_limit",
+      "calls": 11,
+      "acceptance_sha256": "8f843eec8bdf7f278969e859286b6b8143db33279bc26ac0f6e65b36a98a2794"
+    },
+    {
+      "id": "v2-qwen-generic-projection-1-python",
+      "task": "generic-projection",
+      "language": "python",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 4,
+      "acceptance_sha256": "c66910c10ab518795adc204c51e25b440e6f482a2a086774d3b7a29d72f678b4"
+    },
+    {
+      "id": "v2-qwen-generic-projection-1-nex",
+      "task": "generic-projection",
+      "language": "nex",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 12,
+      "acceptance_sha256": "fddd387c2ed2e4e7ba4b94a12ac220c8b18e6dbff85887f073560ba71ae03686"
+    },
+    {
+      "id": "v2-qwen-generic-projection-1-cpp",
+      "task": "generic-projection",
+      "language": "cpp",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 6,
+      "acceptance_sha256": "5eefae9fbb54f867b5172f1905e5cd40c7270c6fbbd801ed44c844ae48b3f8d9"
+    },
+    {
+      "id": "v2-qwen-associated-value-adapter-1-nex",
+      "task": "associated-value-adapter",
+      "language": "nex",
+      "repeat": 1,
+      "status": "failed",
+      "stop_reason": "provider_failure_or_unknown_usage",
+      "calls": 1,
+      "acceptance_sha256": "24959f6a7c4c0692cbf52c7eacb4a4bbd084f288d2025c699cb816c5507b38b2"
+    },
+    {
+      "id": "v2-qwen-associated-value-adapter-1-cpp",
+      "task": "associated-value-adapter",
+      "language": "cpp",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 6,
+      "acceptance_sha256": "2561ea22596e257095a533a335d92742cf3ca7e16acbee0f073b5f0c9799bac0"
+    },
+    {
+      "id": "v2-qwen-associated-value-adapter-1-python",
+      "task": "associated-value-adapter",
+      "language": "python",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 7,
+      "acceptance_sha256": "94c8d3726986e9048b38182ad273886c54c8bdb4f877b9816ef8fe379ca22d95"
+    },
+    {
+      "id": "v2-qwen-module-interface-change-1-cpp",
+      "task": "module-interface-change",
+      "language": "cpp",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 7,
+      "acceptance_sha256": "1605ac6faf2c76322b1fe1874c0f0b63e3584d38a0024825755cd354b4ae56aa"
+    },
+    {
+      "id": "v2-qwen-module-interface-change-1-python",
+      "task": "module-interface-change",
+      "language": "python",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 5,
+      "acceptance_sha256": "0bc356dff11a8d1b4bdc304ef9572c534d250484ecd086f6e25661585d1fcbfa"
+    },
+    {
+      "id": "v2-qwen-module-interface-change-1-nex",
+      "task": "module-interface-change",
+      "language": "nex",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 5,
+      "acceptance_sha256": "358fe6761dc99d3b2f475205959775f4da0757d9d1cf051776d144076a63515e"
+    },
+    {
+      "id": "v2-qwen-ordered-bounded-map-1-python",
+      "task": "ordered-bounded-map",
+      "language": "python",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 5,
+      "acceptance_sha256": "6383141048c6018b0d5d8237d5dac69977d18b6d06192b73faa99bea9378b154"
+    },
+    {
+      "id": "v2-qwen-ordered-bounded-map-1-nex",
+      "task": "ordered-bounded-map",
+      "language": "nex",
+      "repeat": 1,
+      "status": "budget_exhausted",
+      "stop_reason": "review_token_budget",
+      "calls": 11,
+      "acceptance_sha256": "03136ca8288d94856706726da856f1c291dbaca29aaa835ea6df55af2a7dc936"
+    },
+    {
+      "id": "v2-qwen-ordered-bounded-map-1-cpp",
+      "task": "ordered-bounded-map",
+      "language": "cpp",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 7,
+      "acceptance_sha256": "1a8860f4097ec01bfde249c52085fc357fb8d0ee310bf9031c4495c022d2184c"
+    },
+    {
+      "id": "v2-qwen-typed-error-finally-1-nex",
+      "task": "typed-error-finally",
+      "language": "nex",
+      "repeat": 1,
+      "status": "budget_exhausted",
+      "stop_reason": "request_limit",
+      "calls": 11,
+      "acceptance_sha256": "33a43f79200f664b5a62aa54148a344f30e91f88d3209d40855b138af9d39a5a"
+    },
+    {
+      "id": "v2-qwen-typed-error-finally-1-cpp",
+      "task": "typed-error-finally",
+      "language": "cpp",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 4,
+      "acceptance_sha256": "4acff2cd9f5b328c6eba8121e8cbe72934358ff5da8443386a84372162d3b548"
+    },
+    {
+      "id": "v2-qwen-typed-error-finally-1-python",
+      "task": "typed-error-finally",
+      "language": "python",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 4,
+      "acceptance_sha256": "ddd9c24406e1b6627731d827685ebf2a486ec1a7304f60744d457473b6b44fa5"
+    },
+    {
+      "id": "v2-qwen-joined-yielding-child-1-cpp",
+      "task": "joined-yielding-child",
+      "language": "cpp",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 7,
+      "acceptance_sha256": "d763ccb5cdf3ffc5911464cee23b9d3da7acd935e916fb3ac8ec3bd016ddb081"
+    },
+    {
+      "id": "v2-qwen-joined-yielding-child-1-python",
+      "task": "joined-yielding-child",
+      "language": "python",
+      "repeat": 1,
+      "status": "accepted",
+      "stop_reason": "independent_source_review_passed",
+      "calls": 5,
+      "acceptance_sha256": "9f31b9832989b03ff089861ff9e4b3e8ca7dc5657e668e8545ddeb1075f63990"
+    },
+    {
+      "id": "v2-qwen-joined-yielding-child-1-nex",
+      "task": "joined-yielding-child",
+      "language": "nex",
+      "repeat": 1,
+      "status": "budget_exhausted",
+      "stop_reason": "request_limit",
+      "calls": 11,
+      "acceptance_sha256": "d82e7ba94763a621456d67cea619d788bf2db77a04b0eb6667d5e16a4cac95fc"
+    }
+  ],
+  "limits": [
+    "one local model revision and ten fixed contracts, two deterministic repeats",
+    "two task-correlated timeouts have unknown usage; no exact NEX token ratio",
+    "runtime, language and reference bundle differ from historical v1; no isolated prompt causality",
+    "model-assisted review can make source-semantic mistakes; original outcomes are retained",
+    "collection resumed through explicit execution amendments, not the original clean-resume protocol"
+  ],
+  "local_raw_directory": "/Users/sae/projects/NEX/build/llm-cost-v2-0.280.1/study-v1",
+  "local_verifier": "/Users/sae/projects/NEX/build/llm-cost-v2-0.280.1/finish.py"
+}

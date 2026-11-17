@@ -37,13 +37,16 @@ def check_scratch_filesystem(directory=None):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--jobs',type=int,default=2)
-    parser.add_argument('--tier',choices=('core','full'),default='full')
+    parser.add_argument('--tier',choices=('core','full','selected'),default='full')
+    parser.add_argument('--select',action='append')
     parser.add_argument('--live',action='store_true')
     args=parser.parse_args()
     if not 1<=args.jobs<=8:parser.error('--jobs must be 1..8')
-    if args.live and args.tier=='core':parser.error('--live requires --tier full')
+    if args.live and args.tier!='full':parser.error('--live requires --tier full')
+    if (args.tier=='selected') != bool(args.select):parser.error('--tier selected requires --select; other tiers reject it')
     root=Path('/build');started=time.monotonic()
-    report={'ok':False,'source':'/src','network':'none','tier':args.tier,'phases':[], 'release_qualification':False}
+    report={'ok':False,'source':'/src','network':'none','tier':args.tier,
+            'selected_groups':args.select or [],'phases':[], 'release_qualification':False}
     def save(): (root/'verification.json').write_text(json.dumps(report,indent=2)+'\n')
     def run(name,command):
         row={'name':name,'command':list(map(str,command)),'status':'running'};report['phases'].append(row);save()
@@ -84,9 +87,18 @@ def main():
             'version':json.loads((dependencies/'node_modules/typescript/package.json').read_text())['version'],
             'lock_sha256':hashlib.sha256((dependencies/'package-lock.json').read_bytes()).hexdigest(),
             'cache':cache,'offline':True,'ignore_scripts':True}
-        run('ctest',['python3','/src/tools/ci/ctest.py','--build','/build',
-                     '--output','/build/ci-full','--tier','full','--jobs',str(args.jobs)])
-        report['ctest']=json.loads((root/'ci-full/ctest-receipt.json').read_text())
+        evidence='/build/ci-selected' if args.tier=='selected' else '/build/ci-full'
+        command=['python3','/src/tools/ci/ctest.py','--build','/build',
+                 '--output',evidence,'--tier',args.tier,'--jobs',str(args.jobs)]
+        for name in args.select or []:command+=['--select',name]
+        run('ctest',command)
+        report['ctest']=json.loads((Path(evidence)/'ctest-receipt.json').read_text())
+        if args.tier=='selected':
+            report['compiler_sha256']=hashlib.sha256((root/'nex').read_bytes()).hexdigest()
+            report['ok']=True
+            print(json.dumps({'ok':True,'tier':'selected','groups':report['ctest']['observed_groups'],
+                              'sdk_checked':False}),flush=True)
+            return
         text=(root/'Testing/Temporary/LastTest.log').read_text()
         report['case_counts']=[int(n) for n in re.findall(r'Ran (\d+) tests? in ',text)]
         report['skips']=re.findall(r"\.\.\. skipped ['\"]([^'\"]+)",text)

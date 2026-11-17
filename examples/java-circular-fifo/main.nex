@@ -1,0 +1,30 @@
+module java_circular_fifo_example;
+import "./circular_fifo.nex" as fifo;
+
+fn main() -> unit !{state,throw,io} {
+  let queue: fifo::Queue<i64> = fifo::create<i64>(3);
+  let alias: fifo::Queue<i64> = queue;
+  fifo::add(queue, 1); fifo::add(queue, 2); fifo::offer(alias, 3);
+  let before: list<i64> = fifo::items(queue);
+  fifo::add(alias, 4);
+  assert(before == [1, 2, 3]);
+  assert(fifo::items(queue) == [2, 3, 4]);
+  assert(fifo::is_at_full_capacity(queue) && !fifo::is_full(queue));
+  let scan: fifo::Iterator<i64> = fifo::iterator(queue);
+  assert(fifo::next(scan) == 2 && fifo::next(scan) == 3);
+  fifo::iterator_remove(scan);
+  assert(fifo::next(scan) == 4 && !fifo::has_next(scan));
+  assert(fifo::items(alias) == [2, 4]);
+  print("java-circular-fifo-ok");
+}
+
+test fn overwrite_and_iterator_alias() -> unit !{state,throw} {
+  let queue: fifo::Queue<i64> = fifo::from_items([1, 2, 3]);
+  let scan: fifo::Iterator<i64> = fifo::iterator(queue);
+  let alias: fifo::Iterator<i64> = scan;
+  assert(fifo::next(alias) == 1);
+  fifo::iterator_remove(scan);
+  assert(fifo::next(scan) == 2);
+  fifo::clear(queue);
+  assert(fifo::is_empty(queue));
+}

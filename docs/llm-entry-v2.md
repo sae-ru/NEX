@@ -34,6 +34,12 @@ loop confirms that guide, explanation, edit, check, submission and independent
 review remain six accounted calls. These are host controls with zero real model
 calls. They do not establish an observed quality improvement or token saving.
 
+The [observed version2 comparison](llm-cost-qwen38-27b-2026-11-17.en.md) completed
+all60 slots: NEX6/20, C++18/20 and Python20/20 accepted. Two NEX calls have unknown
+usage; exact NEX token cost and comparison ratios remain unavailable. Explicit
+execution amendments continued only unmeasured suffixes after provider stops.
+All failures are retained; no token saving is established.
+
 The [original local comparison](llm-cost-qwen38-27b-2026-11-11.en.md) remains
 unchanged: NEX4/20, C++14/20, Python20/20 accepted tasks. Because version2 changes
 both references and explicit project language, any later difference cannot be
@@ -44,5 +50,6 @@ retains its own frozen document snapshot.
 
 По-русски: короткий общий промпт дополнен полной инструкцией и справкой
 компилятора по запросу. Все обращения, исправления и повторы входят в стоимость
-принятой задачи. Офлайн-проверки готовы; новый замер модели ещё не выполнен,
-экономия токенов не заявлена. Прежние неудачные попытки сохранены.
+принятой задачи. Новый замер завершён: принято6/20 NEX,18/20 C++ и20/20 Python.
+У двух вызовов NEX расход неизвестен; экономия токенов не установлена.
+Прежние неудачные попытки сохранены.

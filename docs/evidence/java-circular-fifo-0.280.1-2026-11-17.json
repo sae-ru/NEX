@@ -1,0 +1,146 @@
+{
+  "schema": "nex.manual-java-port-agreement/1",
+  "ok": true,
+  "language": "0.30",
+  "toolchain_scope": "ordinary source program; no compiler or syntax change",
+  "upstream": "Apache Commons Collections4.6.0 CircularFifoQueue",
+  "compiler_sha256": "58718b7d4928c5daf7f0531c8491d38b2aa63ed8c4fe46a7161dcedb314b1d46",
+  "revision": "d19dbcdf79f0271cd1769daa1cd5651a75b533ee4de24682d01234876139309e",
+  "source_sha256": "91fb34439e86f0142b6098fff337a0cf661e8e27d1cfddbb3b179108d3c515b0",
+  "port_sha256": "9699dde1157b511c25d2f419f64a43a8b519b31fc2831f703373ec936b6dce9d",
+  "oracle_sha256": "da29d76b31d1a1df3505078332d8bbf2dd7ae5b0aced828b3610693ff7ef8a41",
+  "traces": 48,
+  "observations": 995,
+  "source_reference_steps": 1351711,
+  "native": {
+    "debug": {
+      "exit_code": 0,
+      "stdout_sha256": "8ad08c66d8e0580beffcb06e78650181dc01e3c27f2dd7df9a14ae42eaf22f81",
+      "task_execution": {
+        "backend": "native",
+        "configured": {
+          "steps": 80000000,
+          "timeout_ms": 60000,
+          "workers": 2
+        },
+        "cooperative_deadline": true,
+        "effective": {
+          "steps": 80000000,
+          "timeout_ms": 60000,
+          "workers": 2
+        },
+        "executor_workers": 1,
+        "identical_step_thresholds": false,
+        "step_model": "native resume and runtime polls",
+        "supervisor_timeout_seconds": 65
+      }
+    },
+    "release": {
+      "exit_code": 0,
+      "stdout_sha256": "8ad08c66d8e0580beffcb06e78650181dc01e3c27f2dd7df9a14ae42eaf22f81",
+      "task_execution": {
+        "backend": "native",
+        "configured": {
+          "steps": 80000000,
+          "timeout_ms": 60000,
+          "workers": 2
+        },
+        "cooperative_deadline": true,
+        "effective": {
+          "steps": 80000000,
+          "timeout_ms": 60000,
+          "workers": 2
+        },
+        "executor_workers": 1,
+        "identical_step_thresholds": false,
+        "step_model": "native resume and runtime polls",
+        "supervisor_timeout_seconds": 65
+      }
+    }
+  },
+  "strict_executed_TypeScript": true,
+  "async_map_schema": "nex.typescript-map/4",
+  "generic_cell_identity_and_cooperative_tasks": true,
+  "complete_Java_runtime_or_converter": false,
+  "performance_claimed": false,
+  "source_base_commit": "404f50a66517248899047a7f5a769db77669326b",
+  "host": "macOS ARM64",
+  "jdk": "Temurin21.0.12.1+1",
+  "upstream_capture": {
+    "schema": "nex.upstream-source-capture/1",
+    "project": "Apache Commons Collections",
+    "version": "4.6.0",
+    "artifact": "org.apache.commons:commons-collections4:4.6.0:sources",
+    "url": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-collections4/4.6.0/commons-collections4-4.6.0-sources.jar",
+    "published_sha1": "4f00aa6cc4f98bd9c5430a4b94fa515a2db10735",
+    "sha256": "2caf7d2e94b12b3433f9f12ab3b37b7d16626deb2ed4ed13d401ac53d2f5d5c5",
+    "bytes": 830635,
+    "selected_files": [
+      {
+        "path": "org/apache/commons/collections4/BoundedCollection.java",
+        "sha256": "22aebf6e2649df119b224589b5629752580016c046338dca534e1be51ca3e4c7",
+        "bytes": 1704
+      },
+      {
+        "path": "org/apache/commons/collections4/queue/CircularFifoQueue.java",
+        "sha256": "d455d399425c40e2c98c8dab0f6d6b2de58b0df3225cecd1f212f13d5173da1e",
+        "bytes": 12657
+      },
+      {
+        "path": "META-INF/LICENSE.txt",
+        "sha256": "b1d2870f1a00e4d7f56576e5f0870cba109e041f8af66866cf5b499478e654e7",
+        "bytes": 11359
+      },
+      {
+        "path": "META-INF/NOTICE.txt",
+        "sha256": "b02ca2cac4b96fa1a9829573fbc61b2603e5325b5e72b22993921e98bf06aa54",
+        "bytes": 181
+      }
+    ],
+    "license": "Apache-2.0",
+    "captured_utc": "2026-11-17T16:42:46.631500+00:00"
+  },
+  "upstream_capture_sha256": "3e7c8e91f7578bf613b871d9dd46d31b8a54e72a68e6c0f1f3fafe7131454c86",
+  "original_Java_compiled_and_executed": true,
+  "core": {
+    "groups": 17,
+    "receipt_sha256": "93627c596caf0ce409692873a686e47803242fb8ca7b9f135a7da9c8d2ae74af",
+    "ok": true
+  },
+  "source_example_added_after_published_SDK": true,
+  "includes_Java_private_fields_or_Java_memory_model": false,
+  "caveat": "Functional corpus agreement on this host; not full Commons/JVM compatibility or a current cross-platform SDK claim. Original failed local attempts retained.",
+  "utc": "2026-11-17T18:18:09.948590+00:00",
+  "toolchain": "0.280.1",
+  "ctest": {
+    "group": "java_circular_fifo",
+    "passed": true,
+    "unittest_methods": 4,
+    "seconds": 49.742,
+    "registry_sha256": "e2d9e4e082c4da8ae77ebb2e9f1b6a86ce498ad25a756a4b04aa20118c7857ca",
+    "junit_sha256": "0625df60e26103c6795dd6cd58be00cb12d31457df386b7f5f7b2e48f0032874",
+    "receipt_sha256": "28d6a3dfb7409e7387a62d16fe9f3855f7718e3f279f009d037f1a526d1fec2c",
+    "final_source_and_dependency_lock_included": true
+  },
+  "fixture_files": {
+    "tests/fixtures/java-circular-fifo/LICENSE.txt": "b1d2870f1a00e4d7f56576e5f0870cba109e041f8af66866cf5b499478e654e7",
+    "tests/fixtures/java-circular-fifo/NOTICE.txt": "b02ca2cac4b96fa1a9829573fbc61b2603e5325b5e72b22993921e98bf06aa54",
+    "tests/fixtures/java-circular-fifo/Oracle.java": "a5f98a6720a2576f58d0e61b711c8d98a312b9dc148ffd0535c873fcbb7b00e2",
+    "tests/fixtures/java-circular-fifo/driver.nex.in": "c0437587c975234152f576af0636750714f046fea46d49344c0b69113b279413",
+    "tests/fixtures/java-circular-fifo/oracle.json": "da29d76b31d1a1df3505078332d8bbf2dd7ae5b0aced828b3610693ff7ef8a41",
+    "tests/fixtures/java-circular-fifo/upstream/org/apache/commons/collections4/BoundedCollection.java": "22aebf6e2649df119b224589b5629752580016c046338dca534e1be51ca3e4c7",
+    "tests/fixtures/java-circular-fifo/upstream/org/apache/commons/collections4/queue/CircularFifoQueue.java": "d455d399425c40e2c98c8dab0f6d6b2de58b0df3225cecd1f212f13d5173da1e",
+    "tests/fixtures/java-circular-fifo/upstream.json": "3e7c8e91f7578bf613b871d9dd46d31b8a54e72a68e6c0f1f3fafe7131454c86"
+  },
+  "example_files": {
+    "examples/java-circular-fifo/LICENSE.txt": "b1d2870f1a00e4d7f56576e5f0870cba109e041f8af66866cf5b499478e654e7",
+    "examples/java-circular-fifo/NOTICE.txt": "78ed432e5ef192d320d8ca7848970b438aab8e1f3ad979fc7f0079ff49f88412",
+    "examples/java-circular-fifo/README.md": "6e8e21d76de13ee6a2ebd6d2be2cd85064557f30ce079fbdbf9ea29c1d3b2ee8",
+    "examples/java-circular-fifo/circular_fifo.nex": "9699dde1157b511c25d2f419f64a43a8b519b31fc2831f703373ec936b6dce9d",
+    "examples/java-circular-fifo/main.nex": "187d87648420246c4a231e5535fe39341b1e1a022131d8fab3e1713e036a2b82",
+    "examples/java-circular-fifo/nex.json": "8a0bd135f5f3dc5dadde3d561cbf3cb2b9e2f768ba6386343bc2880acb31993e",
+    "examples/java-circular-fifo/nex.lock.json": "dacb88e43c2d132394f346917e6c02bbe60fad35ab3d8a08f69644d236e4016e"
+  },
+  "harness_sha256": "d996cefb21df2f7df2719e50ed0a691537e44215eb320fe712d363a0c8579c63",
+  "case_generator_sha256": "c75ea149c6fa764bb0dee21f05399ae9226ccaa845e218072292ae8190deae3a"
+}

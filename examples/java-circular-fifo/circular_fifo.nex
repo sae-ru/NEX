@@ -1,0 +1,184 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements. See NOTICE.txt for copyright ownership.
+// The ASF licenses this file under the Apache License, Version2.0:
+// https://www.apache.org/licenses/LICENSE-2.0
+// Distributed on an AS IS BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND.
+// See LICENSE.txt for the complete license and limitations.
+//
+// Manually adapted from Apache Commons Collections4.6.0 CircularFifoQueue.
+// Fixed indexed cell slots preserve the ring layout and reuse existing slots.
+// Java null/error boundaries are explicit Maybe values and nominal NEX errors.
+module migration::circular_fifo;
+import "std/java_int.nex" as ints;
+
+pub enum Maybe<T> { None; Some(value: T); }
+pub struct CapacityError { capacity: i64; }
+pub struct NullError { operation: str; }
+pub struct EmptyError { operation: str; }
+pub struct IndexError { index: i64; size: i64; }
+pub struct ArrayIndexError { index: i64; }
+pub struct IteratorStateError { operation: str; }
+
+// These are source representations, not Java private fields. Construct queues
+// and iterators through the factories; arbitrary record edits are not supported.
+pub struct Storage<T> { slots: list<cell<Maybe<T>>>; start: i64; end: i64; full: bool; }
+pub struct Queue<T> { owner: cell<Storage<T>>; }
+pub struct Position { index: i64; last: i64; first: bool; }
+pub struct Iterator<T> { queue: Queue<T>; owner: cell<Position>; }
+
+fn stored_size<T>(state: Storage<T>) -> i64 {
+  if state.end < state.start { return len(state.slots) - state.start + state.end; }
+  if state.end == state.start { if state.full { return len(state.slots); } return 0; }
+  return state.end - state.start;
+}
+fn increment(index: i64, capacity: i64) -> i64 {
+  if index + 1 >= capacity { return 0; }
+  return index + 1;
+}
+fn decrement(index: i64, capacity: i64) -> i64 {
+  if index == 0 { return capacity - 1; }
+  return index - 1;
+}
+fn present<T>(value: Maybe<T>, operation: str) -> T !{throw} {
+  match value {
+    Maybe::Some(item) => { return item; },
+    Maybe::None() => { throw(EmptyError(operation)); }
+  }
+}
+
+pub fn create<T>(capacity: i64) -> Queue<T> !{state,throw} {
+  if capacity <= 0 || capacity > 2147483647 { throw(CapacityError(capacity)); }
+  let slots: list<cell<Maybe<T>>> = list(capacity,
+    fn(index: i64) -> cell<Maybe<T>> !{state} { return cell_new(Maybe<T>::None()); });
+  return Queue(cell_new(Storage(slots, 0, 0, false)));
+}
+pub fn create_default<T>() -> Queue<T> !{state,throw} { return create<T>(32); }
+pub fn max_size<T>(queue: Queue<T>) -> i64 !{state} { return len(cell_read(queue.owner).slots); }
+pub fn size<T>(queue: Queue<T>) -> i64 !{state} { return stored_size(cell_read(queue.owner)); }
+pub fn is_empty<T>(queue: Queue<T>) -> bool !{state} { return size(queue) == 0; }
+pub fn is_at_full_capacity<T>(queue: Queue<T>) -> bool !{state} { return size(queue) == max_size(queue); }
+// The original API's isFull is always false: a full ring still accepts values.
+pub fn is_full<T>(queue: Queue<T>) -> bool { return false; }
+
+pub fn peek<T>(queue: Queue<T>) -> Maybe<T> !{state} {
+  let state: Storage<T> = cell_read(queue.owner);
+  if stored_size(state) == 0 { return Maybe<T>::None(); }
+  return cell_read(state.slots[state.start]);
+}
+pub fn poll<T>(queue: Queue<T>) -> Maybe<T> !{state} {
+  let state: Storage<T> = cell_read(queue.owner);
+  if stored_size(state) == 0 { return Maybe<T>::None(); }
+  let value: Maybe<T> = cell_read(state.slots[state.start]);
+  match value {
+    Maybe::None() => { return value; },
+    Maybe::Some(item) => {
+      cell_write(state.slots[state.start], Maybe<T>::None());
+      cell_write(queue.owner, Storage(state.slots, increment(state.start, len(state.slots)), state.end, false));
+      return value;
+    }
+  }
+}
+pub fn remove<T>(queue: Queue<T>) -> T !{state,throw} { return present(poll(queue), "remove"); }
+pub fn element<T>(queue: Queue<T>) -> T !{state,throw} { return present(peek(queue), "element"); }
+
+pub fn add<T>(queue: Queue<T>, value: T) -> bool !{state} {
+  if is_at_full_capacity(queue) { poll(queue); }
+  let state: Storage<T> = cell_read(queue.owner);
+  cell_write(state.slots[state.end], Maybe<T>::Some(value));
+  let end: i64 = increment(state.end, len(state.slots));
+  cell_write(queue.owner, Storage(state.slots, state.start, end, end == state.start));
+  return true;
+}
+pub fn offer<T>(queue: Queue<T>, value: T) -> bool !{state} { return add(queue, value); }
+pub fn add_maybe<T>(queue: Queue<T>, value: Maybe<T>) -> bool !{state,throw} {
+  match value {
+    Maybe::None() => { throw(NullError("add")); },
+    Maybe::Some(item) => { return add(queue, item); }
+  }
+}
+pub fn offer_maybe<T>(queue: Queue<T>, value: Maybe<T>) -> bool !{state,throw} {
+  return add_maybe(queue, value);
+}
+pub fn from_items<T>(values: list<T>) -> Queue<T> !{state,throw} {
+  let queue: Queue<T> = create<T>(len(values));
+  var index: i64 = 0;
+  while index < len(values) { add(queue, values[index]); index = index + 1; }
+  return queue;
+}
+pub fn from_maybe_items<T>(values: Maybe<list<T>>) -> Queue<T> !{state,throw} {
+  match values {
+    Maybe::None() => { throw(NullError("from_items")); },
+    Maybe::Some(items) => { return from_items(items); }
+  }
+}
+pub fn clear<T>(queue: Queue<T>) -> unit !{state} {
+  let state: Storage<T> = cell_read(queue.owner);
+  cell_write(queue.owner, Storage(state.slots, 0, 0, false));
+  var index: i64 = 0;
+  while index < len(state.slots) {
+    cell_write(state.slots[index], Maybe<T>::None()); index = index + 1;
+  }
+}
+pub fn get<T>(queue: Queue<T>, index: i64) -> T !{state,throw} {
+  let state: Storage<T> = cell_read(queue.owner);
+  let count: i64 = stored_size(state);
+  if index < 0 || index >= count { throw(IndexError(index, count)); }
+  // Preserve Java's int addition even for capacities beyond ordinary fixtures.
+  let sum: ints::Int32 = ints::from_i64(state.start + index);
+  let physical: i64 = ints::to_i64(ints::remainder(sum, ints::from_i64(len(state.slots))));
+  if physical < 0 { throw(ArrayIndexError(physical)); }
+  return present(cell_read(state.slots[physical]), "get");
+}
+pub fn items<T>(queue: Queue<T>) -> list<T> !{state,throw} {
+  let state: Storage<T> = cell_read(queue.owner);
+  return list(stored_size(state), fn(index: i64) -> T !{state,throw} {
+    let physical: i64 = (state.start + index) % len(state.slots);
+    return present(cell_read(state.slots[physical]), "items");
+  });
+}
+
+pub fn iterator<T>(queue: Queue<T>) -> Iterator<T> !{state} {
+  let state: Storage<T> = cell_read(queue.owner);
+  return Iterator(queue, cell_new(Position(state.start, -1, state.full)));
+}
+pub fn has_next<T>(iterator: Iterator<T>) -> bool !{state} {
+  let position: Position = cell_read(iterator.owner);
+  return position.first || position.index != cell_read(iterator.queue.owner).end;
+}
+pub fn next<T>(iterator: Iterator<T>) -> T !{state,throw} {
+  if !has_next(iterator) { throw(EmptyError("iterator.next")); }
+  let position: Position = cell_read(iterator.owner);
+  let state: Storage<T> = cell_read(iterator.queue.owner);
+  cell_write(iterator.owner, Position(increment(position.index, len(state.slots)), position.index, false));
+  return present(cell_read(state.slots[position.index]), "iterator.next");
+}
+pub fn iterator_remove<T>(iterator: Iterator<T>) -> unit !{state,throw} {
+  let position: Position = cell_read(iterator.owner);
+  if position.last == -1 { throw(IteratorStateError("iterator.remove")); }
+  let state: Storage<T> = cell_read(iterator.queue.owner);
+  if position.last == state.start {
+    remove(iterator.queue);
+    cell_write(iterator.owner, Position(position.index, -1, position.first));
+    return;
+  }
+  let capacity: i64 = len(state.slots);
+  var at: i64 = position.last + 1;
+  if state.start < position.last && at < state.end {
+    while at < state.end {
+      cell_write(state.slots[at - 1], cell_read(state.slots[at])); at = at + 1;
+    }
+  } else {
+    while at != state.end {
+      if at >= capacity {
+        cell_write(state.slots[at - 1], cell_read(state.slots[0])); at = 0;
+      } else {
+        cell_write(state.slots[decrement(at, capacity)], cell_read(state.slots[at]));
+        at = increment(at, capacity);
+      }
+    }
+  }
+  let end: i64 = decrement(state.end, capacity);
+  cell_write(state.slots[end], Maybe<T>::None());
+  cell_write(iterator.queue.owner, Storage(state.slots, state.start, end, false));
+  cell_write(iterator.owner, Position(decrement(position.index, capacity), -1, position.first));
+}

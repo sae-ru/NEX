@@ -1,10 +1,20 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.279.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.280.1"
 owner: repository
 ---
 
 # Language prerequisites for Java and Python migration
+
+The [manual Apache queue port](../examples/java-circular-fifo/README.md) now
+exercises a bounded real Java API using existing030 cells, generics and source
+errors. Its [agreement record](evidence/java-circular-fifo-0.280.1-2026-11-17.json)
+compares995 observations from unmodified Commons Collections4.6.0 Java with
+NEX reference, native Debug/Release and executed strict TypeScript. It preserves
+factory-created ring behavior, aliases, snapshots and iterator removal. This
+does not provide a converter, the entire inherited Collection API, Java field
+privacy, class dispatch or parallel memory-model compatibility. It is a source
+example added after the published0.280.1 SDK snapshot.
 
 Toolchain0.279 adds [native reference task profiling](reference-task-profiling.md)
 for standalone030 and source-backed static/shared/mixed provider builds. ABI8

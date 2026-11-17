@@ -279,7 +279,7 @@ add_test(NAME project_build COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE
 add_executable(nex_task_provider_profile_report_probe tests/task_provider_profile_report.cpp src/task_profile_report.cpp)
 target_link_libraries(nex_task_provider_profile_report_probe PRIVATE nex_native_backend nex_frontend)
 target_compile_options(nex_task_provider_profile_report_probe PRIVATE -Wall -Wextra -Wpedantic)
-add_test(NAME task_provider_profile_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_provider_profile.py $<TARGET_FILE:nex> --report-probe $<TARGET_FILE:nex_task_provider_profile_report_probe> ${NEX_TEST_PACKAGE_NOTICES_ARGS})
+add_test(NAME task_provider_profile_native COMMAND ${Python3_EXECUTABLE} -u -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_provider_profile.py $<TARGET_FILE:nex> --report-probe $<TARGET_FILE:nex_task_provider_profile_report_probe> ${NEX_TEST_PACKAGE_NOTICES_ARGS})
 set_tests_properties(task_provider_profile_native PROPERTIES COST 60 TIMEOUT 1200)
 add_test(NAME task_provider_debugging_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_provider_debugging.py $<TARGET_FILE:nex> ${NEX_TEST_PACKAGE_NOTICES_ARGS})
 set_tests_properties(task_provider_debugging_native PROPERTIES COST 60 TIMEOUT 1200)
@@ -1789,6 +1789,9 @@ set_tests_properties(java_int PROPERTIES TIMEOUT 600)
 add_test(NAME java_long COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/java_long.py $<TARGET_FILE:nex>)
 set_tests_properties(java_long PROPERTIES TIMEOUT 600)
+add_test(NAME java_circular_fifo COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/java_circular_fifo.py $<TARGET_FILE:nex>)
+set_tests_properties(java_circular_fifo PROPERTIES TIMEOUT 900)
 
 add_test(NAME effect_parameters COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/effect_parameters.py $<TARGET_FILE:nex>)

@@ -1,5 +1,11 @@
 # Development CI
 
+The [0.280.1 full Linux run](evidence/linux-full-profile-timeout-0.280.1-2026-11-17.json)
+observed all381 groups:380 passed and `task_provider_profile_native` hit its
+1200-second aggregate timeout. Installed checks were not reached. Separate
+Fedora Release controls and the full14-method macOS Debug profile group pass;
+they do not establish the Ubuntu failure's cause or replace its failed receipt.
+
 The [0.280 core run](evidence/core-ci-0.280.0-2026-11-17.json) completed successfully
 on macOS and Linux at `1710e496`, with17 groups. Installed Workboard SDK workflow
 changes retain their own subsequent qualification.
@@ -12,7 +18,12 @@ Each job configures its own fresh build. No language model is invoked.
 The separate [full Linux workflow](../.github/workflows/full.yml) is manual or
 nightly at03:23 UTC on the default branch. It uses the existing Linux source,
 installed smoke and source-free installed workflow. It runs all configured
-CTest groups without a label filter. It does not run after every patch.
+CTest groups without a label filter by default. It does not run after every patch.
+The optional manual `test_group` input selects one exact diagnostic group and
+its actual fixtures on the same pinned Ubuntu Debug toolchain. Its distinct
+`linux-selected` name and receipt do not qualify the full source or installed
+SDK workflow. An empty manual input and nightly runs retain the full workflow.
+See [selected diagnostics](testing.md) for local and Linux wrapper commands.
 
 The [0.246.1 core run](https://github.com/sae-ru/NEX/actions/runs/43717414285) passed on macOS and Linux
 for `48464ca7d9a218524485c9745b9629458c30e2bf`. The SDK's exact source `3b008a4e` also passed core CI and
