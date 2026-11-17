@@ -9,7 +9,7 @@ document describes current behavior. Query the selected compiler for actual
 capabilities; `status: current` documents are checked against the current
 advertised project source languages and toolchain by the same script.
 
-## Current contracts (43)
+## Current contracts (44)
 
 | Document | Applies to | Owner |
 |---|---|---|
@@ -49,6 +49,7 @@ advertised project source languages and toolchain by the same script.
 | [Private TypeScript managed heap](managed-reference-typescript-heap.md) | toolchain 0.253.0; no public source-language extension | repository |
 | [Private TypeScript reference execution](managed-reference-typescript-prototype.md) | toolchain 0.260.0; private 0.30-refs-prototype candidate | repository |
 | [Profiling reference tasks and native libraries](reference-task-profiling.md) | toolchain 0.279.0; language 0.30; task ABI8 | repository |
+| [Public reference context for LLM authors and reviewers](llm-entry-v3.md) | language 0.30; toolchain 0.280.1 | repository |
 | [Reference tasks across debug library images](reference-provider-debugging.md) | toolchain 0.279.0; language 0.30; task ABI8 | repository |
 | [Repeated native runtime benchmark](bench.md) | toolchain 0.175; language 0.28 | repository |
 | [Sequential immutable byte construction](bytes-construction.md) | toolchain 0.172; language 0.28 | repository |
@@ -212,9 +213,9 @@ advertised project source languages and toolchain by the same script.
 | [Source030 reference provider integration](task-providers.md) | — | — |
 | [Source030 reference provider integration](task-shared-providers.md) | — | — |
 | [Start with NEX](getting-started.en.md) | — | — |
+| [Structured source tasks](tasks-runtime-design.md) | — | — |
 | [Task authority and lifetime contract (0.19)](task-lifetimes.md) | — | — |
 | [Task lifetime flow through source exceptions](source-exception-lifetimes.md) | — | — |
-| [Task runtime integration](tasks-runtime-design.md) | — | — |
 | [Task/FFI and owned values in language0.22](task-foreign-prototype.md) | — | — |
 | [Tasks and acceptance evidence](tasks.md) | — | — |
 | [Text and binary files](files.md) | — | — |
@@ -244,4 +245,4 @@ advertised project source languages and toolchain by the same script.
 
 ## Totals
 
-217 documents: 43 current, 1 deferred, 2 historical, 167 reference/unclassified.
+218 documents: 44 current, 1 deferred, 2 historical, 167 reference/unclassified.

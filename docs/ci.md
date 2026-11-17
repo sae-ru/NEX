@@ -6,6 +6,13 @@ observed all381 groups:380 passed and `task_provider_profile_native` hit its
 Fedora Release controls and the full14-method macOS Debug profile group pass;
 they do not establish the Ubuntu failure's cause or replace its failed receipt.
 
+The [isolated Ubuntu follow-up](evidence/linux-profile-serial-0.280.1-2026-11-17.json)
+passes all14 profile methods in924.579 seconds with the same1200-second limit.
+The group now uses CTest `RUN_SERIAL` to reserve its execution while other native
+builds wait. Contention is a scheduling inference, not a measured causal resource
+profile. No method or runtime budget is removed; full source/installed acceptance
+still requires a fresh complete run.
+
 The [0.280 core run](evidence/core-ci-0.280.0-2026-11-17.json) completed successfully
 on macOS and Linux at `1710e496`, with17 groups. Installed Workboard SDK workflow
 changes retain their own subsequent qualification.

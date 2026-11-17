@@ -1,0 +1,88 @@
+{
+  "schema": "nex.llm-reference-preparation-evidence/3",
+  "ok": true,
+  "utc": "2026-11-17T18:57:05.019330+00:00",
+  "source_base_commit": "6659c4b3d2060794c3d7acfece2899b296186fca",
+  "toolchain": "0.280.1",
+  "source_language": "0.30",
+  "prepared_only": true,
+  "actual_model_calls": 0,
+  "compiler_sha256": "58718b7d4928c5daf7f0531c8491d38b2aa63ed8c4fe46a7161dcedb314b1d46",
+  "compiler_build": "e084b22b6677973aaffb62d1546a9e7ddea6bf15eaab5b248bfab402ad8f7bb1",
+  "descriptor_hash": "f9271f65651c9395bdaa307d0fdb49a62b4e28ec0aa363e21c078ec9f4dbc2c1",
+  "compiler_served_guides": 16,
+  "diagnostic_explanations": 103,
+  "compiled_reference_snapshot_sha256": "50e4a5fb5e560460be3f742ba02a02fd8d60af9ce5e6e275397ebcf898a77605",
+  "review_reference_snapshot_sha256": "e8a180d03304219301053d5a54c267f5b5076fd5f4016d01d0af60e633df73c0",
+  "review_packet_UTF8_bytes": {
+    "nex": 11719,
+    "cpp": 499,
+    "python": 512
+  },
+  "review_packet_UTF8_bytes_max": 16384,
+  "common_contract_UTF8_bytes": 4058,
+  "quick_guide_UTF8_bytes": 6092,
+  "synthetic_control_methods": 21,
+  "controls_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "controls_stderr_sha256": "70e6efeb9809a307d21e9f8d7c29af80d4871729404ba0df32c2281407c6d611",
+  "synthetic_accounting_case": {
+    "calls": 6,
+    "tokens": 720,
+    "real_usage": false
+  },
+  "source_task_guide": {
+    "source_task_guide_sha256": "cce1b4bdf60d6277305e3d69820ec0ea9d87806672dec20b9d9e913dcfadcdb8",
+    "source_task_guide_content_hash": "40bd11521d2cbab4e2db6ef7c7673e55afc7573b071b4c478401e26a86385583",
+    "languages": {
+      "0.28": {
+        "reference": true
+      },
+      "0.29": {
+        "reference": true
+      },
+      "0.30": {
+        "reference": true,
+        "native_release": true,
+        "strict_executed_TypeScript": true
+      }
+    },
+    "model_calls": 0,
+    "token_savings_claimed": false
+  },
+  "core_groups": 17,
+  "core_receipt_sha256": "3110aaab67f5e901a58444997a9b9c63f9082349fcd4ed8b5551342ee66b5d1b",
+  "guide_group_receipt_sha256": "9ab645bfb16259701879b5a54318a8fe60f5030840c3e731c58531882e1583e0",
+  "negative_reviews_remain_failures": true,
+  "historical_freezes_rejected_without_writes": true,
+  "historical_implementation_files_changed": false,
+  "observed_model_improvement_claimed": false,
+  "published_SDK_requalified": false,
+  "source_files": {
+    "experiments/quality/llm-campaign-v3/README.md": "66e89f9236036e561173e60bc4134d26f81bac70dbd791fe3e47dd8a7b81d637",
+    "experiments/quality/llm-campaign-v3/collector.py": "2b6770e78f96aa785410b1f16baeb6d383a277ba1a3c3cc96c1026a8e59e364c",
+    "experiments/quality/llm-campaign-v3/protocol.md": "1fba79b9a1dbdaada2b5c16acc0cc6534af4a6d9f51f489cda681eb62b515a29",
+    "experiments/quality/llm-campaign-v3/references.py": "9d24b370ec0b7edcc5e060b819eb3080d935e1f6f7fe90dfc17d572640edb294"
+  },
+  "guide_source_files": {
+    "llm/QUICK_REFERENCE.md": "ec79e4339f18dd70faa852c4506bcca94099ae73fdf16a3bbd937bd882653be2",
+    "docs/stdlib.md": "145f2ba29d3691abb373523c08df8d452ed79b6eab431a8ce98f3c09edfa1c43",
+    "docs/functions.md": "d89b39125c4d89a5d6384c932f45a5682b396fa3512642854ce57197b552e55d",
+    "docs/traits.md": "7fb679cb42bd70c2a95a9a969bab6753a4161779cb69731d5bb4e1f2acf2ecde",
+    "docs/matching.md": "96f653e6fd16fc76f845e4e25bc5812005d92dc18dbe045cbfe0b81fe6ee5af9",
+    "docs/error-propagation.md": "cabcf938880500f59d0b87f3c68cdac0b769326de59ef5baa757eff66b336873",
+    "docs/exceptions.md": "103a89d4f452eb7d7b6f6941fa8f8ecb27495de2cb58471449a822fac002ff77",
+    "docs/source-contracts.md": "c9f61fc588bfd16b471a6f0cd4f8f0fa979ef693e7dcf32dae4361fc6a3a7294",
+    "docs/concurrency-design.md": "a0d7de2df75cd6f09d29aab885368861ca331497b5d93e350b2ef4b07af6eb03",
+    "docs/tasks.md": "d6d56abb557cc762549b05bfbbaab05f89653ca98d4a69cb4797ac6b3532c0cd",
+    "docs/tasks-runtime-design.md": "cce1b4bdf60d6277305e3d69820ec0ea9d87806672dec20b9d9e913dcfadcdb8",
+    "docs/bytes.md": "a3fecf5d11f238ccf4fc76646e92e797736f4463d7868b222bf80b7b2af427d2",
+    "docs/bytes-construction.md": "5e005421c3ebf0370c34696a8dbbcfdfc52f2ceb072716cb558a7fcddcef650e",
+    "docs/list-construction.md": "607bda5034d7e06e29e46b864e8813cbf5ee43dd87eabc75d670bca49e078e24",
+    "docs/text-construction.md": "c4ed063cd8252de2c4d5e507990a45d48d4fcd36fb3dbd1a2d3d99dc6e5fb7e4",
+    "docs/references030.md": "11dc0f6c4e993a4078dc8f0164d4ddce2e817e7c57a3e59fc7e678621f095ec9"
+  },
+  "pending": [
+    "new observed protocol3 collection after qualification, with all costs and failures retained",
+    "full platform and future matching SDK delivery; existing frozen SDK remains unchanged"
+  ]
+}

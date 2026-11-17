@@ -85,6 +85,7 @@ server boundaries still apply; browser clients must not contain server code.
 
 Source task primitives are `with_tasks`, `task_spawn`, `task_wait`, `task_yield`
 and the advertised channel operations. There are no async/await/spawn keywords.
+Use guide `tasks-runtime` for source; guide `task` is acceptance JSON.
 Scope/spawn/wait can deliver source errors: declare `throw` alongside `task`
 or handle them in a lexical try; task callbacks must retain matching effects.
 Keep futures/channels inside their genuine owner scope. Structured tasks do not
@@ -100,8 +101,7 @@ rejections must be checked separately; producing code is not acceptance.
 
 For0.28 source clauses query `source_contracts` and its guide before using
 requires/ensures/invariant/decreases. Runtime checks are distinct from bounded
-proof. Keep unknown integrations pending. This sheet does not establish LLM
-token savings; retain the published negative Qwen study when improving it.
+proof. Keep unknown integrations pending. LLM token savings remain unproved.
 
 If `standard_library` is advertised, query it before writing text/list/math
 helpers. Import `std/list.nex` as `seq`/`lists`; `list` is reserved. The `stdlib`

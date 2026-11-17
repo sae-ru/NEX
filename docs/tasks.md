@@ -1,9 +1,7 @@
-Current language023 retains source task/ffi and genuine external-resource transfer to the
-structured scheduler and adds whole-file task writes; read task-foreign-prototype.md
-and task-file-writes-prototype.md. This is distinct from the
-acceptance-task JSON format below. Acceptance contracts and proof snapshots must
-be regenerated for the current semantic revision while retaining reviewed
-requirements, clauses and budgets. Source/SDK/platform receipts remain separate.
+This guide describes JSON acceptance contracts and their recorded checks.
+For `with_tasks`, `task_spawn`, `task_wait` and `task_yield` in a source program,
+use `nex guide --kind tasks-runtime` and [structured source tasks](tasks-runtime-design.md).
+An acceptance task does not select a program's source scheduling semantics.
 
 # Tasks and acceptance evidence
 
@@ -14,8 +12,9 @@ the actual per-program0.28/0.29/0.30 language in the hash-indexed
 `inputs/program-languages.json` (`nex.task-program-languages/1`). Replay rebuilds
 the isolated workspace using those versions, including when live sources have
 been removed. Older captures without the index retain the legacy0.28 selection.
-Sequential030 cell programs can be checked and captured; this does not permit
-reference transfer into source task/parallel execution.
+Ordinary030 cell/task programs can be checked and captured within their
+[cooperative owner context](reference-tasks.md). Parallel shared-memory reference
+transfer remains unsupported. The old cohort notes below retain their scope.
 
 Language0.19 structured source tasks can be checked, executed and replayed by
 an external `nex.task/1` acceptance contract. Its `effects` checks accept `task`

@@ -1,5 +1,15 @@
 # Current CPU mapping scope — language 0.28, development 0.162
 
+`parallel_map(values,callback,workers)` returns a list in input order. The
+callback has one element parameter, returns a non-unit value and must be pure;
+declare `fn(x:i64)->i64{return x*x;}` rather than a task callback. The requested
+worker count is1..16 and the input has at most65536 elements. Normal checked
+arithmetic and source type/realm rules still apply. Native execution joins its
+bounded CPU workers before returning; reference and TypeScript execution are
+sequential semantic oracles. This operation does not share live cells, file
+authority or task scopes across workers. Use `nex guide --kind tasks-runtime`
+for cooperative source tasks and `browser-worker` for the separate web adapter.
+
 The native backend supports macOS/Linux 64-bit and Windows x86-64 GNU/UCRT.
 The [Windows CPU record](evidence/windows-cpu-development-2026-11-04.json)
 records 11 scenarios, including live debugging, with four overlapping workers,

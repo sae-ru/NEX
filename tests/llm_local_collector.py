@@ -354,4 +354,134 @@ class Version2Collection(unittest.TestCase):
         self.assertEqual(historical['tasks'],current['tasks']);self.assertEqual(current['language'],'0.30')
 
 
+_v3spec=importlib.util.spec_from_file_location('nex_collection_v3',ROOT/'experiments/quality/llm-campaign-v3/collector.py')
+v3=importlib.util.module_from_spec(_v3spec);_v3spec.loader.exec_module(v3)
+
+class Version3Collection(unittest.TestCase):
+    provider=Collection.provider
+    good_check=Collection.good_check
+
+    def compiled(self,compiler_hash='synthetic-compiler'):
+        guides={kind:{'text':(ROOT/path).read_text(encoding='utf-8'),
+                       'hash':hashlib.sha256((ROOT/path).read_bytes()).hexdigest()}
+                for kind,path in v3.references.GUIDE_PATHS.items()}
+        return {'schema':'nex.llm-compiled-references/3','compiler_sha256':compiler_hash,
+            'identity':{'language':'0.28','compiler_build':'synthetic-v3',
+                        'descriptor_hash':'synthetic-descriptor','fields':[]},
+            'guides':guides,'document_paths':v3.references.GUIDE_PATHS,'explanations':{}}
+
+    def trial(self,root,language='nex'):
+        self.root=root;resources=root/'resources';resources.mkdir()
+        docs={name:(ROOT/name).read_text(encoding='utf-8') for name in v3.engine.DOCS}
+        v3.acceptance.save(resources/'documents.json',docs)
+        v3.acceptance.save(resources/'descriptor.json',{'project_languages':['0.28','0.29','0.30']})
+        compiled=self.compiled();v3.acceptance.save(resources/'compiled-references.json',compiled)
+        packets=v3.references.review_references(compiled,v3.engine.BASELINE)
+        references=resources/'review-references.json';v3.acceptance.save(references,packets)
+        v3.acceptance.materialize('bounded-total',language,root/('starts/bounded-total-'+language))
+        slot={'id':'synthetic-v3-trial','task':'bounded-total','language':language,'repeat':0}
+        frozen={'root':str(root),'order':[slot],'compiler':'/synthetic/nex','cpp':'/synthetic/clang++',
+            'resources':str(ROOT),'compiler_index':{'fields':['project_languages']},'model_revision':'a'*64,
+            'tasks':['bounded-total'],'repeats':1,'kind':'synthetic_control',
+            'study_protocol_version':3,'source_language':'0.30','source_review_mode':'independent_local_call',
+            'review_reference_sha256':v3.engine.sha(references)}
+        v3.acceptance.save(root/'freeze.json',frozen)
+        return slot,frozen,packets
+
+    def test_public_guides_and_stateless_reviewer_keep_complete_six_call_accounting(self):
+        with tempfile.TemporaryDirectory(prefix='nex-collector-v3-') as temporary:
+            root=Path(temporary);slot,frozen,packets=self.trial(root)
+            rules=v3.acceptance.catalogue()['bounded-total']['contract']['acceptance_rules']
+            review=json.dumps({'rules':[{'rule':rule,'passed':True,'evidence':'synthetic independent evidence'} for rule in rules]})
+            def edit(prompt):
+                entry=json.loads(prompt)['files']['candidate.nex']
+                solution=v3.acceptance.fixtures.files('bounded-total','nex','solution')['candidate.nex'].decode()
+                return json.dumps({'action':'edit','files':{'candidate.nex':{'sha256':entry['sha256'],'content':solution}}})
+            client=self.provider(['{"action":"guide","kind":"tasks-runtime"}',
+                '{"action":"read","path":"docs/bytes.md","offset":0,"limit":600}',edit,
+                '{"action":"check"}','{"action":"submit"}',review])
+            def check(broker,output,*,visible):return self.good_check(broker,output,visible=visible)
+            with patch.object(v3.engine,'verify',return_value=frozen),patch.object(v3.Broker,'run_check',new=check):
+                state=v3.engine.collect_trial(root,frozen,slot,client,'nex-cost-synthetic-v3')
+                summary=v3.engine.ledger(root)
+            self.assertEqual(state['status'],'accepted')
+            totals=summary['results']['qwen38-27b-q8']['nex']
+            self.assertEqual((totals['calls'],totals['known_total_tokens']),(6,720))
+            self.assertIn('task_spawn',client.prompts[1]['history'][0]['tool_reply']['text'])
+            self.assertIn('set(data,1,7)',client.prompts[2]['history'][1]['tool_reply']['text'])
+            received=client.prompts[-1]
+            self.assertNotIn('history',received);self.assertNotIn('available_documents',received)
+            self.assertEqual(received['language_reference'],packets['nex'])
+            self.assertIn('Unicode scalars',received['language_reference']['documents'][0]['text'])
+            saved=json.loads((root/'trials'/slot['id']/'source-review.json').read_text())
+            self.assertEqual(saved['language_reference_sha256'],v3.acceptance.sha(
+                json.dumps(packets['nex'],sort_keys=True,ensure_ascii=False).encode()))
+            self.assertFalse(summary['matrix_complete'])
+
+    def test_reference_context_cannot_convert_a_negative_source_judgment_to_acceptance(self):
+        with tempfile.TemporaryDirectory(prefix='nex-review-v3-') as temporary:
+            root=Path(temporary);slot,frozen,_=self.trial(root)
+            rules=v3.acceptance.catalogue()['bounded-total']['contract']['acceptance_rules']
+            review=json.dumps({'rules':[{'rule':rule,'passed':False,'evidence':'synthetic rejected source rule'} for rule in rules]})
+            client=self.provider(['{"action":"submit"}',review])
+            def check(broker,output,*,visible):return self.good_check(broker,output,visible=visible)
+            with patch.object(v3.engine,'verify',return_value=frozen),patch.object(v3.Broker,'run_check',new=check):
+                state=v3.engine.collect_trial(root,frozen,slot,client,'nex-cost-synthetic-v3-negative')
+            self.assertEqual((state['status'],state['stop_reason']),('failed','independent_source_review_rejected'))
+            self.assertEqual(len(state['calls']),2)
+            self.assertFalse(json.loads((root/'trials'/slot['id']/'acceptance.json').read_text())['passed'])
+
+    def test_each_baseline_reviewer_receives_its_own_frozen_public_reference(self):
+        for language in ('nex','cpp','python'):
+            with self.subTest(language=language), tempfile.TemporaryDirectory(prefix='nex-review-reference-') as temporary:
+                root=Path(temporary);slot,frozen,packets=self.trial(root,language)
+                broker=v3.Broker(frozen,root/'owned-trial',slot)
+                rules=v3.acceptance.catalogue()['bounded-total']['contract']['acceptance_rules']
+                reply=json.dumps({'rules':[{'rule':rule,'passed':True,'evidence':'synthetic reference control'} for rule in rules]})
+                client=self.provider([reply]);directory=root/'review';directory.mkdir()
+                v3.local_review(broker,directory,client,'nex-cost-synthetic-v3-reference',0,v3.engine.time.monotonic()+60)
+                self.assertEqual(client.prompts[0]['language_reference'],packets[language])
+                self.assertNotIn('history',client.prompts[0]);self.assertEqual(client.number,1)
+                self.assertLessEqual(len(json.dumps(packets[language],ensure_ascii=False).encode()),v3.references.REVIEW_BYTES)
+                if language!='nex':self.assertNotIn('compiler_build',client.prompts[0]['language_reference'])
+
+    def test_new_freeze_pins_references_and_refuses_historical_campaigns(self):
+        with tempfile.TemporaryDirectory(prefix='nex-freeze-v3-') as temporary:
+            root=Path(temporary);compiler=root/'nex';compiler.write_bytes(b'synthetic compiler')
+            cpp=root/'clang++';cpp.write_bytes(b'synthetic native compiler')
+            lm=root/'lm';(lm/'bin').mkdir(parents=True);(lm/'bin/lms').write_bytes(b'synthetic lms')
+            weights=root/'weights.json';v3.acceptance.save(weights,{'files':[
+                {'path':'synthetic-Q8_0.gguf','sha256':'a'*64}]})
+            compiled=self.compiled(v3.engine.sha(compiler));identity=compiled['identity']
+            def info(argv,**kwargs):
+                if 'doctor' in argv:return json.dumps({'version':'0.280.1'}).encode()
+                return json.dumps(identity if '--kind' in argv else {'project_languages':['0.28','0.29','0.30']}).encode()
+            output=root/'new-freeze'
+            with patch.object(v3.engine,'host_facts',return_value={'runtime':'synthetic','files':[]}), \
+                 patch.object(v3.engine,'selected_runtime',return_value='synthetic'), \
+                 patch.object(v3.engine.subprocess,'check_output',side_effect=info), \
+                 patch.object(v3.engine.r,'verify_weights',return_value=None), \
+                 patch.object(v3.references,'snapshot',return_value=compiled):
+                frozen=v3.freeze(output,compiler=compiler,cpp=cpp,weights=weights,lm_home=lm,runtime=root/'runtime')
+                self.assertEqual(v3.verify(output,deep=True),frozen)
+                names={Path(row['path']).resolve() for row in frozen['pinned_files']}
+                for path in [ROOT/'experiments/quality/llm-campaign-v3/collector.py',
+                    ROOT/'experiments/quality/llm-campaign-v3/references.py',
+                    ROOT/'experiments/quality/llm-campaign-v2/acceptance.py',output/'resources/review-references.json']:
+                    self.assertIn(path.resolve(),names)
+                (output/'resources/review-references.json').write_text('{}')
+                with self.assertRaisesRegex(ValueError,'frozen input changed'):v3.verify(output,deep=True)
+            self.assertEqual(frozen['schema'],'nex.local-collection/3')
+            self.assertEqual((frozen['limits'],len(frozen['order'])),(c.LIMITS,60))
+            self.assertTrue(all(slot['id'].startswith('v3-') for slot in frozen['order']))
+            for old in (1,2):
+                historical=root/str(old);historical.mkdir()
+                old_freeze={'schema':f'nex.local-collection/{old}','study_protocol_version':old,'source_language':'0.30'}
+                v3.acceptance.save(historical/'freeze.json',old_freeze)
+                original=(historical/'freeze.json').read_bytes()
+                with self.assertRaisesRegex(ValueError,'historical'):v3.verify(historical)
+                self.assertEqual((historical/'freeze.json').read_bytes(),original)
+            with self.assertRaisesRegex(ValueError,'historical'):v2.verify(output)
+
+
 if __name__=='__main__':unittest.main(verbosity=2)

@@ -1,0 +1,35 @@
+{
+  "schema": "nex.linux-profile-scheduling-followup/1",
+  "ok": true,
+  "toolchain": "0.280.1",
+  "utc": "2026-11-17T18:57:05.019330+00:00",
+  "isolated_source_commit": "6659c4b3d2060794c3d7acfece2899b296186fca",
+  "isolated_run": 44147020657,
+  "url": "https://github.com/sae-ru/NEX/actions/runs/44147020657",
+  "artifact_id": 14360065209,
+  "artifact_sha256": "1d0c0836dfc2fc779521e122a209484a2065b722a28a0519946efd75a593b644",
+  "methods": 14,
+  "all_methods_passed": true,
+  "seconds": 924.579,
+  "registry_sha256": "7a7c1327c2e5f1ffae8b9d8798deb20d22e99ee6c45340cee1f4e751649ced8a",
+  "junit_sha256": "7ab8efb89c670375b1fecaddc5c45fd40d5ef01f9e7116f6ab555c4149529149",
+  "same_test_class_AST_as_failed_run": true,
+  "production_paths_changed_between_failed_and_isolated": [],
+  "original_full_run": {
+    "run": 44100526679,
+    "passed": 380,
+    "observed": 381,
+    "ok": false,
+    "timeout_seconds": 1200.08
+  },
+  "scheduling": {
+    "RUN_SERIAL": true,
+    "TIMEOUT": 1200,
+    "registered_property_verified": true,
+    "runtime_or_test_cases_changed": false,
+    "disabled_cases": 0
+  },
+  "inference": "Concurrent native builds are consistent with exhaustion of the aggregate wall deadline; no causal resource profile was recorded.",
+  "full_source_or_SDK_acceptance": false,
+  "pending": "fresh complete unfiltered Linux source and installed workflow on the committed scheduling correction"
+}

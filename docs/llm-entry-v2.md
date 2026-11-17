@@ -6,6 +6,10 @@ owner: repository
 
 # Bounded coding contract and local study version2
 
+The [version3 preparation](llm-entry-v3.md) adds source-task/byte guides and a
+normative reference packet for independent review. Its offline controls do not
+replace the completed version2 observations below or claim a new model result.
+
 The [common coding contract](../llm/SYSTEM_PROMPT.md) fits one4096-character read
 and at most4096 UTF8 bytes. The previous complete contract is preserved verbatim
 as [detailed coding rules](../llm/DETAILED_CODING_RULES.md). The normative language

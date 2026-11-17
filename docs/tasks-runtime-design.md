@@ -1,10 +1,64 @@
-# Task runtime integration
+# Structured source tasks
 
-Current development uses task ABI7 and ordinary project languages0.28/0.29/0.30.
-Toolchain0.268 adds a private [reference-task cell context](reference-tasks.md),
-without enabling reference-bearing native/TypeScript tasks. Query the compiled
-capabilities for current support. The versioned sections below retain their
-historical introduction scopes; they are not a current completion checklist.
+Use this guide for source scheduling. `nex guide --kind task` instead describes
+JSON acceptance contracts. Query `structured_tasks_runtime`; for cells also
+query `managed_references.source030_development.ordinary_tasks`.
+
+```nex
+module joined_example;
+fn child(value:i64)->i64 !{task} { task_yield(); return value+1; }
+fn joined(value:i64)->i64 !{task,throw} {
+  return with_tasks(2,fn(scope:task_scope)->i64 !{task,throw} {
+    let job:task<i64>=task_spawn(scope,fn()->i64 !{task} {
+      return child(value);
+    });
+    return task_wait(job);
+  });
+}
+fn main()->unit !{task,throw,io} { print(joined(41)); }
+```
+
+This program prints42 and uses syntax supported by project languages0.28,
+0.29 and0.30. Every non-unit function returns a value on each normal path.
+`with_tasks(workers,callback)` supplies the genuine scope used by `task_spawn`.
+`task_wait` obtains its child's result; `task_yield()` creates a suspension point.
+Workers are an explicit bounded request, not a promise of simultaneous CPU work.
+There are no source async/await/spawn keywords. Scope/spawn/wait can deliver
+source errors, so callers/callbacks declare `throw` or handle it lexically.
+An ordinary `result<T>` remains a value; a source throw is a separate outcome.
+
+The group owns its children, futures and channels. These values must remain in
+their genuine owner scope; do not let them escape the group or retain them in cells. An
+immutable closure captures snapshots. In explicit0.30, genuine `cell<T>` aliases
+instead retain identity within the same cooperative owner context. Reference
+tasks share one heap on the owner's thread in native, reference and async
+TypeScript execution. Their native descriptors use ABI8; retained reference-free
+native cohorts keep ABI7. Independent
+requests have independent heaps. This does not permit parallel shared-memory
+cell access or reference transport into browser Workers.
+TypeScript hosts must follow the emitted map's execution kind and runtime
+adapter. Reference-free tasks can emit generator entries: merely calling such
+an entry returns a generator and does not schedule its work. See [web delivery](web.md).
+
+Use `parallel_map(values,callback,workers)` for the separately advertised pure
+CPU batch operation; see `nex guide --kind concurrency`. Browser Worker jobs
+have their own adapter. No source effect grants filesystem or foreign authority.
+Source errors unwind their checked handlers/finally. Cancellation, deadlines,
+fatal traps and deadlock skip user finally while runtime ownership cleanup still
+retires admitted work and owned values. Controls stay bounded by the selected
+host's steps, deadline and worker ceilings.
+
+See [source reference tasks](reference-tasks.md), [task lifetimes](task-lifetimes.md)
+and [persistent host sessions](native-task-sessions.md) for their specific scopes.
+Checking source, executing a backend and qualifying a portable SDK are separate
+operations. Never infer support from a historical ABI record below.
+
+<!-- bounded-source-task-entry-end -->
+
+## Historical implementation records
+
+These sections preserve introduction cohorts; query the current compiler and
+matching evidence for actual support.
 
 # Current025 native task IO contract
 

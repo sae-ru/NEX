@@ -10,12 +10,52 @@ import shutil
 import subprocess
 import unittest
 import support as h
+import standard_library as helpers
 
 spec=importlib.util.spec_from_file_location('quick_sdk_acceptance',h.REPO/'tools/sdk_acceptance.py')
 sdk=importlib.util.module_from_spec(spec);spec.loader.exec_module(sdk)
 
 
 class QuickReference(h.ToolchainCase):
+    run_child=helpers.StandardLibrary.run_child
+    strict_ts=helpers.StandardLibrary.strict_ts
+
+    def test_source_task_guide_uses_real_syntax_and_current_backend_behavior(self):
+        guide=self.cli('guide','--kind','tasks-runtime')
+        prefix=guide['text'].split('<!-- bounded-source-task-entry-end -->')[0]
+        programs=re.findall(r'```nex\n(.*?)```',prefix,re.S)
+        self.assertEqual(len(programs),1)
+        self.assertIn('JSON acceptance',self.cli('guide','--kind','task')['text'])
+        observed={}
+        for language in ('0.28','0.29','0.30'):
+            project=self.root/language;project.mkdir()
+            (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':'main.nex'}))
+            (project/'main.nex').write_text(programs[0])
+            self.cli('check',cwd=project)
+            reference=self.cli('eval',cwd=project)
+            self.assertEqual(reference['stdout'],'42\n')
+            observed[language]={'reference':True}
+            if language!='0.30':continue
+            native=self.cli('run','--profile','release',cwd=project,timeout=180)
+            self.assertEqual(native['stdout'],reference['stdout'])
+            output=project/'typescript'
+            self.cli('emit','--kind','typescript','--directory',output,cwd=project)
+            mapping=json.loads((output/'nex-map.json').read_text())
+            self.assertEqual(mapping['execution'],'task-generator')
+            self.strict_ts(output)
+            (output/'package.json').write_text('{"type":"module"}\n')
+            driver=output/'guide.mjs';driver.write_text("import * as p from './program.ts';\n"
+                "import * as t from './nex-task-runtime.ts';\n"
+                "let stats;await t.runTypedSourceErrors(t.call(()=>p.entry()),p.sourceErrorContracts,"
+                "{complete:s=>{stats=s;}});\n"
+                "if(!stats?.completed||stats.activeCalls||stats.retainedFrames)throw Error('source task guide cleanup');\n")
+            actual=self.run_child([os.environ.get('NEX_NODE','node'),'--no-warnings','--experimental-strip-types',driver])
+            self.assertEqual(actual,reference['stdout'])
+            observed[language].update(native_release=True,strict_executed_TypeScript=True)
+        print(json.dumps({'source_task_guide_sha256':hashlib.sha256(guide['text'].encode()).hexdigest(),
+                          'source_task_guide_content_hash':guide['hash'],'languages':observed,
+                          'model_calls':0,'token_savings_claimed':False}))
+
     def test_bounded_sheet_and_embedded_program_are_current_and_checked(self):
         value=self.cli('guide','--kind','quick')
         cap=self.cli('describe','--field','llm_entry')['value']

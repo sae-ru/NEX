@@ -90,6 +90,8 @@ the [IEEE kernel](docs/ieee-numeric.md) still has no source types.
 The [bounded LLM entry](docs/llm-entry-v2.md) has a4058-byte common contract and
 preserves the full detailed rules. Its [observed Qwen study](docs/llm-cost-qwen38-27b-2026-11-17.en.md)
 retains all60 outcomes, unknown usage and explicit execution amendments.
+The next [reference-context preparation](docs/llm-entry-v3.md) supplies public
+source-task/byte guides and normative reviewer context; no new model result is claimed.
 
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|
