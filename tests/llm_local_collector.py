@@ -484,4 +484,48 @@ class Version3Collection(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'historical'):v2.verify(output)
 
 
+class Version4Collection(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        spec=importlib.util.spec_from_file_location('nex_collection_v4',ROOT/'experiments/quality/llm-campaign-v4/collector.py')
+        cls.version=importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.version)
+
+    def test_observed_opening_only_form_reaches_the_existing_broker(self):
+        with tempfile.TemporaryDirectory(prefix='nex-tool-envelope-') as temporary:
+            control=Version3Collection()
+            root=Path(temporary);slot,frozen,_=control.trial(root)
+            broker=self.version.v3.Broker(frozen,root/'owned-trial',slot)
+            raw='<tool_call>\n{"action":"guide","kind":"quick"}'
+            with self.assertRaises(ValueError):self.version.strict_model_object(raw)
+            received=broker.action(self.version.engine.model_object(raw))
+            self.assertIn('Unicode scalars',received['text'])
+            for invalid_action in ('{"action":"not-a-broker-action"}','{"action":"guide","kind":5}'):
+                with self.subTest(invalid_action=invalid_action), self.assertRaises(ValueError):
+                    broker.action(self.version.engine.model_object('<tool_call>\n'+invalid_action))
+
+    def test_opening_only_form_still_requires_one_complete_json_action(self):
+        for body in ('{"action":"check"', '{"action":1}', '{"rules":[]}', '[]',
+                     '{"action":"check","action":"submit"}', '{"action":"check"} extra',
+                     '{"action":"check"}\n{"action":"submit"}',
+                     '```json\n{"action":"check"}\n```', '{"action":"check"}<tool_call>'):
+            with self.subTest(body=body), self.assertRaises(ValueError):
+                self.version.engine.model_object('<tool_call>\n'+body)
+        self.assertEqual(self.version.engine.model_object('{"rules":[]}'),{'rules':[]})
+        self.assertEqual(self.version.engine.model_object('<tool_call>{"action":"submit"}</tool_call>'),
+                         {'action':'submit'})
+
+    def test_historical_runner_rejects_new_freeze_identity_and_converse(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);path=root/'freeze.json'
+            current={'schema':'nex.local-collection/4','study_protocol_version':4,
+                     'collector_policy_version':7,'source_language':'0.30'}
+            path.write_text(json.dumps(current))
+            with self.assertRaisesRegex(ValueError,'historical'):self.version.v3.verify(root)
+            current.update(schema='nex.local-collection/3',study_protocol_version=3,collector_policy_version=6)
+            path.write_text(json.dumps(current));saved=path.read_bytes()
+            with self.assertRaisesRegex(ValueError,'historical'):self.version.verify(root)
+            self.assertEqual(path.read_bytes(),saved)
+
+
 if __name__=='__main__':unittest.main(verbosity=2)

@@ -1,0 +1,166 @@
+{
+  "schema": "nex.llm-response-envelope-evidence/1",
+  "ok": true,
+  "toolchain": "0.280.1",
+  "source_language": "0.30",
+  "source_base": "75549603be9b188ae6db077a96a1ed4698cdc502",
+  "platform": "macOS ARM64",
+  "protocol": 4,
+  "collector_sha256": "672e21ed24742ae961c7c33f22fce1016974d778042cfa83976b940c034b1e2a",
+  "old_responses_reparsed": [
+    {
+      "call_index": 2,
+      "action": "guide",
+      "sha256": "cf0ea7f7cfc4e7a76c407b406c5c84dfd74bbd3aa8bd5390e3b8cce7b19b8958"
+    },
+    {
+      "call_index": 3,
+      "action": "guide",
+      "sha256": "838efa449271547af46b89e9f9c4b5cd5d5fef1452c83ed0bb2ba7e792d197d3"
+    },
+    {
+      "call_index": 4,
+      "action": "guide",
+      "sha256": "4bc0b36063c6389f4f4b032f7edf39e8a6337a8980ec1311be72bf69f3c76910"
+    },
+    {
+      "call_index": 5,
+      "action": "guide",
+      "sha256": "c67a6f288ff27c4f61079a6697e806cb4df8b3728822b46d6db165ba932ee0df"
+    },
+    {
+      "call_index": 6,
+      "action": "guide",
+      "sha256": "cb5db0b9709cb8a9c200010f745d49fdc235dc2d7a27c6091a9000310891dea5"
+    },
+    {
+      "call_index": 7,
+      "action": "guide",
+      "sha256": "f37c26af700088695f10195e90f482292e35ead7f6ab830dedbc1e83acb07f10"
+    },
+    {
+      "call_index": 8,
+      "action": "guide",
+      "sha256": "78e740d7f98a170b3d64945bb11d835d979d9d8276c8e0202f89869f85c7e3c9"
+    },
+    {
+      "call_index": 9,
+      "action": "edit",
+      "sha256": "a5c3df8eaeb52c1d5a3fdc1df005e09aefe9b3d55fd164bdb7d37053c979c702"
+    },
+    {
+      "call_index": 10,
+      "action": "edit",
+      "sha256": "a7aaceb804f48c7658a8d3f2aa9c9e5a7f7b1775a8be1d65f3c1b91134dea899"
+    }
+  ],
+  "post_pilot_reference_recovered_from_git": [
+    {
+      "path": "docs/references030.md",
+      "source_commit": "75549603be9b188ae6db077a96a1ed4698cdc502",
+      "sha256": "11dc0f6c4e993a4078dc8f0164d4ddce2e817e7c57a3e59fc7e678621f095ec9"
+    }
+  ],
+  "local_core": {
+    "passed": 17,
+    "receipt_sha256": "f83daca5138b2896ffddc712cf85223385c71766c5fd567007dcafedccb288b2"
+  },
+  "installed_collector_help_checked": true,
+  "pilot": {
+    "kind": "infrastructure_pilot",
+    "model": "qwen/qwen3.8-27b Q8_0",
+    "task": "bounded-total",
+    "slots": 3,
+    "owned_instance_unloaded": true,
+    "freeze_sha256": "88945e9c4e2e918a4c93410ce8e27b58eba3e6e8c46f22c8fb987548d6f80461",
+    "ledger_sha256": "428ca6dc4b13702406111bb436a5dddaa336fc0a446da179be5eda9e9018a502",
+    "summary_sha256": "6080782414f691c8b21422317e3ee0e19ec79782e06da1afda35c6ddf0a0a65a",
+    "raw_provider_calls_reconciled": 15,
+    "opening_only_actions_accepted": 8,
+    "sdk_compiler_sha256": "a37aab72fb84cf2bf938859017282977b9b9f2445f16fcae9457086e8df9f0b4",
+    "sdk_manifest_sha256": "24b45dc6271af157abc05a24cd3773228b879e11837bd19dc8d0507e69142018",
+    "frozen_sdk_files": 2389,
+    "results": {
+      "cpp": {
+        "input_tokens": 4781,
+        "output_tokens": 376,
+        "total_tokens": 5157,
+        "accepted": true,
+        "calls": 4,
+        "visible_cases": 4,
+        "held_out_cases": 3,
+        "acceptance_sha256": "f4246696901cda2ddfaba171ee0b377b4fb5dddb421e469fba2eca3fa0eca9c1",
+        "source_review_sha256": "abe4b14b8b957d3dc88bad18ac85c832793183eda82fb66b6fe026a666062c06",
+        "opening_only_actions": [
+          {
+            "call_index": 1,
+            "action": "check",
+            "sha256": "1b55b247a4c55d4d49c39b84518c225dfdb3bd7794f6ee4ca526e7f5dc3e8b0d"
+          },
+          {
+            "call_index": 2,
+            "action": "submit",
+            "sha256": "cfdfdb6a56154e5f0631c1c25476bc6839c9ebd62d61d7c2515381e72c5a2609"
+          }
+        ]
+      },
+      "nex": {
+        "input_tokens": 35831,
+        "output_tokens": 398,
+        "total_tokens": 36229,
+        "accepted": true,
+        "calls": 7,
+        "visible_cases": 4,
+        "held_out_cases": 3,
+        "acceptance_sha256": "2b38b1c6860385277492c12ae6581f5b852c8e72f685bad6e69309b1294210ab",
+        "source_review_sha256": "05e1209bb05216e50df317a822a0b13ca60c092efd7aabc3df1fd9aa18a7034d",
+        "opening_only_actions": [
+          {
+            "call_index": 2,
+            "action": "guide",
+            "sha256": "0bc9f2f4054a7acf93c6dc85a591b8667c259c5b1d2af0b55818f060698ac02c"
+          },
+          {
+            "call_index": 3,
+            "action": "edit",
+            "sha256": "e80ef4511f01a7d10072762f241f11cc68dbe111a4316f33968cffc313054ad2"
+          },
+          {
+            "call_index": 4,
+            "action": "check",
+            "sha256": "8d65a1f83f2387880d40c126542b2005b46ac4492d2f2512696235075ed1dac3"
+          },
+          {
+            "call_index": 5,
+            "action": "submit",
+            "sha256": "d60399c3bfceb47ebb11ad9be7c86aa361738b67046814a1bb96d60409a1fdd3"
+          }
+        ]
+      },
+      "python": {
+        "input_tokens": 4341,
+        "output_tokens": 293,
+        "total_tokens": 4634,
+        "accepted": true,
+        "calls": 4,
+        "visible_cases": 4,
+        "held_out_cases": 3,
+        "acceptance_sha256": "c487164d666a8966b35a829dbd4a2c47d56988876ac0b9000ef59d3b1f9e2532",
+        "source_review_sha256": "80cfa4839f16b2ef91bf89cef620d04851c7c9545f55c8049d2ab68510074bd6",
+        "opening_only_actions": [
+          {
+            "call_index": 1,
+            "action": "check",
+            "sha256": "ad61ba903cb309a2d2febe46ef78bee13aef36326887d6197980720e84da92c0"
+          },
+          {
+            "call_index": 2,
+            "action": "submit",
+            "sha256": "f30934afc0116183181658a8590913f36b898bd129cc3419c70372720b98ca81"
+          }
+        ]
+      }
+    }
+  },
+  "comparative_token_saving_established": false
+}

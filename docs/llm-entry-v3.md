@@ -51,6 +51,15 @@ published SDK. In the three-slot Qwen pilot, C++ and Python passed. The NEX
 slot ran out of requests after nine replies with a missing tool-call closing
 tag. This pilot ended before the NEX candidate reached the compiler.
 
+The [version 4 collector](../experiments/quality/llm-campaign-v4/README.md) can
+read this envelope when it contains one complete JSON action. The broker still
+checks the action and arguments. Replay recovered all nine original JSON
+actions. In a separate local Qwen pilot on the same bounded-total task, NEX,
+C++ and Python each passed. The NEX trial used 36,229 observed tokens, compared
+with 5,157 for C++ and 4,634 for Python. This pilot has one slot per language.
+The [version 4 record](evidence/llm-response-envelope-v4-0.280.1-2026-11-17.json)
+contains the exact scope, response hashes and final acceptance receipts.
+
 These source documentation changes were added after the immutable0.280.1 SDK
 snapshot. They do not rewrite the published SDK or its exact qualification.
 
@@ -58,4 +67,6 @@ snapshot. They do not rewrite the published SDK or its exact qualification.
 документы по байтам и построению коллекций. Ревьюер получает семантику выбранного
 языка, а её стоимость учитывается. Проведён пилот на трёх попытках. Эталонные
 примеры NEX прошли на SDK отдельно, а модель исчерпала лимит попытки NEX до
-компиляции. Полное сравнение по протоколу v3 ещё предстоит.
+компиляции. В отдельном пилоте v4 все три языка прошли приёмку. Для этой задачи
+NEX потребовал 36 229 токенов, C++ — 5 157, Python — 4 634. Полное сравнение
+по новому протоколу ещё предстоит.
