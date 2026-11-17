@@ -287,6 +287,6 @@ server fn main()->unit!{state,task,fs,throw}{
   }
   require(runOwnerTaskRuntime()==0,"native owner-thread runtime probe failed");
   require(runNativeTaskSessionKernel()==0,"native persistent session runtime probe failed");
-  std::cout<<"{\"ok\":true,\"cases\":"<<cases<<",\"owner_cases\":7,\"native_session_cases\":14}\n";
+  std::cout<<"{\"ok\":true,\"cases\":"<<cases<<",\"owner_cases\":11,\"native_session_cases\":14}\n";
 }catch(const Error &error){std::cerr<<"case "<<cases<<": "<<error.code<<": "<<error.message<<" at "<<error.span.line<<'\n';return 1;}
 catch(const std::exception &error){std::cerr<<"case "<<cases<<": "<<error.what()<<'\n';return 1;}}

@@ -1,5 +1,9 @@
 # NEX language specification 0.28
 
+Toolchain0.280.1 preserves native owner-thread task deadline/cancellation outcomes
+at reference-context acquisition. This runtime correction adds no source syntax,
+language version, graph migration or runtime ABI.
+
 # Owner-thread storage — development0.280.0
 
 Source0.30 native/reference task graphs accept blocking server `db` operations

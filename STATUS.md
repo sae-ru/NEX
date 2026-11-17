@@ -1,3 +1,22 @@
+# Native owner-thread control outcomes — development0.280.1
+
+The0.280 source SDK attempt exposed a deadline race in the native host-session
+phase: a temporary task scope returned `E_CELL_CONTEXT` instead of `E_TIMEOUT`.
+It borrowed the heap but had no direct persistent-session pointer. The runtime
+now preserves deadline/cancellation outcomes for both persistent coordinators
+and their borrowed continuation scopes, without consuming an extra step.
+
+[The0.280.1 receipt](docs/evidence/native-owner-control-0.280.1-2026-11-17.json)
+retains the original failure and a deterministic old-runtime cancellation
+reproducer. Four new owner cases pass in O0/O2 with ordinary and persistent
+requests;24 core/affected groups pass, including the previously failing SDK
+sub-workflow. The unchanged capability manifest matches72 shared fields.
+No syntax, source version, graph migration or runtime ABI changes.
+
+The failed0.280 full attempt continues to collect its remaining results.
+Complete current source/portable SDK/platform delivery and the original PLAN
+remain open. Published SDK0.246.1 retains its own immutable qualification.
+
 # Owner-thread SQLite and Workboard — development0.280.0
 
 Source030 server tasks now use blocking storage on the invocation owner,

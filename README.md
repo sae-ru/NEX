@@ -55,7 +55,9 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.280.0 / language 0.28 / task ABIs 7/8**, in development.
+Current source: **toolchain 0.280.1 / language 0.28 / task ABIs 7/8**, in development.
+The [control correction](docs/evidence/native-owner-control-0.280.1-2026-11-17.json)
+preserves timeout/cancellation outcomes in borrowed native task scopes.
 The compiler fallback remains0.28. `nex.json` selects0.28,0.29 or0.30 per project;
 new `nex init` projects select0.30. Language0.29 adds partial type lambdas and
 higher-order kinds;0.30 adds typed cells and the `state` effect. Retained projects

@@ -1,0 +1,204 @@
+{
+  "schema": "nex.native-owner-control/1",
+  "ok": true,
+  "verified_at_utc": "2026-11-17T07:51:50.756904+00:00",
+  "toolchain": "0.280.1",
+  "base_source_commit": "3d0ac36fcdbb3654e68f76a7aa27131f8235f24f",
+  "source_files_sha256": {
+    "VERSION": "957bf14c5db27ce8081bba0641cd5cb387a007d185775ded19c015fc34592d21",
+    "runtime/runtime.cpp": "d904286a5f251b41636bb6609e4cc7a70963ba9b1c5651bc29ad9b83fdbd6b9d",
+    "tests/owner_task_runtime.cpp": "f7388f7167e091763aa75b9c79ddc56f6fea5105b29d7e7efff608fd24954dc1",
+    "tests/reference_tasks.cpp": "527d9c977a75d94fa415ba2e5ad288e56c58b357441493e26db52a1aba069b52",
+    "tests/native_reference_tasks.py": "6f8738a54ceb39d0e0197e011d06781cf409dd41e650c4a8ece4f69e0db82fce",
+    "tests/typescript_reference_tasks.py": "f5afabc450ab6ee8a85acae5f1fbbc8b502ec7d8052e8476ba5399cb1adca1a0",
+    "tests/reference_tasks_cli.py": "9e2b94851d811ad7a595aa532a93d754c7617899144a4f3f546b99a9e9fe4a74",
+    "docs/language.md": "1a4fd874fa848094c1cfc6b7eb0d0739633c6f87cf23accb666787384bb5fe7b",
+    "docs/grammar.ebnf": "abba5f24062d1fd9c2d771df96639b6d89be35fb4bee12a0e482f8dd44906450",
+    "docs/native-task-sessions.md": "1ea8d94f6dfab3a9a2bc2fdccbcf50a9df23b1b59210a7585ae73b3ccd5885a8",
+    "llm/language-pack.json": "45645d41d0c0b1a4a186b24cc7ddd32877c60607f6772ce6e68276944038cf24"
+  },
+  "compiler_sha256": "58718b7d4928c5daf7f0531c8491d38b2aa63ed8c4fe46a7161dcedb314b1d46",
+  "compiler_build": "e084b22b6677973aaffb62d1546a9e7ddea6bf15eaab5b248bfab402ad8f7bb1",
+  "source_versions_unchanged": [
+    "0.28",
+    "0.29",
+    "0.30"
+  ],
+  "runtime_ABIs_unchanged": [
+    7,
+    8
+  ],
+  "C_ABI_unchanged": 1,
+  "original_full_attempt": {
+    "toolchain": "0.280.0",
+    "failed_group": "sdk_reference030",
+    "expected_code": "E_TIMEOUT",
+    "observed_code": "E_CELL_CONTEXT",
+    "message": "expected E_TIMEOUT, got E_CELL_CONTEXT: managed reference request is no longer active",
+    "host_commands_sha256": "ecf33c4e2919c7930f16c92e867dc1f406049dded93c7293758c19095e2d557a",
+    "complete_attempt_still_running": true
+  },
+  "deterministic_before": {
+    "exit_code": 2,
+    "stdout": "",
+    "stderr": "expected E_CANCELLED, got E_CELL_CONTEXT: managed reference request is no longer active\n",
+    "frozen_runtime_sha256": "712bbef1d2065f0e6002748531b1f25555d9514d07988a6a5ef9ca8e23e4dbf1"
+  },
+  "deterministic_after": {
+    "runtime_sha256": "d904286a5f251b41636bb6609e4cc7a70963ba9b1c5651bc29ad9b83fdbd6b9d",
+    "harness_sha256": "f7388f7167e091763aa75b9c79ddc56f6fea5105b29d7e7efff608fd24954dc1",
+    "profiles": [
+      {
+        "optimization": "O0",
+        "commands": [
+          [
+            "/opt/homebrew/opt/llvm@22/bin/clang++",
+            "-std=c++20",
+            "-pthread",
+            "-DNEX_STRUCTURED_WORKERS",
+            "-DNEX_ASYNC_TASKS",
+            "-DNEX_MANAGED_TASKS",
+            "-I/Users/sae/projects/NEX/runtime",
+            "-O0",
+            "-c",
+            "/Users/sae/projects/NEX/runtime/runtime.cpp",
+            "-o",
+            "/Users/sae/projects/NEX/build/borrowed-reference-control-v1/runtime-O0.o"
+          ],
+          [
+            "/opt/homebrew/opt/llvm@22/bin/clang++",
+            "-std=c++20",
+            "-pthread",
+            "-DNEX_STRUCTURED_WORKERS",
+            "-DNEX_ASYNC_TASKS",
+            "-DNEX_MANAGED_TASKS",
+            "-I/Users/sae/projects/NEX/runtime",
+            "-O0",
+            "/Users/sae/projects/NEX/tests/owner_task_runtime.cpp",
+            "/Users/sae/projects/NEX/build/borrowed-reference-control-v1/runtime-O0.o",
+            "/Users/sae/projects/NEX/build/sdk-0.280.0-macos-v1/build/CMakeFiles/nex_native_task_session_host.dir/runtime/nex_cell_host.cpp.o",
+            "/Users/sae/projects/NEX/build/sdk-0.280.0-macos-v1/build/CMakeFiles/nex_native_task_session_host.dir/runtime/nex_cells.cpp.o",
+            "/Users/sae/projects/NEX/build/sdk-0.280.0-macos-v1/build/CMakeFiles/nex_native_task_session_host.dir/runtime/nex_external_resource.cpp.o",
+            "/Users/sae/projects/NEX/build/sdk-0.280.0-macos-v1/build/CMakeFiles/nex_native_task_session_host.dir/runtime/nex_files.cpp.o",
+            "/Users/sae/projects/NEX/build/sdk-0.280.0-macos-v1/build/CMakeFiles/nex_native_task_session_host.dir/runtime/nex_resource_executor.cpp.o",
+            "/Users/sae/projects/NEX/build/sdk-0.280.0-macos-v1/build/CMakeFiles/nex_native_task_session_host.dir/runtime/nex_resource_region.cpp.o",
+            "/Users/sae/projects/NEX/build/sdk-0.280.0-macos-v1/build/CMakeFiles/nex_native_task_session_host.dir/runtime/nex_task_external.cpp.o",
+            "/Users/sae/projects/NEX/build/sdk-0.280.0-macos-v1/build/CMakeFiles/nex_native_task_session_host.dir/runtime/nex_task_frame.cpp.o",
+            "/Users/sae/projects/NEX/build/sdk-0.280.0-macos-v1/build/CMakeFiles/nex_native_task_session_host.dir/runtime/nex_task_session.cpp.o",
+            "-o",
+            "/Users/sae/projects/NEX/build/borrowed-reference-control-v1/fixed-owner-O0"
+          ]
+        ],
+        "exit_code": 0,
+        "stdout": "{\"ok\":true,\"cases\":11,\"turns\":47}\n",
+        "stderr": "",
+        "binary_sha256": "ca47aa60101b8f465831e74bf2d3fb0c366278059cd8c8debf43387e56057243"
+      },
+      {
+        "optimization": "O2",
+        "commands": [
+          [
+            "/opt/homebrew/opt/llvm@22/bin/clang++",
+            "-std=c++20",
+            "-pthread",
+            "-DNEX_STRUCTURED_WORKERS",
+            "-DNEX_ASYNC_TASKS",
+            "-DNEX_MANAGED_TASKS",
+            "-I/Users/sae/projects/NEX/runtime",
+            "-O2",
+            "-c",
+            "/Users/sae/projects/NEX/runtime/runtime.cpp",
+            "-o",
+            "/Users/sae/projects/NEX/build/borrowed-reference-control-v1/runtime-O2.o"
+          ],
+          [
+            "/opt/homebrew/opt/llvm@22/bin/clang++",
+            "-std=c++20",
+            "-pthread",
+            "-DNEX_STRUCTURED_WORKERS",
+            "-DNEX_ASYNC_TASKS",
+            "-DNEX_MANAGED_TASKS",
+            "-I/Users/sae/projects/NEX/runtime",
+            "-O2",
+            "/Users/sae/projects/NEX/tests/owner_task_runtime.cpp",
+            "/Users/sae/projects/NEX/build/borrowed-reference-control-v1/runtime-O2.o",
+            "/Users/sae/projects/NEX/build/sdk-0.280.0-macos-v1/build/CMakeFiles/nex_native_task_session_host.dir/runtime/nex_cell_host.cpp.o",
+            "/Users/sae/projects/NEX/build/sdk-0.280.0-macos-v1/build/CMakeFiles/nex_native_task_session_host.dir/runtime/nex_cells.cpp.o",
+            "/Users/sae/projects/NEX/build/sdk-0.280.0-macos-v1/build/CMakeFiles/nex_native_task_session_host.dir/runtime/nex_external_resource.cpp.o",
+            "/Users/sae/projects/NEX/build/sdk-0.280.0-macos-v1/build/CMakeFiles/nex_native_task_session_host.dir/runtime/nex_files.cpp.o",
+            "/Users/sae/projects/NEX/build/sdk-0.280.0-macos-v1/build/CMakeFiles/nex_native_task_session_host.dir/runtime/nex_resource_executor.cpp.o",
+            "/Users/sae/projects/NEX/build/sdk-0.280.0-macos-v1/build/CMakeFiles/nex_native_task_session_host.dir/runtime/nex_resource_region.cpp.o",
+            "/Users/sae/projects/NEX/build/sdk-0.280.0-macos-v1/build/CMakeFiles/nex_native_task_session_host.dir/runtime/nex_task_external.cpp.o",
+            "/Users/sae/projects/NEX/build/sdk-0.280.0-macos-v1/build/CMakeFiles/nex_native_task_session_host.dir/runtime/nex_task_frame.cpp.o",
+            "/Users/sae/projects/NEX/build/sdk-0.280.0-macos-v1/build/CMakeFiles/nex_native_task_session_host.dir/runtime/nex_task_session.cpp.o",
+            "-o",
+            "/Users/sae/projects/NEX/build/borrowed-reference-control-v1/fixed-owner-O2"
+          ]
+        ],
+        "exit_code": 0,
+        "stdout": "{\"ok\":true,\"cases\":11,\"turns\":47}\n",
+        "stderr": "",
+        "binary_sha256": "b6c941fa5964a49f5303f2f769f375b39c8f1d12983904cfc0d5c71f25baa17f"
+      }
+    ]
+  },
+  "regressions": {
+    "owner_cases_each": 11,
+    "new_cases": 4,
+    "contexts": [
+      "ordinary_request",
+      "persistent_request"
+    ],
+    "control_outcomes": [
+      "E_CANCELLED",
+      "E_TIMEOUT"
+    ],
+    "boundary": "after the preceding host poll and before borrowed heap acquisition",
+    "values_retired": true
+  },
+  "targeted_CTest": {
+    "groups": 24,
+    "passed": 24,
+    "failed": 0,
+    "skipped": 0,
+    "names": [
+      "llm_cost_ledger",
+      "llm_local_collector",
+      "ctest_report_validation",
+      "discovery",
+      "language_pack_contract",
+      "task_frontend_native",
+      "reference_tasks_development",
+      "typescript_reference_tasks_development",
+      "native_reference_tasks_development",
+      "reference_tasks_cli",
+      "frontend_diagnostics_native",
+      "value_owner_runtime",
+      "value_retirement_runtime",
+      "managed_references_frontend_reference",
+      "managed_reference_native_context",
+      "native_task_sessions",
+      "reference_http_context",
+      "managed_reference_requests_native",
+      "bytes_runtime_native",
+      "float_runtime_native",
+      "sdk_reference030",
+      "typed_source_frontend_reference",
+      "test_tiers",
+      "diagnostic_catalogue"
+    ],
+    "registry_sha256": "9c9e2585b93141bb2b82baa147349e6bde540596a377f1fc79208a536362783d",
+    "junit_sha256": "7a332df59a1c2501b5a7aacc6561ce1d8098fb5274525d8af75269cfea17b7c6",
+    "receipt_sha256": "9b3ffa2bbffad75e24c3caad82e3d8606a1e477e50c01619557e10991e14cee5"
+  },
+  "language_pack": {
+    "shared_fields": 72,
+    "compared_JSON_values": 4790,
+    "ok": true,
+    "report_sha256": "fe5400440fbed40790dcf434ace4fee5f185605712a83bb46df438c9e6a60f62"
+  },
+  "build_stdout_sha256": "dddd92a6e783996ca11c2b37a792b011a8ba7955734ca2b8e44c4ad67f25ed24",
+  "complete_source_suite_qualified": false,
+  "portable_SDK_qualified": false,
+  "whole_goal_complete": false
+}

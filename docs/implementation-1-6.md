@@ -1,10 +1,15 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.280.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.280.1"
 owner: repository
 ---
 
 # Implementation sequence: items 1–6
+
+The0.280 source SDK attempt exposed a deadline/context diagnostic race in the
+native host-session phase. The0.280.1 runtime correction retains the original
+deadline/cancellation outcome in temporary owner-thread continuation scopes.
+The failed snapshot remains immutable; matching qualification is still required.
 
 The0.280 SDK workflow adds required [Workboard consumption](sdk-workboard.md)
 as phase43: installed native/reference/browser application behavior, SQL/file

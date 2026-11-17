@@ -15,7 +15,7 @@ def run(name,command,folder=out,**kw):
     if p.returncode:raise RuntimeError(str(command)+'\n'+p.stdout+'\n'+p.stderr)
     return p
 gates=json.loads(run('gates',[emitter,'gates']).stdout);assert gates=={'ok':True,'rejected':8,'reachable_only':True},gates
-corpus=out/'corpus';assert json.loads(run('reference-corpus',[reference,corpus]).stdout)=={'ok':True,'cases':21,'owner_cases':7,'native_session_cases':14}
+corpus=out/'corpus';assert json.loads(run('reference-corpus',[reference,corpus]).stdout)=={'ok':True,'cases':21,'owner_cases':11,'native_session_cases':14}
 cases=[{'name':Path(row['file']).stem,'source':(corpus/row['file']).read_text(),'steps':row.get('steps',1000000),'expected_error':row.get('error'),'expected_stdout':row['stdout']} for row in json.loads((corpus/'cases.json').read_text())['cases'] if not row['files']]
 assert len(cases)==9,len(cases)
 extra=[

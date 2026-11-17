@@ -1,3 +1,12 @@
+# Native owner-thread control correction — development0.280.1
+
+The0.280 full source attempt exposed a host-session deadline/context race.
+The0.280.1 [runtime correction](docs/evidence/native-owner-control-0.280.1-2026-11-17.json)
+passes deterministic O0/O2 reproduction and24 core/affected groups. Retain the
+failed snapshot, collect the rest of that attempt and qualify one corrected
+committed cohort through the complete SDK/platform workflow. All original
+requirements below remain active.
+
 # Owner-thread SQLite and a coherent application — development0.280.0
 
 The maintained SDK workflow now requires [Workboard phase43](docs/sdk-workboard.md)

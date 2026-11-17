@@ -18,7 +18,7 @@ def run(name,command,expected=0,**kw):
     if p.returncode!=expected:raise RuntimeError(str(command)+'\n'+p.stdout+'\n'+p.stderr)
     return p
 corpus=out/'corpus';observed=json.loads(run('reference',[reference,corpus]).stdout)
-assert observed=={'ok':True,'cases':21,'owner_cases':7,'native_session_cases':14},observed
+assert observed=={'ok':True,'cases':21,'owner_cases':11,'native_session_cases':14},observed
 cases=json.loads((corpus/'cases.json').read_text())['cases'];assert len(cases)==13,len(cases)
 run('target',[compiler,'-x','c','-S','-emit-llvm',os.devnull,'-o',out/'target.ll'])
 text=(out/'target.ll').read_text();triple=re.search(r'target triple = "([^"]+)"',text)[1];layout=re.search(r'target datalayout = "([^"]+)"',text)[1]
@@ -34,7 +34,7 @@ for optimization in ['0','2']:
     owner=build/('owner.exe' if os.name=='nt' else 'owner')
     run('O'+optimization+'-link-owner',[compiler,*flags,'-O'+optimization,root/'tests/owner_task_runtime.cpp',*objects,*libraries,'-o',owner])
     owner_result=json.loads(run('O'+optimization+'-owner',[owner],cwd=tempfile.gettempdir(),env=deployed_environment()).stdout)
-    assert owner_result['ok'] and owner_result['cases']==7,owner_result
+    assert owner_result['ok'] and owner_result['cases']==11,owner_result
     report['owner_runtime'].append({'optimization':'O'+optimization,'result':owner_result,'binary_sha256':sha(owner)})
     for case in cases:
         name=Path(case['file']).stem;directory=out/(name+'-O'+optimization)

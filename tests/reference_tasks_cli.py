@@ -18,7 +18,7 @@ def run(label,args,folder=out,expected=0,env=None):
 def cli(label,args,folder=out,expected=0,env=None):return json.loads(run(label,[compiler,*args,'--json'],folder,expected,env).stdout)
 def project(folder,source):
  folder.mkdir();(folder/'main.nex').write_text(source);(folder/'nex.json').write_text('{"schema":"nex.project/1","language":"0.30","entry":"main.nex"}\n');return folder
-corpus=out/'corpus';assert json.loads(run('corpus',[reference,corpus]).stdout)=={'ok':True,'cases':21,'owner_cases':7,'native_session_cases':14}
+corpus=out/'corpus';assert json.loads(run('corpus',[reference,corpus]).stdout)=={'ok':True,'cases':21,'owner_cases':11,'native_session_cases':14}
 cases=json.loads((corpus/'cases.json').read_text())['cases'];assert len(cases)==13
 build_dir=Path(os.environ.get('NEX_REFERENCE_TASK_CLI_BUILD',str(out/'native'))).resolve()
 baseline=project(out/'baseline','module retained;fn main()->unit!{task,io}{task_yield();print(7);}\n')

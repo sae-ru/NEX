@@ -44,7 +44,18 @@ TaskBody ownerDescriptor(TaskGroup &group,Value abi,Value){
  const TaskCodeDescriptor code{unused,nullptr,nullptr,nullptr,nullptr,abi.scalar,0,0,0,4,taskCodeDeclaredState};
  return executeTaskFrame(group,NativeTaskFrame(code,{},{}));
 }
-template<class F> void trap(const std::string &code,F action){bool failed=false;try{action();}catch(const Trap &error){require(error.code==code,"wrong native owner error");failed=true;}require(failed,"expected native owner error");}
+struct ControlAcquisition {RequestScope *request;bool timeout;mutable bool reached=false;};
+TaskBody acquireAfterControl(TaskGroup &,Value,Value,const void *context){
+ const auto &control=*static_cast<const ControlAcquisition*>(context);
+ onOwner();pollHostOperation(0);control.reached=true;
+ // Make the control change happen after the last successful host poll and
+ // before reference acquisition, inside the borrowed owner-task scope.
+ if(control.timeout)std::this_thread::sleep_until(*currentRequestDeadline()+std::chrono::milliseconds(1));
+ else control.request->cancel();
+ (void)managedReferenceContext(nullptr,nullptr,nullptr);
+ co_return Value();
+}
+template<class F> void trap(const std::string &code,F action){bool failed=false;try{action();}catch(const Trap &error){require(error.code==code,("expected "+code+", got "+error.code+": "+std::string(trapMessage(error))).c_str());failed=true;}require(failed,"expected native owner error");}
 }
 int runOwnerTaskRuntime(){try{
  owner=std::this_thread::get_id();int cases=0;
@@ -74,7 +85,19 @@ int runOwnerTaskRuntime(){try{
   auto value=readHandle(nex_cell_new_i64(0,0,0));TaskGroup group(managedTaskOwnerExecution());
   auto task=group.spawn(endless,value);trap("E_CANCELLED",[&]{(void)group.join(task);});++cases;}
  require(retired==2&&!inRequestScope()&&liveObjects==0,"cancelled owner left context/values");
- require(cases==7,"owner scenario count differs");
+ for(bool persistent:{false,true})for(bool timeout:{false,true}){
+  {
+   auto context=persistent?std::make_unique<PersistentRequestContext>():nullptr;
+   auto request=context?std::make_unique<RequestScope>(*context,1000000,1000):std::make_unique<RequestScope>(1000000,1000);
+   auto value=readHandle(nex_cell_new_i64(0,0,0));TaskGroup group(managedTaskOwnerExecution());
+   ControlAcquisition control{request.get(),timeout};
+   auto task=group.spawnWithContext(acquireAfterControl,&control,value,{});
+   trap(timeout?"E_TIMEOUT":"E_CANCELLED",[&]{(void)group.join(task);});
+   require(control.reached,"control acquisition scenario did not reach the post-poll boundary");
+  }
+  require(!inRequestScope()&&liveObjects==0,"control acquisition race retained request values");++cases;
+ }
+ require(cases==11,"owner scenario count differs");
 #ifndef NEX_OWNER_TASK_INLINE
  std::cout<<"{\"ok\":true,\"cases\":"<<cases<<",\"turns\":"<<turns<<"}\n";
 #endif

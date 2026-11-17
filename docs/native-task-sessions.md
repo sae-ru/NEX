@@ -1,10 +1,17 @@
 ---
 status: current
-applies_to: "language 0.30; toolchain 0.276.0"
+applies_to: "language 0.30; toolchain 0.280.1"
 owner: repository
 ---
 
 # Persistent native task sessions
+
+Toolchain0.280.1 preserves `E_TIMEOUT`/`E_CANCELLED` when execution control
+changes between a cell host poll and reference-context acquisition inside an
+owner-thread continuation. Its temporary request scope borrows the application's
+attachment and shared controls; it must not replace that control outcome with
+`E_CELL_CONTEXT`. The fix also applies to ordinary request-owned continuations.
+Source versions, task ABIs and graph history stay unchanged.
 
 `nexrt::NativeTaskSession` in `runtime/nex_task_session.h` is a compiler-private,
 matching-runtime C++ host API for ordinary checked030 ABI8 provider exports.
