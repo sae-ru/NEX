@@ -1,0 +1,25 @@
+{
+  "schema": "nex.original-sdk-source-attempt/1",
+  "toolchain": "0.279.0",
+  "source_commit": "482f433482f353635274e599f6037171695b9ea9",
+  "status": "completed",
+  "ok": false,
+  "groups": 386,
+  "passed": 381,
+  "failed": [
+    "task_foreign",
+    "task_file_stream_protocol",
+    "typed_web_delivery",
+    "task_write_protocol",
+    "source_contract_web_delivery"
+  ],
+  "skipped": [],
+  "ctest_receipt_sha256": "cf054b46e11c3a70958b5cb0fcb9c24427f70963b596d8f612c43ab439581ff4",
+  "SDK_report_sha256": "84559cd87cd3a2411c1ed0eff95918a505d909012324c9207c818c54eed8a627",
+  "SDK_archive_qualified": false,
+  "correction_commit": "1710e496d354c619b281f16956376742e3b785a8",
+  "correction_scope": "Current0.280 focused23 groups plus previously fixed exact-input method; this does not replace complete current source/SDK acceptance.",
+  "source_test_seconds": 5397.528,
+  "scope": "Original immutable0.279 source attempt ended without an installed or portable SDK; five failed expectations are retained.",
+  "source_snapshot_unchanged": true
+}

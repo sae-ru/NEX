@@ -6,6 +6,11 @@ owner: repository
 
 # Implementation sequence: items 1–6
 
+The0.280 SDK workflow adds required [Workboard consumption](sdk-workboard.md)
+as phase43: installed native/reference/browser application behavior, SQL/file
+restart persistence and explicit generated-versus-production web scope. Complete
+current source/distribution/archive acceptance remains required before publishing.
+
 Toolchain0.280 adds [blocking owner-thread task storage](task-storage.md) and the
 [Workboard application](../examples/workboard/README.md): persistent030 UI,
 HTTP/SQLite, file export/restore and a dedicated summary Worker. Actual focused

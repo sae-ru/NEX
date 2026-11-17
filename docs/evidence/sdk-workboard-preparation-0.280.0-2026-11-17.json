@@ -1,0 +1,95 @@
+{
+  "schema": "nex.sdk-workboard-preparation/1",
+  "ok": true,
+  "toolchain": "0.280.0",
+  "source_language": "0.30",
+  "base_commit": "1710e496d354c619b281f16956376742e3b785a8",
+  "compiler_unchanged": true,
+  "compiler_sha256": "fca8d4e92306269bdc60f96554fcefac0d7f34ef9b7145246f9bda5ee7b473d3",
+  "code_sha256": {
+    "tools/sdk_workboard.py": "0588f00f589d4f1d41870c77644d21708d98732258fbd8745b7f885a8911ad57",
+    "tools/sdk_acceptance.py": "9323fdcef707307627ec494f6206f60b79b693a788076787bc6233c55593b36d",
+    "tests/workboard_application.py": "b4cb55ca4da5bccb2232670422b59e9f42edeea212f6275406db90725bb6accd",
+    "tests/sdk_workboard.py": "e426fbdf0dfb411d5728f57740671285d0830ebe9387de525bd8732fa29a86bd",
+    "tests/sdk_archives.py": "93ca6889be9ecb65ce861a8b9930c04677ce786dcff11660fd92d664cd76cab1",
+    "cmake/Install.cmake": "285826e6af964a853571a3dfdf014802f40cbc4d0226ae192d0848d28c6f0a96"
+  },
+  "current_SDK_phases": 43,
+  "retained_0279_phases": 42,
+  "retained_02461_phases": 41,
+  "build_exit_code": 0,
+  "unit_groups": [
+    "sdk_archives",
+    "sdk_host",
+    "test_tiers"
+  ],
+  "unit_receipt_sha256": "53a357f78b2183f1243e817070ce3cb82261602e75470f6866c588697b1aed7b",
+  "moved_installation": "/Users/sae/projects/NEX/build/sdk-workboard-v1/SDK moved 🧠",
+  "modes": {
+    "installed-browser-v1": {
+      "report": "/Users/sae/projects/NEX/build/sdk-workboard-v1/installed-browser-v1/report.json",
+      "report_sha256": "c3ee4e1809f312cdd190b9fc5b43b8f7f998acea02886885d01463859bcef496",
+      "compiler_sha256": "fca8d4e92306269bdc60f96554fcefac0d7f34ef9b7145246f9bda5ee7b473d3",
+      "compiler_build": "a4a2a6a680c51c480d432822fb0a8960ed8c1f0b3b9408d23b382a9f0a27dcfa",
+      "resource_pins": 27,
+      "production_web_build": true,
+      "HTTP_requests": 24,
+      "native_profiles": [
+        "debug",
+        "release"
+      ],
+      "server_starts": 4,
+      "native_task_ABI": 8,
+      "controller": {
+        "ok": true,
+        "persistent_state": true,
+        "immutable_published_views": true,
+        "transient_commands_once": true,
+        "summary": {
+          "total": 1,
+          "done": 1,
+          "Unicode_scalars": 3
+        },
+        "file_commands": true,
+        "signed_out_late_response_ignored": true,
+        "closed": true
+      },
+      "complete_SDK_workflow_claimed": false
+    },
+    "installed-generate-v1": {
+      "report": "/Users/sae/projects/NEX/build/sdk-workboard-v1/installed-generate-v1/report.json",
+      "report_sha256": "1615f8d427da8ba4617e3eed502bc6e88c3494c2d5c5226e4509d1acc601401e",
+      "compiler_sha256": "fca8d4e92306269bdc60f96554fcefac0d7f34ef9b7145246f9bda5ee7b473d3",
+      "compiler_build": "a4a2a6a680c51c480d432822fb0a8960ed8c1f0b3b9408d23b382a9f0a27dcfa",
+      "resource_pins": 27,
+      "production_web_build": false,
+      "HTTP_requests": 24,
+      "native_profiles": [
+        "debug",
+        "release"
+      ],
+      "server_starts": 4,
+      "native_task_ABI": 8,
+      "controller": {
+        "ok": true,
+        "persistent_state": true,
+        "immutable_published_views": true,
+        "transient_commands_once": true,
+        "summary": {
+          "total": 1,
+          "done": 1,
+          "Unicode_scalars": 3
+        },
+        "file_commands": true,
+        "signed_out_late_response_ignored": true,
+        "closed": true
+      },
+      "complete_SDK_workflow_claimed": false
+    }
+  },
+  "full_current_source_regression": false,
+  "portable_SDK_archive_qualified": false,
+  "new_browser_UI_qualification": false,
+  "complete_objective": false,
+  "scope": "Actual matching relocated normal installation; source/all-target/full388/install/distribution/archive/restore still required."
+}

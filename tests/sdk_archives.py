@@ -803,6 +803,84 @@ class LinuxVerifierBudgets(unittest.TestCase):
 
 
 class DistributionWorkflow(unittest.TestCase):
+    def workboard_report(self,browser=True):
+        module=acceptance.sdk_workboard
+        pins={name:'a'*64 for name in module.RESOURCES}
+        empty={'next_id':'1','items':[]}
+        first={'next_id':'2','items':[{'id':'1','text':'Я🙂\0','done':False}]}
+        second={'next_id':'3','items':[*first['items'],{'id':'2','text':'Second','done':False}]}
+        changed={'next_id':'3','items':[{**first['items'][0],'done':True},second['items'][1]]}
+        third={'next_id':'4','items':[*changed['items'],{'id':'3','text':'After export','done':False}]}
+        bob={'next_id':'2','items':[{'id':'1','text':'Bob','done':False}]}
+        snapshots=[empty,first,second,changed,changed,third,changed,empty,bob,bob,changed,bob]
+        labels=list(module.COMMANDS)
+        if not browser:labels[labels.index('web-build')]='web-generate'
+        proof={'schema':'nex.workboard-application/1','ok':True,'compiler_sha256':'f'*64,
+          'harness_sha256':pins['tests/workboard_application.py'],'source_language':'0.30',
+          'source_files':{name:pins['examples/workboard/'+name] for name in module.EXAMPLE_FILES},
+          'browser_UI_qualified':False,'portable_SDK_qualified':False,'complete_objective':False,
+          'commands':[{'label':label,'status':'passed','exit_code':0} for label in labels],
+          'web':{'revision':'b'*64,'build_key':'c'*64 if browser else None,'production_build':browser,
+                 'files':{'index.html':'d'*64},'generated_files':{name:'e'*64 for name in
+                    ['nex-map.json','src/program.ts','src/worker-program.ts','tsconfig.json']}},
+          'controller':{**{name:True for name in ['ok','persistent_state','immutable_published_views',
+             'transient_commands_once','file_commands','signed_out_late_response_ignored','closed']},
+             'summary':{'total':1,'done':1,'Unicode_scalars':3}},
+          'images':[],'servers':[],'requests':[]}
+        exports=[]
+        for index,profile in enumerate(['debug','release']):
+            proof['images'].append({'profile':profile,'task_ABI':0x4e45585400000008,'sha256':'b'*64,
+              'metadata_sha256':'c'*64,'export_sha256':'d'*64,'restart_persistence':True,
+              'file_export_restore':True,'ordinary_two_user_flow':True})
+            exports.append({'profile':profile,'sha256':'d'*64,'snapshot':copy.deepcopy(changed)})
+            proof['servers'] += [{'profile':profile,'server':index*2+n,'exit_code':0,'source_copy_absent':True} for n in [1,2]]
+            for number,(method,path,user,status) in enumerate(module.FLOW):
+                proof['requests'].append({'profile':profile,'server':index*2+(1 if number<10 else 2),
+                  'method':method,'path':path,'user':user,'status':status,
+                  'response':{'snapshot':copy.deepcopy(snapshots[number])}})
+        value={'schema':'nex.sdk-workboard/1','ok':True,'compiler_sha256':'f'*64,'compiler_build':'b'*64,
+          'descriptor_hash':'c'*64,'application_report_sha256':'d'*64,'resource_sha256':pins,
+          'application':proof,'browser_build':browser,'exports':exports,'complete_SDK_workflow_claimed':False}
+        return {'compiler_sha256':'f'*64,'resource_hashes':pins,
+                'evidence':{'browser_build':browser,'workboard':value}}
+
+    def test_workboard_adds_required_phase_only_from0280(self):
+        self.assertEqual(len(acceptance.acceptance_phases('0.246.1')),41)
+        self.assertEqual(len(acceptance.acceptance_phases('0.279.0')),42)
+        self.assertEqual(acceptance.acceptance_phases('0.280.0'),acceptance.ACCEPTANCE_PHASES_030+('workboard-application',))
+        incomplete={'schema':'nex.sdk-acceptance/1','ok':True,'version':'0.280.0','doctor':{'version':'0.280.0'},
+          'phases':[{'name':name,'status':'passed'} for name in acceptance.ACCEPTANCE_PHASES_030],
+          'commands':[{'status':'passed','exit_code':0}]}
+        with self.assertRaisesRegex(RuntimeError,'complete workflow phase contract'):
+            acceptance.validate_completed_report(incomplete)
+
+    def test_workboard_accepts_explicit_generation_and_production_scopes(self):
+        for browser in [False,True]:acceptance.sdk_workboard.validate(self.workboard_report(browser))
+
+    def test_workboard_requires_resources_compiler_profiles_and_clean_servers(self):
+        for edit in [lambda r:r['resource_hashes'].pop('tests/workboard_controller.mjs'),
+                     lambda r:r['evidence']['workboard'].update(compiler_sha256='e'*64),
+                     lambda r:r['evidence']['workboard']['application']['images'].pop(),
+                     lambda r:r['evidence']['workboard']['application']['servers'][0].update(exit_code=1)]:
+            value=self.workboard_report();edit(value)
+            with self.assertRaisesRegex(RuntimeError,'installed Workboard'):acceptance.sdk_workboard.validate(value)
+
+    def test_workboard_checks_response_values_and_file_restart_equivalence(self):
+        for edit in [lambda r:r['evidence']['workboard']['application']['requests'].pop(),
+                     lambda r:r['evidence']['workboard']['application']['requests'][6]['response']['snapshot'].update(next_id='4'),
+                     lambda r:r['evidence']['workboard']['application']['requests'][10].update(server=1),
+                     lambda r:r['evidence']['workboard']['exports'][0].update(sha256='e'*64)]:
+            value=self.workboard_report();edit(value)
+            with self.assertRaisesRegex(RuntimeError,'installed Workboard'):acceptance.sdk_workboard.validate(value)
+
+    def test_workboard_does_not_hide_failed_commands_or_overstate_web_scope(self):
+        for edit in [lambda r:r['evidence']['workboard']['application']['commands'][0].update(exit_code=1),
+                     lambda r:r['evidence']['workboard']['application']['web'].update(production_build=False),
+                     lambda r:r['evidence']['workboard']['application']['controller'].update(closed=False),
+                     lambda r:r['evidence']['workboard']['application'].update(browser_UI_qualified=True)]:
+            value=self.workboard_report();edit(value)
+            with self.assertRaisesRegex(RuntimeError,'installed Workboard'):acceptance.sdk_workboard.validate(value)
+
     def test_reference030_extends_only_current_sdk_workflow(self):
         self.assertEqual(acceptance.acceptance_phases('0.278.0'), acceptance.ACCEPTANCE_PHASES_028)
         self.assertEqual(acceptance.acceptance_phases('0.279.0'), acceptance.ACCEPTANCE_PHASES_028 + ('reference030',))

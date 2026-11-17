@@ -19,7 +19,8 @@ does not qualify the full source run or a portable archive; the original failed
 attempt remains retained.
 
 The maintained SDK workflow adds a required `reference030` phase starting with
-0.279.0. Earlier versioned SDKs retain their original phase lists and receipts.
+0.279.0. Toolchain0.280 adds [Workboard consumption](sdk-workboard.md) afterward.
+Earlier versioned SDKs retain their original phase lists and receipts.
 The compiler fallback language remains0.28; this phase creates explicit030
 projects and verifies that `nex init` selects030 for a new project.
 

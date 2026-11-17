@@ -1,5 +1,9 @@
 # Development CI
 
+The [0.280 core run](evidence/core-ci-0.280.0-2026-11-17.json) completed successfully
+on macOS and Linux at `1710e496`, with17 groups. Installed Workboard SDK workflow
+changes retain their own subsequent qualification.
+
 The [core workflow](../.github/workflows/core.yml) builds the compiler/core
 probes and runs the explicit core tier on macOS15 and Ubuntu24.04. It is
 triggered by pull requests, pushes to `main`/`codex/**`, or a manual request.

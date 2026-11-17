@@ -9,7 +9,7 @@ document describes current behavior. Query the selected compiler for actual
 capabilities; `status: current` documents are checked against the current
 advertised project source languages and toolchain by the same script.
 
-## Current contracts (41)
+## Current contracts (42)
 
 | Document | Applies to | Owner |
 |---|---|---|
@@ -25,6 +25,7 @@ advertised project source languages and toolchain by the same script.
 | [Formatting NEX source](formatting.md) | toolchain 0.265.0; language 0.28; language 0.29; language 0.30 | repository |
 | [Implementation sequence: items 1–6](implementation-1-6.md) | language 0.28; language 0.29; language 0.30; toolchain 0.280.0 | repository |
 | [Inferred effect parameters](effect-parameters.md) | toolchain 0.180; language 0.28 | repository |
+| [Installed Workboard SDK workflow](sdk-workboard.md) | toolchain 0.280.0; language 0.30 | repository |
 | [Installed030 SDK consumption](sdk-reference030.md) | toolchain 0.279.0; language 0.30 | repository |
 | [Language prerequisites for Java and Python migration](migration-readiness.md) | language 0.28; language 0.29; language 0.30; toolchain 0.279.0 | repository |
 | [Managed references: runtime foundation and remaining language work](managed-references-design.md) | toolchain 0.268.0; source0.30; historical private-kernel introductions | repository |
@@ -240,4 +241,4 @@ advertised project source languages and toolchain by the same script.
 
 ## Totals
 
-213 documents: 41 current, 1 deferred, 2 historical, 165 reference/unclassified.
+214 documents: 42 current, 1 deferred, 2 historical, 165 reference/unclassified.

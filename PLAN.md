@@ -1,5 +1,9 @@
 # Owner-thread SQLite and a coherent application — development0.280.0
 
+The maintained SDK workflow now requires [Workboard phase43](docs/sdk-workboard.md)
+for0.280. Focused moved-install preparation covers generated and production
+web scopes; complete current source/portable SDK/platform delivery remains open.
+
 Source030 server task graphs execute blocking storage on the invocation owner,
 including native ABI8 graphs with no cells. HTTP retains its request transaction;
 CLI calls keep individual transactions. Workboard combines persistent UI,

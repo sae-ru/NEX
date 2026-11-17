@@ -21,13 +21,18 @@ every requested platform/device.
 
 ## Current030 qualification
 
-Toolchain0.279 adds the mandatory [installed030 phase](sdk-reference030.md).
-The full current workflow has42 phases; older archive receipts keep their
-original phase contracts. The [focused preparation](evidence/sdk-reference030-preparation-0.279.0-2026-11-17.json)
+Toolchain0.280 adds the mandatory [installed Workboard phase](sdk-workboard.md)
+after the0.279 [installed030 phase](sdk-reference030.md). The current workflow
+has43 phases;0.279 keeps42 and older archive receipts keep their original
+contracts. The earlier [focused preparation](evidence/sdk-reference030-preparation-0.279.0-2026-11-17.json)
 passes from a moved normal installation with actual live DAP, three provider
 modes, persistent native hosts and the browser controller/build. Full source
 regression, moved/restored distribution and publication are separate gates.
-This SDK-workflow change retains toolchain0.279 and source versions028/029/030.
+The first0.279 full source attempt completed386 groups:381 passed and five
+failed. [The original result](evidence/full-source-0.279.0-first-attempt-2026-11-17.json)
+retains the failures; current targeted repairs do not replace a full new run.
+The0.280 registry has388 groups. SDK-only workflow changes retain toolchain0.280
+and source versions028/029/030.
 
 ## Linux
 

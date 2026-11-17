@@ -25,6 +25,8 @@ p.add_argument('compiler',type=Path)
 p.add_argument('--resources',type=Path,default=Path(__file__).resolve().parents[1])
 p.add_argument('--output',type=Path)
 p.add_argument('--output-parent',type=Path)
+p.add_argument('--web-mode',choices=('build','generate'),default='build',
+               help='Build production assets, or generate and execute the controller without a Vite build.')
 a=p.parse_args()
 resources=a.resources.resolve();compiler=a.compiler.resolve()
 out=a.output.resolve() if a.output else Path(tempfile.mkdtemp(prefix='nex-workboard-',dir=a.output_parent))
@@ -50,9 +52,10 @@ def run(label,argv,cwd=source):
     return result
 def cli(label,*argv):return json.loads(run(label,[compiler,*argv,'--json']).stdout)
 launches=0
+active_server=None
 @contextlib.contextmanager
-def serve(image,database,files):
-    global launches
+def serve(image,database,files,profile):
+    global launches,active_server
     launches+=1;label='server-'+str(launches)
     command=[str(image),'--auth',str(auth),'--database',str(database),'--static',str(out/'dist'),
              '--files-root',str(files),'--files-write','1','--workers','4','--port','0']
@@ -63,14 +66,17 @@ def serve(image,database,files):
     try:
         line=lines.get(timeout=20);match=re.fullmatch(r'NEX server http://127\.0\.0\.1:([0-9]+)\n',line)
         assert match,('server did not start',line)
+        active_server={'profile':profile,'server':launches}
         yield int(match[1])
     finally:
+        active_server=None
         if process.poll() is None:stop_server(process)
         try:stdout,stderr=process.communicate(timeout=20)
         except subprocess.TimeoutExpired:process.kill();stdout,stderr=process.communicate();raise
         reader.join(timeout=2)
         (out/(label+'.stdout')).write_text(line+stdout);(out/(label+'.stderr')).write_text(stderr)
-        report['servers'].append({'argv':command,'exit_code':process.returncode,'source_copy_absent':not source.exists()});save()
+        report['servers'].append({'argv':command,'profile':profile,'server':launches,
+                                 'exit_code':process.returncode,'source_copy_absent':not source.exists()});save()
         assert process.returncode==0 and 'E_INTERNAL_LEAK' not in stderr,(process.returncode,stderr)
 def request(port,path,method='GET',body=None,user='alice',status=200):
     connection=http.client.HTTPConnection('127.0.0.1',port,timeout=15)
@@ -78,7 +84,9 @@ def request(port,path,method='GET',body=None,user='alice',status=200):
         connection.request(method,path,body=None if body is None else json.dumps(body,ensure_ascii=False).encode(),
                            headers={'Authorization':'Bearer '+tokens[user],'Content-Type':'application/json'})
         response=connection.getresponse();data=response.read();value=json.loads(data)
-        report['requests'].append({'path':path,'method':method,'user':user,'status':response.status,'response':value});save()
+        assert active_server is not None
+        report['requests'].append({**active_server,'path':path,'method':method,'user':user,
+                                   'status':response.status,'response':value});save()
         assert response.status==status,(response.status,value)
         return value
     finally:connection.close()
@@ -95,10 +103,17 @@ try:
         shutil.copy2(built['executable'],image)
         report['images'].append({'profile':profile,'path':str(image),'sha256':sha(image),'metadata_sha256':sha(built['metadata']),'task_ABI':metadata['task_execution_abi']});save()
     cli('client-tests-web','test','client.nex','--target','web')
-    web=cli('web-build','build','client.nex','--target','web','--profile','release')
-    generated=Path(web['directory']);shutil.copytree(web['dist'],out/'dist')
-    report['web']={'revision':web['revision'],'build_key':web['build_key'],'dist':str(out/'dist'),
-                   'files':{str(path.relative_to(out/'dist')):sha(path) for path in (out/'dist').rglob('*') if path.is_file()}}
+    production=a.web_mode=='build'
+    web=(cli('web-build','build','client.nex','--target','web','--profile','release') if production else
+         cli('web-generate','web','client.nex','--directory',source/'generated'))
+    generated=Path(web['directory'])
+    if production:shutil.copytree(web['dist'],out/'dist')
+    else:
+        (out/'dist').mkdir();(out/'dist/index.html').write_text('<!doctype html><title>Workboard API fixture</title>')
+    report['web']={'revision':web['revision'],'build_key':web.get('build_key'),'production_build':production,
+                   'dist':str(out/'dist'),
+                   'files':{str(path.relative_to(out/'dist')):sha(path) for path in (out/'dist').rglob('*') if path.is_file()},
+                   'generated_files':{name:sha(generated/name) for name in ('nex-map.json','src/program.ts','src/worker-program.ts','tsconfig.json')}}
     report['controller']=json.loads(run('controller',[os.environ.get('NEX_NODE','node'),'--no-warnings','--experimental-strip-types',
                                                      resources/'tests/workboard_controller.mjs',generated]).stdout)
     assert report['controller']['ok']
@@ -109,7 +124,7 @@ try:
         {'user':user,'sha256':hashlib.sha256(value.encode()).hexdigest()} for user,value in tokens.items()]}))
     for image in report['images']:
         profile=image['profile'];database=out/(profile+'.sqlite');files=out/(profile+'-files');files.mkdir()
-        with serve(image['path'],database,files) as port:
+        with serve(image['path'],database,files,profile) as port:
             assert request(port,'/api/items')['snapshot']=={'next_id':'1','items':[]}
             first=request(port,'/api/items','POST',{'text':'Я🙂\0'},status=201)['snapshot']
             assert first=={'next_id':'2','items':[{'id':'1','text':'Я🙂\0','done':False}]}
@@ -125,7 +140,7 @@ try:
             request(port,'/api/items','POST',{'text':'Bob'},user='bob',status=201)
             request(port,'/api/export','POST',user='bob')
             assert (files/'tasks-626f62.json').is_file() and json.loads(saved.read_bytes())==changed
-        with serve(image['path'],database,files) as port:
+        with serve(image['path'],database,files,profile) as port:
             assert request(port,'/api/items')['snapshot']==changed
             assert request(port,'/api/items',user='bob')['snapshot']['items'][0]['text']=='Bob'
         image['export_sha256']=sha(saved);image['restart_persistence']=True

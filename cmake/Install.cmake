@@ -7,6 +7,7 @@ install(TARGETS nex RUNTIME DESTINATION bin)
 install(DIRECTORY docs llm runtime examples lib web debug mobile DESTINATION share/nex
   PATTERN node_modules EXCLUDE PATTERN test-results EXCLUDE PATTERN playwright-report EXCLUDE
   PATTERN .nex EXCLUDE PATTERN generated EXCLUDE PATTERN __pycache__ EXCLUDE
+  PATTERN workboard/var EXCLUDE
   PATTERN .build EXCLUDE PATTERN windows-tic-tac-toe/dist EXCLUDE
   PATTERN windows-tic-tac-toe/src/gui.nex EXCLUDE
   PATTERN tic-tac-toe/dist EXCLUDE PATTERN tic-tac-toe/src/gui.nex EXCLUDE)
@@ -37,7 +38,7 @@ install(FILES tests/reference_task_providers.py DESTINATION share/nex/tests)
 install(FILES tests/native_task_sessions.py tests/native_task_session.cpp tests/native_task_session_images.cpp
   tests/host_test.h DESTINATION share/nex/tests)
 install(FILES tests/persistent_ui.py tests/persistent_ui_cases.mjs DESTINATION share/nex/tests)
-install(FILES tests/workboard_application.py tests/workboard_controller.mjs DESTINATION share/nex/tests)
+install(FILES tests/workboard_application.py tests/workboard_controller.mjs tests/sdk_workboard.py DESTINATION share/nex/tests)
 install(FILES tests/hash_containers.py tests/hash_containers_cases.py DESTINATION share/nex/tests)
 install(FILES tests/sequence_containers.py tests/sequence_containers_cases.py DESTINATION share/nex/tests)
 install(FILES tests/reference_library.py tests/reference_library_host.cpp DESTINATION share/nex/tests)
@@ -52,7 +53,7 @@ install(DIRECTORY tools/dns_provider DESTINATION share/nex/tools PATTERN __pycac
 install(DIRECTORY tools/http_provider DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/http_stream_provider DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/macos DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
-install(FILES tools/sdk_acceptance.py tools/sdk_host.py tools/sdk_stdlib.py tools/sdk_references.py tools/sdk_source_contracts.py tools/sdk_typed_source.py tools/sdk_task_limits.py tools/sdk_source_exceptions.py tools/sdk_source_handlers.py tools/server_workload.py tools/provider_sdk.py DESTINATION share/nex/tools)
+install(FILES tools/sdk_acceptance.py tools/sdk_host.py tools/sdk_stdlib.py tools/sdk_references.py tools/sdk_workboard.py tools/sdk_source_contracts.py tools/sdk_typed_source.py tools/sdk_task_limits.py tools/sdk_source_exceptions.py tools/sdk_source_handlers.py tools/server_workload.py tools/provider_sdk.py DESTINATION share/nex/tools)
 install(FILES tools/compiler_cohort.py DESTINATION share/nex/tools)
 install(FILES tools/nex_rename.py DESTINATION share/nex/tools)
 install(FILES tools/ctest_report.py DESTINATION share/nex/tools)
