@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.279.0"
+applies_to: "language 0.28; toolchain 0.280.0"
 owner: repository
 generated_from: README.md#development-status
 ---
@@ -12,51 +12,38 @@ It reports recorded evidence, not a live observation of devices or remote jobs.
 For syntax and capabilities, query the selected compiler. For detailed history,
 use [STATUS](../STATUS.md); for next work, use [development priorities](development-priorities.md).
 
-Current source: **toolchain 0.279.0 / language 0.28 / task ABIs 7/8**, in development.
+Current source: **toolchain 0.280.0 / language 0.28 / task ABIs 7/8**, in development.
 The compiler fallback remains0.28. `nex.json` selects0.28,0.29 or0.30 per project;
 new `nex init` projects select0.30. Language0.29 adds partial type lambdas and
 higher-order kinds;0.30 adds typed cells and the `state` effect. Retained projects
 preserve their selected version and require explicit migration to change it.
 
-Libraries include [hash map/set](hash-containers.md),
-[AVL maps](ordered-containers.md) and
-[sequences, queues and heaps](sequence-containers.md).
-Explicit [Java int](java-integers.md) / [long](java-long.md) domains
-preserve ordinary checked arithmetic.
-The [internal IEEE kernel](ieee-numeric.md) has no source types yet.
-[Ordinary030 projects](references030.md) use canonical reference graphs,
-guarded migration and normal CLI authoring, static components, API projection
-and captured-task replay. See the [cell example](../examples/references/README.md).
-Code-only [native reference libraries](reference-library-abi.md) share one
-host/application context across related calls and live handles.
-Native [HTTP requests](reference-http.md) own separate reference contexts.
-Ordinary values and retained snapshots now use
-[iterative deep cleanup](value-retirement.md).
-[Reference tasks](reference-tasks.md) now use one owner-thread heap in
-reference/native/TypeScript and native HTTP entries.
-[Persistent030 UI](persistent-ui.md) retains state across serialized events.
-[Native reference task providers](reference-task-providers.md) share one
-application context across static/shared images.
-[Persistent native task sessions](native-task-sessions.md) retain cells and
-returned file owners across serialized C++ host calls with fresh per-call limits.
-[Native task debugging](reference-task-debugging.md) reads cell state in
-LLDB/NEX-DAP; [provider debugging](reference-provider-debugging.md) covers
-static/shared/mixed source-backed images. [Reference task profiling](reference-task-profiling.md)
-measures source calls/time and shallow tracked allocations in standalone/provider builds.
-HTTP debugging/profiling, parallel transfer and remaining [migration prerequisites](migration-readiness.md)
-stay open. [Focused acceptance](evidence/reference-task-profiling-0.279.0-2026-11-17.json)
-is separate from full SDK/platform gates.
+[Owner-thread storage](task-storage.md) lets030 server tasks use blocking
+SQLite operations in their existing invocation/HTTP transaction. Native task
+graphs with storage select ABI8 even without cells. The
+[Workboard application](../examples/workboard/README.md) combines persistent UI,
+HTTP tasks, SQLite, file export/restore and a dedicated summary Worker.
+[Focused acceptance](evidence/workboard-task-storage-0.280.0-2026-11-17.json)
+and complete SDK/platform delivery remain separate scopes.
+
+Libraries provide [hash containers](hash-containers.md),
+[ordered maps](ordered-containers.md) and [queues/heaps](sequence-containers.md).
+[Java int](java-integers.md)/[long](java-long.md) are explicit domains;
+the [IEEE kernel](ieee-numeric.md) still has no source types.
+[Source030](references030.md) supports references through native libraries,
+HTTP, structured tasks, persistent UI and [native host sessions](native-task-sessions.md).
+Native [debugging](reference-provider-debugging.md) and
+[profiling](reference-task-profiling.md) cover source-backed provider images.
+HTTP debugging/profiling, parallel reference transfer and other
+[migration prerequisites](migration-readiness.md) remain open.
 The [implementation sequence](implementation-1-6.md) tracks remaining work.
 
-The [0.246.1 macOS source regression](evidence/full-ctest-0.246.1-current-2026-11-15.json)
-passed **351/351 groups** at `3b008a4e`. The immutable
-[macOS ARM64 SDK 0.246.1](releases/0.246.1.json) passed the complete
-source-to-archive command: 4091 inventory files and **41 phases each** after
-relocation and archive restoration, with locked browser builds and the full
-network profile. [Download](https://github.com/sae-ru/NEX/releases/tag/v0.246.1)
-and [install](getting-started.en.md#install-the-macos-arm64-sdk).
-[Core CI](ci.md) passed. The full Linux test step passed; its artifact
-retention fix passed a separate CI check.
+The immutable [macOS ARM64 SDK0.246.1](releases/0.246.1.json) passed
+351 source groups and41 phases each after relocation/archive restoration,
+with locked browser builds and full network checks, at its recorded source.
+[Download](https://github.com/sae-ru/NEX/releases/tag/v0.246.1) and
+[install](getting-started.en.md#install-the-macos-arm64-sdk).
+Current source/SDK qualification remains separate. See [CI scope](ci.md).
 
 Browser applications support workers, custom CSS/assets/HTML/React components
 and generated file hashes. iOS/Android projects share that checked web output;
@@ -75,12 +62,10 @@ listed below, with delivery gaps kept separate.
 | CIX ARM64 | [current 0.245 core 12/12 + 12 Mali GPU/8 Zhouyi NPU](evidence/cix-current-0.245.0-2026-11-13.json) | portable SDK installation |
 | RK3588 ARM64 | [Snapshot `2172b35`: 63 GPU and 30 NPU calls](evidence/rk3588-current-GPU-NPU-0.165.0-2026-11-10.json) | matching current source regression and portable SDK |
 
-CUDA and OpenCL source emitters remain bounded checked-AST paths; CUDA device
-execution and provider phases retain their own earlier receipts. General GPU/NPU
-compilation, Apple NPU, complete native-desktop UI, NEX Studio, project conversion,
-signed installers, device signing and measured cross-model token savings remain
-[planned work](../PLAN.md). Retained CIX/RK NPU results are real hardware receipts but
-do not qualify the current compiler/archive.
+CUDA/OpenCL emission remains bounded. General GPU/NPU compilation, Apple NPU,
+native desktop UI, Studio, conversion, signed installers and cross-model token
+savings remain [planned work](../PLAN.md). Older device receipts do not qualify
+the current compiler/archive.
 
 [STATUS.md](../STATUS.md) and [versioned evidence](evidence) retain the
 history, exact source/compiler/archive identities, original failures and scope

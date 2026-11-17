@@ -431,6 +431,13 @@ add_test(NAME persistent_ui COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/persistent_ui.py $<TARGET_FILE:nex>
   --output-parent ${CMAKE_CURRENT_BINARY_DIR})
 set_tests_properties(persistent_ui PROPERTIES TIMEOUT 900)
+add_test(NAME task_storage COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_storage.py $<TARGET_FILE:nex>)
+set_tests_properties(task_storage PROPERTIES TIMEOUT 1200)
+add_test(NAME workboard_application COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/workboard_application.py $<TARGET_FILE:nex>
+  --output-parent ${CMAKE_CURRENT_BINARY_DIR})
+set_tests_properties(workboard_application PROPERTIES TIMEOUT 1800)
 add_executable(nex_task_reference_limits_probe tests/task_reference_limits.cpp runtime/runtime.cpp)
 target_include_directories(nex_task_reference_limits_probe PRIVATE runtime)
 target_compile_definitions(nex_task_reference_limits_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)

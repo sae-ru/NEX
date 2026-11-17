@@ -15,6 +15,8 @@
   ],
   "timing_policy": "Report actual measured core wall time separately. Other tier wall times await the agreed full milestone; timeout sums are not measurements.",
   "tests": {
+    "task_storage": ["extended", "platform", "scale"],
+    "workboard_application": ["extended", "browser", "platform", "scale"],
     "sdk_reference030": ["extended", "browser", "platform", "sdk", "scale"],
     "native_task_sessions": ["extended", "platform", "scale"],
     "reference_tasks_cli": ["extended", "browser", "platform", "scale"],

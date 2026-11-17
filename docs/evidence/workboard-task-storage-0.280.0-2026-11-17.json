@@ -1,0 +1,183 @@
+{
+  "schema": "nex.workboard-task-storage/1",
+  "ok": true,
+  "toolchain": "0.280.0",
+  "source_language": "0.30",
+  "base_commit": "07d0e7d44723ff72ba2feb19ca18ba70b1e55025",
+  "host": "macOS-27.2.1-arm64-arm-64bit-Mach-O",
+  "compiler_sha256": "fca8d4e92306269bdc60f96554fcefac0d7f34ef9b7145246f9bda5ee7b473d3",
+  "compiler_build": "a4a2a6a680c51c480d432822fb0a8960ed8c1f0b3b9408d23b382a9f0a27dcfa",
+  "code_sha256": {
+    "VERSION": "a73d0743e9a7a1cd96662fa4a3714f9229f1af4eb64a12d3169654721e79501e",
+    "cmake/Install.cmake": "e9a9b7e8f6ba6e64a3ca55383c831d44182d9ffb18b3edd4ca6aa62a817db273",
+    "cmake/Tests.cmake": "e4c22c26beed425c790b2d9c42454432ed6a6c2244421b328072867c5b82f356",
+    "cmake/test-tiers.json": "c93570186e9ab106f82096b9275fcd5270c3dedd0795e25ec1fdbadef3e1c96d",
+    "examples/workboard/client.nex": "252b61a595bd22a77fcb5708ca4725ecdaa717686136b9d607ce0ee07734e2e6",
+    "examples/workboard/model.nex": "3d4e9ce89ec2222bab075f2c684890f9d6e621c1fea291bfd540c2a07eeb2a92",
+    "examples/workboard/nex.json": "1cae0af424fc991a2543779fc2ab5b19038895d7cd45b4c7260962afd4b90ac8",
+    "examples/workboard/server.nex": "7290e35ed11a09a047ab4556157a2fa093fee4587146422d93fd7a9f21c57c76",
+    "include/nex/managed_references.h": "da7e9ddd9a3c72f7f7b02bf5283f65a4ada24c0211ca4a5f769d435973115713",
+    "include/nex/task_frontend.h": "658b450deb26f1e2bf80fb625ed4da97fb7462fa6ca73721b19bebcedded53be",
+    "llm/SYSTEM_PROMPT.md": "080542d52d035689db9ff300d354c88038a13d07a64a882486436b8cfa16ac4d",
+    "llm/language-pack.json": "45645d41d0c0b1a4a186b24cc7ddd32877c60607f6772ce6e68276944038cf24",
+    "src/backend.cpp": "bc4dc7cf2e99b35421e189b4f090d45688bf0ba14944b39709e415c8af0e9b8a",
+    "src/language.cpp": "c0724e817df162b011a9ff1387f2e17d510669f0aff3c04b4b3185853d8db0cb",
+    "src/main.cpp": "22cf3e2e5cb91605da8c7fa557e4771154864c03d98916aace5a13a6c6e1714f",
+    "src/managed_references.cpp": "3a0fc2e0a10e19baa4037182646be0d56263e1ceea188413e1e32055eb9c1852",
+    "src/project_build.cpp": "4d9242ec4c22eb4213086551ab189393732375bf48faf06d69be3b7d81691c86",
+    "src/task_ast.cpp": "44bb1961ade808add644ef71ec6c9c10eab3d8193b97c9d8cb35934f43b451af",
+    "src/task_frontend.cpp": "88672d9b5cbdf7641a72b4da5e8af39e51be6f727250a73f554b13529f74034a",
+    "src/task_machine.cpp": "2197871b969397347c0a56ff38aaa5c492c18d17a729e2b3a3e22b59d247682c",
+    "src/task_reference.cpp": "2205d844f5626660babb77fbaba461de6dc2084b4eea84e1a1b32978a7b6bf07",
+    "tests/task_storage.py": "6eea8c908e9c4aa8c29ec07d17522a093f76deac4b47f9b7686afe73ea54e8cf",
+    "tests/task_stream_protocol.cpp": "e1de19d844ccee4717c9e16fd0cf572d2d9532a3f97f343f3df3b54b96cb98f2",
+    "tests/task_write_protocol.cpp": "23aea926a30fe43f0936552945b8f2f76864958bc6b65b804e727237024210db",
+    "tests/typed_web_delivery.py": "f678155a2575b1398d86e42680ec55ae6af30543eb77817efa3c9c54e9b88c7d",
+    "tests/workboard_application.py": "8833e8279078a71abcbe62b1b544c411c24d8041af2d2ad7877ecf09d02d4bcd",
+    "tests/workboard_controller.mjs": "f65b18a641abab9383137ab45929a316c95953efbc5bab8f43acc4d5d7131565"
+  },
+  "language_version_changed": false,
+  "runtime_ABI_changed": false,
+  "new_execution": "blocking source030 server storage on the invocation owner; task ABI8 also selected without cells",
+  "source_acceptance": {
+    "groups": 23,
+    "registered_groups": 388,
+    "group_sets": [
+      [
+        "bytes_runtime_native",
+        "ctest_report_validation",
+        "diagnostic_catalogue",
+        "discovery",
+        "float_runtime_native",
+        "frontend_diagnostics_native",
+        "language_pack_contract",
+        "llm_cost_ledger",
+        "llm_local_collector",
+        "managed_reference_native_context",
+        "managed_references_frontend_reference",
+        "reference_tasks_development",
+        "task_frontend_native",
+        "task_storage",
+        "test_tiers",
+        "typed_source_frontend_reference",
+        "value_owner_runtime",
+        "value_retirement_runtime",
+        "workboard_application"
+      ],
+      [
+        "source_contract_web_delivery",
+        "task_file_stream_protocol",
+        "task_write_protocol",
+        "typed_web_delivery"
+      ]
+    ],
+    "receipts": [
+      {
+        "path": "/Users/sae/projects/NEX/build/workboard-v1/focused-final-v1/ctest-receipt.json",
+        "sha256": "b2e7c17615f088612b878a7a19548807ee6ec103bd0f3d7aa904fc36f2d41d28"
+      },
+      {
+        "path": "/Users/sae/projects/NEX/build/workboard-v1/integration-repair-v1/ctest-receipt.json",
+        "sha256": "dd7f29610d406bb9f494b15e56c6f4488a14c556181f50779423db7bd20e7b78"
+      }
+    ],
+    "workboard_report": "/Users/sae/projects/NEX/build/nex-workboard-6le6cp7w/report.json",
+    "workboard_report_sha256": "29ea1baf70c902f492852472af2f731ea12fc80f88b73b2eaaf8ded731855262",
+    "HTTP_requests": 24,
+    "native_profiles": [
+      "debug",
+      "release"
+    ],
+    "source_copy_absent": true,
+    "restart_persistence": true,
+    "file_export_restore": true,
+    "ordinary_two_user_flow": true,
+    "controller": {
+      "ok": true,
+      "persistent_state": true,
+      "immutable_published_views": true,
+      "transient_commands_once": true,
+      "summary": {
+        "total": 1,
+        "done": 1,
+        "Unicode_scalars": 3
+      },
+      "file_commands": true,
+      "signed_out_late_response_ignored": true,
+      "closed": true
+    },
+    "web_files": {
+      "index.html": "e4dc162ad91abf5e2b53be924543c5f6985d74b751955fc33f9a2da303feb46d",
+      "THIRD_PARTY_NOTICES.txt": "a274c9eda972cced27204e9065a09b529b0e7b84f01e0e2153ab2a7f77e6b433",
+      "assets/index-CaNkoEgt.css": "0dd3a5d138e41887bc14152ed5a6a688ac42e1c64e842e9f55357e5227534628",
+      "assets/index-D8OnK31J.js": "33765bfc6eef90260b9b39141badbe6ecd800f6a8708cd0416f69a9818a11842",
+      "assets/worker-entry-CDCTm4oB.js": "4c4a646fe962c9f3f7f76b4bea546b2f8e8488693b0c931fc2531978a664bce7",
+      "assets/worker-entry-CDCTm4oB.js.map": "c96af2bc9755c8cf758724f54fdae5e4ee84677bdfad1af86a52cc4d82d63baf",
+      "assets/index-D8OnK31J.js.map": "bb8fe4acfbdff81f649ba91b8085ee21fceab630f7609dd02653e18ccf2c2126"
+    }
+  },
+  "normal_moved_installation": {
+    "report": "/Users/sae/projects/NEX/build/workboard-v1/installed-run-v1/report.json",
+    "report_sha256": "8693ffe310752f5650343cf363256369b21a52a6f5842262307855471ac69aec",
+    "compiler_sha256": "781b353fc46b5284fbd9b38c0beca31291bcf6af95beb85461962acc3fd4c95a",
+    "HTTP_requests": 24,
+    "profiles": [
+      "debug",
+      "release"
+    ],
+    "relocated_path_contains_space_and_Unicode": true,
+    "exact_frontend_asset_hashes_match_final_source": true,
+    "cohort_note": "Executed before the final describe callback-effects wording addition; its binary/receipt identities remain explicit.",
+    "portable_SDK_qualified": false
+  },
+  "browser": {
+    "engine": "Google Chrome",
+    "version": "157.0.8103.79",
+    "driver": "Playwright CLI",
+    "real_UI": true,
+    "actions": [
+      "sign in",
+      "add Unicode item",
+      "add second item",
+      "toggle first item",
+      "run dedicated Worker",
+      "export file",
+      "add third item",
+      "restore file",
+      "recalculate Worker summary",
+      "reload",
+      "sign in and reload persisted items"
+    ],
+    "observed_summary": {
+      "complete": 1,
+      "total": 2,
+      "Unicode_scalars": 14
+    },
+    "persisted_items": 2,
+    "snapshot_sha256": "4cdcb9e614587cee6732c10df32a23a7b365fd2b30caa4ce2eb65d88788a38e4",
+    "reloaded_snapshot_sha256": "af40e07eb1bbe171844b3676f6f8cf943dfef12b451412c1e404864ebeed3e93",
+    "image": "/Users/sae/projects/NEX/output/playwright/workboard-0.280.0.png",
+    "image_sha256": "b2b54c8bca9e27ed39e8ac310aaea4f608984c0142acc2583b75c50d85098c3c",
+    "export_sha256": "79bcacd5008992315666b3c9b4081739e589953799320958b686fff5f5efc9ea",
+    "served_binary_sha256": "4408d10fda04614bb1213f9c15bf47da2d624707d53e069016cc7831d8eaace5",
+    "frontend_assets_identical_to_final_source_and_moved_installation": true,
+    "server_exit_code": 0,
+    "console_observation": "One404 for optional/favicon.ico; no application-script exception observed."
+  },
+  "language_pack": {
+    "shared_fields": 72,
+    "JSON_values": 4790,
+    "report_sha256": "bd21379b8fe26cc8a59d81362f09a3cfea5cdc79a22c6fe0bf2c2f0408905bb8"
+  },
+  "full_source_original_attempt": {
+    "source_commit": "482f433482f353635274e599f6037171695b9ea9",
+    "still_running": true,
+    "original_failures_observed": [],
+    "repairs": "Exact-input count fixed in07d0e7d4; ABI fixtures now accept8 and reject an unallocated tag; retained026 source/map identities stay exact while two shared compiler assets match the current checked production plan."
+  },
+  "complete_source_regression": false,
+  "portable_SDK_release_qualified": false,
+  "new_device_qualification": false,
+  "token_savings_measured": false,
+  "whole_objective_complete": false
+}

@@ -1,0 +1,39 @@
+module workboard::model;
+
+pub struct Item { id: i64; text: str; done: bool; }
+pub struct Create { text: str; }
+pub struct Change { id: i64; done: bool; }
+pub struct Snapshot { next_id: i64; items: list<Item>; }
+pub struct Reply { snapshot: Snapshot; notice: str; }
+pub struct Failure { error: str; }
+pub struct Summary { total: i64; done: i64; characters: i64; }
+
+pub fn valid_text(value: str) -> bool { return len(value) > 0 && len(value) <= 2000; }
+pub fn valid_snapshot(value: Snapshot) -> bool {
+  if len(value.items) > 500 || value.next_id != len(value.items) + 1 { return false; }
+  var index: i64 = 0;
+  while index < len(value.items) {
+    if value.items[index].id != index + 1 || !valid_text(value.items[index].text) { return false; }
+    index = index + 1;
+  }
+  return true;
+}
+pub fn summarize(items: list<Item>) -> Summary !{task} {
+  var done: i64 = 0; var characters: i64 = 0; var index: i64 = 0;
+  while index < len(items) {
+    task_yield();
+    if items[index].done { done = done + 1; }
+    characters = characters + len(items[index].text); index = index + 1;
+  }
+  return Summary(len(items), done, characters);
+}
+
+test fn snapshot_contract() -> unit {
+  assert(valid_snapshot(Snapshot(2, [Item(1, "Я🙂", false)])));
+  assert(!valid_snapshot(Snapshot(2, [Item(2, "wrong id", false)])));
+  assert(!valid_snapshot(Snapshot(3, [Item(1, "wrong next id", false)])));
+  assert(!valid_snapshot(Snapshot(2, [Item(1, "", false)])));
+}
+test fn Unicode_summary() -> unit !{task} {
+  assert(summarize([Item(1, "Я🙂\u0000", true), Item(2, "ab", false)]) == Summary(2, 1, 5));
+}

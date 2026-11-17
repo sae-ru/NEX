@@ -983,7 +983,8 @@ struct Reference {
         (function.effects.contains("task")||function.foreign);
       if(supportsTaskFileReads(program)&&function.effects.contains("fs")&&!function.effects.contains("task"))
         throw Error("E_EFFECT","reference task calls require an explicitly resumable task/fs helper",function.span);
-      for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(cells&&effect=="state")&&!(supportsSourceExceptionTasks(program)&&effect=="throw")&&!(reads&&effect=="fs")&&!(foreign&&effect=="ffi"))
+      const bool storage=supportsTaskStorage(program)&&function.realm=="server";
+      for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(cells&&effect=="state")&&!(supportsSourceExceptionTasks(program)&&effect=="throw")&&!(reads&&effect=="fs")&&!(foreign&&effect=="ffi")&&!(storage&&effect=="db"))
         throw Error("E_TASK_UNIMPLEMENTED","reference task execution has no bridge for effect "+effect,function.span);
       std::function<void(E)> expression=[&](E e){if(!e)return;
         if(e->kind==Expr::Call&&taskFileBuiltin(e->text)){

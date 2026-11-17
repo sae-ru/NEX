@@ -34,6 +34,7 @@ bool supportsTaskFileWrites(const Program &program){return supportsSourceExcepti
 bool supportsTaskFileStreams(const Program &program){return supportsSourceExceptionTasks(program)||program.sourceLanguage==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(program.sourceLanguage);}
 bool taskFileWriteOperation(const std::string &operation){return operation=="file_write_text"||operation=="file_write_bytes";}
 bool supportsTaskForeignCalls(const Program &program){return supportsSourceExceptionTasks(program)||program.sourceLanguage==SourceLanguage::TaskForeign022||program.sourceLanguage==SourceLanguage::TaskWrites023||program.sourceLanguage==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(program.sourceLanguage);}
+bool supportsTaskStorage(const Program &program){return program.sourceLanguage==SourceLanguage::References030;}
 bool usesTaskEffects(const Program &program,const std::string &entry){
   std::vector<std::string> pending{entry};std::set<std::string> seen;
   while(!pending.empty()){

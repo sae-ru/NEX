@@ -6,8 +6,9 @@ struct WebModule;
 llvm::json::Object managedReferencesCapability();
 const std::set<std::string> &managedReferenceBuiltins();
 // Reachable execution requirements, distinct from source-version capability.
-// A0.30 program without cells retains ordinary0.29 task/parallel execution.
+// Reference-free task programs without owner-thread storage retain ABI7.
 bool usesManagedReferences(const Program &,const std::set<std::string> &entries);
+bool usesOwnerThreadTasks(const Program &,const std::set<std::string> &entries);
 void validateManagedReferenceExecution(const Program &,const std::set<std::string> &entries);
 // Unarchived C++ development entry points. Ordinary CLI versions do not select
 // this identity, and ordinary backends/evaluation reject it.

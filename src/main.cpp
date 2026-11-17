@@ -1124,7 +1124,7 @@ int run(const Options &o) {
         }else{auto opts=buildOptions;opts.entry=f.name;opts.testEntry=true;auto result=build(p,directory,opts);requireNativeHost(result);actual=capture(executionArguments(result.executable),taskTest?supervisorTimeout(taskLimits):30);}
         if(actual.code!=0||actual.output!=expected.output)throw Error("E_DIFFERENTIAL",std::string(web?"TypeScript":"native")+" test disagrees with interpreter: "+f.name+"\n"+actual.errors,f.span);}
       ++count;llvm::json::Object observed{{"name",f.name},{"ok",true},{"native",native&&!web},{"web",native&&web}};
-      if(taskTest)observed["task_execution"]=taskExecutionJSON(taskLimits,taskLimits,native?(web?"typescript":"native"):"reference",native?supervisorTimeout(taskLimits):0,usesManagedReferences(p,{f.name}));
+      if(taskTest)observed["task_execution"]=taskExecutionJSON(taskLimits,taskLimits,native?(web?"typescript":"native"):"reference",native?supervisorTimeout(taskLimits):0,(usesManagedReferences(p,{f.name})||usesOwnerThreadTasks(p,{f.name})));
       tests.push_back(std::move(observed));
     }
     if(!count)throw Error("E_TEST","no tests found");
@@ -1205,7 +1205,7 @@ int run(const Options &o) {
     auto timeout=taskEntry?supervisorTimeout(effective):30u;auto child=capture(arguments,timeout);
     auto manifest=parseJSON(readFile((fs::path(result.executable).parent_path()/"debug.json").string()));
     llvm::json::Object observed{{"ok",child.code==0},{"exit_code",child.code},{"stdout",child.output},{"stderr",child.errors},{"build_key",result.key},{"native_diagnostics",nativeDiagnostics(p,manifest,store,child.errors)}};
-    if(taskEntry)observed["task_execution"]=taskExecutionJSON(taskLimits,effective,"native",timeout,usesManagedReferences(p,{buildOptions.entry}));
+    if(taskEntry)observed["task_execution"]=taskExecutionJSON(taskLimits,effective,"native",timeout,(usesManagedReferences(p,{buildOptions.entry})||usesOwnerThreadTasks(p,{buildOptions.entry})));
     print(std::move(observed));return child.code;
   }
   if(o.command=="debug") {

@@ -1,0 +1,89 @@
+module workboard::server_app;
+import "std/http.nex" as http;
+import "./model.nex" as model;
+
+fn failed(status: i64, message: str) -> http::Response {
+  return http::json_response(status, encode_json(model::Failure(message)));
+}
+fn reply(status: i64, snapshot: model::Snapshot, notice: str) -> http::Response {
+  return http::json_response(status, encode_json(model::Reply(snapshot, notice)));
+}
+server fn load() -> result<model::Snapshot> !{db} {
+  let saved: result<str> = store_get("workboard");
+  if !is_ok(saved) {
+    if error_code(saved) == "NOT_FOUND" { return ok(model::Snapshot(1, [])); }
+    return err(error_code(saved), error_message(saved));
+  }
+  let decoded: result<model::Snapshot> = decode_json<model::Snapshot>(unwrap(saved));
+  if is_ok(decoded) && model::valid_snapshot(unwrap(decoded)) { return decoded; }
+  return err("INVALID_SNAPSHOT", "Stored workboard is invalid");
+}
+server fn save(snapshot: model::Snapshot) -> result<bool> !{db} {
+  return store_put("workboard", encode_json(snapshot));
+}
+// Hexadecimal UTF-8 is an injective filename encoding for the bounded principal.
+fn export_name(user: str) -> str {
+  let data: bytes = utf8_bytes(user);
+  let digits: str = "0123456789abcdef";
+  return "tasks-" + str(len(data), fn(index: i64) -> str {
+    return digits[data[index] / 16] + digits[data[index] % 16];
+  }) + ".json";
+}
+
+server fn handle(request: http::Request) -> http::Response !{db,fs,state,task,throw} {
+  let loaded: result<model::Snapshot> = load();
+  if !is_ok(loaded) { return failed(503, "storage_unavailable"); }
+  let snapshot: model::Snapshot = unwrap(loaded);
+  if request.path == "/api/items" && request.method == "GET" { return reply(200, snapshot, "Loaded."); }
+  if request.path == "/api/items" && request.method == "POST" {
+    let decoded: result<model::Create> = decode_json<model::Create>(request.body);
+    if !is_ok(decoded) || !model::valid_text(unwrap(decoded).text) { return failed(400, "invalid_text"); }
+    if len(snapshot.items) >= 500 { return failed(409, "item_limit"); }
+    let text: cell<str> = cell_new(unwrap(decoded).text);
+    let item: model::Item = with_tasks(1, server fn(scope: task_scope) -> model::Item !{state,task,throw} {
+      let child: task<model::Item> = task_spawn(scope, server fn() -> model::Item !{state,task} {
+        task_yield();
+        return model::Item(snapshot.next_id, cell_read(text), false);
+      });
+      return task_wait(child);
+    });
+    let next: model::Snapshot = model::Snapshot(snapshot.next_id + 1, push(snapshot.items, item));
+    if !is_ok(save(next)) { return failed(503, "storage_unavailable"); }
+    return reply(201, next, "Added.");
+  }
+  if request.path == "/api/items" && request.method == "PUT" {
+    let decoded: result<model::Change> = decode_json<model::Change>(request.body);
+    if !is_ok(decoded) { return failed(400, "invalid_change"); }
+    let change: model::Change = unwrap(decoded);
+    if change.id < 1 || change.id >= snapshot.next_id { return failed(404, "not_found"); }
+    let items: list<model::Item> = list(len(snapshot.items), fn(index: i64) -> model::Item {
+      let item: model::Item = snapshot.items[index];
+      if item.id == change.id { return model::Item(item.id, item.text, change.done); }
+      return item;
+    });
+    let next: model::Snapshot = model::Snapshot(snapshot.next_id, items);
+    if !is_ok(save(next)) { return failed(503, "storage_unavailable"); }
+    return reply(200, next, "Updated.");
+  }
+  if request.method == "POST" && (request.path == "/api/export" || request.path == "/api/restore") {
+    if len(utf8_bytes(request.user)) > 96 { return failed(422, "export_user_too_long"); }
+    let name: str = export_name(request.user);
+    if request.path == "/api/export" {
+      if !is_ok(file_write_text(name, encode_json(snapshot))) { return failed(503, "export_unavailable"); }
+      return reply(200, snapshot, "Exported " + name);
+    }
+    let saved: result<str> = file_read_text(name);
+    if !is_ok(saved) { return failed(404, "export_unavailable"); }
+    let restored: result<model::Snapshot> = decode_json<model::Snapshot>(unwrap(saved));
+    if !is_ok(restored) || !model::valid_snapshot(unwrap(restored)) { return failed(400, "invalid_export"); }
+    if !is_ok(save(unwrap(restored))) { return failed(503, "storage_unavailable"); }
+    return reply(200, unwrap(restored), "Restored export.");
+  }
+  return failed(404, "not_found");
+}
+
+test fn principal_export_names() -> unit {
+  assert(export_name("alice") == "tasks-616c696365.json");
+  assert(export_name("Я") == "tasks-d0af.json");
+  assert(export_name("ab") != export_name("a/b"));
+}

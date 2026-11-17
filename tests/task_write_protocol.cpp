@@ -1,10 +1,11 @@
 #include "nex_task_frame.h"
 #include <iostream>
+#include <source_location>
 #include <stdexcept>
 using namespace nexrt;
 namespace {
 int64_t step(void *){return 0;}
-void require(bool value){if(!value)throw std::runtime_error("write protocol invariant failed");}
+void require(bool value,std::source_location where=std::source_location::current()){if(!value)throw std::runtime_error("write protocol invariant failed at line "+std::to_string(where.line()));}
 void rejected(TaskCodeDescriptor code){try{NativeTaskFrame frame(code,{},Value{});}catch(const DataError &e){require(e.code=="E_TASK_STATE");return;}throw std::runtime_error("invalid write descriptor accepted");}
 }
 static_assert(int64_t(TaskRequestKind::FileReadText)==10&&int64_t(TaskRequestKind::FileReadBytes)==11&&int64_t(TaskRequestKind::Foreign)==12);
@@ -13,12 +14,13 @@ static_assert(sizeof(TaskCodeDescriptor)==88&&offsetof(TaskCodeDescriptor,abi)==
 int main(){try{
   require(validTaskCodeRequirements(taskCodeABI,255));require(!validTaskCodeRequirements(taskCodeABI,taskCodeFileWrite));
   require(validTaskCodeRequirements(taskCodeWriteABI,1023));require(!validTaskCodeRequirements(taskCodeWriteABI,1024));
-  require(!validTaskCodeRequirements(taskCodeTypedSourceExceptionABI+1,0));require(!validTaskCodeRequirements(taskCodeWriteABI,-1));
+  require(validTaskCodeRequirements(taskCodeManagedReferencesABI,0));
+  require(!validTaskCodeRequirements(INT64_C(0x4e4558547fffffff),0));require(!validTaskCodeRequirements(taskCodeWriteABI,-1));
   TaskCodeDescriptor d{step,nullptr,nullptr,nullptr,nullptr,taskCodeWriteABI,0,0,0,0,7|taskCodeFileWrite|taskCodeImageFileWrite};
   {NativeTaskFrame frame(d,{},Value{});require(bool(frame.requirements&taskCodeFileWrite));}
   auto invalid=d;invalid.abi=taskCodeABI;rejected(invalid);
   for(auto missing:{taskCodeDeclaredTask,taskCodeServer,taskCodeDeclaredFs}){invalid=d;invalid.requirements&=~missing;rejected(invalid);}
   invalid=d;invalid.requirements|=1024;rejected(invalid);
   invalid=d;invalid.abi=taskCodeABI;invalid.requirements=7|taskCodeFileRead;{NativeTaskFrame frame(invalid,{},Value{});}
-  std::cout<<"{\"ok\":true,\"cases\":13,\"retained_ABI3_mask31\":true,\"write_ABI4\":true}\n";return 0;
+  std::cout<<"{\"ok\":true,\"cases\":14,\"retained_ABI3_mask31\":true,\"write_ABI4\":true,\"known_ABI8\":true,\"unallocated_ABI_rejected\":true}\n";return 0;
 }catch(const std::exception &e){std::cerr<<e.what()<<'\n';return 1;}}

@@ -1,5 +1,13 @@
 # NEX language specification 0.28
 
+# Owner-thread storage — development0.280.0
+
+Source0.30 native/reference task graphs accept blocking server `db` operations
+on the invocation owner thread, preserving the HTTP transaction and existing
+CLI storage configuration. Such native graphs select ABI8 even without cells.
+There is no new syntax/version or asynchronous database executor. Read
+[the storage task contract](task-storage.md).
+
 Toolchain0.279 adds native profiling for030 reference tasks and source-backed
 static/shared/mixed providers. Profile record19/plan19 retain execution ABI8;
 source grammar, versions, canonical graph history and C ABI1 are unchanged.

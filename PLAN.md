@@ -1,3 +1,12 @@
+# Owner-thread SQLite and a coherent application — development0.280.0
+
+Source030 server task graphs execute blocking storage on the invocation owner,
+including native ABI8 graphs with no cells. HTTP retains its request transaction;
+CLI calls keep individual transactions. Workboard combines persistent UI,
+structured HTTP work, SQLite, file export/restore and a dedicated Worker.
+Async database execution, remaining source/SDK/platform gates and the original
+requirements below remain open. [Contract](docs/task-storage.md).
+
 # Installed030 SDK qualification — toolchain0.279.0
 
 The maintained SDK workflow adds required phase42 for the current source cohort,

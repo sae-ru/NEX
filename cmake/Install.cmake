@@ -37,6 +37,7 @@ install(FILES tests/reference_task_providers.py DESTINATION share/nex/tests)
 install(FILES tests/native_task_sessions.py tests/native_task_session.cpp tests/native_task_session_images.cpp
   tests/host_test.h DESTINATION share/nex/tests)
 install(FILES tests/persistent_ui.py tests/persistent_ui_cases.mjs DESTINATION share/nex/tests)
+install(FILES tests/workboard_application.py tests/workboard_controller.mjs DESTINATION share/nex/tests)
 install(FILES tests/hash_containers.py tests/hash_containers_cases.py DESTINATION share/nex/tests)
 install(FILES tests/sequence_containers.py tests/sequence_containers_cases.py DESTINATION share/nex/tests)
 install(FILES tests/reference_library.py tests/reference_library_host.cpp DESTINATION share/nex/tests)

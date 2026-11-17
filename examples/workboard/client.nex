@@ -1,0 +1,142 @@
+module workboard::client_app;
+import "std/web.nex" as web;
+import "std/net.nex" as net;
+import "std/worker.nex" as worker;
+import "./model.nex" as model;
+
+struct State {
+  credential: cell<str>; token: cell<str>; draft: cell<str>;
+  items: cell<list<model::Item>>; serial: cell<i64>; pending: cell<str>;
+  notice: cell<str>; summary: cell<str>; job: cell<str>;
+  requests: list<net::Command>; jobs: list<worker::Command<list<model::Item>>>;
+}
+client fn title() -> str { return "NEX Workboard"; }
+client fn initial() -> State !{state} {
+  return State(cell_new(""), cell_new(""), cell_new(""), cell_new<list<model::Item>>([]),
+    cell_new(0), cell_new(""), cell_new("Enter a bearer token."), cell_new("Not calculated."), cell_new(""), [], []);
+}
+client fn publish(state: State, requests: list<net::Command>, jobs: list<worker::Command<list<model::Item>>>) -> State {
+  return State(state.credential, state.token, state.draft, state.items, state.serial,
+    state.pending, state.notice, state.summary, state.job, requests, jobs);
+}
+client fn begin(state: State, method: str, path: str, body: str) -> State !{state} {
+  cell_write(state.serial, cell_read(state.serial) + 1);
+  let id: str = "request-" + str(cell_read(state.serial));
+  cell_write(state.pending, id);
+  cell_write(state.notice, "Working...");
+  return publish(state, [net::request(id, method, path, body, cell_read(state.token), "response", 5000)], []);
+}
+client fn update(state: State, event: web::Event) -> State !{state,task} {
+  task_yield();
+  let next: State = publish(state, [], []);
+  if event.name == "credential" { cell_write(state.credential, event.value); return next; }
+  if event.name == "draft" { cell_write(state.draft, event.value); return next; }
+  if event.name == "logout" {
+    cell_write(state.credential, ""); cell_write(state.token, ""); cell_write(state.draft, "");
+    cell_write(state.items, []); cell_write(state.pending, ""); cell_write(state.job, "");
+    cell_write(state.notice, "Signed out."); cell_write(state.summary, "Not calculated.");
+    return publish(state, [net::cancel_all()], [worker::cancel_all<list<model::Item>>()]);
+  }
+  if event.name == "response" {
+    let decoded: result<net::Response> = net::response(event);
+    if !is_ok(decoded) { return next; }
+    let response: net::Response = unwrap(decoded);
+    if response.id != cell_read(state.pending) || cell_read(state.pending) == "" { return next; }
+    cell_write(state.pending, "");
+    if !is_ok(response.body) { cell_write(state.notice, "Request failed; refresh to confirm saved data."); return next; }
+    if response.status < 200 || response.status >= 300 { cell_write(state.notice, "HTTP " + str(response.status)); return next; }
+    let result: result<model::Reply> = decode_json<model::Reply>(unwrap(response.body));
+    if !is_ok(result) || !model::valid_snapshot(unwrap(result).snapshot) { cell_write(state.notice, "Invalid server response."); return next; }
+    let reply: model::Reply = unwrap(result);
+    cell_write(state.items, reply.snapshot.items); cell_write(state.notice, reply.notice);
+    cell_write(state.summary, "Not calculated."); cell_write(state.job, "");
+    return publish(state, [], [worker::cancel_all<list<model::Item>>()]);
+  }
+  if event.name == "computed" {
+    let decoded: result<worker::Response<model::Summary>> = worker::response<model::Summary>(event);
+    if !is_ok(decoded) { return next; }
+    let response: worker::Response<model::Summary> = unwrap(decoded);
+    if response.id != cell_read(state.job) || cell_read(state.job) == "" { return next; }
+    cell_write(state.job, "");
+    if !is_ok(response.value) { cell_write(state.summary, error_code(response.value)); return next; }
+    let value: model::Summary = unwrap(response.value);
+    cell_write(state.summary, str(value.done) + "/" + str(value.total) + " complete; " + str(value.characters) + " characters.");
+    return next;
+  }
+  if event.name == "login" {
+    if cell_read(state.credential) == "" || cell_read(state.pending) != "" { return next; }
+    cell_write(state.token, cell_read(state.credential)); cell_write(state.credential, "");
+    return begin(state, "GET", "/api/items", "");
+  }
+  if cell_read(state.token) == "" { return next; }
+  if event.name == "summary" && cell_read(state.job) == "" {
+    cell_write(state.serial, cell_read(state.serial) + 1);
+    let id: str = "summary-" + str(cell_read(state.serial));
+    cell_write(state.job, id); cell_write(state.summary, "Working...");
+    return publish(state, [], [worker::request(id, cell_read(state.items), "computed", 5000)]);
+  }
+  if cell_read(state.pending) != "" { return next; }
+  if event.name == "refresh" { return begin(state, "GET", "/api/items", ""); }
+  if event.name == "export" { return begin(state, "POST", "/api/export", ""); }
+  if event.name == "restore" { return begin(state, "POST", "/api/restore", ""); }
+  if event.name == "add" {
+    if !model::valid_text(cell_read(state.draft)) { cell_write(state.notice, "Enter 1..2000 characters."); return next; }
+    return begin(state, "POST", "/api/items", encode_json(model::Create(cell_read(state.draft))));
+  }
+  let items: list<model::Item> = cell_read(state.items);
+  var index: i64 = 0;
+  while index < len(items) {
+    let item: model::Item = items[index];
+    if event.name == "toggle:" + str(item.id) { return begin(state, "PUT", "/api/items", encode_json(model::Change(item.id, !item.done))); }
+    index = index + 1;
+  }
+  return next;
+}
+client fn commands(before: State, after: State, event: web::Event) -> list<net::Command> { return after.requests; }
+client fn worker_commands(before: State, after: State, event: web::Event) -> list<worker::Command<list<model::Item>>> { return after.jobs; }
+client fn worker_compute(items: list<model::Item>) -> model::Summary !{task} {
+  return model::summarize(items);
+}
+client fn view(state: State) -> web::View !{state} {
+  let heading: web::View = web::element("h1", [], [], [web::text(title())]);
+  let notice: web::View = web::element("p", [web::attr("id", "notice"), web::attr("role", "status")], [], [web::text(cell_read(state.notice))]);
+  if cell_read(state.token) == "" {
+    return web::element("main", [web::attr("class", "app")], [], [heading, notice,
+      web::element("form", [], [web::on("submit", "login")], [
+        web::element("label", [web::attr("for", "credential")], [], [web::text("Bearer token")]),
+        web::element("input", [web::attr("id", "credential"), web::attr("type", "password"), web::attr("autocomplete", "off"), web::attr("value", cell_read(state.credential))], [web::on("input", "credential")], []),
+        web::element("button", [web::attr("type", "submit")], [], [web::text("Sign in")])])]);
+  }
+  let items: list<model::Item> = cell_read(state.items);
+  let rows: list<web::View> = list(len(items), fn(index: i64) -> web::View {
+    let item: model::Item = items[index];
+    var action: str = "Complete "; if item.done { action = "Reopen "; }
+    return web::element("li", [web::attr("key", str(item.id)), web::attr("data-id", str(item.id))], [], [
+      web::element("span", [web::attr("class", "item-text")], [], [web::text(item.text)]),
+      web::button(action + str(item.id), "toggle:" + str(item.id))]);
+  });
+  return web::element("main", [web::attr("class", "app")], [], [heading, notice,
+    web::element("form", [], [web::on("submit", "add")], [
+      web::element("label", [web::attr("for", "draft")], [], [web::text("Task text")]),
+      web::input("draft", cell_read(state.draft), "draft"),
+      web::element("button", [web::attr("type", "submit")], [], [web::text("Add task")])]),
+    web::element("ul", [web::attr("aria-label", "Tasks")], [], rows),
+    web::element("p", [web::attr("id", "summary")], [], [web::text(cell_read(state.summary))]),
+    web::button("Calculate summary", "summary"), web::button("Export file", "export"),
+    web::button("Restore export", "restore"), web::button("Refresh", "refresh"), web::button("Sign out", "logout")]);
+}
+
+client test fn persistent_requests_and_worker_values() -> unit !{state,task} {
+  let start: State = initial();
+  update(start, web::Event("credential", "runtime-token", "/"));
+  let pending: State = update(start, web::Event("login", "", "/"));
+  assert(start.items == pending.items && pending.requests[0].token == "runtime-token");
+  let value: model::Reply = model::Reply(model::Snapshot(2, [model::Item(1, "Я🙂", true)]), "Loaded.");
+  let response: net::Response = net::Response("request-1", 200, ok(encode_json(value)));
+  let loaded: State = update(start, web::Event("response", encode_json(response), "/"));
+  assert(cell_read(loaded.items) == value.snapshot.items);
+  assert(worker_compute(cell_read(loaded.items)) == model::Summary(1, 1, 2));
+  let job: State = update(start, web::Event("summary", "", "/"));
+  assert(unwrap(job.jobs[0].input) == value.snapshot.items);
+  assert(update(start, web::Event("draft", "new text", "/")).requests == []);
+}

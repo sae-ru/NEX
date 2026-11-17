@@ -11,6 +11,14 @@ metadata or migration. Compiled applications do not require an LLM.
 Internal kernels marked `public_source_enabled:false` do not enable source
 types or syntax.
 
+When `task_storage.source_support` is advertised, source0.30 server task/db
+graphs use blocking storage on the invocation owner thread (native ABI8).
+Task callbacks need the server caller's complete declared host effects.
+HTTP keeps its request transaction; CLI storage operations remain individually
+atomic. This is not async database IO. Browser code uses HTTP commands and
+cannot access server storage directly. See `docs/task-storage.md` and the
+coherent `examples/workboard` project rather than combining unrelated snippets.
+
 Use typed source errors only when source_exceptions.typed_payloads is true.
 Language0.27 and later have throw(value), ordered catch(error:T) with optional guards,
 legacy throw(code,message)/catch(code,message), lexical rethrow and finally.

@@ -137,7 +137,8 @@ int64_t sourceErrorHeapKind(const Program &p,const Type &t,Span span){
 void validateNativeTaskFunction(const Program &p,const Function &function,bool managedTasks=false){
   const bool reads=supportsTaskFileReads(p)&&function.realm=="server"&&function.effects.contains("task")&&function.effects.contains("fs");
   const bool foreign=supportsTaskForeignCalls(p)&&function.realm=="server"&&function.effects.contains("ffi")&&(function.effects.contains("task")||function.foreign);
-  for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(effect=="state"&&managedTasks)&&!(effect=="throw"&&supportsSourceExceptionTasks(p))&&!(effect=="fs"&&reads)&&!(effect=="ffi"&&foreign)){
+  const bool storage=managedTasks&&supportsTaskStorage(p)&&function.realm=="server";
+  for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(effect=="state"&&managedTasks)&&!(effect=="throw"&&supportsSourceExceptionTasks(p))&&!(effect=="fs"&&reads)&&!(effect=="ffi"&&foreign)&&!(effect=="db"&&storage)){
     if(effect=="fs"&&supportsTaskFileReads(p)&&!function.effects.contains("task"))throw Error("E_EFFECT","filesystem helpers in a task execution graph must explicitly declare task and fs",function.span);
     throw Error("E_TASK_UNIMPLEMENTED","compiled task application has no asynchronous host bridge for effect "+effect,function.span);
   }
@@ -1783,7 +1784,7 @@ std::string emitMLIR(const Program &p,const std::string &entry,bool testEntry,bo
     // An IR-only library projection never embeds a second runtime.
     if(p.sourceLanguage==SourceLanguage::References030&&libraryEntry)options.codeOnlyLibrary=true;
     validateNativeBuildEntry(p,options);
-    if(usesNativeTasks(p,entry))return emitTaskNative(p,entry,!libraryEntry,false,{},false,false,nullptr,false,usesManagedReferences(p,{entry})?nexrt::taskCodeManagedReferencesABI:nexrt::taskCodeTypedSourceExceptionABI).mlir;
+    if(usesNativeTasks(p,entry))return emitTaskNative(p,entry,!libraryEntry,false,{},false,false,nullptr,false,usesOwnerThreadTasks(p,{entry})?nexrt::taskCodeManagedReferencesABI:nexrt::taskCodeTypedSourceExceptionABI).mlir;
     return Emitter(p).run(entry,testEntry,libraryEntry);
   }
   if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require native lowering before publication");
@@ -2048,7 +2049,7 @@ void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
   rejectUnloweredTasks(p,"native entry preparation");
   std::set<std::string> referenceEntries(options.libraryExports.begin(),options.libraryExports.end());referenceEntries.insert(options.entry);
   validateManagedReferenceExecution(p,referenceEntries);
-  const bool managedReferences=p.sourceLanguage==SourceLanguage::References030&&usesManagedReferences(p,referenceEntries);
+  const bool managedReferences=p.sourceLanguage==SourceLanguage::References030&&(usesManagedReferences(p,referenceEntries)||usesOwnerThreadTasks(p,referenceEntries));
   if(managedReferences){
     if(options.libraryEntry&&!options.codeOnlyLibrary)throw Error("E_CELL_TARGET","reference libraries require code-only output and one enclosing host/application runtime",p.function(options.entry).span);
   }
@@ -2382,7 +2383,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   // ABI5 uses the same checked operation classification as emitted descriptors.
   const bool taskFileReads=tasks&&(supportsTaskFileStreams(p)?taskFiles.reads:files);
   const bool taskFileWrites=tasks&&taskFiles.writes;
-  const bool managedTasks=tasks&&p.sourceLanguage==SourceLanguage::References030&&(options.managedTaskABI||usesManagedReferences(p,names));
+  const bool managedTasks=tasks&&p.sourceLanguage==SourceLanguage::References030&&(options.managedTaskABI||usesManagedReferences(p,names)||usesOwnerThreadTasks(p,names));
   const auto taskExecutionABI=managedTasks?nexrt::taskCodeManagedReferencesABI:isTypedSourceErrorLanguage(p.sourceLanguage)?nexrt::taskCodeTypedSourceExceptionABI:isPublicSourceExceptionLanguage(p.sourceLanguage)?nexrt::taskCodeSourceExceptionABI:supportsTaskFileStreams(p)?nexrt::taskCodeStreamABI:supportsTaskFileWrites(p)?nexrt::taskCodeWriteABI:nexrt::taskCodeABI;
   if(configuredABI.getOS()==llvm::Triple::IOS&&foreign)
     throw Error("E_TARGET","iOS source foreign-library loading is not configured");
@@ -2392,7 +2393,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(server&&(toolchain.opensslInclude.empty()||toolchain.opensslSSL.empty()||toolchain.opensslCrypto.empty()))throw Error("E_TARGET_LIBRARY","target server requires openssl include/ssl/crypto paths in --toolchain FILE");
   if(foreign&&(toolchain.opensslInclude.empty()||toolchain.opensslCrypto.empty()))throw Error("E_TARGET_LIBRARY","foreign calls require target OpenSSL Crypto include/library paths");
   bool profiling=options.profile=="profile";
-  const bool managedCells=p.sourceLanguage==SourceLanguage::References030&&(options.managedTaskABI||usesManagedReferences(p,names));
+  const bool managedCells=p.sourceLanguage==SourceLanguage::References030&&(options.managedTaskABI||usesManagedReferences(p,names)||usesOwnerThreadTasks(p,names));
   std::vector<std::string> components={"runtime.cpp"},headers={"nex_value.h","nex_value_owner.h","nex_bytes.h","nex_file_resource.h","nex_resource.h","nex_external_resource.h","nex_resource_executor.h","nex_resource_region.h","nex_error.h","nex_float.h","nex_host.h","nex_source_error.h","nex_io.h","nex_platform.h","nex_profile.h","third_party/dragonbox/dragonbox.h","third_party/dragonbox/manifest.json","third_party/dragonbox/LICENSE-Apache2-LLVM"};
   if(managedCells)components.insert(components.end(),{"nex_cells.cpp","nex_cell_host.cpp"});
   if(managedTasks){components.push_back("nex_task_session.cpp");headers.push_back("nex_task_session.h");}

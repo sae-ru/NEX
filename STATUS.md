@@ -1,3 +1,25 @@
+# Owner-thread SQLite and Workboard — development0.280.0
+
+Source030 server tasks now use blocking storage on the invocation owner,
+including ABI8 tasks without cells. HTTP child work retains its request
+transaction; CLI operations keep individual transactions. The Workboard example
+combines persistent browser state, structured HTTP work, SQLite, file
+export/restore and a dedicated summary Worker.
+
+[Focused acceptance](docs/evidence/workboard-task-storage-0.280.0-2026-11-17.json)
+records23 groups at one compiler identity:17 core, task storage/application and
+four ABI/web integration repairs. A normal moved installation passes its own
+24-request application flow; its exact earlier descriptor cohort is retained.
+The actual Chrome flow covers Unicode tasks, completion, Worker summary,
+export/restore and reload. Source and moved frontend assets are byte-identical.
+
+The first full0.279 SDK attempt retains its original failures. Fixed expectations
+now recognize supported ABI8, reject an unallocated tag and preserve genuine026
+source/map identities while checking two updated shared compiler assets.
+Complete current source/portable SDK/platform delivery, async database work,
+remaining language/application/LLM work and the original PLAN remain open.
+No new portable SDK is qualified by these focused results.
+
 # Installed030 SDK workflow preparation — toolchain0.279.0
 
 The SDK workflow now requires a42nd `reference030` phase for0.279 and later;

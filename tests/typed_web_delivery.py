@@ -158,8 +158,28 @@ def agreement_cases():
  (control/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debug','configurations':{'debug':{'profile':'debug'}},'components':{'app':{'kind':'web','root':'.','entry':'main.nex'}}})+'\n', newline="\n")
  request=O/'retained026.request.json';request.write_text(json.dumps({'action':'plan','root':str(control),'source_language':'0.26'})+'\n', newline="\n")
  new=json.loads(run('retained026-new',[args.project_probe,request],control).stdout)['components'][0]
- assert new['web_projection']==golden['web_projection'] and new['revision']==golden['revision'] and new['source_bundle_hash']==golden['source_bundle_hash']
- report['cases'].append({'genuine026_web_asset_and_source_identity_preserved':True,'passed':True})
+ assert new['revision']==golden['revision'] and new['source_bundle_hash']==golden['source_bundle_hash']
+ old_projection=golden['web_projection'];projection=new['web_projection']
+ assert projection.keys()==old_projection.keys()
+ assert all(projection[key]==old_projection[key] for key in ['schema','language','revision'])
+ assert projection['files'].keys()==old_projection['files'].keys()
+ # Retained source/map identities remain exact. Shared runtime fixes and the
+ # current TypeScript library target are compiler resources, not archived026
+ # source. Pin these two assets to this run's actual checked production build;
+ # all other original149 asset hashes must remain unchanged.
+ current=json.loads((output/'pure/plan.stdout').read_text())['components'][0]['web_projection']
+ current_assets={'src/nex-task-runtime.ts','tsconfig.json'}
+ changed=[name for name in projection['files'] if projection['files'][name]!=old_projection['files'][name]]
+ assert set(changed)<=current_assets
+ for name in projection['files']:
+  expected=current['files'][name] if name in current_assets else old_projection['files'][name]
+  assert projection['files'][name]==expected,(name,projection['files'][name],expected)
+ assert (projection['key']!=old_projection['key'])==bool(changed)
+ report['cases'].append({'genuine026_source_and_map_identity_preserved':True,
+   'original_source_revision':golden['revision'],'original_source_bundle_hash':golden['source_bundle_hash'],
+   'current_runtime_assets':{name:projection['files'][name] for name in sorted(current_assets)},
+   'other_original_asset_hashes_preserved':len(projection['files'])-len(current_assets),
+   'changed_compiler_assets':changed,'passed':True})
  report.update(ok=True,seconds=round(time.monotonic()-started,3));save();return report
 
 def contract_cases():

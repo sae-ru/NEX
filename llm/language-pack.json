@@ -86,6 +86,7 @@
       "task_provider_profiling",
       "task_providers",
       "task_shared_providers",
+      "task_storage",
       "task_value_retirement",
       "tcp_provider",
       "text_construction",
@@ -1317,7 +1318,8 @@
       "pure",
       "task",
       "server task/fs with caller task/fs",
-      "server task/ffi with optional fs and complete caller effects"
+      "server task/ffi with optional fs and complete caller effects",
+      "source030 server task/db with complete caller effects on the owner thread"
     ],
     "channel_rendezvous": true,
     "default_task_slots": 4096,
@@ -1427,7 +1429,7 @@
       "control": "independent checked AST scheduler; no TaskIR or native TaskGroup dispatch",
       "cooperative": true,
       "entry_point": "evaluateTaskReference",
-      "host_effects": "pure/io atoms, server task/fs whole-file and stream IO, task/ffi typed calls and genuine file/resource owner transport; db/network rejected",
+      "host_effects": "pure/io atoms, server task/fs whole-file and stream IO, task/ffi typed calls and genuine file/resource owner transport; server030 blocking owner-thread db; network rejected",
       "maximum_channel_slots": 65536,
       "maximum_channels": 1024,
       "maximum_pending_actions_per_task": 262144,
@@ -1446,7 +1448,7 @@
     "private_ast_steps": {
       "control": "checked AST actions; no TaskIR lowering or execution",
       "entry_point": "TaskAstMachine",
-      "host_effects": "pure/io atoms, server task/fs whole-file and stream IO, task/ffi typed calls and genuine file/resource owner transport; db/network rejected",
+      "host_effects": "pure/io atoms, server task/fs whole-file and stream IO, task/ffi typed calls and genuine file/resource owner transport; server030 blocking owner-thread db; network rejected",
       "maximum_call_depth": 256,
       "maximum_pending_actions": 262144,
       "owned_values": true,
@@ -6089,6 +6091,33 @@
       "wire/debugger/ABI contracts",
       "versioned migration",
       "SDK/platform qualification"
+    ]
+  },
+  "task_storage": {
+    "status": "development_owner_thread_blocking_storage",
+    "source_language": "0.30",
+    "source_support": true,
+    "operations": [
+      "store_get",
+      "store_put",
+      "store_remove",
+      "store_keys"
+    ],
+    "effect": "db",
+    "realm": "server",
+    "execution": "blocking atom on invocation owner thread; native task ABI8 even without cells",
+    "callbacks": "server task/db with complete caller effects; optional fs/ffi/state/throw under existing rules",
+    "HTTP": "borrow the existing request StorageScope and transaction; commit/rollback stays at the HTTP boundary",
+    "CLI": "existing explicit NEX_DATABASE/NEX_STORAGE_OWNER configuration; individual operation transactions",
+    "async_database": false,
+    "cross_thread_database_transfer": false,
+    "browser_database": false,
+    "retained_source_languages_unchanged": true,
+    "complete_SDK_qualified": false,
+    "guide": "docs/task-storage.md",
+    "conformance": [
+      "task_storage",
+      "workboard_application"
     ]
   }
 }

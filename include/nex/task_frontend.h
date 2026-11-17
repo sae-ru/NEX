@@ -23,6 +23,8 @@ bool supportsTaskFileStreams(const Program &program);
 bool taskFileWriteOperation(const std::string &operation);
 // Private022 source prototype; current public language021 remains unchanged.
 bool supportsTaskForeignCalls(const Program &program);
+// Source030 storage calls are blocking atoms on the invocation owner thread.
+bool supportsTaskStorage(const Program &program);
 bool containsTaskAuthority(const Program &program,const Type &type);
 bool usesTaskEffects(const Program &program,const std::string &entry);
 void rejectUnloweredTasks(const Program &program,const char *operation);

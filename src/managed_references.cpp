@@ -1,4 +1,5 @@
 #include "nex/managed_references.h"
+#include "nex/task_frontend.h"
 #include "nex_cells.h"
 #include <functional>
 namespace nex {
@@ -36,6 +37,20 @@ bool usesManagedReferences(const Program &program,const std::set<std::string> &e
     return false;
   };
   for(const auto &entry:entries)if(visit(program.function(entry)))return true;
+  return false;
+}
+bool usesOwnerThreadTasks(const Program &program,const std::set<std::string> &entries){
+  if(program.sourceLanguage!=SourceLanguage::References030)return false;
+  bool tasks=false;for(const auto &entry:entries)tasks|=usesTaskEffects(program,entry);
+  if(!tasks)return false;
+  if(usesManagedReferences(program,entries))return true;
+  std::set<std::string> seen;std::vector<std::string> pending(entries.begin(),entries.end());
+  while(!pending.empty()){
+    auto name=std::move(pending.back());pending.pop_back();if(!seen.insert(name).second)continue;
+    const auto &function=program.function(name);
+    if(function.realm=="server"&&function.effects.contains("db"))return true;
+    pending.insert(pending.end(),function.dependencies.begin(),function.dependencies.end());
+  }
   return false;
 }
 void validateManagedReferenceExecution(const Program &program,const std::set<std::string> &entries){

@@ -101,7 +101,8 @@ struct TaskAstMachine::Impl {
     const bool files=supportsTaskFileReads(program)&&function.realm=="server"&&
       function.effects.contains("task")&&function.effects.contains("fs");
     const bool foreign=supportsTaskForeignCalls(program)&&function.realm=="server"&&function.effects.contains("task")&&function.effects.contains("ffi");
-    for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(borrowedCells&&effect=="state")&&!(supportsSourceExceptionTasks(program)&&effect=="throw")&&!(files&&effect=="fs")&&!(foreign&&effect=="ffi"))
+    const bool storage=supportsTaskStorage(program)&&function.realm=="server";
+    for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(borrowedCells&&effect=="state")&&!(supportsSourceExceptionTasks(program)&&effect=="throw")&&!(files&&effect=="fs")&&!(foreign&&effect=="ffi")&&!(storage&&effect=="db"))
       throw Error("E_TASK_UNIMPLEMENTED","AST continuation has no host resource bridge",function.span);
     auto unsupported=[&](const Type &type){return !supportsTaskFileStreams(program)&&(supportsTaskForeignCalls(program)?containsFile(program,type):containsNonTaskResource(program,type));};
     if(function.foreign||unsupported(Type::function({},function.result))||

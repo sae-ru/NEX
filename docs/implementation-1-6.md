@@ -1,10 +1,16 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.279.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.280.0"
 owner: repository
 ---
 
 # Implementation sequence: items 1–6
+
+Toolchain0.280 adds [blocking owner-thread task storage](task-storage.md) and the
+[Workboard application](../examples/workboard/README.md): persistent030 UI,
+HTTP/SQLite, file export/restore and a dedicated summary Worker. Actual focused
+acceptance, matching full source/SDK/platform delivery, LLM measurements and
+the remaining original PLAN keep their independent requirements.
 
 The0.279 SDK workflow adds a required [installed030 phase](sdk-reference030.md)
 with live-debug/profile/library delivery, native host sessions and persistent

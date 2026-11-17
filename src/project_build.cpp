@@ -369,7 +369,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   std::set<std::string> managedTaskABI;
   for(const auto &item:prepared)if(taskABI.contains(item.name)){
     std::set<std::string> entries(item.options.libraryExports.begin(),item.options.libraryExports.end());entries.insert(item.options.entry);
-    if(usesManagedReferences(item.program,entries))managedTaskABI.insert(item.name);
+    if(usesManagedReferences(item.program,entries)||usesOwnerThreadTasks(item.program,entries))managedTaskABI.insert(item.name);
   }
   for(bool changed=true;changed;){
     changed=false;
@@ -780,7 +780,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
         row["typescript_observation"]=Object{{"exit_code",child.code},{"stdout",child.output},{"stderr",child.errors}};
         ok&=child.code==0&&child.output==expected;
       }
-      if(usesTaskEffects(program,test.function))row["task_execution"]=taskExecutionJSON(configuration.taskLimits,configuration.taskLimits,test.web?"typescript":"native",options.timeout,test.item->options.managedTaskABI||usesManagedReferences(program,{test.function}));
+      if(usesTaskEffects(program,test.function))row["task_execution"]=taskExecutionJSON(configuration.taskLimits,configuration.taskLimits,test.web?"typescript":"native",options.timeout,test.item->options.managedTaskABI||usesManagedReferences(program,{test.function})||usesOwnerThreadTasks(program,{test.function}));
       row["ok"]=ok;row["observation"]=std::move(observation);success&=ok;boundTestResult(row,cache);results.push_back(std::move(row));
     }
     return Object{{"schema","nex.project-test/1"},{"ok",success},{"exit_code",success?0:1},{"plan_hash",planHash},{"configuration",configuration.name},
@@ -874,7 +874,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
         }else{auto code=runInteractive(arguments,root);observation=Object{{"ok",code==0},{"exit_code",code}};}
       }
     }
-    if(effectiveTaskLimits&&options.kind!="profile")(*observation.getAsObject())["task_execution"]=taskExecutionJSON(configuration.taskLimits,*effectiveTaskLimits,"native",options.kind=="debug"?0:options.machine?options.timeout:0,item.options.managedTaskABI||usesManagedReferences(item.program,{item.options.entry}));
+    if(effectiveTaskLimits&&options.kind!="profile")(*observation.getAsObject())["task_execution"]=taskExecutionJSON(configuration.taskLimits,*effectiveTaskLimits,"native",options.kind=="debug"?0:options.machine?options.timeout:0,item.options.managedTaskABI||usesManagedReferences(item.program,{item.options.entry})||usesOwnerThreadTasks(item.program,{item.options.entry}));
     verifyGrant();auto code=observation.getAsObject()->getInteger("exit_code").value_or(0);
     return Object{{"schema","nex.project-session/1"},{"ok",code==0},{"exit_code",code},{"action",options.kind},{"component",selectedComponent},
       {"plan_hash",planHash},{"plan",std::move(plan)},{"artifacts",std::move(artifacts)},{"native_runtime_image",runtimeByComponent.contains(selectedComponent)?llvm::json::Value(runtimeByComponent.at(selectedComponent)):llvm::json::Value(nullptr)},

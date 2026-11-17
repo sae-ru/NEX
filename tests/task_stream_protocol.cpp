@@ -1,17 +1,19 @@
 #include "nex_task_frame.h"
 #include <iostream>
+#include <source_location>
 #include <stdexcept>
 using namespace nexrt;
 int64_t step(void*){return 0;}
-void require(bool b){if(!b)throw std::runtime_error("stream protocol invariant failed");}
+void require(bool b,std::source_location where=std::source_location::current()){if(!b)throw std::runtime_error("stream protocol invariant failed at line "+std::to_string(where.line()));}
 static_assert(sizeof(TaskCodeDescriptor)==88&&offsetof(TaskCodeDescriptor,abi)==40);
 static_assert(taskProviderRequirementsMask==31&&taskWriteProviderRequirementsMask==799);
 static_assert(int64_t(TaskRequestKind::FileWriteBytes)==14&&int64_t(TaskRequestKind::FileOpenRead)==15&&int64_t(TaskRequestKind::FileIsOpen)==24);
 int main(){try{
- size_t cases=0;auto check=[&](bool b){require(b);++cases;};
+ size_t cases=0;auto check=[&](bool b,std::source_location where=std::source_location::current()){require(b,where);++cases;};
  check(validTaskCodeRequirements(taskCodeStreamABI,4095));check(!validTaskCodeRequirements(taskCodeStreamABI,4096));
  check(!validTaskCodeRequirements(taskCodeStreamABI,-1));check(!validTaskCodeRequirements(taskCodeWriteABI,taskCodeFileStream));
- check(!validTaskCodeRequirements(taskCodeABI,taskCodeFileStream));check(!validTaskCodeRequirements(taskCodeTypedSourceExceptionABI+1,0));
+ check(!validTaskCodeRequirements(taskCodeABI,taskCodeFileStream));
+ check(validTaskCodeRequirements(taskCodeManagedReferencesABI,0));check(!validTaskCodeRequirements(INT64_C(0x4e4558547fffffff),0));
  check(taskCodeSourceExceptionABI==INT64_C(0x4e45585400000006));
  check(validTaskCodeRequirements(taskCodeSourceExceptionABI,taskCodeStreamRequirementsMask|taskCodeDeclaredThrow));
  check(!validTaskCodeRequirements(taskCodeSourceExceptionABI,8192));check(!validTaskCodeRequirements(taskCodeSourceExceptionABI,-1));
