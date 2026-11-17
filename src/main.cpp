@@ -179,9 +179,13 @@ void migrate(const Options &o,const fs::path &root){
     bundle=graphSources(*object);
     if(archive&&archive->containsRevision(original)){
       if(archive->revisionLanguage(original)!=originLanguage)throw Error("E_REVISION","graph origin language differs from the retained revision");
-      if(archive->bundle(original)!=bundle)throw Error("E_REVISION","exported graph source differs from the retained revision; use a reviewed migration candidate to change source");
-    }
-    verified=verifyMigrationOrigin(bundle,root,originLanguage,original,target);
+      const auto retained=archive->bundle(original);
+      if(target==SourceLanguage::References030&&retained!=bundle)
+        throw Error("E_REVISION","exported graph source differs from the retained revision; use a reviewed migration candidate to change source");
+      // Legacy targets also accept a repaired graph as the new source. The
+      // origin is still verified from its independently retained snapshot.
+      verified=verifyMigrationOrigin(retained,root,originLanguage,original,target);
+    }else verified=verifyMigrationOrigin(bundle,root,originLanguage,original,target);
   }
   // No writable Store, schema upgrade or destination creation before both the
   // origin integrity check and complete current-language target preflight.

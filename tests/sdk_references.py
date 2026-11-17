@@ -23,12 +23,18 @@ spec = importlib.util.spec_from_file_location('sdk_reference_workflow', resource
 acceptance = importlib.util.module_from_spec(spec); spec.loader.exec_module(acceptance)
 environment = {**os.environ, 'NEX_RESOURCE_DIR': str(resources)}
 commands = []
+doctor = None
 
 
 def run(command, cwd=root, expected_success=True, timeout=180):
-    observed = subprocess.run(list(map(str, command)), cwd=cwd, env=environment,
-                              capture_output=True, text=True, timeout=timeout)
-    commands.append({'command': list(map(str, command)), 'cwd': str(cwd),
+    command = list(map(str, command))
+    options = dict(cwd=cwd, env=environment, capture_output=True, text=True,
+                   encoding='utf-8', timeout=timeout)
+    if acceptance.sdk_host.WINDOWS and acceptance.sdk_host.compiler_command(command):
+        observed = acceptance.sdk_host.compile_fixture(command, doctor=doctor, **options)
+    else:
+        observed = subprocess.run(command, **options)
+    commands.append({'command': command, 'cwd': str(cwd),
                      'exit_code': observed.returncode, 'stdout': observed.stdout, 'stderr': observed.stderr})
     (root/'commands.json').write_text(json.dumps(commands, ensure_ascii=False, indent=2) + '\n')
     if (observed.returncode == 0) != expected_success:

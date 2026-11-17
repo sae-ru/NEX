@@ -71,9 +71,12 @@ nex test --json
 The plan reports the expected HEAD, the origin's checked identity and any target
 diagnostic. For a reserved-name conflict, edit the sources in the returned
 candidate and apply with `--candidate FILE`. A graph export can also be supplied
-as `nex migrate archived-graph.json --language-version 0.30`. When the destination
-already retains that revision, the export must agree with its stored source
-snapshot. See [0.30 migration](references030.md#guarded-migration) and
+as `nex migrate archived-graph.json --language-version 0.30`. For target 0.30,
+an export of a retained revision must agree with its stored source snapshot.
+Older migration targets retain their repaired-graph input. The compiler
+verifies the old revision against its retained snapshot before checking the
+supplied repair under the selected target. See
+[0.30 migration](references030.md#guarded-migration) and
 [snapshot and recovery](snapshots.md).
 
 Migration is an explicit recheck under current semantics, not proof of semantic
