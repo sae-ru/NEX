@@ -11,6 +11,13 @@ FILES=('lib/text.nex','lib/list.nex','lib/math.nex','lib/map.nex','lib/set.nex',
 CONTAINER_EXAMPLE_FILES={'README.md','main.nex','tasks.nex','nex.json','nex.lock.json'}
 
 
+def resource_names():
+    examples=[*('examples/stdlib/'+name for name in ('main.nex','nex.json','nex.lock.json')),
+        *('examples/'+example+'/'+name for example in ('hash-containers','sequence-containers')
+            for name in sorted(CONTAINER_EXAMPLE_FILES))]
+    return (*FILES,*examples)
+
+
 def require(condition,message):
     if not condition:raise RuntimeError(message)
 

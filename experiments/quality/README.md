@@ -141,3 +141,11 @@ The individual `type_edit_workflow.py`, `server_web_edit.py`, `repair_workflow.p
 `--output`; development preflights may additionally pass matching `--resources`.
 Passing these fixed scenarios does not establish general C++/Python parity,
 cross-model token savings, all-platform delivery or kernel source isolation.
+
+## Local task study version2
+
+The [version2 campaign](llm-campaign-v2/README.md) uses explicit030 and bounded
+compiled guides/diagnostic explanations with the compact common coding contract.
+Every action retains the original whole-task accounting and local Qwen policy.
+The previous study and failures stay unchanged; offline controls are not new
+observed model trials. Read its [protocol](llm-campaign-v2/protocol.md).

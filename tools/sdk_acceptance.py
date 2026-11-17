@@ -418,7 +418,7 @@ def language_resource_inventory(resources, resource_names, language, include_std
     resources = Path(resources).resolve()
     names = list(resource_names)
     if include_stdlib and language in ('0.27','0.28'):
-        names.extend(path for path in sdk_stdlib.FILES if path not in names)
+        names.extend(path for path in sdk_stdlib.resource_names() if path not in names)
     if language in ('0.27','0.28'):
         names.extend(path for _, path in TYPED_SOURCE_RESOURCE_PINS if path not in names)
     if language == '0.28':

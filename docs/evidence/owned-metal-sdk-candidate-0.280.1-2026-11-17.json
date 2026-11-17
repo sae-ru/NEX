@@ -1,0 +1,345 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "physical Metal through relocated0.280.1 SDK candidate; archive qualification separate",
+  "source_commit": "04298bd0bbf8bc6d7e30800ebc50c0a94a9b1a48",
+  "toolchain": "0.280.1",
+  "compiler_sha256": "85bfa5d7bb51f600ee976d9016a16c6e57c36f602a3b0c48027dd1c33c19ecc4",
+  "sdk_manifest_sha256": "97b06c875bd64fa2d0cb8e2653c005a9d9aab7771251f9997d593f896bc31d7f",
+  "devices": [
+    "Apple M5 Max"
+  ],
+  "native_reference_pairs": 15,
+  "actual_kernel_events": 32,
+  "checked_overflow_kernels": 4,
+  "independent_trace_inspection": {
+    "schema": "nex.metal-independent-trace-inspection/1",
+    "ok": true,
+    "source_commit": "04298bd0bbf8bc6d7e30800ebc50c0a94a9b1a48",
+    "compiler_sha256": "85bfa5d7bb51f600ee976d9016a16c6e57c36f602a3b0c48027dd1c33c19ecc4",
+    "trace_count": 30,
+    "native_reference_pairs": 15,
+    "physical_kernel_events": 32,
+    "checked_overflow_kernels": 4,
+    "published_completion_events": 28,
+    "all_buffers_released": true,
+    "all_sessions_retired_after_buffers": true,
+    "all_published_command_buffers_status": 4,
+    "traces": [
+      {
+        "path": "hardware/small_cpu_oracle/reference.trace.jsonl",
+        "sha256": "2341a73e9726f83cc880430405914518572a2bb8f2a914bf6ac1ed5abc523589",
+        "sessions": 1,
+        "buffers": 3,
+        "physical_kernels": 1,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 1,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/small_cpu_oracle/native.trace.jsonl",
+        "sha256": "db7f399a22dc8c796c3357eaa1135948807db82774cfb30a46c3b7af80a43349",
+        "sessions": 1,
+        "buffers": 3,
+        "physical_kernels": 1,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 1,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/all_octets/reference.trace.jsonl",
+        "sha256": "7b86ae315335d72e92dd27fdebe1727e488d212849fb19f5f150bd31f9de5519",
+        "sessions": 1,
+        "buffers": 3,
+        "physical_kernels": 1,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 1,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/all_octets/native.trace.jsonl",
+        "sha256": "d43b869020318005bdd0ba31c3a15b9e91bc80958ed625c5eb69f7b2770b90b5",
+        "sessions": 1,
+        "buffers": 3,
+        "physical_kernels": 1,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 1,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/persistent_session_scales/reference.trace.jsonl",
+        "sha256": "deb8faa8591a8bf129014ca6ba7ca06986abcfe19fc969a815cd0ef5cd7108a4",
+        "sessions": 1,
+        "buffers": 15,
+        "physical_kernels": 5,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 5,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/persistent_session_scales/native.trace.jsonl",
+        "sha256": "311c2f5aebda5cfb0d4235a9ffa71eba26f8d5ccd96908d0864c92cd79ee15e7",
+        "sessions": 1,
+        "buffers": 15,
+        "physical_kernels": 5,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 5,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/overflow_is_not_fallback_and_session_recovers/reference.trace.jsonl",
+        "sha256": "a5cf4776445ab673c7bdaae25dcd1eca3744e8752f72a11f314108d744310408",
+        "sessions": 1,
+        "buffers": 5,
+        "physical_kernels": 2,
+        "checked_overflow_kernels": 1,
+        "published_completion_events": 1,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/overflow_is_not_fallback_and_session_recovers/native.trace.jsonl",
+        "sha256": "8196dfb1aedaf12c2aec2c5c3741840c83f2e27cdcd03633d32b67a014222fdb",
+        "sessions": 1,
+        "buffers": 5,
+        "physical_kernels": 2,
+        "checked_overflow_kernels": 1,
+        "published_completion_events": 1,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/maximum_262144_elements/reference.trace.jsonl",
+        "sha256": "a1f2275c0127f3d70d33a2105e11e8324c18d80550ee51d9c37502dd3ecf35fd",
+        "sessions": 1,
+        "buffers": 3,
+        "physical_kernels": 1,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 1,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/maximum_262144_elements/native.trace.jsonl",
+        "sha256": "5378c43c510cb0115b123d2059172cb8132007252c24d15d49886d9b74735ea6",
+        "sessions": 1,
+        "buffers": 3,
+        "physical_kernels": 1,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 1,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/overflow_only_last_of_262144/reference.trace.jsonl",
+        "sha256": "240a6be861341783d3b5050b31ab045ef018b4a14e2dc3d1f0cf673d9d742571",
+        "sessions": 1,
+        "buffers": 2,
+        "physical_kernels": 1,
+        "checked_overflow_kernels": 1,
+        "published_completion_events": 0,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/overflow_only_last_of_262144/native.trace.jsonl",
+        "sha256": "101d6d3082fdcc1e5b414f392967bbdd836afa7ff8ebb335f6ba311c891247d8",
+        "sessions": 1,
+        "buffers": 2,
+        "physical_kernels": 1,
+        "checked_overflow_kernels": 1,
+        "published_completion_events": 0,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/hidden_session_after_scope_return/reference.trace.jsonl",
+        "sha256": "56d6c421d2661b81d7837bccd51e8e64180a27dd64872d92605138153ed6c36f",
+        "sessions": 1,
+        "buffers": 3,
+        "physical_kernels": 1,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 1,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/hidden_session_after_scope_return/native.trace.jsonl",
+        "sha256": "449db8cb26c3835ef3fa7bb70c48d1cfd0408e7c2d631bb7923019caf1621264",
+        "sessions": 1,
+        "buffers": 3,
+        "physical_kernels": 1,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 1,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/closed_context_existing_buffer_still_reads/reference.trace.jsonl",
+        "sha256": "eee848e1c14e0373edac5f3aad573ac865b09018982981eeedd8667efe107c76",
+        "sessions": 1,
+        "buffers": 3,
+        "physical_kernels": 1,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 1,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/closed_context_existing_buffer_still_reads/native.trace.jsonl",
+        "sha256": "262d4ae3b22a76fdd683ff919a852e2e838a16c6496054927f4359b939dd089a",
+        "sessions": 1,
+        "buffers": 3,
+        "physical_kernels": 1,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 1,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/sibling_channel_hidden_session/reference.trace.jsonl",
+        "sha256": "675c09564d31d0018baf41cb55795dd8ea378fc6061e4ff011eacd444f0d5e0c",
+        "sessions": 1,
+        "buffers": 3,
+        "physical_kernels": 1,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 1,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/sibling_channel_hidden_session/native.trace.jsonl",
+        "sha256": "4d262ad06507f29e2fabdfc1796305211fa4e38764922bef4e6687b11963da7a",
+        "sessions": 1,
+        "buffers": 3,
+        "physical_kernels": 1,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 1,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/cross_session_buffers_rejected/reference.trace.jsonl",
+        "sha256": "27ab89bb401fed86d2e7bb9623769147e30191c94c7c3dfb606fc03278b5d8fd",
+        "sessions": 2,
+        "buffers": 2,
+        "physical_kernels": 0,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 0,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/cross_session_buffers_rejected/native.trace.jsonl",
+        "sha256": "55aa95d153e3b2302ce8523bf2bb19e81d3ff35f1df86fa4db4539e5c678b238",
+        "sessions": 2,
+        "buffers": 2,
+        "physical_kernels": 0,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 0,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/malformed_request_never_uploads/reference.trace.jsonl",
+        "sha256": "f0bf38f8fd78d7689a452587fd70908d1dec04f8e8d5f223900c387a4245799c",
+        "sessions": 1,
+        "buffers": 0,
+        "physical_kernels": 0,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 0,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/malformed_request_never_uploads/native.trace.jsonl",
+        "sha256": "d46d45f2d4beddc71f95f19feb8fd761c94032c1ef8d3dd0ba37de50f14ec904",
+        "sessions": 1,
+        "buffers": 0,
+        "physical_kernels": 0,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 0,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/explicit_placement_and_cpu_fallback/reference.trace.jsonl",
+        "sha256": "e7686e312cb77fb287cbde02fa3e88ec75e6741e4213ab7c10df7a87c8846748",
+        "sessions": 1,
+        "buffers": 0,
+        "physical_kernels": 0,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 0,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/explicit_placement_and_cpu_fallback/native.trace.jsonl",
+        "sha256": "35af398e4fcaac9a88729b741b8909b4829ecdbad306bb6e4fca359f09ac939f",
+        "sessions": 1,
+        "buffers": 0,
+        "physical_kernels": 0,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 0,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/unsupported_matmul_fallback/reference.trace.jsonl",
+        "sha256": "870014716f624cb7490a6d71e578fea192e1a6ae5731da435ce293cfbe36ec66",
+        "sessions": 1,
+        "buffers": 0,
+        "physical_kernels": 0,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 0,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/unsupported_matmul_fallback/native.trace.jsonl",
+        "sha256": "8fa611c7f81ed0154f775470639672f7a23c17aa159bdcfa151cbb18ca097bb3",
+        "sessions": 1,
+        "buffers": 0,
+        "physical_kernels": 0,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 0,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/cancel_enqueued_GPU/reference.trace.jsonl",
+        "sha256": "d780ef707b42f348f4b46297877f9dc8622c50c5ad74b3e54b3e70b03ab8f8b5",
+        "sessions": 1,
+        "buffers": 3,
+        "physical_kernels": 1,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 1,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/cancel_enqueued_GPU/native.trace.jsonl",
+        "sha256": "be3f5f33bfd4bafe3980bcf8e6a068ad103c64ab6ba38c645b5c97019e5778d5",
+        "sessions": 1,
+        "buffers": 3,
+        "physical_kernels": 1,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 1,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/deadline_enqueued_GPU/reference.trace.jsonl",
+        "sha256": "1be291ef9dc09869483500b6eaeeefe7e97e017122b2b9513c3106a8fa02413b",
+        "sessions": 1,
+        "buffers": 3,
+        "physical_kernels": 1,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 1,
+        "all_buffers_released": true
+      },
+      {
+        "path": "hardware/deadline_enqueued_GPU/native.trace.jsonl",
+        "sha256": "5fb291eefe4845269c7d7e9e01e86878503fd1adab0053325a4d0e227e519aa8",
+        "sessions": 1,
+        "buffers": 3,
+        "physical_kernels": 1,
+        "checked_overflow_kernels": 0,
+        "published_completion_events": 1,
+        "all_buffers_released": true
+      }
+    ]
+  },
+  "hardware_report_sha256": "04a4df156813d80deeee9bd4d02358af18f06ce7ddcd60aa8df690307ed3a9b0",
+  "preparation_report_sha256": "8b47db0a890a64b46e9e308503107a442c4a284cd20b5d27ef27b180de78af0f",
+  "seconds": 105.985,
+  "source_native_agreement": true,
+  "all_buffers_released": true,
+  "all_sessions_retired_after_buffers": true,
+  "SDK_archive_created": false,
+  "whole_SDK_accepted": false,
+  "whole_goal_complete": false,
+  "limits": [
+    "Existing owned U8 Add/Affine provider; no general GPU compilation claim",
+    "The candidate executed43 SDK phases but failed final resource-inventory validation; it was not published",
+    "No sanitizer/fuzz/security campaign was run"
+  ],
+  "artifacts": "build/metal-sdk-0.280.1-candidate-v1"
+}

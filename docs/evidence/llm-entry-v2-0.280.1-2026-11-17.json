@@ -1,0 +1,66 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "bounded common coding contract and local study version2; offline controls and synthetic accounting only",
+  "toolchain": "0.280.1",
+  "source_language": "0.30",
+  "source_base_commit": "04298bd0bbf8bc6d7e30800ebc50c0a94a9b1a48",
+  "compiler_sha256": "58718b7d4928c5daf7f0531c8491d38b2aa63ed8c4fe46a7161dcedb314b1d46",
+  "compiler_build": "e084b22b6677973aaffb62d1546a9e7ddea6bf15eaab5b248bfab402ad8f7bb1",
+  "descriptor_hash": "f9271f65651c9395bdaa307d0fdb49a62b4e28ec0aa363e21c078ec9f4dbc2c1",
+  "checks": [
+    "complete-common-contract-one-page-and-detailed-rules-preserved",
+    "all-ten-task-contracts-and-boundary-cases-unchanged",
+    "integrated-broker-common-quick-and-bootstrap-aliases",
+    "integrated-broker-large-guide-continuation-and-actual-diagnostic-scope",
+    "reference-actions-compose-with-real-edit-and-submission",
+    "all-ten-explicit030-solutions-pass-and-ten-wrong-starts-fail"
+  ],
+  "functional_controls": {
+    "trusted030_solutions": 10,
+    "wrong_starts_rejected": 10,
+    "reference_and_native_agreement": true,
+    "model_source_review_performed": false,
+    "seconds": 134.646,
+    "receipt_sha256": "34a81ea421de474cbd37253042b4dea51cc366d9faaf051778da2558dcb9cb75"
+  },
+  "synthetic_collection": {
+    "checks": 3,
+    "receipt_sha256": "f13f677e3e42cd0a7e3c9d12a27e6ac2d21d7ce402c8dd8462a32a9eea137921",
+    "reference_edit_check_submit_and_review_counted": true,
+    "both_engines_documents_and_compiled_references_pinned": true,
+    "historical_freeze_refused": true,
+    "real_model_calls": 0,
+    "freeze_schema": "nex.local-collection/2",
+    "old_and_new_runners_refuse_each_others_freezes": true
+  },
+  "contract": {
+    "common_utf8_bytes": 4058,
+    "common_sha256": "7d7a9a49a6a7bf0fdac884593e6046c903af7bf829432d3d5a92b3554ff0ce1b",
+    "detailed_utf8_bytes": 32806,
+    "detailed_sha256": "080542d52d035689db9ff300d354c88038a13d07a64a882486436b8cfa16ac4d",
+    "complete_previous_contract_retained": true
+  },
+  "capability_validation": {
+    "shared_fields": 72,
+    "compared_JSON_values": 4790,
+    "equal": true
+  },
+  "historical_study": {
+    "modified": false,
+    "accepted_nex": 4,
+    "accepted_cpp": 14,
+    "accepted_python": 20,
+    "attempts_each": 20
+  },
+  "observed_v2_model_calls": 0,
+  "token_saving_measured": false,
+  "paid_API_calls": 0,
+  "limits": [
+    "No observed version2 model study has run",
+    "Collection runtime currently targets qualified macOS ARM64 LM Studio; Windows/Linux collection pending",
+    "New tool/document source identity does not change any immutable SDK archive",
+    "The broader language/SDK/PLAN objective remains active"
+  ],
+  "operator_artifacts": "build/llm-entry-integration-v2",
+  "current_SDK_source_unchanged_during_preparation": true
+}

@@ -258,4 +258,100 @@ class Collection(unittest.TestCase):
         self.assertFalse(any(x['step']=='infrastructure'for x in report['errors']))
 
 
+
+_v2spec=importlib.util.spec_from_file_location('nex_collection_v2',ROOT/'experiments/quality/llm-campaign-v2/collector.py')
+v2=importlib.util.module_from_spec(_v2spec);_v2spec.loader.exec_module(v2)
+
+class Version2Collection(unittest.TestCase):
+    provider=Collection.provider
+    good_check=Collection.good_check
+
+    def test_reference_edit_check_submit_and_independent_review_share_one_ledger(self):
+        with tempfile.TemporaryDirectory(prefix='nex-collector-v2-') as temporary:
+            self.root=Path(temporary);resources=self.root/'resources';resources.mkdir()
+            docs={name:(ROOT/name).read_text(encoding='utf-8') for name in v2.engine.DOCS}
+            v2.acceptance.save(resources/'documents.json',docs)
+            v2.acceptance.save(resources/'descriptor.json',{'project_languages':['0.28','0.29','0.30']})
+            quick=docs['llm/QUICK_REFERENCE.md']
+            compiled={'identity':{'compiler_build':'synthetic-v2'},
+                'guides':{'quick':{'text':quick,'hash':hashlib.sha256(quick.encode()).hexdigest()},
+                          'stdlib':{'text':docs['docs/stdlib.md'],'hash':'synthetic-stdlib'}},
+                'explanations':{'E_PARSE':{'code':'E_PARSE','context_specific':False,'action':'synthetic instruction'}}}
+            v2.acceptance.save(resources/'compiled-references.json',compiled)
+            v2.acceptance.materialize('bounded-total','nex',self.root/'starts/bounded-total-nex')
+            slot={'id':'synthetic-v2-trial','task':'bounded-total','language':'nex','repeat':0}
+            frozen={'root':str(self.root),'order':[slot],'compiler':'/synthetic/nex','cpp':'/synthetic/clang++',
+                'resources':str(ROOT),'compiler_index':{'fields':['project_languages']},'model_revision':'a'*64,
+                'tasks':['bounded-total'],'repeats':1,'kind':'synthetic_control',
+                'study_protocol_version':2,'source_language':'0.30','source_review_mode':'independent_local_call'}
+            v2.acceptance.save(self.root/'freeze.json',frozen)
+            rules=v2.acceptance.catalogue()['bounded-total']['contract']['acceptance_rules']
+            review=json.dumps({'rules':[{'rule':rule,'passed':True,'evidence':'synthetic independent source evidence'}for rule in rules]})
+            def edit(prompt):
+                packet=json.loads(prompt);entry=packet['files']['candidate.nex']
+                solution=v2.acceptance.fixtures.files('bounded-total','nex','solution')['candidate.nex'].decode()
+                return json.dumps({'action':'edit','files':{'candidate.nex':{'sha256':entry['sha256'],'content':solution}}})
+            client=self.provider(['{"action":"guide","kind":"quick"}',
+                '{"action":"explain","code":"E_PARSE"}',edit,'{"action":"check"}','{"action":"submit"}',review])
+            def check(broker,output,*,visible):return self.good_check(broker,output,visible=visible)
+            with patch.object(v2.engine,'verify',return_value=frozen),patch.object(v2.Broker,'run_check',new=check):
+                state=v2.engine.collect_trial(self.root,frozen,slot,client,'nex-cost-synthetic-v2')
+                self.assertEqual(state['status'],'accepted');self.assertEqual(len(state['calls']),6)
+                summary=v2.engine.ledger(self.root)
+            totals=summary['results']['qwen38-27b-q8']['nex']
+            self.assertEqual(totals['calls'],6);self.assertEqual(totals['known_total_tokens'],720)
+            self.assertEqual(client.prompts[1]['history'][0]['tool_reply']['text'],quick)
+            self.assertEqual(client.prompts[2]['history'][1]['tool_reply']['code'],'E_PARSE')
+            self.assertNotIn('history',client.prompts[-1]);self.assertNotIn('language_reference',client.prompts[-1])
+            self.assertFalse(summary['matrix_complete']);self.assertFalse(summary['eligible_for_comparison_review'])
+            self.assertIn('llm/DETAILED_CODING_RULES.md',client.prompts[0]['available_documents'])
+
+    def test_new_freeze_pins_both_engines_documents_and_compiled_references(self):
+        with tempfile.TemporaryDirectory(prefix='nex-freeze-v2-') as temporary:
+            root=Path(temporary);compiler=root/'nex';compiler.write_bytes(b'synthetic compiler')
+            cpp=root/'clang++';cpp.write_bytes(b'synthetic native compiler')
+            lm=root/'lm';(lm/'bin').mkdir(parents=True);(lm/'bin/lms').write_bytes(b'synthetic lms')
+            weights=root/'weights.json';v2.acceptance.save(weights,{'files':[{'path':'synthetic-Q8_0.gguf','sha256':'a'*64}]})
+            identity={'language':'0.28','compiler_build':'synthetic-build','descriptor_hash':'synthetic-descriptor','fields':[]}
+            descriptor={'project_languages':['0.28','0.29','0.30']}
+            def info(argv,**kwargs):
+                if 'doctor' in argv:return json.dumps({'version':'0.280.1'}).encode()
+                return json.dumps(identity if '--kind' in argv else descriptor).encode()
+            compiled={'compiler_sha256':v2.engine.sha(compiler),'identity':identity,
+                'guides':{kind:{'text':(ROOT/name).read_text(encoding='utf-8')}for kind,name in
+                    [('quick','llm/QUICK_REFERENCE.md'),('stdlib','docs/stdlib.md')]},'explanations':{}}
+            output=root/'new-freeze'
+            with patch.object(v2.engine,'host_facts',return_value={'runtime':'synthetic','files':[]}), \
+                 patch.object(v2.engine,'selected_runtime',return_value='synthetic runtime listing'), \
+                 patch.object(v2.engine.subprocess,'check_output',side_effect=info), \
+                 patch.object(v2.engine.r,'verify_weights',return_value=None), \
+                 patch.object(v2.references,'snapshot',return_value=compiled):
+                frozen=v2.freeze(output,compiler=compiler,cpp=cpp,weights=weights,lm_home=lm,runtime=root/'runtime')
+                self.assertEqual(v2.verify(output,deep=True),frozen)
+            self.assertEqual(frozen['study_protocol_version'],2);self.assertEqual(frozen['source_language'],'0.30')
+            self.assertEqual(frozen['schema'],'nex.local-collection/2')
+            with self.assertRaisesRegex(ValueError,'unsupported collection freeze'):c.verify(output)
+            self.assertEqual(frozen['limits'],c.LIMITS);self.assertEqual(len(frozen['order']),60)
+            self.assertTrue(all(slot['id'].startswith('v2-')for slot in frozen['order']))
+            names={Path(row['path']).resolve() for row in frozen['pinned_files']}
+            for path in [ROOT/'experiments/quality/llm-campaign-v1/collector.py',
+                         ROOT/'experiments/quality/llm-campaign-v2/collector.py',
+                         ROOT/'experiments/quality/llm-campaign-v2/acceptance.py',
+                         ROOT/'llm/DETAILED_CODING_RULES.md',output/'resources/compiled-references.json']:
+                self.assertIn(path.resolve(),names)
+            self.assertEqual(json.loads((output/'resources/documents.json').read_text())['llm/SYSTEM_PROMPT.md'],
+                (ROOT/'llm/SYSTEM_PROMPT.md').read_text())
+
+    def test_historical_freeze_is_refused_and_common_contract_fits_one_read(self):
+        self.assertLessEqual(len((ROOT/'llm/SYSTEM_PROMPT.md').read_bytes()),4096)
+        self.assertGreater(len((ROOT/'llm/DETAILED_CODING_RULES.md').read_bytes()),4096)
+        with tempfile.TemporaryDirectory(prefix='nex-historical-freeze-') as temporary:
+            historical_root=Path(temporary)
+            c.a.save(historical_root/'freeze.json',{'schema':'nex.local-collection/1','study_protocol_version':1,'source_language':'0.28'})
+            with self.assertRaisesRegex(ValueError,'historical'):v2.verify(historical_root)
+        historical=json.loads((ROOT/'experiments/quality/llm-campaign-v1/tasks.json').read_text())
+        current=json.loads((ROOT/'experiments/quality/llm-campaign-v2/tasks.json').read_text())
+        self.assertEqual(historical['tasks'],current['tasks']);self.assertEqual(current['language'],'0.30')
+
+
 if __name__=='__main__':unittest.main(verbosity=2)

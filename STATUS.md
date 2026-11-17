@@ -1,3 +1,27 @@
+# Bounded LLM entry and SDK resource inventory — development0.280.1
+
+The [immutable04298bd0 source baseline](docs/evidence/sdk-example-inventory-0.280.1-2026-11-17.json)
+passes388/388 groups without skips/failures. The second SDK attempt executed all
+43 moved phases, including native030 sessions and Workboard, then failed final
+validation because discovery omitted ten container-example hashes. Original
+reports remain failed; no archive/restored qualification or publication occurred.
+The collector now records all standard-library examples. The focused test uses
+that actual collector with reference/native Debug+Release/TypeScript consumption
+and19 receipt rejection controls; core17 also passes. Compiler/runtime bytes,
+language versions and ABIs remain unchanged. A fresh committed SDK is next.
+[Physical candidate Metal](docs/evidence/owned-metal-sdk-candidate-0.280.1-2026-11-17.json)
+passes15 native/reference pairs and32 GPU kernels on Apple M5 Max, with all30
+traces re-inspected and resources retired. Its archive gate remains separate.
+
+The [LLM entry block](docs/llm-entry-v2.md) supplies a4058-byte common contract
+and preserves the previous32806-byte rules verbatim. Version2 local study tools
+integrate bounded guides/explanations with the existing edit/check/submit/review
+ledger and execute explicit030. Its own freeze schema prevents cross-use with
+historical campaigns. Ten trusted solutions pass, ten wrong starts fail and
+three synthetic collector checks pass. There are zero observed version2 model
+calls; the historical negative Qwen result remains unchanged. New tool/document
+resources and every immutable SDK keep their own source identities.
+
 # Delivery paths and five-stand regression — development0.280.1
 
 The [full source baseline](docs/evidence/sdk-source-and-relocation-first-0.280.1-2026-11-17.json)

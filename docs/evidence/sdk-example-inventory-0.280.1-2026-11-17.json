@@ -1,0 +1,62 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "SDK example resource inventory correction and grouped LLM-entry tooling; no compiler/runtime change",
+  "toolchain": "0.280.1",
+  "source_base_commit": "04298bd0bbf8bc6d7e30800ebc50c0a94a9b1a48",
+  "baseline_source_gate": {
+    "source_commit": "04298bd0bbf8bc6d7e30800ebc50c0a94a9b1a48",
+    "groups": 388,
+    "passed": 388,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 5457.673,
+    "registry_sha256": "cef507b0f86d0260acbf636341d508fa662c5e7a2f1b4cf35770033ef8b978a3",
+    "junit_sha256": "a88aa2a43b84efd9ff17afeb02e4760723eef39bf71ebec26f833d3e3ecdec27",
+    "stored_receipt_independently_matched": true,
+    "source_snapshot_unchanged_after_failure": true
+  },
+  "original_distribution": {
+    "overall_ok": false,
+    "moved_phases_executed_and_passed": 43,
+    "commands_executed_and_passed": 926,
+    "final_validation_error": "RuntimeError: SDK container example differs: hash-containers",
+    "report_sha256": "8af990c9e025b166e524b4f2f6e30fbe8f0d5faa55bdffc9d862bbe25860300d",
+    "archive_created": false,
+    "restored_run_executed": false,
+    "original_report_preserved": true
+  },
+  "cause": "Discovery captured standard modules but omitted ten hash/sequence example hashes; the prior focused test constructed its own inventory instead of exercising discovery.",
+  "correction": "Collect all standard-library module/example resources through one declared set; the actual backend-consumption regression now uses the public discovery collector.",
+  "actual_resources_added_to_inventory": {
+    "examples/hash-containers/README.md": "9695c68cfeaa0da498155d43373d2796b0d21542c30f9724a4be024eb297362e",
+    "examples/hash-containers/main.nex": "e3e6a6b49ee3b7a4f327b3960d423642518df6bbf376d628888b393f5155adb2",
+    "examples/hash-containers/nex.json": "677a6ca3cec3fb7acd2f2aa8468af981d3288a256eafb9c041079342cf3ca3fe",
+    "examples/hash-containers/nex.lock.json": "da95f5179198880028e31f7b7243c6d50bd309e588784560be8729f0d21fec99",
+    "examples/hash-containers/tasks.nex": "664819631051a2ffcb7458a42757d5c71c8d72d92330295808b949affa856370",
+    "examples/sequence-containers/README.md": "f703a4d24d796c2667358c8df92175f118e123a2236667d4937d6bafb9fa5ce4",
+    "examples/sequence-containers/main.nex": "050dc89a9cb229172654f2fbdd2a2f395857b9d0cd5dec69701c48935f00b8ae",
+    "examples/sequence-containers/nex.json": "677a6ca3cec3fb7acd2f2aa8468af981d3288a256eafb9c041079342cf3ca3fe",
+    "examples/sequence-containers/nex.lock.json": "12b9a5261975c9a6a4d0ed69cdae547e5b2a68b25ddc3973b251ca4755b7d3a4",
+    "examples/sequence-containers/tasks.nex": "4288972c238b5578aded160a96c88f9868266f2ea8444e5d79b5b66c35e88a21"
+  },
+  "focused_checks": {
+    "core_groups": 17,
+    "core_receipt_sha256": "7b6b41a24fbf2c2ac0dc428a0f17d40368505b7ad31fbf0926191e3871272173",
+    "failed": 0,
+    "skipped": 0,
+    "standard_library_actual_SDK_subworkflow": "passed reference/native Debug+Release/TypeScript, strict TypeScript and19 receipt rejection controls",
+    "stdlib_stdout_sha256": "01db020382215fa114c057e1539885c86dc8f334495e2d2a1207b8e6b4fc8c58",
+    "stdlib_stderr_sha256": "287577c12f9eb2f3131bb3de46576bb4d0aa87ea658c900fa08dcbdd087e6807"
+  },
+  "compiler_sha256": "58718b7d4928c5daf7f0531c8491d38b2aa63ed8c4fe46a7161dcedb314b1d46",
+  "compiler_bytes_unchanged": true,
+  "language_versions_and_ABIs_unchanged": true,
+  "diagnostic_only_inventory_reconstruction": {
+    "not_release_acceptance": true,
+    "original_workflow_failed": true,
+    "all_final_validators_after_recording_actual_missing_hashes": true,
+    "receipt_sha256": "0c83924864929e700950d00ec42db003ae10ef0891f88a12b7f0b9a4a0738f44"
+  },
+  "next": "Qualify a fresh committed SDK cohort with inventory correction and reviewed LLM block together. Neither failed archive attempt is published.",
+  "whole_goal_complete": false
+}

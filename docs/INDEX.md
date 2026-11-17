@@ -9,12 +9,13 @@ document describes current behavior. Query the selected compiler for actual
 capabilities; `status: current` documents are checked against the current
 advertised project source languages and toolchain by the same script.
 
-## Current contracts (42)
+## Current contracts (43)
 
 | Document | Applies to | Owner |
 |---|---|---|
 | [Atomic runtime value ownership](value-owners.md) | toolchain 0.255.0; language 0.28 and 0.29; private reference candidate | repository |
 | [Blocking storage in owner-thread tasks](task-storage.md) | toolchain 0.280.0; language 0.30 | repository |
+| [Bounded coding contract and local study version2](llm-entry-v2.md) | language 0.30; toolchain 0.280.1 | repository |
 | [Captured-source frontend diagnostics](frontend-diagnostics.md) | language 0.28; toolchain 0.248.0 | repository |
 | [Command help, completion and quiet output](cli.md) | toolchain 0.169; language 0.28 | repository |
 | [Compiler-checked diagnostic fixes](fixes.md) | toolchain 0.176; language 0.28 | repository |
@@ -241,4 +242,4 @@ advertised project source languages and toolchain by the same script.
 
 ## Totals
 
-214 documents: 42 current, 1 deferred, 2 historical, 165 reference/unclassified.
+215 documents: 43 current, 1 deferred, 2 historical, 165 reference/unclassified.

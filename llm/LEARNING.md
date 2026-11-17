@@ -11,6 +11,8 @@ repository; publication does not guarantee that a model already knows NEX.
 ## A small working context
 
 1. Read applicable `AGENTS.md`, [BOOTSTRAP](BOOTSTRAP.md) and [SYSTEM_PROMPT](SYSTEM_PROMPT.md).
+   The common contract fits one bounded read; retrieve relevant
+   [detailed rules](DETAILED_CODING_RULES.md) for feature-specific contracts.
 2. Query `nex describe --kind index --json`. Keep toolchain/language,
    compiler_build and descriptor_hash consistent across feature queries.
 3. Retrieve only relevant `--field PATH` sections and `nex guide --kind KIND`.
@@ -119,3 +121,7 @@ The user-selected [local Qwen3.8 27B study](../docs/llm-cost-qwen38-27b-2026-11-
 completed60 trials and found lower NEX acceptance with higher total token use.
 Keep that negative result separate from the labelled learning corpus; do not
 present compiler-checked examples as evidence of model task-success or savings.
+
+The [version2 entry and study](../docs/llm-entry-v2.md) preserves that historical
+result. Its explicit030 host controls and synthetic accounting checks have
+passed; no new observed model result or token saving is claimed.

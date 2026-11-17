@@ -58,10 +58,13 @@ platform acceptance.
 Current source: **toolchain 0.280.1 / language 0.28 / task ABIs 7/8**, in development.
 The [control correction](docs/evidence/native-owner-control-0.280.1-2026-11-17.json)
 preserves timeout/cancellation outcomes in borrowed native task scopes.
-The [0.280.1 full source baseline](docs/evidence/sdk-source-and-relocation-first-0.280.1-2026-11-17.json)
-passes388 groups. Its first portable SDK attempt passed41 relocated phases
-before a test linker argument split a comma-containing archive path. Delivery
-fixes pass19 core/affected groups; current archive qualification remains pending.
+The [source and delivery record](docs/evidence/sdk-example-inventory-0.280.1-2026-11-17.json)
+passes388 source groups at04298bd0. All43 moved SDK phases executed successfully;
+final validation exposed ten omitted example hashes. The corrected collector
+passes core17 and the actual standard-library backend/receipt workflow.
+Matching archive qualification remains pending. The [bounded LLM entry](docs/llm-entry-v2.md)
+retains full detailed rules and a separately versioned local study; no new
+observed model trial or token saving is claimed.
 The compiler fallback remains0.28. `nex.json` selects0.28,0.29 or0.30 per project;
 new `nex init` projects select0.30. Language0.29 adds partial type lambdas and
 higher-order kinds;0.30 adds typed cells and the `state` effect. Retained projects
@@ -101,7 +104,7 @@ listed below, with delivery gaps kept separate.
 
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|
-| macOS ARM64 | [0.280.1 source388/388 and delivery correction](docs/evidence/sdk-source-and-relocation-first-0.280.1-2026-11-17.json); [immutable SDK0.246.1](docs/releases/0.246.1.json); [physical Metal M5 Max](docs/evidence/owned-metal-0.243.0-2026-11-13.json) | corrected current SDK archive, extended interactive web/mobile matrices, signing |
+| macOS ARM64 | [0.280.1 source388/388 and inventory correction](docs/evidence/sdk-example-inventory-0.280.1-2026-11-17.json); [immutable SDK0.246.1](docs/releases/0.246.1.json); [physical Metal M5 Max candidate](docs/evidence/owned-metal-sdk-candidate-0.280.1-2026-11-17.json) | corrected current SDK archive, extended interactive web/mobile matrices, signing |
 | Astra Linux 1.7 x86-64 | [0.280.1 build, core17/17, native app](docs/evidence/stands-current-0.280.1-2026-11-17.json) | extended/browser/SDK groups |
 | Fedora 45 x86-64 | [0.280.1 Clang23 build, core17/17, native app](docs/evidence/stands-current-0.280.1-2026-11-17.json) | extended/browser/SDK groups |
 | Windows 11 x86-64 | [0.280.1 core17 unique groups, native app, CUDA35/35](docs/evidence/stands-current-0.280.1-2026-11-17.json) | extended/browser/SDK groups; intentional IPv6 restrictions retain a separate scope |

@@ -10,11 +10,14 @@ import random
 import re
 import shutil
 import subprocess
+import sys
 import unittest
 import support as h
 
 spec=importlib.util.spec_from_file_location('stdlib_sdk',h.REPO/'tools/sdk_stdlib.py')
 sdk=importlib.util.module_from_spec(spec);spec.loader.exec_module(sdk)
+spec=importlib.util.spec_from_file_location('stdlib_sdk_acceptance',h.REPO/'tools/sdk_acceptance.py')
+acceptance=importlib.util.module_from_spec(spec);spec.loader.exec_module(acceptance)
 SPACE=''.join(chr(x) for x in [*range(9,14),32,133,160,5760,*range(8192,8203),8232,8233,8239,8287,12288])
 PREFIX='''module library_cases;
 import "std/text.nex" as text;
@@ -159,9 +162,11 @@ class StandardLibrary(h.ToolchainCase):
 
     def test_actual_SDK_subworkflow_and_strict_typescript_with_receipt_controls(self):
         proof=sdk.exercise(cli=self.cli,run=self.run_child,compiler=Path(h.NEX),resources=h.REPO,root=self.root,browser=True)
-        inventory={**proof['compiled_source_pins'],**{'examples/stdlib/'+name:digest for name,digest in proof['example_hashes'].items()},
-            **{'examples/hash-containers/'+name:digest for name,digest in proof['hash_containers']['example_hashes'].items()},
-            **{'examples/sequence-containers/'+name:digest for name,digest in proof['sequence_containers']['example_hashes'].items()}}
+        before=sys.path
+        try:
+            sys.path=[str(h.REPO/'tools'),*before]
+            inventory=acceptance.language_resource_inventory(h.REPO,[],h.CURRENT_LANGUAGE,include_stdlib=True)
+        finally:sys.path=before
         report={'compiler_sha256':proof['compiler_sha256'],'language':h.CURRENT_LANGUAGE,'version':proof['toolchain'],
             'resource_hashes':inventory,'evidence':{'standard_library':proof,'browser_build':True,
                 'scoped_discovery':{'descriptor_hash':proof['descriptor_hash']}}}
