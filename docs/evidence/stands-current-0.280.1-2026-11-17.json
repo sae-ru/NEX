@@ -1,0 +1,149 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Current0.280.1 CPU and physical accelerator regression on all five user stands",
+  "date": "2026-11-17",
+  "source_base_commit": "3709b917d8aa82017a6982f483d0bda5ea0c1eb9",
+  "source_archive_sha256": "87d47aa715a03a439fb8a4af1788e4087764726796207ec215f81fcf8a310e6e",
+  "source_files": 2966,
+  "toolchain": "0.280.1",
+  "compiler_runtime_or_language_changes_made_for_stands": false,
+  "native_CPU": {
+    "Astra1.7-x86_64": {
+      "core_passed": 17,
+      "core_failed": [],
+      "core_skipped": [],
+      "source_unchanged": true,
+      "compiler_sha256": "2985307603670d26a53bd956321dbe696596ff320b4c4d7cbeb1b783faf51b5d",
+      "registry_sha256": "bf7d9d16991ff2c25bf00b5bc3bf7527bb9b409be1fdaf8d8c50a8e783752d24",
+      "junit_sha256": "63452a44118e4b37f439e7e89cd2cdd19cbd3800906795c35bb906100f3713af",
+      "native_application_stdout": "55\n",
+      "core_receipt_sha256": "a1b68b906e16f8c743413d1f501dd51ac7ac588a8ea3806ebf2b0659e9de7d93"
+    },
+    "Fedora45-x86_64": {
+      "core_passed": 17,
+      "core_failed": [],
+      "core_skipped": [],
+      "source_unchanged": true,
+      "compiler_sha256": "05244d825985045794125a6b0498d45eeb9450d99ea1d62ddd679b1eef931706",
+      "registry_sha256": "dd02c38aa8cb6ff5138a98e51d3458615272fb1884227cd222ec80320a8f378d",
+      "junit_sha256": "8c0eca2d4fceac4c2aeafb216293964052af2ec49d10c45690f918ffc2ebd6a7",
+      "native_application_stdout": "55\n",
+      "core_receipt_sha256": "c58de0417cc826324d8f16ec36de107f1707d2063bf0989a59ed881944c477b9"
+    },
+    "CIX-ARM64": {
+      "core_passed": 17,
+      "core_failed": [],
+      "core_skipped": [],
+      "source_unchanged": true,
+      "compiler_sha256": "14ed2bc67ca62a198310ee19fc3e00dd42556141cfb6833bb52ebc63d15205f5",
+      "registry_sha256": "cef7b4f8b2855eb33f5ff48569c6cf14b31a5f7b275cefd9ad961869caedf3e2",
+      "junit_sha256": "26abe0a1ca6b2e7a64e3ef70f3ca783dfc6bb690a6a52c1076d6857981f76d7a",
+      "native_application_stdout": "55\n",
+      "core_receipt_sha256": "bb22838ba586aa3dff292e5db74534624d588cb3f4c36aa3417d09abe65048cd"
+    }
+  },
+  "CIX": {
+    "GPU_calls": 12,
+    "NPU_calls": 8,
+    "GPU_devices": [
+      "Mali-G720-Immortalis r0p0"
+    ],
+    "NPU_provider": "ZhouyiExecutionProvider",
+    "all_NPU_fallback_disabled": true,
+    "all_NPU_aipu_open": true,
+    "exclusive_Zhouyi_profiles": 8,
+    "profile_sha256": [
+      "0ba2dd1c41f680581d6e14ca74f464d5e4c709b08ad0b3ce931a4a674ca08143",
+      "13d66748bebb404c6ceca125ed793eaa34f54672620c1a93506cd9bad975cc77",
+      "2a3a3b5b4e0aa0e4999e0f9c052b5b35de782c07f11b8c036532ff08777c4c99",
+      "5409c0f925f4a50034f9ed789927839318c1d19ef832d8231cfbb54df08eea0c",
+      "86b9aac79c8851872a468855822256710098c383d094f6ef3fd6f496ea853b17",
+      "8cc8adeb75531cb3603f75047855970af2abcb29419cb3467a38b03ff9f8ef15",
+      "d999b26eceaa65eb5e00eeaa237372832bb23369eb58cb972b6c601f49dc0668",
+      "d9ac064f5d9ad74874bb74e4f939c0f1f131bfedaf95d56ce0126c472df500b0"
+    ],
+    "trace_sha256": "698bcf24681dd93a52e1a3615a596fd6aee82cbeb45f75b76d6c74ae9a5d2522",
+    "scope": "fixed GPU affine and NPU Mul fixture; ordinary native installation"
+  },
+  "Windows": {
+    "schema": "nex.windows-current-inspected/1",
+    "source_base_commit": "3709b917d8aa82017a6982f483d0bda5ea0c1eb9",
+    "source_patch_sha256": "e0560396e8262e496d38cba2332636135544d14648154bba5a46e8218c438395",
+    "test_harness_only": true,
+    "unique_core_groups_passed": 17,
+    "single_17_group_invocation_claimed": false,
+    "previous_passed_groups": [
+      "llm_cost_ledger",
+      "llm_local_collector",
+      "ctest_report_validation",
+      "language_pack_contract",
+      "task_frontend_native",
+      "reference_tasks_development",
+      "frontend_diagnostics_native",
+      "value_owner_runtime",
+      "value_retirement_runtime",
+      "managed_references_frontend_reference",
+      "managed_reference_native_context",
+      "bytes_runtime_native",
+      "float_runtime_native",
+      "typed_source_frontend_reference",
+      "test_tiers",
+      "diagnostic_catalogue"
+    ],
+    "final_rechecked_group": [
+      "discovery"
+    ],
+    "CUDA_cases": 35,
+    "CUDA_trace_files_independently_rehashed_and_balanced": 70,
+    "compiler_sha256": "449e9d247c9473c42f23bdf6d1988d205231e3b461ff0d52320be6c39acf78b4",
+    "full_windows_regression_accepted": false,
+    "portable_SDK_qualified": false,
+    "SDK_native_session_delivery": {
+      "ok": true,
+      "kernel_cases": 14,
+      "compiled_cases_each_profile": 13,
+      "profiles": [
+        "debug",
+        "release"
+      ],
+      "comma_path": true,
+      "UTF8_mode": true,
+      "uses_ordinary_compile_fixture": true,
+      "compiler_sha256": "449e9d247c9473c42f23bdf6d1988d205231e3b461ff0d52320be6c39acf78b4",
+      "host_sha256": "ff9ce66182e25461f3b230d423fb28a9a51575338ca28d815fc5a000cb94dc13",
+      "receipt_sha256": "1f815b9dabfbfe39179e862a6c39921efa4ebbdd8cf89016feb102234b790ef3",
+      "portable_SDK_qualified": false
+    }
+  },
+  "RK3588": {
+    "environment": "Native ARM64 Ubuntu24 Docker on physical Jammy/glibc2.35 host",
+    "host_native_SDK_qualified": false,
+    "source_core_passed": 17,
+    "core_junit_sha256": "77d5b6e9e6d25ebba5c3edc8727036e5f07f4456b3eac45f3da2bbbfad4a1474",
+    "image_OCI_manifest": "sha256:34a98f1aad00ad2e71e3c77db7aac6fa1cc8e539acd5e2d9251ace2a306a8f82",
+    "image_config": "sha256:80cfee57edb29ca52deded13da098b1bb52037ccbd7f9dc254d8b52af7edc6f3",
+    "GPU_calls": 49,
+    "GPU_valid_values": 1835078,
+    "GPU_expected_overflow_rejections": 7,
+    "GPU_devices": [
+      "Mali-G610 r0p0"
+    ],
+    "NPU_calls": 30,
+    "NPU_values": 6400,
+    "NPU_provider": "RKNN/RKNPU",
+    "reference_native_profile_replay_standalone": true,
+    "managed_memory_balanced": true,
+    "evidence_archive_sha256": "c429724aa1c1728069271417cbc4c9d4608ce2b28ea4c984dfa373abd9757f58",
+    "integration_adjustments": [
+      "Use a compatible ARM64 userspace container; CIX LLVM dependencies require glibc2.36.",
+      "Expose unchanged RKNN runtime at its required container path.",
+      "Expose the existing RKNPU card1 device as well as render nodes."
+    ],
+    "host_drivers_settings_or_other_containers_modified": false
+  },
+  "security_or_sanitizer_campaign_started": false,
+  "portable_Linux_or_Windows_SDK_qualified": false,
+  "full_Windows_or_Linux_source_regression_claimed": false,
+  "general_GPU_NPU_codegen_claimed": false,
+  "whole_original_goal_complete": false
+}

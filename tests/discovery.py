@@ -113,30 +113,30 @@ class Discovery(harness.ToolchainCase):
         self.assertTrue(contract['public_cli'])
         self.assertEqual(contract['execution_abi'],'0x4e45585400000007')
         guide=self.cli('guide','--kind',contract['guide_kind'])
-        self.assertEqual(guide['text'],(harness.REPO/contract['guide']).read_text())
+        self.assertEqual(guide['text'],(harness.REPO/contract['guide']).read_text(encoding="utf-8"))
 
     def test_pack_guides_and_schema_are_installed_capability_contracts(self):
         full = self.cli('describe')
-        pack = json.loads((harness.REPO / 'llm/language-pack.json').read_text())
+        pack = json.loads((harness.REPO / 'llm/language-pack.json').read_text(encoding="utf-8"))
         browser = self.cli('describe', '--field', 'source_exceptions.current_delivery.browser')['value']
         self.assertEqual(browser, pack['source_exceptions']['current_delivery']['browser'])
         self.assertTrue(browser['public_CLI'])
         self.assertEqual(browser['typescript_map_schema'], 'nex.typescript-map/2')
-        self.assertEqual(self.cli('guide', '--kind', browser['guide_kind'])['text'], (harness.REPO / browser['guide']).read_text())
+        self.assertEqual(self.cli('guide', '--kind', browser['guide_kind'])['text'], (harness.REPO / browser['guide']).read_text(encoding="utf-8"))
         self.assertTrue((harness.REPO / browser['schema_file']).is_file())
         self.assertEqual(full['scoped_discovery'], pack['scoped_discovery'])
         self.assertEqual(full['dns_provider'], pack['dns_provider'])
         self.assertTrue(full['dns_provider']['source_support'])
         self.assertFalse(full['dns_provider']['browser_execution'])
         self.assertFalse(full['dns_provider']['source_ABI_changed'])
-        self.assertEqual(self.cli('guide', '--kind', 'dns')['text'], (harness.REPO / 'docs/dns-provider.md').read_text())
+        self.assertEqual(self.cli('guide', '--kind', 'dns')['text'], (harness.REPO / 'docs/dns-provider.md').read_text(encoding="utf-8"))
         for key in ('library', 'preparer', 'dependency_builder', 'conformance', 'delivery_conformance', 'operator_schema'):
             self.assertTrue((harness.REPO / full['dns_provider'][key]).is_file())
         self.assertEqual(full['tcp_provider'], pack['tcp_provider'])
         self.assertTrue(full['tcp_provider']['source_support'])
         self.assertFalse(full['tcp_provider']['browser_execution'])
         self.assertFalse(full['tcp_provider']['source_ABI_changed'])
-        self.assertEqual(self.cli('guide', '--kind', 'tcp')['text'], (harness.REPO / 'docs/tcp-provider.md').read_text())
+        self.assertEqual(self.cli('guide', '--kind', 'tcp')['text'], (harness.REPO / 'docs/tcp-provider.md').read_text(encoding="utf-8"))
         for key in ('library', 'preparer', 'conformance', 'delivery_conformance', 'operator_schema'):
             self.assertTrue((harness.REPO / full['tcp_provider'][key]).is_file())
         self.assertEqual(full['task_value_retirement'], pack['task_value_retirement'])
@@ -201,8 +201,8 @@ class Discovery(harness.ToolchainCase):
                           ('quality', 'quality_contract'), ('tasks-runtime','tasks_runtime_design'),
                           ('browser-worker','browser_workers'), ('model','model')]:
             guide = self.cli('guide', '--kind', kind)
-            self.assertEqual(guide['text'], (harness.REPO / pack['documents'][key]).read_text())
-        schema = json.loads((harness.REPO / full['scoped_discovery']['schema_file']).read_text())
+            self.assertEqual(guide['text'], (harness.REPO / pack['documents'][key]).read_text(encoding="utf-8"))
+        schema = json.loads((harness.REPO / full['scoped_discovery']['schema_file']).read_text(encoding="utf-8"))
         self.assertEqual(schema['properties']['schema']['const'], 'nex.discovery/1')
 
     def test_doctor_accepts_explicit_toolchain_selector(self):

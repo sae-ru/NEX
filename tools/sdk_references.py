@@ -216,7 +216,8 @@ def delivery(cli, run, resources, directory, base, identity):
 
 def native_host(cli, run, compiler, resources, base, doctor):
     host = base/('native-host.exe' if os.name == 'nt' else 'native-host')
-    flags = ['-Wl,--export-all-symbols', '-Wl,--out-implib,' + str(host.parent/('lib' + host.stem + '.dll.a'))] if os.name == 'nt' else (
+    flags = ['-Wl,--export-all-symbols', '-Xlinker', '--out-implib', '-Xlinker',
+             str(host.parent/('lib' + host.stem + '.dll.a'))] if os.name == 'nt' else (
         ['-Wl,-export_dynamic'] if sys.platform == 'darwin' else ['-rdynamic', '-ldl'])
     command = [doctor['native_compiler'], '-std=c++20', '-pthread', '-O0',
                '-DNEX_STRUCTURED_WORKERS', '-DNEX_ASYNC_TASKS', '-DNEX_MANAGED_TASKS',

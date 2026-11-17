@@ -64,7 +64,7 @@ int main(int argc,char **argv){try{
     auto library=LoadLibraryW(std::filesystem::absolute(argv[2]).c_str());
     if(!library)throw std::runtime_error("cannot load managed fixture image: "+std::to_string(GetLastError()));
     struct CloseImage{HMODULE value;~CloseImage(){FreeLibrary(value);}} closeImage{library};
-    auto address=GetProcAddress(library,requestImage?"nex_private_reference_request":"main");
+    auto address=reinterpret_cast<void*>(GetProcAddress(library,requestImage?"nex_private_reference_request":"main"));
     auto entry=reinterpret_cast<int(*)(int,const char *const*)>(address);
     if(!entry)throw std::runtime_error("cannot find managed fixture main: "+std::to_string(GetLastError()));
 #else

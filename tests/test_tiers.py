@@ -55,7 +55,14 @@ class Tiers(unittest.TestCase):
                 +'set(Python3_EXECUTABLE '+quoted(sys.executable)+')\n'
                 +'add_test(NAME unclassified_future_group COMMAND '+quoted(sys.executable)+' -c "pass")\n'
                 +'include('+quoted(ROOT/'cmake/TestTiers.cmake')+')\n')
-            result=subprocess.run([args.cmake,'-S',str(source),'-B',str(root/'build')],capture_output=True,timeout=20)
+            # The parent build already selected a working generator and build tool.
+            # On Windows, the unrelated default NMake may be absent.
+            cache=dict(line.split('=',1) for line in (args.build/'CMakeCache.txt').read_text(encoding='utf-8').splitlines()
+                       if line.startswith(('CMAKE_GENERATOR:INTERNAL=','CMAKE_MAKE_PROGRAM:FILEPATH=')))
+            configure=[args.cmake,'-S',str(source),'-B',str(root/'build'),'-G',cache['CMAKE_GENERATOR:INTERNAL']]
+            if cache.get('CMAKE_MAKE_PROGRAM:FILEPATH'):
+                configure+=['-DCMAKE_MAKE_PROGRAM='+cache['CMAKE_MAKE_PROGRAM:FILEPATH']]
+            result=subprocess.run(configure,capture_output=True,timeout=20)
             self.assertNotEqual(result.returncode,0)
             self.assertIn('Classify CTest',result.stderr.decode());self.assertIn('unclassified_future_group',result.stderr.decode())
 

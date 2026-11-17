@@ -1,10 +1,16 @@
 # Start with NEX
 
-Current source uses **toolchain 0.248.0 / language 0.28 / task ABI 7**, in development.
+Current source uses **toolchain 0.280.1 / language 0.28 / task ABIs 7/8**, in development.
 Readable source, runtime contracts and explicit history-preserving migrations
 are available through the ordinary CLI.
 
 [Русский](getting-started.ru.md) · [Overview](overview.en.md)
+
+After unpacking an SDK, add its `bin` directory to PATH and run `nex doctor --json`.
+Its report identifies the installed version. Continue at [Create an application](#create-an-application).
+The download recipe below retains the separately qualified published0.246.1 archive.
+New source-built `nex init` projects select language0.30; existing projects keep
+the language explicitly selected in their `nex.json`.
 
 ## Install the macOS ARM64 SDK
 
@@ -35,7 +41,7 @@ matching platform guide.
 
 ## Build the current version
 
-Install C++20, CMake 3.25+, LLVM **and MLIR 22.1.x or 23.1.x**, SQLite 3.37+, OpenSSL **3**,
+Install C++20, CMake 3.25+, LLVM **and MLIR 22.1.x or 23.1.x**, SQLite 3.37+, OpenSSL **3 or4**,
 Z3 development files and Python 3.10+. Web/TypeScript needs Node.js 22.18+ and npm.
 Native execution needs the target platform's compiler/SDK; live debugging needs
 compatible LLDB tools. Keep the repository's `web/package-lock.json`.

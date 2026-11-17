@@ -58,6 +58,10 @@ platform acceptance.
 Current source: **toolchain 0.280.1 / language 0.28 / task ABIs 7/8**, in development.
 The [control correction](docs/evidence/native-owner-control-0.280.1-2026-11-17.json)
 preserves timeout/cancellation outcomes in borrowed native task scopes.
+The [0.280.1 full source baseline](docs/evidence/sdk-source-and-relocation-first-0.280.1-2026-11-17.json)
+passes388 groups. Its first portable SDK attempt passed41 relocated phases
+before a test linker argument split a comma-containing archive path. Delivery
+fixes pass19 core/affected groups; current archive qualification remains pending.
 The compiler fallback remains0.28. `nex.json` selects0.28,0.29 or0.30 per project;
 new `nex init` projects select0.30. Language0.29 adds partial type lambdas and
 higher-order kinds;0.30 adds typed cells and the `state` effect. Retained projects
@@ -97,15 +101,15 @@ listed below, with delivery gaps kept separate.
 
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|
-| macOS ARM64 | [351/351 full CTest](docs/evidence/full-ctest-0.246.1-current-2026-11-15.json); [immutable SDK 0.246.1](docs/releases/0.246.1.json); [physical Metal M5 Max](docs/evidence/owned-metal-0.243.0-2026-11-13.json) | extended interactive web/mobile matrices, signing |
-| Astra Linux 1.7 x86-64 | [0.245 build, core 12/12, native smoke](docs/evidence/platform-cross-compiler-current-0.245.0-2026-11-13.json) | extended/browser/SDK groups |
-| Fedora 45 x86-64 | [0.242 Clang 23 build, core 12/12, native smoke](docs/evidence/platform-cross-compiler-0.242.0-2026-11-13.json) | extended/browser/SDK groups |
-| Windows 11 x86-64 | [0.242 LLVM-MinGW build, core 12/12, native smoke](docs/evidence/platform-cross-compiler-0.242.0-2026-11-13.json) | extended/browser/SDK groups |
+| macOS ARM64 | [0.280.1 source388/388 and delivery correction](docs/evidence/sdk-source-and-relocation-first-0.280.1-2026-11-17.json); [immutable SDK0.246.1](docs/releases/0.246.1.json); [physical Metal M5 Max](docs/evidence/owned-metal-0.243.0-2026-11-13.json) | corrected current SDK archive, extended interactive web/mobile matrices, signing |
+| Astra Linux 1.7 x86-64 | [0.280.1 build, core17/17, native app](docs/evidence/stands-current-0.280.1-2026-11-17.json) | extended/browser/SDK groups |
+| Fedora 45 x86-64 | [0.280.1 Clang23 build, core17/17, native app](docs/evidence/stands-current-0.280.1-2026-11-17.json) | extended/browser/SDK groups |
+| Windows 11 x86-64 | [0.280.1 core17 unique groups, native app, CUDA35/35](docs/evidence/stands-current-0.280.1-2026-11-17.json) | extended/browser/SDK groups; intentional IPv6 restrictions retain a separate scope |
 | iOS Simulator | [Debug/Release, install/launch, actual UI, test-driver input](docs/evidence/mobile-ios-release-0.244.0-2026-11-13.json) | device signing/store delivery |
 | Android emulator | [signed release APK, launch, add interaction](docs/evidence/mobile-android-release-signed-0.244.0-2026-11-13.json) | Play Store delivery |
 | macOS desktop app | [standalone embedded app, live input](docs/evidence/desktop-macos-interaction-0.244.0-2026-11-13.json) | Developer ID, notarization |
-| CIX ARM64 | [current 0.245 core 12/12 + 12 Mali GPU/8 Zhouyi NPU](docs/evidence/cix-current-0.245.0-2026-11-13.json) | portable SDK installation |
-| RK3588 ARM64 | [Snapshot `2172b35`: 63 GPU and 30 NPU calls](docs/evidence/rk3588-current-GPU-NPU-0.165.0-2026-11-10.json) | matching current source regression and portable SDK |
+| CIX ARM64 | [0.280.1 core17/17 +12 Mali GPU/8 Zhouyi NPU](docs/evidence/stands-current-0.280.1-2026-11-17.json) | extended source regression and portable SDK installation |
+| RK3588 ARM64 | [0.280.1 Ubuntu24 ARM64-container core17/17 +49 GPU/30 NPU](docs/evidence/stands-current-0.280.1-2026-11-17.json) | native Jammy qualification and portable SDK |
 
 CUDA/OpenCL emission remains bounded. General GPU/NPU compilation, Apple NPU,
 native desktop UI, Studio, conversion, signed installers and cross-model token

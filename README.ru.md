@@ -57,6 +57,10 @@ TypeScript / React / Vite клиентом. Устройства подключ�
 Текущие исходники: **toolchain 0.280.1 / язык 0.28 / task ABI 7/8**, в разработке.
 [Исправление runtime](docs/evidence/native-owner-control-0.280.1-2026-11-17.json)
 сохраняет исходную ошибку таймаута/отмены во временной области native-задачи.
+[Полный исходный прогон0.280.1](docs/evidence/sdk-source-and-relocation-first-0.280.1-2026-11-17.json)
+прошёл388 групп. Первый переносимый SDK остановился после41 успешной фазы:
+тест разрезал путь с запятой в аргументе линкера. Исправления прошли19 базовых
+и затронутых групп; приёмка нового архива остаётся отдельным этапом.
 
 [Задачи с SQLite](docs/task-storage.md) выполняют блокирующие операции БД на
 потоке владельца, сохраняя транзакцию HTTP-запроса. Для таких задач030 выбирается
@@ -151,14 +155,14 @@ Developer ID и notarization остаются отдельными этапам�
 
 | Платформа | Подтверждённые результаты | Что ещё проверить |
 |---|---|---|
-| macOS ARM64 | [351/351 и переносимый SDK 0.246.1](docs/evidence/sdk-current-0.246.1-2026-11-15.json); [Metal на M5 Max, версия 0.243](docs/evidence/owned-metal-0.243.0-2026-11-13.json) | Полная матрица живой отладки SDK, подписание |
-| Linux x86-64 | [Тестовый шаг source/SDK 0.246.1](docs/ci.md); [Astra 0.245 и Fedora 0.242: сборка/core/native](docs/evidence/platform-cross-compiler-current-0.245.0-2026-11-13.json) | Полный workflow после исправления выгрузки; переносимый SDK и аппаратные проверки |
-| Windows 11 x86-64 | [0.242: сборка/core/native](docs/evidence/platform-cross-compiler-0.242.0-2026-11-13.json) | Полная регрессия и переносимый SDK; намеренно ограниченный IPv6 сохраняет отдельный профиль |
+| macOS ARM64 | [0.280.1: исходные388/388 и исправление приёмки](docs/evidence/sdk-source-and-relocation-first-0.280.1-2026-11-17.json); [опубликованный SDK0.246.1](docs/evidence/sdk-current-0.246.1-2026-11-15.json); [Metal на M5 Max0.243](docs/evidence/owned-metal-0.243.0-2026-11-13.json) | Новый исправленный архив SDK, подписание |
+| Linux x86-64 | [0.280.1: Astra/Fedora, по17/17 core и нативные приложения](docs/evidence/stands-current-0.280.1-2026-11-17.json) | Полная регрессия и переносимый SDK |
+| Windows 11 x86-64 | [0.280.1:17 уникальных core-групп, нативное приложение, CUDA35/35](docs/evidence/stands-current-0.280.1-2026-11-17.json) | Полная регрессия и переносимый SDK; намеренно ограниченный IPv6 сохраняет отдельный профиль |
 | iOS Simulator | [0.244 Debug/Release, запуск и ввод в UI](docs/evidence/mobile-ios-release-0.244.0-2026-11-13.json) | Устройства, подписание, Store |
 | Android emulator | [0.244 signed release APK, запуск и ввод](docs/evidence/mobile-android-release-signed-0.244.0-2026-11-13.json) | Play Store |
 | macOS desktop app | [0.244: автономное приложение и живой ввод](docs/evidence/desktop-macos-interaction-0.244.0-2026-11-13.json) | Developer ID, notarization |
-| CIX ARM64 | [0.245 core и 12 GPU/8 NPU](docs/evidence/cix-current-0.245.0-2026-11-13.json) | Актуальная полная регрессия и переносимый SDK |
-| RK3588 ARM64 | [Снимок `2172b35`: 63 GPU/30 NPU](docs/evidence/rk3588-current-GPU-NPU-0.165.0-2026-11-10.json) | Актуальная полная регрессия и переносимый SDK |
+| CIX ARM64 | [0.280.1:17/17 core,12 GPU/8 NPU](docs/evidence/stands-current-0.280.1-2026-11-17.json) | Полная регрессия и переносимый SDK |
+| RK3588 ARM64 | [0.280.1: ARM64-контейнер Ubuntu24,17/17 core,49 GPU/30 NPU](docs/evidence/stands-current-0.280.1-2026-11-17.json) | Нативная Jammy-сборка и переносимый SDK |
 
 Общая компиляция GPU/NPU, Apple NPU, полный нативный desktop UI, NEX Studio,
 конвертер проектов, подписанные установщики и доказанная экономия токенов на

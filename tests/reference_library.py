@@ -96,7 +96,8 @@ for profile in ['debug', 'release']:
         artifact = Path(built['artifact'])
         shared = folder/(image+('.dylib' if platform.system() == 'Darwin' else '.dll' if os.name == 'nt' else '.so'))
         if platform.system() == 'Darwin':
-            flags = ['-dynamiclib', '-undefined', 'dynamic_lookup', '-Wl,-force_load,'+str(artifact)]
+            flags = ['-dynamiclib', '-undefined', 'dynamic_lookup',
+                     '-Xlinker', '-force_load', '-Xlinker', str(artifact)]
         elif os.name == 'nt':
             flags = ['-shared', '-Wl,--whole-archive', artifact, '-Wl,--no-whole-archive',
                      host.parent/('lib'+host.stem+'.dll.a')]

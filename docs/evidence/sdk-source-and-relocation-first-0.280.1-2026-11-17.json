@@ -1,0 +1,50 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Full source0.280.1 passed; first relocated SDK attempt failed in delivery-test linker arguments",
+  "source_commit": "3709b917d8aa82017a6982f483d0bda5ea0c1eb9",
+  "toolchain": "0.280.1",
+  "date": "2026-11-17",
+  "source_files": 2966,
+  "source_snapshot_independently_verified_unchanged": true,
+  "source_tests": {
+    "passed": 388,
+    "failed": [],
+    "skipped": [],
+    "junit_sha256": "b0e41af25b3c45a2f7f61ae0d6ed7d38d80f59826c6de939ab835299e16a8f81",
+    "registry_sha256": "c7eb15966a5b35bca7dd920854da37b690f004f25a86a221f8aa0eeaf9aec624",
+    "receipt_sha256": "bc5737a8853224361b2d863625bc69140187db31994500ccf312e74db57a2912"
+  },
+  "SDK_attempt": {
+    "ok": false,
+    "moved_phases_passed": 41,
+    "failed_phase": "reference030",
+    "archive_created": false,
+    "restored_acceptance_run": false,
+    "published": false,
+    "build_report_sha256": "7a39757463e873f8d8098be1edb28c0b55b520917926d0f7fe4229f3be2e6408",
+    "distribution_report_sha256": "6e7f93b0ad330d7f0a7163dc459de1c52c248a59631ac2f490ead886e65126a3",
+    "moved_report_sha256": "6e41dca86439373af7070af3257751e7bc4d7d0ad84c195923457f121187bbf7"
+  },
+  "cause": "The native-task-session test combined -force_load and an archive path using -Wl commas. A comma in the relocation path split the archive filename.",
+  "correction": {
+    "argv": "-Xlinker -force_load -Xlinker PATH; Windows import-library paths also use separate linker arguments",
+    "original_archive_and_bundled_compiler_unchanged": true,
+    "corrected_original_archive_link_exit_code": 0,
+    "corrected_original_archive_sha256": "1a7c819c7396073e86475a82e9fa96e6edc8b31103371d3f24db9b4ee8243d2a",
+    "corrected_link_receipt_sha256": "3fd42c5753b107272de886168306e0fea0174c869ed31a271c86e18e58230806"
+  },
+  "focused_current_tree": {
+    "passed": 19,
+    "failed": [],
+    "skipped": [],
+    "junit_sha256": "68109f95a455f0391bb12cc23c59a452e7e57e53da0c09dbe627081b0fc8c7a0",
+    "scope": "core17 plus native_task_sessions and reference_library_context, both configured with comma/space output paths",
+    "root_compiler_sha256": "58718b7d4928c5daf7f0531c8491d38b2aa63ed8c4fe46a7161dcedb314b1d46"
+  },
+  "limits": [
+    "The 388-group result belongs to the recorded base snapshot.",
+    "The current fixed SDK still needs a new complete moved/archive/restored workflow.",
+    "No0.280.1 archive was released from this failed attempt."
+  ],
+  "whole_original_goal_complete": false
+}

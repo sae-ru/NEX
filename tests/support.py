@@ -17,7 +17,7 @@ REPO = Path(__file__).resolve().parents[1]
 
 
 def native_fixture_compiler():
-    return json.loads(subprocess.check_output([NEX,'doctor','--json'],text=True))['native_compiler']
+    return json.loads(subprocess.check_output([NEX,'doctor','--json'],text=True,encoding="utf-8"))['native_compiler']
 
 
 def host_toolchain_defaults(doctor):
@@ -45,7 +45,7 @@ def __getattr__(name):
     if name != 'CURRENT_LANGUAGE':
         raise AttributeError(name)
     language=json.loads(subprocess.check_output(
-        [NEX,'describe','--kind','index','--json'],text=True))['language']
+        [NEX,'describe','--kind','index','--json'],text=True,encoding="utf-8"))['language']
     globals()['CURRENT_LANGUAGE']=language
     return language
 
@@ -99,7 +99,7 @@ class ToolchainCase(unittest.TestCase):
         if machine:
             command.append("--json")
         result = subprocess.run(command, cwd=cwd or self.root, capture_output=True, env=None if env is None else {**os.environ, **env},
-                                text=True, timeout=timeout)
+                                text=True,encoding="utf-8", timeout=timeout)
         if ok:
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         else:
@@ -116,7 +116,7 @@ class ToolchainCase(unittest.TestCase):
         if not manifest.exists():
             manifest.write_text(json.dumps({'schema':'nex.project/1','language':getattr(sys.modules[__name__],'CURRENT_LANGUAGE'),
                                             'entry':self.file.relative_to(self.root).as_posix()})+'\n', newline="\n")
-        self.file.write_text(body, newline="\n")
+        self.file.write_text(body, encoding="utf-8", newline="\n")
         return self.file
 
     def historical_store(self, language):

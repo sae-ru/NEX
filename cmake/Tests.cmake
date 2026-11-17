@@ -674,7 +674,7 @@ set_target_properties(nex_reference_library_host PROPERTIES ENABLE_EXPORTS ON)
 add_test(NAME reference_library_context COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_library.py $<TARGET_FILE:nex_references030_probe>
   $<TARGET_FILE:nex_reference_library_host> --clang ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
-  --output ${CMAKE_CURRENT_BINARY_DIR}/reference-library-${PROJECT_VERSION}-acceptance)
+  --output "${CMAKE_CURRENT_BINARY_DIR}/reference library, ${PROJECT_VERSION}-acceptance")
 set_tests_properties(reference_library_context PROPERTIES TIMEOUT 600)
 add_executable(nex_native_task_session_host tests/native_task_session.cpp tests/native_task_session_images.cpp
   runtime/runtime.cpp runtime/nex_cells.cpp runtime/nex_cell_host.cpp runtime/nex_task_session.cpp
@@ -687,7 +687,7 @@ set_target_properties(nex_native_task_session_host PROPERTIES ENABLE_EXPORTS ON)
 add_test(NAME native_task_sessions COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_task_sessions.py $<TARGET_FILE:nex>
   --host $<TARGET_FILE:nex_native_task_session_host> --clang ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
-  --output ${CMAKE_CURRENT_BINARY_DIR}/native-task-sessions-${PROJECT_VERSION}-acceptance)
+  --output "${CMAKE_CURRENT_BINARY_DIR}/native task sessions, ${PROJECT_VERSION}-acceptance")
 set_tests_properties(native_task_sessions PROPERTIES TIMEOUT 1200)
 add_test(NAME reference_http_context COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_http.py $<TARGET_FILE:nex_references030_probe>

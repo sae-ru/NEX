@@ -74,12 +74,14 @@ for profile in ('debug', 'release'):
         archive = archives[0]
         shared = folder/('session-'+component+('.dylib' if platform.system() == 'Darwin' else '.dll' if os.name == 'nt' else '.so'))
         if platform.system() == 'Darwin':
-            flags = ['-dynamiclib', '-undefined', 'dynamic_lookup', '-Wl,-force_load,'+str(archive)]
+            flags = ['-dynamiclib', '-undefined', 'dynamic_lookup',
+                     '-Xlinker', '-force_load', '-Xlinker', str(archive)]
             if component == 'mid':
                 flags += [images['core']]
         elif os.name == 'nt':
             flags = ['-shared', '-Wl,--whole-archive', archive, '-Wl,--no-whole-archive',
-                     host.parent/('lib'+host.stem+'.dll.a'), '-Wl,--out-implib,'+str(shared)+'.a']
+                     host.parent/('lib'+host.stem+'.dll.a'),
+                     '-Xlinker', '--out-implib', '-Xlinker', str(shared)+'.a']
             if component == 'mid':
                 flags += [str(images['core'])+'.a']
         else:

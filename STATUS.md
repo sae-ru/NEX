@@ -1,3 +1,25 @@
+# Delivery paths and five-stand regression — development0.280.1
+
+The [full source baseline](docs/evidence/sdk-source-and-relocation-first-0.280.1-2026-11-17.json)
+passes388 groups without failures/skips. The first portable SDK attempt passed41
+moved phases before a native-session test split an archive filename containing
+a comma through `-Wl`. Separate `-Xlinker` arguments preserve the complete path.
+The original archive and bundled compiler link successfully with that correction;
+core17 plus both native library/session groups pass with comma/space output paths.
+Compiler/runtime bytes, language versions and ABIs are unchanged.
+
+[Five-stand evidence](docs/evidence/stands-current-0.280.1-2026-11-17.json)
+records current Astra/Fedora/CIX core17 and native applications; CIX12 GPU/8 NPU;
+Windows17 unique core groups and35 CUDA cases; RK3588 ARM64-container core17,
+49 GPU calls and30 RKNN calls. Raw CUDA traces and NPU placement were inspected.
+Windows test fixes cover UTF8 decoding, the configured CMake generator and a
+DLL function-pointer conversion. RK uses its existing drivers through explicit
+container device mounts; it does not qualify a native Jammy SDK.
+
+Current SDK publication still needs complete corrected moved/archive/restored
+acceptance. The failed attempt is retained; no0.280.1 archive was published.
+SDK0.246.1 and the original PLAN keep their separate scopes.
+
 # Native owner-thread control outcomes — development0.280.1
 
 The0.280 source SDK attempt exposed a deadline race in the native host-session
@@ -13,9 +35,10 @@ requests;24 core/affected groups pass, including the previously failing SDK
 sub-workflow. The unchanged capability manifest matches72 shared fields.
 No syntax, source version, graph migration or runtime ABI changes.
 
-The failed0.280 full attempt continues to collect its remaining results.
-Complete current source/portable SDK/platform delivery and the original PLAN
-remain open. Published SDK0.246.1 retains its own immutable qualification.
+The failed0.280 attempt was interrupted after103 passing groups and the recorded
+host-session failure. The later0.280.1 full source and delivery results are
+recorded above. The original PLAN and portable platform delivery remain open.
+Published SDK0.246.1 retains its own immutable qualification.
 
 # Owner-thread SQLite and Workboard — development0.280.0
 
