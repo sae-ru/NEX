@@ -47,6 +47,16 @@ int main(){std::filesystem::path root;try{
    else wrong[field]="0.29";
    rejected([&]{(void)parseNativeTaskProvider(llvm::json::Value(std::move(wrong)));},"E_TASK_PROVIDER");
  }
+ managed.debugging=NativeTaskDebugInfo{"task-debug-catalog.json",std::string(64,'b'),"task-debug-sources.json",std::string(64,'c'),
+   {{"leaf","nex_task_debug_registry_leaf_v1",std::string(64,'d'),1}}};
+ auto debugOwner=nativeTaskProviderJSON(managed);
+ require(debugOwner.getString("schema")=="nex.native-task-provider/18","reference debugger provider schema differs");
+ auto debugParsed=parseNativeTaskProvider(llvm::json::Value(llvm::json::Object(debugOwner)));
+ require(debugParsed.managedReferences&&bool(debugParsed.debugging),"debug metadata lost the reference execution owner");
+ for(auto schema:{"nex.native-task-provider/16","nex.native-task-provider/17"}){
+   auto wrong=llvm::json::Object(debugOwner);wrong["schema"]=schema;
+   rejected([&]{(void)parseNativeTaskProvider(llvm::json::Value(std::move(wrong)));},"E_TASK_PROVIDER");
+ }
  // The pure helper ABI is synchronous, but a callable must never escape it
  // into a task cohort and fail later when task_spawn needs a descriptor.
  for(const auto &source:std::vector<std::string>{

@@ -1,3 +1,28 @@
+# Native reference provider debugging — development0.278.0
+
+Source-backed030 static/fixed-shared/mixed components retain ABI8 owner state
+through logical library stacks, copied cell views and source-aware pure watches.
+A child captures cells while its parent waits; the leaf changes state and throws
+that cell in a nominal error, then the middle component catches it. Step-out
+crosses the error/image boundary without changing identity. Debug record18/plan18
+are distinct from ordinary17/static6 and retained ABI7 records. See the
+[contract](docs/reference-provider-debugging.md) and
+[example](examples/reference-provider-debugging/README.md).
+
+[Focused acceptance](docs/evidence/reference-provider-debugging-0.278.0-2026-11-17.json)
+records24 passing core/affected groups and an independent139-check retained
+metadata probe. Actual LLDB runs all three linkage modes; NEX-DAP reads cells,
+steps to the caller and rejects stale variables through mixed images. Native
+capture/package/replay debug successfully after removing original source/cache
+folders. The same three new scenarios pass from a moved normal installation.
+Pure source-helper watches use the owning component's checked source.
+
+[Hosted0.277 core](docs/evidence/core-ci-0.277.0-2026-11-17.json) passed Linux/macOS
+at its own exact commit. Reference profiling, HTTP logical debugging, cell watch
+graph reconstruction, parallel state, persistent native UI and complete current
+SDK/platform delivery remain open. Portable SDK0.246.1 is unchanged; the normal
+relocated installation retains its build-host dependencies.
+
 # Source-only reference task debugging — development0.277.0
 
 Ordinary030 native source task applications select logical LLDB/NEX-DAP debugging

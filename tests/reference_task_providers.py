@@ -76,6 +76,9 @@ for mode in ['static', 'shared', 'mixed']:
         assert all(c['task_linkage']['execution_abi'] == 8 for c in plan['components'])
         assert all(c['task_linkage']['schema'] == expected_schema for c in plan['components'])
         assert all(i['calling_mode'] == 'task-code/8' for c in plan['components'] for i in c['task_linkage']['imports'])
+        if profile == 'debug':
+            debug_plan = project(root, 'plan', profile, '--task-debug')
+            assert all(c['task_linkage']['schema'] == 'nex.project-task-linkage/18' and c['task_linkage']['execution_abi'] == 8 for c in debug_plan['components'])
         observed = project(root, 'run', profile)
         assert observed['ok'] and not observed['graph_store_opened']
         actual = observed['observation']
@@ -138,7 +141,6 @@ assert replayed['ok'] and replayed['programs'] == captured['programs']
 rejections = []
 for name, mutate, code in [
     ('profile', lambda r: None, 'E_CELL_TARGET'),
-    ('debugger', lambda r: None, 'E_CELL_TARGET'),
     ('imported-callable', lambda r: (r/'app/main.nex').write_text(
         'module provider_app;import "../leaf/value.nex" as leaf;'
         'fn main()->unit!{task,state}{let value:cell<i64>=leaf::make(1);'
@@ -149,8 +151,7 @@ for name, mutate, code in [
         data = json.loads((root/'nex.build.json').read_text());data['configurations']['debug']['profile'] = 'profile'
         (root/'nex.build.json').write_text(json.dumps(data)+'\n')
     mutate(root)
-    extra = ['--task-debug'] if name == 'debugger' else []
-    denied = project(root, 'plan', 'debug', *extra, expected=1)
+    denied = project(root, 'plan', 'debug', expected=1)
     assert denied['code'] == code, denied
     rejections.append({'name': name, 'code': code})
 

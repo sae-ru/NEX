@@ -5964,7 +5964,12 @@
         "logical_debug_profile": false,
         "stable_public_ABI": false,
         "SDK_delivery_accepted": false,
-        "full_platform_acceptance": false
+        "full_platform_acceptance": false,
+        "debug_guide": "docs/reference-provider-debugging.md",
+        "debug_plan_schema": "nex.project-task-linkage/18",
+        "debug_record_schema": "nex.native-task-provider/18",
+        "logical_debugging": true,
+        "profiling": false
       },
       "native_host_sessions": {
         "API": "nexrt::NativeTaskSession",
@@ -6011,13 +6016,16 @@
         "ordinary_CLI": true,
         "parallel_transfer": false,
         "profiling": false,
-        "provider_images": false,
+        "provider_images": true,
         "read_only": true,
         "scalar_pure_watches": true,
         "selection": "nex debug --kind lldb|nex-dap; debug-profile source-only task entry",
         "source_language": "0.30",
         "standalone": true,
-        "test": "tests/task_debugging.py"
+        "test": "tests/task_debugging.py",
+        "provider_catalog_ABI": 2,
+        "provider_guide": "docs/reference-provider-debugging.md",
+        "provider_introduced_toolchain": "0.278.0"
       }
     }
   },

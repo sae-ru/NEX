@@ -1,10 +1,13 @@
 ---
 status: current
-applies_to: "toolchain 0.277.0; language 0.30; task ABI8"
+applies_to: "toolchain 0.278.0; language 0.30; task ABI8"
 owner: repository
 ---
 
 # Native reference task debugging
+
+Toolchain0.278 adds [source-backed provider images](reference-provider-debugging.md)
+with debug catalogABI2. The standalone contract below retains catalogABI1.
 
 The [0.277 receipt](evidence/reference-task-debugging-0.277.0-2026-11-17.json)
 records25 distinct passing core/affected groups and actual LLDB/NEX-DAP sessions
@@ -73,7 +76,7 @@ collection cannot execute through pure watch evaluation. Use inspection to read
 the stopped payload. Reconstructing live cell graphs for watch calls remains a
 separate contract, including alias identity, lazy paths and cycles.
 
-Reference provider-image debugging, HTTP logical debugging, profile builds,
+HTTP logical debugging, profile builds,
 persistent native host-session debug launches, parallel reference transfer and
 matching complete SDK/platform delivery remain open. Existing sequential raw
 native inspection and reference-free logical debugging keep their contracts.

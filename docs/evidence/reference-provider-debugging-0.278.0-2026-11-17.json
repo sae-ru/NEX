@@ -1,0 +1,2703 @@
+{
+  "schema": "nex.reference-provider-debugging-milestone/1",
+  "ok": true,
+  "toolchain": "0.278.0",
+  "base_commit": "01b7c47e57d1d95f8705c1b10bf5fb5a2ced22c0",
+  "platform": "macOS-27.2.1-arm64-arm-64bit-Mach-O",
+  "scope": "Checked030 ABI8 source-backed static/fixed-shared/mixed logical debugging and owned cell state; not profile/HTTP/foreign or a portable SDK.",
+  "compiler": {
+    "ok": true,
+    "shared_fields": [
+      "browser_workers",
+      "bytes_construction",
+      "cli_interface",
+      "compute",
+      "device",
+      "diagnostic_catalogue",
+      "dns_provider",
+      "effect_parameters",
+      "features_scope",
+      "foreign_trap_reporting",
+      "generic_features",
+      "gpu_codegen",
+      "http_client_provider",
+      "http_response_streams",
+      "http_storage_transactions",
+      "ieee_numeric_kernel",
+      "language_pack_contract",
+      "list_construction",
+      "llm_cost",
+      "llm_entry",
+      "managed_references",
+      "model",
+      "native_application_lifetime",
+      "native_core",
+      "native_debug_image_binding",
+      "native_debug_pages",
+      "native_debug_session",
+      "native_entry_abi",
+      "native_runtime_search",
+      "native_tool_arguments",
+      "opencl_codegen",
+      "patch_entities",
+      "project_capture_layout",
+      "project_languages",
+      "resource_executor",
+      "resource_regions",
+      "result_propagation",
+      "runtime_contracts",
+      "runtime_diagnostic_messages",
+      "scoped_discovery",
+      "source_concurrency",
+      "source_contracts",
+      "source_contracts_development",
+      "source_exception_prototype",
+      "source_exceptions",
+      "source_formatting",
+      "source_resources",
+      "standard_library",
+      "structured_tasks_runtime",
+      "task_debugging",
+      "task_execution_limits",
+      "task_external_completion",
+      "task_file_reads",
+      "task_file_streams",
+      "task_file_streams_host",
+      "task_file_streams_prototype",
+      "task_file_writes",
+      "task_file_writes_host",
+      "task_file_writes_prototype",
+      "task_foreign_prototype",
+      "task_network_transport",
+      "task_profile_collector",
+      "task_profiling",
+      "task_provider_debugging",
+      "task_provider_profiling",
+      "task_providers",
+      "task_shared_providers",
+      "task_value_retirement",
+      "tcp_provider",
+      "text_construction",
+      "wasm_features"
+    ],
+    "shared_field_count": 71,
+    "compared_JSON_values": 4729,
+    "errors": [],
+    "schema": "nex.language-pack-validation/1",
+    "compiler_sha256": "81838c34d157e20f16234ce757cc1703eb8d99902454ce7d8fe6b976c5ccbf57",
+    "manifest_sha256": "045fd4906959dc0d08e2d1d7111c77dc0824e90f1324d92d5d487e520693a179",
+    "language": "0.28",
+    "toolchain": "0.278.0",
+    "compiler_build": "f70934b0c6e7565f178fe9916f168b86c3a357bb6afca894bdf26a9d98178dbb",
+    "descriptor_hash": "556d5c812daab459526d2cd7bdbae1b376359e0f3f5f4463aca17e4c8cc9f00b"
+  },
+  "source_files_sha256": {
+    "VERSION": "c61239ae108de301ceef439af57c04436aa9682fbc59f73b5b7cbb83ffa685fa",
+    "src/backend.cpp": "634e7c2b89c0b275e93cac0c2182742501851ce72ad525bfc09aea4b20a14c14",
+    "src/project_build.cpp": "387d7fe19295989cfcf30cbc1ba9090f45f6b46d69b66921cb3e0a583ebcdb31",
+    "src/project_capture.cpp": "923dd34d805fbcb3f88a22aa98bcc8b42d468755d3d8556af3be897d594fe337",
+    "src/managed_references.cpp": "4055bcef5b42ad0c2d99905d9b1c9e5ce8ea7d6eb28d8ded136b8b9aff45f003",
+    "debug/lldb_nex.py": "dfa60813b6a3f9ed12a820b3db9db3a0efe2f3e6968d5cba08c280ef08cb0ab7",
+    "tests/task_static_provider_boundary.cpp": "2782f51db0ea1f0b212731aaa00d9bb2b89209fe82fa5341603adae334c273d6",
+    "tests/reference_task_providers.py": "40d354a5f79bf8d0c68ce97a07c4e4edd3c672aa3a69acf8a25bf28ca8b292b1",
+    "tests/task_provider_debugging.py": "ab3fba18e4e9c41eb1843366e3b485b490fffbcc49b4712c8c29e4c5d3a3b5a0",
+    "llm/language-pack.json": "045fd4906959dc0d08e2d1d7111c77dc0824e90f1324d92d5d487e520693a179",
+    "llm/native-reference-task-provider.schema.json": "3bd5191bd1a0789ef9ae9386353d5b3cea2ac20617498c231918eb800712f642",
+    "llm/project-reference-task-linkage.schema.json": "b614d01ddaad2c8d73697371943aceca0ac3b036b9b9f0b342579ab93f64a914"
+  },
+  "example_files_sha256": {
+    "README.md": "da93dd0dd547261319d0ec847af7ccd8979c45b5f12cf6a06e9d5e11babcec09",
+    "nex.build.json": "24047cb30f03f41169d9732ab323b1816fbc3b93ef286a6e55d46f7300fa9760",
+    "nex.json": "4480a42a3fcc15093bafd78ff2148b4cb4a0b696d863e442658abe33115cd2b9",
+    "leaf/value.nex": "4e1fec513c5e145e4af70cf327aeef7df6ff0aec82a3956b6e76a4496616797f",
+    "app/main.nex": "da1646bb25f6c5dcf37d0d50d98644ea1d52a7d26388e255c1bb324fda4cc88b",
+    "mid/value.nex": "dde03d2e2c7c71ce4f1f53c7a0aa3187396adc2fc1aca65ca1e24d58f86e9e7e",
+    "pure/value.nex": "0c09b501d7b16fe0e03bd1f4f937a7ba0a680029a5ea7b528dfc3f3d93fac7d7"
+  },
+  "build": {
+    "command": "cmake --build build -j 4",
+    "exit_code": 0,
+    "stdout_sha256": "e3c92c0fabd65c4ecb48d8bf947fabd014f00dece1742472d0a188ccb9412998",
+    "stderr_sha256": "0a9b492579089371f2c3bb9a9680df233e7c75e7005e596d46ac861482fd3524"
+  },
+  "core": {
+    "schema": "nex.ctest-verification/1",
+    "ok": true,
+    "ctest_exit_code": 0,
+    "selected_groups": [
+      "bytes_runtime_native",
+      "ctest_report_validation",
+      "diagnostic_catalogue",
+      "discovery",
+      "float_runtime_native",
+      "frontend_diagnostics_native",
+      "language_pack_contract",
+      "llm_cost_ledger",
+      "llm_local_collector",
+      "managed_reference_native_context",
+      "managed_references_frontend_reference",
+      "reference_tasks_development",
+      "task_frontend_native",
+      "test_tiers",
+      "typed_source_frontend_reference",
+      "value_owner_runtime",
+      "value_retirement_runtime"
+    ],
+    "required_fixture_groups": [],
+    "expected_groups": [
+      "bytes_runtime_native",
+      "ctest_report_validation",
+      "diagnostic_catalogue",
+      "discovery",
+      "float_runtime_native",
+      "frontend_diagnostics_native",
+      "language_pack_contract",
+      "llm_cost_ledger",
+      "llm_local_collector",
+      "managed_reference_native_context",
+      "managed_references_frontend_reference",
+      "reference_tasks_development",
+      "task_frontend_native",
+      "test_tiers",
+      "typed_source_frontend_reference",
+      "value_owner_runtime",
+      "value_retirement_runtime"
+    ],
+    "observed_groups": [
+      "llm_cost_ledger",
+      "llm_local_collector",
+      "ctest_report_validation",
+      "discovery",
+      "language_pack_contract",
+      "task_frontend_native",
+      "reference_tasks_development",
+      "frontend_diagnostics_native",
+      "value_owner_runtime",
+      "value_retirement_runtime",
+      "managed_references_frontend_reference",
+      "managed_reference_native_context",
+      "bytes_runtime_native",
+      "float_runtime_native",
+      "typed_source_frontend_reference",
+      "test_tiers",
+      "diagnostic_catalogue"
+    ],
+    "results": {
+      "passed": [
+        "llm_cost_ledger",
+        "llm_local_collector",
+        "ctest_report_validation",
+        "discovery",
+        "language_pack_contract",
+        "task_frontend_native",
+        "reference_tasks_development",
+        "frontend_diagnostics_native",
+        "value_owner_runtime",
+        "value_retirement_runtime",
+        "managed_references_frontend_reference",
+        "managed_reference_native_context",
+        "bytes_runtime_native",
+        "float_runtime_native",
+        "typed_source_frontend_reference",
+        "test_tiers",
+        "diagnostic_catalogue"
+      ],
+      "failed": [],
+      "skipped": []
+    },
+    "registry_sha256": "d5ffe06193e131ed5f77285c5601a881e4064a4ebcb251475ab0e706cda9fc7b",
+    "junit_sha256": "9232dc62da4d11d688edab1e3bcde8f447eb36a25c0dc15cb6b84bd1fd9b63f2"
+  },
+  "additional_ctest": {
+    "ctest_exit_code": 0,
+    "passed_groups": [
+      "task_static_provider_boundary_native",
+      "task_provider_debug_boundary_native",
+      "task_shared_provider_boundary_native",
+      "task_provider_debugging_native",
+      "reference_task_providers",
+      "task_debug_registry_native",
+      "docs_index"
+    ],
+    "junit_sha256": "2fd0dc5061d6b8e1afa4f613eb99c2e9d6a2512c776bf962b3dbc27ba9df8171",
+    "log_sha256": "07a55f6be04d51a50ce291f05ff9d397479f1e1d4de9238e240e0b1911606d84"
+  },
+  "unique_passed_group_count": 24,
+  "unique_passed_groups": [
+    "bytes_runtime_native",
+    "ctest_report_validation",
+    "diagnostic_catalogue",
+    "discovery",
+    "docs_index",
+    "float_runtime_native",
+    "frontend_diagnostics_native",
+    "language_pack_contract",
+    "llm_cost_ledger",
+    "llm_local_collector",
+    "managed_reference_native_context",
+    "managed_references_frontend_reference",
+    "reference_task_providers",
+    "reference_tasks_development",
+    "task_debug_registry_native",
+    "task_frontend_native",
+    "task_provider_debug_boundary_native",
+    "task_provider_debugging_native",
+    "task_shared_provider_boundary_native",
+    "task_static_provider_boundary_native",
+    "test_tiers",
+    "typed_source_frontend_reference",
+    "value_owner_runtime",
+    "value_retirement_runtime"
+  ],
+  "retained_legacy_metadata_probe": {
+    "command": "build/nex_typed_provider_records_probe",
+    "exit_code": 0,
+    "checks": 139,
+    "stdout_sha256": "30b652326feaa0e43e9649fd12d258347acd66bdf7096605955caa02ea8a78be",
+    "binary_sha256": "fca3122d01e35ef268fb08fa562ec47e42922fcfa279f23113e2ebb94d4054ba"
+  },
+  "live_qualification": [
+    {
+      "kind": "full-live-v1",
+      "linkage_modes": [
+        {
+          "mode": "static",
+          "manifest_sha256": "17d4f7b7fa81ab60b01d03e8521a7ccf9a47237e0c92345e4687517261edab92",
+          "images": [
+            {
+              "component": "app",
+              "hash": "e78200ca3549d4244e8ef962de25b85176e4a588644a360f575dc96bcca1099f",
+              "key": "872c1aa9bbf7d92f4e55c984b9f892ab56f7884fef6c48a0ef8dadef3e834429",
+              "kind": "application",
+              "path": "/Users/sae/projects/NEX/build/reference-provider-debug-v1/full-live-v1/test_reference_provider_static_shared_mixed_cells_and_logical_steps/static/.nex/build/872c1aa9bbf7d92f4e55c984b9f892ab56f7884fef6c48a0ef8dadef3e834429/app",
+              "sha256": "91f02f2224dcc13799a399e26adae61099f6aef5bbd67eb44dc5b41858136584",
+              "uuid": "439283c93f3f3d789b2443222dead136"
+            }
+          ],
+          "runtime_image": {
+            "component": "app",
+            "hash": "e78200ca3549d4244e8ef962de25b85176e4a588644a360f575dc96bcca1099f",
+            "key": "872c1aa9bbf7d92f4e55c984b9f892ab56f7884fef6c48a0ef8dadef3e834429",
+            "kind": "application",
+            "path": "/Users/sae/projects/NEX/build/reference-provider-debug-v1/full-live-v1/test_reference_provider_static_shared_mixed_cells_and_logical_steps/static/.nex/build/872c1aa9bbf7d92f4e55c984b9f892ab56f7884fef6c48a0ef8dadef3e834429/app",
+            "sha256": "91f02f2224dcc13799a399e26adae61099f6aef5bbd67eb44dc5b41858136584",
+            "uuid": "439283c93f3f3d789b2443222dead136"
+          },
+          "providers": [
+            {
+              "record_sha256": "d67107e6c33e4ec171c20cdb056fe4d761086df4d4cb68b0c41b483274617c75",
+              "schema": "nex.native-task-provider/18",
+              "component": "pure",
+              "mode": "static",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "76fa38e6f2c1199d521ef3ba7955c0c241b7483b1890c13fd0034f2f8abfe5d2",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_pure_v1",
+                    "catalog_hash": "f0deebcd2f1561f687f4f70dbeea07ff2582d0bb56e89bee5d88cc6bc17c55e7",
+                    "code_count": 1,
+                    "component": "pure"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "3cdeb260a844d1f2f8d06fa5b45277620fc792ecea4298c1ab7ac5811357f443"
+              }
+            },
+            {
+              "record_sha256": "c69db0a29da0a63de3e2f5d68c28ce591cc0a106db0777dadad339b56474bef4",
+              "schema": "nex.native-task-provider/18",
+              "component": "leaf",
+              "mode": "static",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "ac6ab25595fcf261b0d3befd19a6d7fbb70287a3246f4c1d0e8324ae7b2f0c35",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_leaf_v1",
+                    "catalog_hash": "15a63df75214ea747d44938b61e0b6eb23d7bdbee7d758f42d80ed46daf91f2e",
+                    "code_count": 2,
+                    "component": "leaf"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "557ae30d1c40b246ccc4d90bf41ed2aa32cad01fafb8f6325dedc3db1b4af3fd"
+              }
+            },
+            {
+              "record_sha256": "e6d9479ee69cf6e17a99ac8f13a607e33a3e14c90e568d860a308f5140865dd0",
+              "schema": "nex.native-task-provider/18",
+              "component": "mid",
+              "mode": "static",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "2f084b2bf072654e0931e403016cbaf58b42cdb9fb4e8a0aa5c9f419d8e940b4",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_mid_v1",
+                    "catalog_hash": "d6a23d2a69821069aa816fd69ffa082bde4c5d606a3314ddaed2eb37a6307683",
+                    "code_count": 1,
+                    "component": "mid"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "704d40e1491d7b65edc121fd856ccde5ef610667cd1203f2cb29725614ae7066"
+              }
+            },
+            {
+              "record_sha256": "355550002e49ce114291b9cf0acda556ede3b903241d18c4a95e40aca4401e2f",
+              "schema": "nex.native-task-provider/18",
+              "component": "app",
+              "mode": "static",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "186f5e64d483aca71625d1772e1b88ed50bc46e16ac22945a1bfbfaa8d7db5c8",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_app_v1",
+                    "catalog_hash": "f2e0be595dbfa8795460b83c6d4bfcecc972c33718d52091624760f0bb550468",
+                    "code_count": 3,
+                    "component": "app"
+                  },
+                  {
+                    "accessor": "nex_task_debug_registry_leaf_v1",
+                    "catalog_hash": "14dd15c7f352cb246c11272abe35cb07b378fdd7a9efb5fafe0762eb08e8a737",
+                    "code_count": 2,
+                    "component": "leaf"
+                  },
+                  {
+                    "accessor": "nex_task_debug_registry_mid_v1",
+                    "catalog_hash": "3e4bc25ee5eecbcf7c7987156dd3f644192729eb6db37e3abb6cbf50337e014e",
+                    "code_count": 1,
+                    "component": "mid"
+                  },
+                  {
+                    "accessor": "nex_task_debug_registry_pure_v1",
+                    "catalog_hash": "8d079a72edbaaf2655d01d45eba62fad4c10594149b6442f3e1379709d57d34d",
+                    "code_count": 1,
+                    "component": "pure"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "b6d5df1a0052e0c60cbde2a32702bf4bef1329335c92b69ff7c960667a5fab3e"
+              }
+            }
+          ],
+          "inspections": [
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "87373",
+                "process_epoch": "1",
+                "stop_id": "63",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "6",
+                "publication": "18",
+                "visit": "8",
+                "point_id": 1
+              },
+              "binding": "state",
+              "value": {
+                "kind": "cell",
+                "identity": "4388604584",
+                "live": true,
+                "value": {
+                  "kind": "i64",
+                  "value": "41"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            },
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "87373",
+                "process_epoch": "1",
+                "stop_id": "63",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "6",
+                "publication": "18",
+                "visit": "8",
+                "point_id": 1
+              },
+              "binding": "text",
+              "value": {
+                "kind": "cell",
+                "identity": "4388604904",
+                "live": true,
+                "value": {
+                  "kind": "str",
+                  "value": "Я\u0000🧠"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            },
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "87373",
+                "process_epoch": "1",
+                "stop_id": "103",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "5",
+                "publication": "62",
+                "visit": "28",
+                "point_id": 7
+              },
+              "binding": "state",
+              "value": {
+                "kind": "cell",
+                "identity": "4388604584",
+                "live": true,
+                "value": {
+                  "kind": "i64",
+                  "value": "42"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            }
+          ],
+          "component_watch": {
+            "build_key": "872c1aa9bbf7d92f4e55c984b9f892ab56f7884fef6c48a0ef8dadef3e834429",
+            "display": "42",
+            "display_truncated": false,
+            "expression": "input+pure::offset()",
+            "frame_truncated": false,
+            "function": "ref_debug_leaf::work",
+            "language": "0.30",
+            "limits": {
+              "capture_path_depth": 56,
+              "cumulative_text_bytes": 8388608,
+              "frame_captures": 256,
+              "lazy_references": 10000,
+              "steps": 100000,
+              "text_range_scalars": 4096,
+              "text_scalar_observations": 100000,
+              "value_depth": 64,
+              "value_visits": 100000,
+              "wire_result_bytes": 1048576
+            },
+            "ok": true,
+            "read_bindings": [
+              "input"
+            ],
+            "read_paths": [
+              {
+                "binding": "input",
+                "kind": "value",
+                "path": []
+              }
+            ],
+            "revision": "7a69832623d42a7fa197bbb57f0c7da5bebd7daf6f8cdb20f0947016df38ab53",
+            "schema": "nex.task-expression/2",
+            "source_identity": {
+              "component": "leaf",
+              "contract": "3f48313966818021c491e17f4840b67e831d45c9ffef80656a76088ed648f2e3",
+              "language": "0.30",
+              "owner_image": "app",
+              "revision": "f575b793f68097c6a0fd9473c2bd14565c73caa7b99b080347541c94b30b3a2f",
+              "source_hash": "912f7edd127651284091194de5808fdc44abcaa74b30963b8aefe6da7f349e51",
+              "source_unit_hash": "0542334cad3104d9ab259d43ff19bbf2a797d83838918958151e1913d47b718c"
+            },
+            "steps": 5,
+            "stop": {
+              "frame_id": "6",
+              "point_id": 1,
+              "process_epoch": "1",
+              "process_id": "87373",
+              "publication": "18",
+              "stop_id": "63",
+              "task_generation": "1",
+              "task_id": "2",
+              "visit": "8"
+            },
+            "type": "i64",
+            "value": "42",
+            "wire_schema": {
+              "enums": {},
+              "records": {},
+              "root": "i64",
+              "schema": "nex.wire/2"
+            }
+          },
+          "pure_helper_owner": "app",
+          "stdout_sha256": "1d45922e65f0c57a13f81fd47a4a3fcacb62e547bf17c4bfc7510da49ef20816",
+          "commands_sha256": "ce58866e9872da4eed5b9c806c20a49bbe863f3b10913ec4084529689a9f4d20"
+        },
+        {
+          "mode": "shared",
+          "manifest_sha256": "feedba7a1587a7763ab90f6d1b0b4900674ad58f6ef70c57d9db3bbd2e6c24e3",
+          "images": [
+            {
+              "component": "app",
+              "hash": "7650a738fd69dc2fe3ee2a9755efd65df283aa946b0d6dbc4a93eab2ec2b3aba",
+              "key": "21c000658942bde090db17a01b75dbb7e0e2231a739d9bc7ba06dda815122f0b",
+              "kind": "application",
+              "path": "/Users/sae/projects/NEX/build/reference-provider-debug-v1/full-live-v1/test_reference_provider_static_shared_mixed_cells_and_logical_steps/shared/.nex/build/21c000658942bde090db17a01b75dbb7e0e2231a739d9bc7ba06dda815122f0b/app",
+              "sha256": "aed8ddf1c10ed9b83c8e8a525ed249bc1ff4920e0a7f0d18a45734143fcebe36",
+              "uuid": "788b36f3270b3fbfa02b1ce5dbd79cfb"
+            },
+            {
+              "component": "leaf",
+              "hash": "1ffec63615a6ed74bdf2b379c2e13aefa4a05857f9eb81c2e75cb596235ca9c8",
+              "key": "b68582678cd3a686d539fe1664fb31ea4572d6c64d94216b46ded73f04577958",
+              "kind": "shared-image",
+              "path": "/Users/sae/projects/NEX/build/reference-provider-debug-v1/full-live-v1/test_reference_provider_static_shared_mixed_cells_and_logical_steps/shared/.nex/build/21c000658942bde090db17a01b75dbb7e0e2231a739d9bc7ba06dda815122f0b/images/libnex_leaf_b68582678cd3a686d539fe1664fb31ea4572d6c64d94216b46ded73f04577958.dylib",
+              "sha256": "c8dc3e814ee457edf7ace6036fe1e8cfef99fba98654ccdbdd5cc56727724aae",
+              "uuid": "619a30c239513cb29625215d6352d860"
+            },
+            {
+              "component": "mid",
+              "hash": "36d3528f79f0805a1da17fcbb3206c787059de6f80007072832dcdee29ba49c3",
+              "key": "cf7a12d79d0e0e63b200c920f6ce5ec7068c84dff21e0d8ddfa4080ce76b1b30",
+              "kind": "shared-image",
+              "path": "/Users/sae/projects/NEX/build/reference-provider-debug-v1/full-live-v1/test_reference_provider_static_shared_mixed_cells_and_logical_steps/shared/.nex/build/21c000658942bde090db17a01b75dbb7e0e2231a739d9bc7ba06dda815122f0b/images/libnex_mid_cf7a12d79d0e0e63b200c920f6ce5ec7068c84dff21e0d8ddfa4080ce76b1b30.dylib",
+              "sha256": "577be9547dcf007135a5a4414ceef5938da82ddeb06e8d962a394e4e48b54547",
+              "uuid": "0fc2d7c72bd832448f8a2a9bbeeca0fd"
+            },
+            {
+              "component": "pure",
+              "hash": "fb05721cb7fdd5633f41d0f31118010796ca443f44747744e4b872938b2bbf2b",
+              "key": "c5c989f72caf2aa386b82e444f1617b713c29336151a0be21675087031fca071",
+              "kind": "shared-image",
+              "path": "/Users/sae/projects/NEX/build/reference-provider-debug-v1/full-live-v1/test_reference_provider_static_shared_mixed_cells_and_logical_steps/shared/.nex/build/21c000658942bde090db17a01b75dbb7e0e2231a739d9bc7ba06dda815122f0b/images/libnex_pure_c5c989f72caf2aa386b82e444f1617b713c29336151a0be21675087031fca071.dylib",
+              "sha256": "300b1a6d8a86caef14130f34dfd64ad77e53cb9971cf1379efdc76b8bf23cfa8",
+              "uuid": "0608dce9dd703e28a45e58b52613f626"
+            }
+          ],
+          "runtime_image": {
+            "component": null,
+            "hash": "7ffe47ee6b97be38c2ab05fe372011d37839030cef660c7b5d776583a206c0d8",
+            "key": "2cddec307ab62d7920bf0b267fb75b9ec784f9ae305f8d16e89a2ec51bbde9dc",
+            "kind": "runtime",
+            "path": "/Users/sae/projects/NEX/build/reference-provider-debug-v1/full-live-v1/test_reference_provider_static_shared_mixed_cells_and_logical_steps/shared/.nex/build/21c000658942bde090db17a01b75dbb7e0e2231a739d9bc7ba06dda815122f0b/images/libnex_runtime_2cddec307ab62d7920bf0b267fb75b9ec784f9ae305f8d16e89a2ec51bbde9dc.dylib",
+            "sha256": "aa7e405610c54abc1c031f59e27e288cf5ae64ec74dd3d3de968511b2f1461d9",
+            "uuid": "6c584a46c7ab361ebc50d6d1f5233b22"
+          },
+          "providers": [
+            {
+              "record_sha256": "44c5fa9ba0acfc8676ba85937ae6cee3610a08320e84a22d90d05d157fe24f47",
+              "schema": "nex.native-task-provider/18",
+              "component": "pure",
+              "mode": "shared-fixed",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "3dcf170889447dd1dd46bd05020f729c312cc6dbd3d0ee7e9ff210f3ecf0f5f3",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_pure_v1",
+                    "catalog_hash": "94046f7c4cbae5bcb8370b92f03751d53995bfd2299790a78de3812e27586174",
+                    "code_count": 1,
+                    "component": "pure"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "1273eda4a74ab86be6da222bc9d23bdc6ffe3037160f0d8a95982a1d37a90642"
+              }
+            },
+            {
+              "record_sha256": "4d6121eb229e662a36a2f9521052f32606bfa87be5d768f4f7f18fe2647fe3a6",
+              "schema": "nex.native-task-provider/18",
+              "component": "leaf",
+              "mode": "shared-fixed",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "5b4a1cb0ce8a5ff1d4affd3c7042dc84704ed6ef0d13a70988b96f314bb22348",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_leaf_v1",
+                    "catalog_hash": "d4a5ba4d0819b8e987d9ae6c411a65ac127e141ea56adeb8d713192964328679",
+                    "code_count": 2,
+                    "component": "leaf"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "09f194eea2c10808dfb056b5f1bcfa222bd3299af339f7450469569ece682d60"
+              }
+            },
+            {
+              "record_sha256": "0de6804af0c9cd154d3b428f30d2c5942f4a9649725503fe1854369d2d49d662",
+              "schema": "nex.native-task-provider/18",
+              "component": "mid",
+              "mode": "shared-fixed",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "6301a991ff75d461e76f1d584d6e904e0e27661ae44e0c4f4554bc7f7af23aa3",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_mid_v1",
+                    "catalog_hash": "e29960eeef0ee8369726fbf148a803ed30438d67cbff6117c78512c83f2d39fc",
+                    "code_count": 1,
+                    "component": "mid"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "173d046ca3b9514be2e80ec28f9164cf44fc1bd57201d10530e9b3907b70e634"
+              }
+            },
+            {
+              "record_sha256": "126d3dfe9a26216a2dec65617e8024fc4a97197fa143ccd8cd52c9a91e1c07d2",
+              "schema": "nex.native-task-provider/18",
+              "component": "app",
+              "mode": "shared-fixed",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "739e1a2acb6f5cdb7d5435514d8964561b3fc751590c34e340ac0dcdd4cca507",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_app_v1",
+                    "catalog_hash": "fc08a0b4d55dedeae37ca28925b9f30056e7607249345250070a9d4f0de77221",
+                    "code_count": 3,
+                    "component": "app"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "570367155b2ca9dedcaa80003f86e4fcc4d7e0c3737176f15757010b82c17ad6"
+              }
+            }
+          ],
+          "inspections": [
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "87771",
+                "process_epoch": "1",
+                "stop_id": "63",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "6",
+                "publication": "18",
+                "visit": "8",
+                "point_id": 1
+              },
+              "binding": "state",
+              "value": {
+                "kind": "cell",
+                "identity": "4380461416",
+                "live": true,
+                "value": {
+                  "kind": "i64",
+                  "value": "41"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            },
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "87771",
+                "process_epoch": "1",
+                "stop_id": "63",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "6",
+                "publication": "18",
+                "visit": "8",
+                "point_id": 1
+              },
+              "binding": "text",
+              "value": {
+                "kind": "cell",
+                "identity": "4380461736",
+                "live": true,
+                "value": {
+                  "kind": "str",
+                  "value": "Я\u0000🧠"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            },
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "87771",
+                "process_epoch": "1",
+                "stop_id": "103",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "5",
+                "publication": "62",
+                "visit": "28",
+                "point_id": 7
+              },
+              "binding": "state",
+              "value": {
+                "kind": "cell",
+                "identity": "4380461416",
+                "live": true,
+                "value": {
+                  "kind": "i64",
+                  "value": "42"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            }
+          ],
+          "component_watch": {
+            "build_key": "21c000658942bde090db17a01b75dbb7e0e2231a739d9bc7ba06dda815122f0b",
+            "display": "42",
+            "display_truncated": false,
+            "expression": "input+pure::offset()",
+            "frame_truncated": false,
+            "function": "ref_debug_leaf::work",
+            "language": "0.30",
+            "limits": {
+              "capture_path_depth": 56,
+              "cumulative_text_bytes": 8388608,
+              "frame_captures": 256,
+              "lazy_references": 10000,
+              "steps": 100000,
+              "text_range_scalars": 4096,
+              "text_scalar_observations": 100000,
+              "value_depth": 64,
+              "value_visits": 100000,
+              "wire_result_bytes": 1048576
+            },
+            "ok": true,
+            "read_bindings": [
+              "input"
+            ],
+            "read_paths": [
+              {
+                "binding": "input",
+                "kind": "value",
+                "path": []
+              }
+            ],
+            "revision": "7a69832623d42a7fa197bbb57f0c7da5bebd7daf6f8cdb20f0947016df38ab53",
+            "schema": "nex.task-expression/2",
+            "source_identity": {
+              "component": "leaf",
+              "contract": "3f48313966818021c491e17f4840b67e831d45c9ffef80656a76088ed648f2e3",
+              "language": "0.30",
+              "owner_image": "leaf",
+              "revision": "f575b793f68097c6a0fd9473c2bd14565c73caa7b99b080347541c94b30b3a2f",
+              "source_hash": "912f7edd127651284091194de5808fdc44abcaa74b30963b8aefe6da7f349e51",
+              "source_unit_hash": "0542334cad3104d9ab259d43ff19bbf2a797d83838918958151e1913d47b718c"
+            },
+            "steps": 5,
+            "stop": {
+              "frame_id": "6",
+              "point_id": 1,
+              "process_epoch": "1",
+              "process_id": "87771",
+              "publication": "18",
+              "stop_id": "63",
+              "task_generation": "1",
+              "task_id": "2",
+              "visit": "8"
+            },
+            "type": "i64",
+            "value": "42",
+            "wire_schema": {
+              "enums": {},
+              "records": {},
+              "root": "i64",
+              "schema": "nex.wire/2"
+            }
+          },
+          "pure_helper_owner": "pure",
+          "stdout_sha256": "f888680d01dfeb811033ec3ac49782474440228df3b420a6c6378a40650c1067",
+          "commands_sha256": "7b4f58cf8209252eecf079dcaf284aa058c38183a9905f7cc1dbb4ff2b9d7996"
+        },
+        {
+          "mode": "mixed",
+          "manifest_sha256": "5a4859d94ab6597863c3f2ee870c1f878e1393bb82065f75e8a7dd6a038f7f0c",
+          "images": [
+            {
+              "component": "app",
+              "hash": "68dfb45263d786e4a899fe421307b6d6089810dbc384ea7bc9caeb5d7e8ee59c",
+              "key": "cb467979f7b56dc9af33e93e9d352ce6edd271d36eb601dedbe851c1f1252751",
+              "kind": "application",
+              "path": "/Users/sae/projects/NEX/build/reference-provider-debug-v1/full-live-v1/test_reference_provider_static_shared_mixed_cells_and_logical_steps/mixed/.nex/build/cb467979f7b56dc9af33e93e9d352ce6edd271d36eb601dedbe851c1f1252751/app",
+              "sha256": "22225582d5f4d2a797978b3dcedbb8d36df1c5739f8e9156d6f97db7a8c328dd",
+              "uuid": "59a190a58de93f69a5280964350c44c3"
+            },
+            {
+              "component": "leaf",
+              "hash": "a1b82910d853b1277c578fe2ae87b21d82aa77d5b5e653b651382fa91e8d02cb",
+              "key": "7684e8c80e5f702ba6f8d305c883f5aa645aaa0ce27dbdebf34e1b4f3236b7a4",
+              "kind": "shared-image",
+              "path": "/Users/sae/projects/NEX/build/reference-provider-debug-v1/full-live-v1/test_reference_provider_static_shared_mixed_cells_and_logical_steps/mixed/.nex/build/cb467979f7b56dc9af33e93e9d352ce6edd271d36eb601dedbe851c1f1252751/images/libnex_leaf_7684e8c80e5f702ba6f8d305c883f5aa645aaa0ce27dbdebf34e1b4f3236b7a4.dylib",
+              "sha256": "11a954ab3e48dbd9ab6f78b982142d0c45157bfb6212be82b7506c9f567356fc",
+              "uuid": "3b77cf18859237b4a6c5ffc85397e700"
+            }
+          ],
+          "runtime_image": {
+            "component": null,
+            "hash": "0526f197a56c464179a0446899f87da7e5cae9e8944f31593b8d2d7e1c8640c2",
+            "key": "b3c81ef5d09f44e115107cd9befab85317b54eda64dc43582875ca649ebbe685",
+            "kind": "runtime",
+            "path": "/Users/sae/projects/NEX/build/reference-provider-debug-v1/full-live-v1/test_reference_provider_static_shared_mixed_cells_and_logical_steps/mixed/.nex/build/cb467979f7b56dc9af33e93e9d352ce6edd271d36eb601dedbe851c1f1252751/images/libnex_runtime_b3c81ef5d09f44e115107cd9befab85317b54eda64dc43582875ca649ebbe685.dylib",
+            "sha256": "ba3a0ee6c20f645d297932c05618e7477b8054c57f9107c1d34cdd8c9b0336fc",
+            "uuid": "4374d33f5f23331caa1e3e7bb3cf1732"
+          },
+          "providers": [
+            {
+              "record_sha256": "e0260c3c688cf433121fb19fa86a4e1c4f98470ee73418ac263d734271789906",
+              "schema": "nex.native-task-provider/18",
+              "component": "pure",
+              "mode": "shared-fixed",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "7775dd6caf92284ba30f4e67f99798aebff8707ca7665553c55b37a0fc006097",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_pure_v1",
+                    "catalog_hash": "230929f2ca78a5f0f747ba68fba09e66224ac0b6699f2095e18e5120a069ec43",
+                    "code_count": 1,
+                    "component": "pure"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "205b48cb90282f89b3742878eabe0f7ef2f173896f3061c22ebc50605e6baa0a"
+              }
+            },
+            {
+              "record_sha256": "4385d043a5dfe673949987747fd6230d357cfa9845448ada5fcdf97e1cd9ba86",
+              "schema": "nex.native-task-provider/18",
+              "component": "leaf",
+              "mode": "shared-fixed",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "43d40267de7314b47e7a826cbbf34fc7f7ebe97d0d79c4d11b7ba45a8b471f28",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_leaf_v1",
+                    "catalog_hash": "218729335dd4ceb12f59e112fd62497576f12768050d2e557e3caa1704a6133a",
+                    "code_count": 2,
+                    "component": "leaf"
+                  },
+                  {
+                    "accessor": "nex_task_debug_registry_pure_v1",
+                    "catalog_hash": "17ff007b82c655dcf64c3d40b92e96d23ebb8d07f835a6ddf7d34dd13d0f9444",
+                    "code_count": 1,
+                    "component": "pure"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "46d63ccd6f2232c6de70866fcf888f836538d7d73971583a7f6784379ac2454e"
+              }
+            },
+            {
+              "record_sha256": "b7498e34581d27d345655e6e8a97f85cce832f89c323ecdc14b4639f02a94003",
+              "schema": "nex.native-task-provider/18",
+              "component": "mid",
+              "mode": "shared-fixed",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "2a822312fe165a260088794f5b623f8cde1b3756f3f1f3ecb6868fca4574127e",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_mid_v1",
+                    "catalog_hash": "4da19a8aa260af8f340084c70084e43dc78a08fdb591ae7165c635cd5ed116e9",
+                    "code_count": 1,
+                    "component": "mid"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "31b47c8b5c004a3ffbf564a1ed2c89840aa4914411d182aa48a86f9abd0af4a1"
+              }
+            },
+            {
+              "record_sha256": "535ad3f38a7f11788f5dc3bf22819082bc68eaae771a8ac1c6bdcb3b09fc0cc5",
+              "schema": "nex.native-task-provider/18",
+              "component": "app",
+              "mode": "shared-fixed",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "f27ccb116a32c3038465548325924442a997c16a476aaa70dd0b881f6737d957",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_app_v1",
+                    "catalog_hash": "fa1c6401645532d0d43171c88b78a8d33735a75abfd5bb50c07a2923e02bf650",
+                    "code_count": 3,
+                    "component": "app"
+                  },
+                  {
+                    "accessor": "nex_task_debug_registry_mid_v1",
+                    "catalog_hash": "38dd5fa72df2e04d7baa7a0a6f13db6e627eae518bc1f801f1b6bb38a100b038",
+                    "code_count": 1,
+                    "component": "mid"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "884da1518aba3a04733d7938d147991fe341457771b2d99a597bd82ce34b09f0"
+              }
+            }
+          ],
+          "inspections": [
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "88140",
+                "process_epoch": "1",
+                "stop_id": "63",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "6",
+                "publication": "18",
+                "visit": "8",
+                "point_id": 1
+              },
+              "binding": "state",
+              "value": {
+                "kind": "cell",
+                "identity": "4318669160",
+                "live": true,
+                "value": {
+                  "kind": "i64",
+                  "value": "41"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            },
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "88140",
+                "process_epoch": "1",
+                "stop_id": "63",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "6",
+                "publication": "18",
+                "visit": "8",
+                "point_id": 1
+              },
+              "binding": "text",
+              "value": {
+                "kind": "cell",
+                "identity": "4318669480",
+                "live": true,
+                "value": {
+                  "kind": "str",
+                  "value": "Я\u0000🧠"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            },
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "88140",
+                "process_epoch": "1",
+                "stop_id": "103",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "5",
+                "publication": "62",
+                "visit": "28",
+                "point_id": 7
+              },
+              "binding": "state",
+              "value": {
+                "kind": "cell",
+                "identity": "4318669160",
+                "live": true,
+                "value": {
+                  "kind": "i64",
+                  "value": "42"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            }
+          ],
+          "component_watch": {
+            "build_key": "cb467979f7b56dc9af33e93e9d352ce6edd271d36eb601dedbe851c1f1252751",
+            "display": "42",
+            "display_truncated": false,
+            "expression": "input+pure::offset()",
+            "frame_truncated": false,
+            "function": "ref_debug_leaf::work",
+            "language": "0.30",
+            "limits": {
+              "capture_path_depth": 56,
+              "cumulative_text_bytes": 8388608,
+              "frame_captures": 256,
+              "lazy_references": 10000,
+              "steps": 100000,
+              "text_range_scalars": 4096,
+              "text_scalar_observations": 100000,
+              "value_depth": 64,
+              "value_visits": 100000,
+              "wire_result_bytes": 1048576
+            },
+            "ok": true,
+            "read_bindings": [
+              "input"
+            ],
+            "read_paths": [
+              {
+                "binding": "input",
+                "kind": "value",
+                "path": []
+              }
+            ],
+            "revision": "7a69832623d42a7fa197bbb57f0c7da5bebd7daf6f8cdb20f0947016df38ab53",
+            "schema": "nex.task-expression/2",
+            "source_identity": {
+              "component": "leaf",
+              "contract": "3f48313966818021c491e17f4840b67e831d45c9ffef80656a76088ed648f2e3",
+              "language": "0.30",
+              "owner_image": "leaf",
+              "revision": "f575b793f68097c6a0fd9473c2bd14565c73caa7b99b080347541c94b30b3a2f",
+              "source_hash": "912f7edd127651284091194de5808fdc44abcaa74b30963b8aefe6da7f349e51",
+              "source_unit_hash": "0542334cad3104d9ab259d43ff19bbf2a797d83838918958151e1913d47b718c"
+            },
+            "steps": 5,
+            "stop": {
+              "frame_id": "6",
+              "point_id": 1,
+              "process_epoch": "1",
+              "process_id": "88140",
+              "publication": "18",
+              "stop_id": "63",
+              "task_generation": "1",
+              "task_id": "2",
+              "visit": "8"
+            },
+            "type": "i64",
+            "value": "42",
+            "wire_schema": {
+              "enums": {},
+              "records": {},
+              "root": "i64",
+              "schema": "nex.wire/2"
+            }
+          },
+          "pure_helper_owner": "leaf",
+          "stdout_sha256": "6254f67f40a2f3f518b35af52b13d2164b0f66167547778ac0547041b05b0c3e",
+          "commands_sha256": "39e053f4273951a2722b36e3e416c2ece95b2ac4a591ded264564122da86af88"
+        }
+      ],
+      "DAP_trace_sha256": "5ff75d51d701c2f356e596b661159dd42bdaf917c518cfbe0120efe363ef2e96",
+      "DAP_response_summary": [
+        {
+          "command": "initialize",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": null,
+          "success": null,
+          "event": "initialized",
+          "source_identity": null
+        },
+        {
+          "command": "setFunctionBreakpoints",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": "configurationDone",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": "launch",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": null,
+          "success": null,
+          "event": "stopped",
+          "source_identity": null
+        },
+        {
+          "command": "threads",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": "stackTrace",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": "scopes",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": "variables",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": "variables",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": "evaluate",
+          "success": true,
+          "event": null,
+          "source_identity": {
+            "component": "leaf",
+            "contract": "3f48313966818021c491e17f4840b67e831d45c9ffef80656a76088ed648f2e3",
+            "language": "0.30",
+            "owner_image": "leaf",
+            "revision": "f575b793f68097c6a0fd9473c2bd14565c73caa7b99b080347541c94b30b3a2f",
+            "source_hash": "912f7edd127651284091194de5808fdc44abcaa74b30963b8aefe6da7f349e51",
+            "source_unit_hash": "0542334cad3104d9ab259d43ff19bbf2a797d83838918958151e1913d47b718c"
+          }
+        },
+        {
+          "command": "next",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": null,
+          "success": null,
+          "event": "stopped",
+          "source_identity": null
+        },
+        {
+          "command": "variables",
+          "success": false,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": "stepOut",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": null,
+          "success": null,
+          "event": "stopped",
+          "source_identity": null
+        },
+        {
+          "command": "stackTrace",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": "continue",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": null,
+          "success": null,
+          "event": "exited",
+          "source_identity": null
+        }
+      ],
+      "source_absent_debugging": [
+        {
+          "kind": "retained",
+          "stdout_sha256": "9e4bff1eedfb2663e0d067f4a5b50012135c9113d26b44d7ee1570a70311f7cc",
+          "inspections": [
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "87187",
+                "process_epoch": "1",
+                "stop_id": "63",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "6",
+                "publication": "18",
+                "visit": "8",
+                "point_id": 1
+              },
+              "binding": "state",
+              "value": {
+                "kind": "cell",
+                "identity": "4360079496",
+                "live": true,
+                "value": {
+                  "kind": "i64",
+                  "value": "41"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            }
+          ]
+        },
+        {
+          "kind": "package",
+          "stdout_sha256": "8df595ac6ea1e702aa294e3d1a8a549e4e6bab9eaf3a5100be2bbee342352457",
+          "inspections": [
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "87201",
+                "process_epoch": "1",
+                "stop_id": "63",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "6",
+                "publication": "18",
+                "visit": "8",
+                "point_id": 1
+              },
+              "binding": "state",
+              "value": {
+                "kind": "cell",
+                "identity": "4376398184",
+                "live": true,
+                "value": {
+                  "kind": "i64",
+                  "value": "41"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            }
+          ]
+        },
+        {
+          "kind": "replay",
+          "stdout_sha256": "23d3fd375df1a79e3f33e6da0a13a824b91e785938d0e487bb4e6004c9193194",
+          "inspections": [
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "87266",
+                "process_epoch": "1",
+                "stop_id": "63",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "6",
+                "publication": "18",
+                "visit": "8",
+                "point_id": 1
+              },
+              "binding": "state",
+              "value": {
+                "kind": "cell",
+                "identity": "4357916648",
+                "live": true,
+                "value": {
+                  "kind": "i64",
+                  "value": "41"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            }
+          ]
+        }
+      ],
+      "capture_commands_sha256": "d344b2d1a74f6651537aed303ed9006fb746db725e6a9428212ed02bed531ff5"
+    },
+    {
+      "kind": "moved-live-v1",
+      "linkage_modes": [
+        {
+          "mode": "static",
+          "manifest_sha256": "35e36b030f5fad29420d9e61e3f088c583b222a6fc2251c1c40131f3f00dd004",
+          "images": [
+            {
+              "component": "app",
+              "hash": "b9472c61eff6e2f5de2708e7cfa098d0a6210789c30ac3bc53ef6576dcc65da0",
+              "key": "c92a1d6e90e85ad553c27ebb2d23278fd3c75ed81cf497822f506d86853b122b",
+              "kind": "application",
+              "path": "/Users/sae/projects/NEX/build/reference-provider-debug-v1/moved-live-v1/test_reference_provider_static_shared_mixed_cells_and_logical_steps/static/.nex/build/c92a1d6e90e85ad553c27ebb2d23278fd3c75ed81cf497822f506d86853b122b/app",
+              "sha256": "4d35ed3f6a07eed78180dd6603d5838a21463764a64b07adaac19130dea07535",
+              "uuid": "7f0e2fe9dc9e38018de5fc4314520951"
+            }
+          ],
+          "runtime_image": {
+            "component": "app",
+            "hash": "b9472c61eff6e2f5de2708e7cfa098d0a6210789c30ac3bc53ef6576dcc65da0",
+            "key": "c92a1d6e90e85ad553c27ebb2d23278fd3c75ed81cf497822f506d86853b122b",
+            "kind": "application",
+            "path": "/Users/sae/projects/NEX/build/reference-provider-debug-v1/moved-live-v1/test_reference_provider_static_shared_mixed_cells_and_logical_steps/static/.nex/build/c92a1d6e90e85ad553c27ebb2d23278fd3c75ed81cf497822f506d86853b122b/app",
+            "sha256": "4d35ed3f6a07eed78180dd6603d5838a21463764a64b07adaac19130dea07535",
+            "uuid": "7f0e2fe9dc9e38018de5fc4314520951"
+          },
+          "providers": [
+            {
+              "record_sha256": "dab1f74c37ec9b47b5e21c11e645c0559a65c972eea8601d74defa3045edb016",
+              "schema": "nex.native-task-provider/18",
+              "component": "pure",
+              "mode": "static",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "0adb402323ec09f1333b3d683ac2fea87d7a5f54b4aba6e7e0345bd323322a78",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_pure_v1",
+                    "catalog_hash": "054d5c4d61e48021dcf195af456e2e9ab7ab94738e1a7fba306b44e226296c9a",
+                    "code_count": 1,
+                    "component": "pure"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "57b61b888a0d576f13381383d2f76907a7b0eb704031fd911814aa3453eaf359"
+              }
+            },
+            {
+              "record_sha256": "dad50dea4adbcd1b3d0533d72a7a5d20d3c7942b5497914f97c445a002a6408c",
+              "schema": "nex.native-task-provider/18",
+              "component": "leaf",
+              "mode": "static",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "701e4e379dadef9a6c2d7f54e11e83a3ad3f02102138a3ca6df1356636a57fc3",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_leaf_v1",
+                    "catalog_hash": "e8fdc9d79bdc50f69877de06cb2671f8bd7b175657b898f79b00cf6885135130",
+                    "code_count": 2,
+                    "component": "leaf"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "8b1b7b1a8ddcd42c1bfd22d25c87a35dde27c647eb5a6158da5937b89c18e6e6"
+              }
+            },
+            {
+              "record_sha256": "03e2297c394cfebbc7d0d5cd2549f8a2c4384b48e60c35da22d1547f500929b2",
+              "schema": "nex.native-task-provider/18",
+              "component": "mid",
+              "mode": "static",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "47b2d730127131315d3ad7ab838aee412afc4f055c8f9cb39dbd59d0fb9aa843",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_mid_v1",
+                    "catalog_hash": "abf55608987ae81f584b59e48a743f9c35271c5fe7b2a7fdc3e18e9fe980ef11",
+                    "code_count": 1,
+                    "component": "mid"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "ebf53f8dfd869c002192e5eb0637d143c12e3d3a03e2e783fdbff80e3d08c4eb"
+              }
+            },
+            {
+              "record_sha256": "8e41f5b9c4ba7f887c7114c90a96213ea841b2e3be5f81cbaf75a88ab3fb5a39",
+              "schema": "nex.native-task-provider/18",
+              "component": "app",
+              "mode": "static",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "9c44d4de0ab6c3faecf497069e6dd3952ddc5ad00fa1de875af1f2b128659ea9",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_app_v1",
+                    "catalog_hash": "b5be21d1dfbc28908ce1b155227a3a05462d3503b88e16b402ba222ba5e45105",
+                    "code_count": 3,
+                    "component": "app"
+                  },
+                  {
+                    "accessor": "nex_task_debug_registry_leaf_v1",
+                    "catalog_hash": "bda9c180142b24d29b706ba3f29fbd1a9c348aea60083e0bc2e0d159487e5fb4",
+                    "code_count": 2,
+                    "component": "leaf"
+                  },
+                  {
+                    "accessor": "nex_task_debug_registry_mid_v1",
+                    "catalog_hash": "11db10af79aa67417451a6950a7974ed7fd5ed33857a00d505fa0fd6540a29c9",
+                    "code_count": 1,
+                    "component": "mid"
+                  },
+                  {
+                    "accessor": "nex_task_debug_registry_pure_v1",
+                    "catalog_hash": "b8b3a4466839461fde125db9127ff31b47e01707beebbe99bded9a993102c137",
+                    "code_count": 1,
+                    "component": "pure"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "811f4a0b7da1a881fe8af89e04c869dca86fadf157334989c95790f7e0c2a6a6"
+              }
+            }
+          ],
+          "inspections": [
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "86102",
+                "process_epoch": "1",
+                "stop_id": "63",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "6",
+                "publication": "18",
+                "visit": "8",
+                "point_id": 1
+              },
+              "binding": "state",
+              "value": {
+                "kind": "cell",
+                "identity": "4375759528",
+                "live": true,
+                "value": {
+                  "kind": "i64",
+                  "value": "41"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            },
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "86102",
+                "process_epoch": "1",
+                "stop_id": "63",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "6",
+                "publication": "18",
+                "visit": "8",
+                "point_id": 1
+              },
+              "binding": "text",
+              "value": {
+                "kind": "cell",
+                "identity": "4375759848",
+                "live": true,
+                "value": {
+                  "kind": "str",
+                  "value": "Я\u0000🧠"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            },
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "86102",
+                "process_epoch": "1",
+                "stop_id": "103",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "5",
+                "publication": "62",
+                "visit": "28",
+                "point_id": 7
+              },
+              "binding": "state",
+              "value": {
+                "kind": "cell",
+                "identity": "4375759528",
+                "live": true,
+                "value": {
+                  "kind": "i64",
+                  "value": "42"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            }
+          ],
+          "component_watch": {
+            "build_key": "c92a1d6e90e85ad553c27ebb2d23278fd3c75ed81cf497822f506d86853b122b",
+            "display": "42",
+            "display_truncated": false,
+            "expression": "input+pure::offset()",
+            "frame_truncated": false,
+            "function": "ref_debug_leaf::work",
+            "language": "0.30",
+            "limits": {
+              "capture_path_depth": 56,
+              "cumulative_text_bytes": 8388608,
+              "frame_captures": 256,
+              "lazy_references": 10000,
+              "steps": 100000,
+              "text_range_scalars": 4096,
+              "text_scalar_observations": 100000,
+              "value_depth": 64,
+              "value_visits": 100000,
+              "wire_result_bytes": 1048576
+            },
+            "ok": true,
+            "read_bindings": [
+              "input"
+            ],
+            "read_paths": [
+              {
+                "binding": "input",
+                "kind": "value",
+                "path": []
+              }
+            ],
+            "revision": "7a69832623d42a7fa197bbb57f0c7da5bebd7daf6f8cdb20f0947016df38ab53",
+            "schema": "nex.task-expression/2",
+            "source_identity": {
+              "component": "leaf",
+              "contract": "3f48313966818021c491e17f4840b67e831d45c9ffef80656a76088ed648f2e3",
+              "language": "0.30",
+              "owner_image": "app",
+              "revision": "f575b793f68097c6a0fd9473c2bd14565c73caa7b99b080347541c94b30b3a2f",
+              "source_hash": "912f7edd127651284091194de5808fdc44abcaa74b30963b8aefe6da7f349e51",
+              "source_unit_hash": "0542334cad3104d9ab259d43ff19bbf2a797d83838918958151e1913d47b718c"
+            },
+            "steps": 5,
+            "stop": {
+              "frame_id": "6",
+              "point_id": 1,
+              "process_epoch": "1",
+              "process_id": "86102",
+              "publication": "18",
+              "stop_id": "63",
+              "task_generation": "1",
+              "task_id": "2",
+              "visit": "8"
+            },
+            "type": "i64",
+            "value": "42",
+            "wire_schema": {
+              "enums": {},
+              "records": {},
+              "root": "i64",
+              "schema": "nex.wire/2"
+            }
+          },
+          "pure_helper_owner": "app",
+          "stdout_sha256": "fa59592b9ac5de841d2124e45a0455ea3a97b78492abe9cdb1182ad75896cf89",
+          "commands_sha256": "aa59c5e51f60566b8faac900536b343df1979afd9e1fac206b0307c4d8dbd237"
+        },
+        {
+          "mode": "shared",
+          "manifest_sha256": "e3b58763058af83747982686f8292fd6856253a477ef1d996a317c09fe24277d",
+          "images": [
+            {
+              "component": "app",
+              "hash": "65865c14dd13e09db3663240dbb90623488ad57e0fd4969f0c89122698f0af2d",
+              "key": "324360d006ff7886157918b061d06f500fd1a1c7a1569cfdd0cb56f49a186704",
+              "kind": "application",
+              "path": "/Users/sae/projects/NEX/build/reference-provider-debug-v1/moved-live-v1/test_reference_provider_static_shared_mixed_cells_and_logical_steps/shared/.nex/build/324360d006ff7886157918b061d06f500fd1a1c7a1569cfdd0cb56f49a186704/app",
+              "sha256": "2687c71454529796a7516b1706b2c45d155f5e59bb9199ccb4863115afad3a23",
+              "uuid": "1dbc00437a3434aca4074e4e2332e237"
+            },
+            {
+              "component": "leaf",
+              "hash": "4a09b08bfd0bafff6964f79d448d9ff003e0be4416cae601f0330872ca7f7f32",
+              "key": "08bdc7f65c90922714ebb3b22240be95254967f81a1f6e4bc29ff88855399046",
+              "kind": "shared-image",
+              "path": "/Users/sae/projects/NEX/build/reference-provider-debug-v1/moved-live-v1/test_reference_provider_static_shared_mixed_cells_and_logical_steps/shared/.nex/build/324360d006ff7886157918b061d06f500fd1a1c7a1569cfdd0cb56f49a186704/images/libnex_leaf_08bdc7f65c90922714ebb3b22240be95254967f81a1f6e4bc29ff88855399046.dylib",
+              "sha256": "76556476aeac3437e74caff4e04d9f3b393a31f89f5a6daa68e35243f92e1cfe",
+              "uuid": "27a09ebe10eb3015ad53812a74da2dea"
+            },
+            {
+              "component": "mid",
+              "hash": "e2a42eaac0313bfd5daaa37b610af305b43f22dbd8c2e8a7a78c98e3255a563f",
+              "key": "c610899ea1c2c1bd274db3f2dd91e7fa7bd31e9aa22253a2fb48d78ab2166fc5",
+              "kind": "shared-image",
+              "path": "/Users/sae/projects/NEX/build/reference-provider-debug-v1/moved-live-v1/test_reference_provider_static_shared_mixed_cells_and_logical_steps/shared/.nex/build/324360d006ff7886157918b061d06f500fd1a1c7a1569cfdd0cb56f49a186704/images/libnex_mid_c610899ea1c2c1bd274db3f2dd91e7fa7bd31e9aa22253a2fb48d78ab2166fc5.dylib",
+              "sha256": "f38bbca62bb749ea53f26cab8956eaf399863786d7052c3d8dea181cb05cb2a6",
+              "uuid": "35f1a98bef813ae78363c1658ed406fa"
+            },
+            {
+              "component": "pure",
+              "hash": "cfca195498dbdeba27ebd3ddb0fc1b3bdf17167a6bf72574b65d38f878ad64b8",
+              "key": "9bfa81663f002d8908cb5a7ab3b6007443591575e56baf310f487c25a6ce145c",
+              "kind": "shared-image",
+              "path": "/Users/sae/projects/NEX/build/reference-provider-debug-v1/moved-live-v1/test_reference_provider_static_shared_mixed_cells_and_logical_steps/shared/.nex/build/324360d006ff7886157918b061d06f500fd1a1c7a1569cfdd0cb56f49a186704/images/libnex_pure_9bfa81663f002d8908cb5a7ab3b6007443591575e56baf310f487c25a6ce145c.dylib",
+              "sha256": "25a4da97a9056c0d27a583388dfe7c7aa76fb6882825a6df288afad89eb8602f",
+              "uuid": "c5825c837f623ca9aa40745868bdb077"
+            }
+          ],
+          "runtime_image": {
+            "component": null,
+            "hash": "88c283c730cc0dd47e1b021feeb919722124666181c65505381d9a71a87b96f5",
+            "key": "2fe057e3affd267f243772dae03bd4a19f7c4fe2958d4c3cac20418b23fb1726",
+            "kind": "runtime",
+            "path": "/Users/sae/projects/NEX/build/reference-provider-debug-v1/moved-live-v1/test_reference_provider_static_shared_mixed_cells_and_logical_steps/shared/.nex/build/324360d006ff7886157918b061d06f500fd1a1c7a1569cfdd0cb56f49a186704/images/libnex_runtime_2fe057e3affd267f243772dae03bd4a19f7c4fe2958d4c3cac20418b23fb1726.dylib",
+            "sha256": "47721587139e4a8c826813396df8798e6f4526796cd21fc9dade4c41c1d819a4",
+            "uuid": "49f02ac332f73734ada9fcce479ddbbb"
+          },
+          "providers": [
+            {
+              "record_sha256": "93a13215601fea4aab96ac18e6d0847a91dc55dd28aca5879bc3b0232fd22436",
+              "schema": "nex.native-task-provider/18",
+              "component": "pure",
+              "mode": "shared-fixed",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "63cc32e1bffa2766a01a9a0fa43ff5faf5d4e3dd62dc77d4c53e1ccfdd67f8cb",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_pure_v1",
+                    "catalog_hash": "60b2bcc1db5cc10215adbe2a213af5c72d0a9697bf6ac195c191d1edf3367226",
+                    "code_count": 1,
+                    "component": "pure"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "fbf7ac685621786b170659ea1d1bd808bda3ce0a20d2020f20bee4ff3e43fcc3"
+              }
+            },
+            {
+              "record_sha256": "5a90547c8a66adbde47e2044da91ad3fec1f30ea75e5c448bf11197257cf6485",
+              "schema": "nex.native-task-provider/18",
+              "component": "leaf",
+              "mode": "shared-fixed",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "56466ad463bb550f06cc8a928466f525ae48ec19390b3cab2fd9edb6c8579357",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_leaf_v1",
+                    "catalog_hash": "563a5dcfe10d211657d8016a14f5032142c11433d21c0512a0215f99cbb602af",
+                    "code_count": 2,
+                    "component": "leaf"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "ebb77d479d3bf27bf3491d61ab50fdaf005cdd68e0308402a06d41a5d2ec6a4a"
+              }
+            },
+            {
+              "record_sha256": "738b9fbb0826a63829a4e4cec90267f056dc7059f830a7c5ec4e102b59ac191d",
+              "schema": "nex.native-task-provider/18",
+              "component": "mid",
+              "mode": "shared-fixed",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "dbc140620030f03406d05894e3f61041ca284cdfb18bc37ebf35ee325440e875",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_mid_v1",
+                    "catalog_hash": "7a276c18fa1dab218fa72ae28e51f699e822fa29dd0230d35c6d937b7b901359",
+                    "code_count": 1,
+                    "component": "mid"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "d21c0fe821f961d036b7e321c3ebdc7eddff4bad093360ff058b1a27f5f5e1e8"
+              }
+            },
+            {
+              "record_sha256": "320e36b956add17cdaf0a969accf722e08986a00ffaee3c183a418fd30a757be",
+              "schema": "nex.native-task-provider/18",
+              "component": "app",
+              "mode": "shared-fixed",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "4b91a70855daec58a6f10cf24ebdfb1ae0b83310a355af3cceeee31fdc0f077d",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_app_v1",
+                    "catalog_hash": "4d579992f1053f92bc9254b00b99d28029e4ebebed1a0338b23bf0546fc9f2f3",
+                    "code_count": 3,
+                    "component": "app"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "0f9f53bf15312e3984e4783b0cc9f3770b397d7135e1a5beccb1efcdfd951290"
+              }
+            }
+          ],
+          "inspections": [
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "86224",
+                "process_epoch": "1",
+                "stop_id": "63",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "6",
+                "publication": "18",
+                "visit": "8",
+                "point_id": 1
+              },
+              "binding": "state",
+              "value": {
+                "kind": "cell",
+                "identity": "4344220008",
+                "live": true,
+                "value": {
+                  "kind": "i64",
+                  "value": "41"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            },
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "86224",
+                "process_epoch": "1",
+                "stop_id": "63",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "6",
+                "publication": "18",
+                "visit": "8",
+                "point_id": 1
+              },
+              "binding": "text",
+              "value": {
+                "kind": "cell",
+                "identity": "4344220328",
+                "live": true,
+                "value": {
+                  "kind": "str",
+                  "value": "Я\u0000🧠"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            },
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "86224",
+                "process_epoch": "1",
+                "stop_id": "103",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "5",
+                "publication": "62",
+                "visit": "28",
+                "point_id": 7
+              },
+              "binding": "state",
+              "value": {
+                "kind": "cell",
+                "identity": "4344220008",
+                "live": true,
+                "value": {
+                  "kind": "i64",
+                  "value": "42"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            }
+          ],
+          "component_watch": {
+            "build_key": "324360d006ff7886157918b061d06f500fd1a1c7a1569cfdd0cb56f49a186704",
+            "display": "42",
+            "display_truncated": false,
+            "expression": "input+pure::offset()",
+            "frame_truncated": false,
+            "function": "ref_debug_leaf::work",
+            "language": "0.30",
+            "limits": {
+              "capture_path_depth": 56,
+              "cumulative_text_bytes": 8388608,
+              "frame_captures": 256,
+              "lazy_references": 10000,
+              "steps": 100000,
+              "text_range_scalars": 4096,
+              "text_scalar_observations": 100000,
+              "value_depth": 64,
+              "value_visits": 100000,
+              "wire_result_bytes": 1048576
+            },
+            "ok": true,
+            "read_bindings": [
+              "input"
+            ],
+            "read_paths": [
+              {
+                "binding": "input",
+                "kind": "value",
+                "path": []
+              }
+            ],
+            "revision": "7a69832623d42a7fa197bbb57f0c7da5bebd7daf6f8cdb20f0947016df38ab53",
+            "schema": "nex.task-expression/2",
+            "source_identity": {
+              "component": "leaf",
+              "contract": "3f48313966818021c491e17f4840b67e831d45c9ffef80656a76088ed648f2e3",
+              "language": "0.30",
+              "owner_image": "leaf",
+              "revision": "f575b793f68097c6a0fd9473c2bd14565c73caa7b99b080347541c94b30b3a2f",
+              "source_hash": "912f7edd127651284091194de5808fdc44abcaa74b30963b8aefe6da7f349e51",
+              "source_unit_hash": "0542334cad3104d9ab259d43ff19bbf2a797d83838918958151e1913d47b718c"
+            },
+            "steps": 5,
+            "stop": {
+              "frame_id": "6",
+              "point_id": 1,
+              "process_epoch": "1",
+              "process_id": "86224",
+              "publication": "18",
+              "stop_id": "63",
+              "task_generation": "1",
+              "task_id": "2",
+              "visit": "8"
+            },
+            "type": "i64",
+            "value": "42",
+            "wire_schema": {
+              "enums": {},
+              "records": {},
+              "root": "i64",
+              "schema": "nex.wire/2"
+            }
+          },
+          "pure_helper_owner": "pure",
+          "stdout_sha256": "b520dd1a71f2dd0ea7d7bbafcefd6f05bd9b6f73f44b7695d8d72c18afa0ab45",
+          "commands_sha256": "d64c2b33d97d9d988e58d189a80aaa96e35603e2e0d2633b864f193b774ae5b3"
+        },
+        {
+          "mode": "mixed",
+          "manifest_sha256": "22083a001a2af6c7b31d47b9d7797a1de6a34b719ba0dc25baf06faa3ce26294",
+          "images": [
+            {
+              "component": "app",
+              "hash": "8871e4315c1ae360d7a270c5429ea63a2760cb52e0665edfb206aaaa3ced3131",
+              "key": "701dd91e314c8f392e79b2f76a1d7b58cb766a02c4daba1fdbf345e37ce4a609",
+              "kind": "application",
+              "path": "/Users/sae/projects/NEX/build/reference-provider-debug-v1/moved-live-v1/test_reference_provider_static_shared_mixed_cells_and_logical_steps/mixed/.nex/build/701dd91e314c8f392e79b2f76a1d7b58cb766a02c4daba1fdbf345e37ce4a609/app",
+              "sha256": "b7a98d3481d4d5e7168586244cfd41020b18ae2f77c0fffd78d19356f96441ac",
+              "uuid": "cd8d1cce46cf3b999160eb4e16dca3cf"
+            },
+            {
+              "component": "leaf",
+              "hash": "4fe1ffd935c0996d3390d6765f5fbbb71629fff6ee377c9ced5fb0f4e522b61f",
+              "key": "b742681f38260195cc3adefe0ec14ac2b1c853daed02e81e70233416e5951e9a",
+              "kind": "shared-image",
+              "path": "/Users/sae/projects/NEX/build/reference-provider-debug-v1/moved-live-v1/test_reference_provider_static_shared_mixed_cells_and_logical_steps/mixed/.nex/build/701dd91e314c8f392e79b2f76a1d7b58cb766a02c4daba1fdbf345e37ce4a609/images/libnex_leaf_b742681f38260195cc3adefe0ec14ac2b1c853daed02e81e70233416e5951e9a.dylib",
+              "sha256": "634f8d6dfdfa5a3ff59102e4f1daa9e52d490933f535ade664ff82f76ce234a6",
+              "uuid": "df8cbbdf9643357793ae0f002fe10110"
+            }
+          ],
+          "runtime_image": {
+            "component": null,
+            "hash": "3a34d14eed6e235ff27534ace5ced917b086bcd42ba44b173a4407d6db8a889f",
+            "key": "022ab77028f9af35ff29a7b7db8924ee3f8b831e82a2f1096b7aab7ad5fd5ec5",
+            "kind": "runtime",
+            "path": "/Users/sae/projects/NEX/build/reference-provider-debug-v1/moved-live-v1/test_reference_provider_static_shared_mixed_cells_and_logical_steps/mixed/.nex/build/701dd91e314c8f392e79b2f76a1d7b58cb766a02c4daba1fdbf345e37ce4a609/images/libnex_runtime_022ab77028f9af35ff29a7b7db8924ee3f8b831e82a2f1096b7aab7ad5fd5ec5.dylib",
+            "sha256": "99958a37091308d3923954301fc56b37d7308064808003ce9f0a992fe83a8d93",
+            "uuid": "5cf2cfb9927c323c8f8993daf25fdc31"
+          },
+          "providers": [
+            {
+              "record_sha256": "0d8b03e668ead12d2f727da53a44c417f238083da8ef68d28ecd7d9b2d23aa20",
+              "schema": "nex.native-task-provider/18",
+              "component": "pure",
+              "mode": "shared-fixed",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "afacdc48ced3f88483142357596a5c5fe4c59b969a358508923efeaffe15e3c4",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_pure_v1",
+                    "catalog_hash": "a4578c7a4bfae8f7e4749ddce77557c34b7a68add39faf6222865b1a8ddab46d",
+                    "code_count": 1,
+                    "component": "pure"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "1f09c0cf4a83164d9818cc2c2738c23a8ff24a7ba1f79ade1ec074d7ee031897"
+              }
+            },
+            {
+              "record_sha256": "63a7c13319e2fb182191da5a73d5060ac7df7f14b584edad6fd54e7a5d8a508b",
+              "schema": "nex.native-task-provider/18",
+              "component": "leaf",
+              "mode": "shared-fixed",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "eaa52e76e8866fc601e3ee54aa547d0f5ba765e205210cdb28e01966c3d3871a",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_leaf_v1",
+                    "catalog_hash": "a96a01ae8a7430170c1d8d93f7d05c5a026c9bf05dac472cb59220486bb0b624",
+                    "code_count": 2,
+                    "component": "leaf"
+                  },
+                  {
+                    "accessor": "nex_task_debug_registry_pure_v1",
+                    "catalog_hash": "285b2d9a295733fb3a554de5ca9bc6f41534e39610bf4cfc6fd26a2916ef764c",
+                    "code_count": 1,
+                    "component": "pure"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "2eba6fe6350c61bed34babd9816b5e91d4fbeb48a3bddd761c9f53ec37a1cafb"
+              }
+            },
+            {
+              "record_sha256": "a2d8f116fb80e49443bd1b75f9e22056a9db1beb4dc0c122b687aa0409dcbb59",
+              "schema": "nex.native-task-provider/18",
+              "component": "mid",
+              "mode": "shared-fixed",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "8902eec40782deb2621497e2cc01bfae2b2b1164f09c9efa1f6a7f53069a7cf7",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_mid_v1",
+                    "catalog_hash": "bfc753a2c03943864fe45f3985c8d1c7dba4d57fa3dfd804b5cfe8ab51bc2c25",
+                    "code_count": 1,
+                    "component": "mid"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "7006a65c44b25d71e403772387ebada322f672541999487d6e301ab5e1de71d9"
+              }
+            },
+            {
+              "record_sha256": "13ebf14c65535bf0a55aa58e2d600e60c0afba35333703f323c0194eaba98406",
+              "schema": "nex.native-task-provider/18",
+              "component": "app",
+              "mode": "shared-fixed",
+              "descriptor_abi": 5640011226151911432,
+              "debugging": {
+                "catalog_file": "task-debug-catalog.json",
+                "catalog_hash": "d2b866858e4381caf8a63ae6d220949a3627da7c58d6a04a8d510484d39fe734",
+                "registries": [
+                  {
+                    "accessor": "nex_task_debug_registry_app_v1",
+                    "catalog_hash": "7851c2c1d53cc1360455e6178f1919a51cac6d9da63894340050dbd1b6c54761",
+                    "code_count": 3,
+                    "component": "app"
+                  },
+                  {
+                    "accessor": "nex_task_debug_registry_mid_v1",
+                    "catalog_hash": "d4d59f2b72ced82a494adcf6461d5b3f4f204a59dd229236939e796d0f0ba1dd",
+                    "code_count": 1,
+                    "component": "mid"
+                  }
+                ],
+                "registry_abi": 1,
+                "schema": "nex.native-task-debug/1",
+                "source_union_file": "task-debug-sources.json",
+                "source_union_hash": "918e99cef323adcbcf1e24b3f807bd836880925c067556c438330a7cadbefbae"
+              }
+            }
+          ],
+          "inspections": [
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "86474",
+                "process_epoch": "1",
+                "stop_id": "63",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "6",
+                "publication": "18",
+                "visit": "8",
+                "point_id": 1
+              },
+              "binding": "state",
+              "value": {
+                "kind": "cell",
+                "identity": "4347638824",
+                "live": true,
+                "value": {
+                  "kind": "i64",
+                  "value": "41"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            },
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "86474",
+                "process_epoch": "1",
+                "stop_id": "63",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "6",
+                "publication": "18",
+                "visit": "8",
+                "point_id": 1
+              },
+              "binding": "text",
+              "value": {
+                "kind": "cell",
+                "identity": "4347639144",
+                "live": true,
+                "value": {
+                  "kind": "str",
+                  "value": "Я\u0000🧠"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            },
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "86474",
+                "process_epoch": "1",
+                "stop_id": "103",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "5",
+                "publication": "62",
+                "visit": "28",
+                "point_id": 7
+              },
+              "binding": "state",
+              "value": {
+                "kind": "cell",
+                "identity": "4347638824",
+                "live": true,
+                "value": {
+                  "kind": "i64",
+                  "value": "42"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            }
+          ],
+          "component_watch": {
+            "build_key": "701dd91e314c8f392e79b2f76a1d7b58cb766a02c4daba1fdbf345e37ce4a609",
+            "display": "42",
+            "display_truncated": false,
+            "expression": "input+pure::offset()",
+            "frame_truncated": false,
+            "function": "ref_debug_leaf::work",
+            "language": "0.30",
+            "limits": {
+              "capture_path_depth": 56,
+              "cumulative_text_bytes": 8388608,
+              "frame_captures": 256,
+              "lazy_references": 10000,
+              "steps": 100000,
+              "text_range_scalars": 4096,
+              "text_scalar_observations": 100000,
+              "value_depth": 64,
+              "value_visits": 100000,
+              "wire_result_bytes": 1048576
+            },
+            "ok": true,
+            "read_bindings": [
+              "input"
+            ],
+            "read_paths": [
+              {
+                "binding": "input",
+                "kind": "value",
+                "path": []
+              }
+            ],
+            "revision": "7a69832623d42a7fa197bbb57f0c7da5bebd7daf6f8cdb20f0947016df38ab53",
+            "schema": "nex.task-expression/2",
+            "source_identity": {
+              "component": "leaf",
+              "contract": "3f48313966818021c491e17f4840b67e831d45c9ffef80656a76088ed648f2e3",
+              "language": "0.30",
+              "owner_image": "leaf",
+              "revision": "f575b793f68097c6a0fd9473c2bd14565c73caa7b99b080347541c94b30b3a2f",
+              "source_hash": "912f7edd127651284091194de5808fdc44abcaa74b30963b8aefe6da7f349e51",
+              "source_unit_hash": "0542334cad3104d9ab259d43ff19bbf2a797d83838918958151e1913d47b718c"
+            },
+            "steps": 5,
+            "stop": {
+              "frame_id": "6",
+              "point_id": 1,
+              "process_epoch": "1",
+              "process_id": "86474",
+              "publication": "18",
+              "stop_id": "63",
+              "task_generation": "1",
+              "task_id": "2",
+              "visit": "8"
+            },
+            "type": "i64",
+            "value": "42",
+            "wire_schema": {
+              "enums": {},
+              "records": {},
+              "root": "i64",
+              "schema": "nex.wire/2"
+            }
+          },
+          "pure_helper_owner": "leaf",
+          "stdout_sha256": "51e6c290cb7436d2626fad58bc529314562627a19a12ed52dd2827c96cef193b",
+          "commands_sha256": "76a4e419ab289a88fea5b0b730c3e0228fb0b88143cfc06065d46cf4cc55f31d"
+        }
+      ],
+      "DAP_trace_sha256": "e5a337b9fc251360cda245217c4922878621d9e2f6635d4061ca92a0d6742d51",
+      "DAP_response_summary": [
+        {
+          "command": "initialize",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": null,
+          "success": null,
+          "event": "initialized",
+          "source_identity": null
+        },
+        {
+          "command": "setFunctionBreakpoints",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": "configurationDone",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": "launch",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": null,
+          "success": null,
+          "event": "stopped",
+          "source_identity": null
+        },
+        {
+          "command": "threads",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": "stackTrace",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": "scopes",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": "variables",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": "variables",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": "evaluate",
+          "success": true,
+          "event": null,
+          "source_identity": {
+            "component": "leaf",
+            "contract": "3f48313966818021c491e17f4840b67e831d45c9ffef80656a76088ed648f2e3",
+            "language": "0.30",
+            "owner_image": "leaf",
+            "revision": "f575b793f68097c6a0fd9473c2bd14565c73caa7b99b080347541c94b30b3a2f",
+            "source_hash": "912f7edd127651284091194de5808fdc44abcaa74b30963b8aefe6da7f349e51",
+            "source_unit_hash": "0542334cad3104d9ab259d43ff19bbf2a797d83838918958151e1913d47b718c"
+          }
+        },
+        {
+          "command": "next",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": null,
+          "success": null,
+          "event": "stopped",
+          "source_identity": null
+        },
+        {
+          "command": "variables",
+          "success": false,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": "stepOut",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": null,
+          "success": null,
+          "event": "stopped",
+          "source_identity": null
+        },
+        {
+          "command": "stackTrace",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": "continue",
+          "success": true,
+          "event": null,
+          "source_identity": null
+        },
+        {
+          "command": null,
+          "success": null,
+          "event": "exited",
+          "source_identity": null
+        }
+      ],
+      "source_absent_debugging": [
+        {
+          "kind": "retained",
+          "stdout_sha256": "2b038e3b6b7efd2d9d59f75c9435eaaa265ae40f26f20f64cd3fc537c3a19e4a",
+          "inspections": [
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "86843",
+                "process_epoch": "1",
+                "stop_id": "63",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "6",
+                "publication": "18",
+                "visit": "8",
+                "point_id": 1
+              },
+              "binding": "state",
+              "value": {
+                "kind": "cell",
+                "identity": "4387555304",
+                "live": true,
+                "value": {
+                  "kind": "i64",
+                  "value": "41"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            }
+          ]
+        },
+        {
+          "kind": "package",
+          "stdout_sha256": "8f8d023447124a9c5d98aed119d3eb4420a94d99f8e1df9baad05cb771614e49",
+          "inspections": [
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "86857",
+                "process_epoch": "1",
+                "stop_id": "63",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "6",
+                "publication": "18",
+                "visit": "8",
+                "point_id": 1
+              },
+              "binding": "state",
+              "value": {
+                "kind": "cell",
+                "identity": "4347524264",
+                "live": true,
+                "value": {
+                  "kind": "i64",
+                  "value": "41"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            }
+          ]
+        },
+        {
+          "kind": "replay",
+          "stdout_sha256": "1743ebb57302245eaa26554d8b5af60a9c08fd7dbbeb80033db8a97fb2157b7d",
+          "inspections": [
+            {
+              "schema": "nex.task-value-inspection/1",
+              "stop": {
+                "process_id": "86978",
+                "process_epoch": "1",
+                "stop_id": "63",
+                "task_id": "2",
+                "task_generation": "1",
+                "frame_id": "6",
+                "publication": "18",
+                "visit": "8",
+                "point_id": 1
+              },
+              "binding": "state",
+              "value": {
+                "kind": "cell",
+                "identity": "4355541128",
+                "live": true,
+                "value": {
+                  "kind": "i64",
+                  "value": "41"
+                }
+              },
+              "truncated": false,
+              "limits": {
+                "nodes": 256,
+                "depth": 8,
+                "text_bytes": 16384,
+                "items": 64,
+                "byte_prefix": 256
+              }
+            }
+          ]
+        }
+      ],
+      "capture_commands_sha256": "806152034ab262122c3c04c3bb9516d950da938af9e53ae008faedde46412b39"
+    }
+  ],
+  "ordinary_installation": {
+    "portable": false,
+    "host_dependencies_retained": true,
+    "moved_compiler_matches_source": true,
+    "language_pack": {
+      "ok": true,
+      "shared_fields": [
+        "browser_workers",
+        "bytes_construction",
+        "cli_interface",
+        "compute",
+        "device",
+        "diagnostic_catalogue",
+        "dns_provider",
+        "effect_parameters",
+        "features_scope",
+        "foreign_trap_reporting",
+        "generic_features",
+        "gpu_codegen",
+        "http_client_provider",
+        "http_response_streams",
+        "http_storage_transactions",
+        "ieee_numeric_kernel",
+        "language_pack_contract",
+        "list_construction",
+        "llm_cost",
+        "llm_entry",
+        "managed_references",
+        "model",
+        "native_application_lifetime",
+        "native_core",
+        "native_debug_image_binding",
+        "native_debug_pages",
+        "native_debug_session",
+        "native_entry_abi",
+        "native_runtime_search",
+        "native_tool_arguments",
+        "opencl_codegen",
+        "patch_entities",
+        "project_capture_layout",
+        "project_languages",
+        "resource_executor",
+        "resource_regions",
+        "result_propagation",
+        "runtime_contracts",
+        "runtime_diagnostic_messages",
+        "scoped_discovery",
+        "source_concurrency",
+        "source_contracts",
+        "source_contracts_development",
+        "source_exception_prototype",
+        "source_exceptions",
+        "source_formatting",
+        "source_resources",
+        "standard_library",
+        "structured_tasks_runtime",
+        "task_debugging",
+        "task_execution_limits",
+        "task_external_completion",
+        "task_file_reads",
+        "task_file_streams",
+        "task_file_streams_host",
+        "task_file_streams_prototype",
+        "task_file_writes",
+        "task_file_writes_host",
+        "task_file_writes_prototype",
+        "task_foreign_prototype",
+        "task_network_transport",
+        "task_profile_collector",
+        "task_profiling",
+        "task_provider_debugging",
+        "task_provider_profiling",
+        "task_providers",
+        "task_shared_providers",
+        "task_value_retirement",
+        "tcp_provider",
+        "text_construction",
+        "wasm_features"
+      ],
+      "shared_field_count": 71,
+      "compared_JSON_values": 4729,
+      "errors": [],
+      "schema": "nex.language-pack-validation/1",
+      "compiler_sha256": "81838c34d157e20f16234ce757cc1703eb8d99902454ce7d8fe6b976c5ccbf57",
+      "manifest_sha256": "045fd4906959dc0d08e2d1d7111c77dc0824e90f1324d92d5d487e520693a179",
+      "language": "0.28",
+      "toolchain": "0.278.0",
+      "compiler_build": "f70934b0c6e7565f178fe9916f168b86c3a357bb6afca894bdf26a9d98178dbb",
+      "descriptor_hash": "556d5c812daab459526d2cd7bdbae1b376359e0f3f5f4463aca17e4c8cc9f00b"
+    }
+  },
+  "record_formats": {
+    "ordinary_reference_provider": 17,
+    "reference_debug_provider": 18,
+    "ordinary_static_plan": 6,
+    "reference_debug_plan": 18,
+    "retained_ABI7_debug_provider": 16,
+    "execution_ABI": 8,
+    "runtime_debug_catalog_ABI": 2
+  },
+  "complete_source_regression": false,
+  "portable_SDK": false,
+  "published_portable_SDK": "0.246.1 unchanged",
+  "pending": [
+    "Reference profiling and HTTP logical debugging",
+    "Cell watch graph reconstruction",
+    "Parallel reference transfer",
+    "Persistent native UI and session debug lifecycle",
+    "Matching complete source/platform/portable SDK qualification",
+    "Remaining application/library/LLM and migration roadmap"
+  ],
+  "whole_goal_complete": false
+}

@@ -72,6 +72,109 @@ def reader_module():
 
 @unittest.skipUnless(platform.system() in ('Darwin','Linux','Windows'),'provider debugger requires a supported native LLDB host')
 class TaskProviderDebugging(harness.ToolchainCase):
+    def reference_project(self,mode):
+        self.root=self.root/mode
+        shutil.copytree(harness.REPO/'examples/reference-provider-debugging',self.root)
+        self.description=json.loads((self.root/'nex.build.json').read_text())
+        for name,component in self.description['components'].items():
+            if name!='app':component['kind']='shared_library' if mode=='shared' or (mode=='mixed' and name=='leaf') else 'static_library'
+        for component in self.description['components'].values():
+            for dependency in component.get('dependencies',{}):
+                component['dependencies'][dependency]='dynamic' if self.description['components'][dependency]['kind']=='shared_library' else 'static'
+        self.save()
+
+    def test_reference_provider_static_shared_mixed_cells_and_logical_steps(self):
+        base=self.root
+        for mode in ['static','shared','mixed']:
+            self.root=base;self.reference_project(mode)
+            self.assertEqual(self.cli('eval')['stdout'],'42\n')
+            plan=self.cli('project','--kind','plan','--component','app','--task-debug')
+            self.assertTrue(all(row['task_linkage']['schema']=='nex.project-task-linkage/18' and row['task_linkage']['execution_abi']==8 for row in plan['components']))
+            result,session,_,manifest=self.prepare()
+            self.assertEqual(manifest['execution_task_abi'],'0x4e45585400000008')
+            for artifact in self.artifacts(result).values():
+                record=json.loads((Path(artifact['artifact']).parent/'task-provider.json').read_text())
+                self.assertEqual(record['schema'],'nex.native-task-provider/18')
+                self.assertEqual(record['descriptor_abi'],0x4e45585400000008)
+                self.assertIn('debugging',record)
+            run,rows=self.lldb(session,['nex-task-break function ref_debug_leaf::work','run','nex-task-stack',
+                'nex-task-inspect state','nex-task-inspect text','nex-eval input+pure::offset()',
+                'nex-task-next','nex-task-out','nex-task-stack','nex-task-inspect state','continue'])
+            inspections=[row for row in rows if row.get('schema')=='nex.task-value-inspection/1']
+            self.assertEqual(len(inspections),3,run.stdout)
+            self.assertEqual(inspections[0]['value']['value']['value'],'41')
+            self.assertEqual(inspections[1]['value']['value']['value'],'Я\0🧠')
+            self.assertEqual(inspections[2]['value']['value']['value'],'42')
+            self.assertEqual(inspections[0]['value']['identity'],inspections[2]['value']['identity'])
+            watch=next(row for row in rows if row.get('schema')=='nex.task-expression/2')
+            self.assertEqual(watch['value'],'42');self.assertEqual(watch['source_identity']['component'],'leaf')
+            self.assertEqual(watch['source_identity']['owner_image'],'app' if mode=='static' else 'leaf')
+            self.assertIn('exited with status = 0',run.stdout)
+
+    def test_reference_provider_mixed_actual_dap_cells_and_source_watch(self):
+        self.reference_project('mixed');_,session,_,_=self.prepare()
+        def body(adapter):
+            tasks=adapter.request('threads')['nex'];selected=tasks['selected']
+            self.assertTrue(any(t['id']!=selected and t['state']=='blocked' for t in tasks['tasks']))
+            frames=adapter.request('stackTrace',{'threadId':selected});frame=frames['stackFrames'][0]['id']
+            self.assertEqual(frames['stackFrames'][0]['name'],'ref_debug_leaf::work')
+            scope=adapter.request('scopes',{'frameId':frame})['scopes'][0]['variablesReference']
+            locals=adapter.request('variables',{'variablesReference':scope})['variables']
+            value=next(row for row in locals if row['name']=='state');self.assertTrue(value['variablesReference'])
+            children=adapter.request('variables',{'variablesReference':value['variablesReference']})['variables']
+            self.assertEqual(next(row for row in children if row['name']=='value')['value'],'41')
+            watch=adapter.request('evaluate',{'expression':'input+pure::offset()','frameId':frame,'context':'watch'})
+            self.assertEqual(watch['nex']['value'],'42');self.assertEqual(watch['nex']['source_identity']['owner_image'],'leaf')
+            adapter.request('next',{'threadId':selected});adapter.event('stopped')
+            stale=adapter.send('variables',{'variablesReference':value['variablesReference']})
+            self.assertFalse(adapter.wait(lambda m:m.get('type')=='response' and m.get('request_seq')==stale)['success'])
+            adapter.request('stepOut',{'threadId':selected});adapter.event('stopped')
+            parent=adapter.request('stackTrace',{'threadId':selected});self.assertEqual(parent['stackFrames'][0]['name'],'ref_debug_mid::work')
+            adapter.request('continue',{'threadId':selected});self.assertEqual(adapter.event('exited')['exitCode'],0)
+        self.dap(session,'ref_debug_leaf::work',body)
+
+    def test_reference_provider_captured_replay_and_package_without_original_sources(self):
+        self.reference_project('mixed')
+        task=self.cli('task','nex.build.json','--kind','init','--component','app','--configuration','debug')
+        task['checks']=[{'id':'prepare-reference-debug','kind':'build','program':'app','target':'native',
+            'configuration':'debug','task_debug':True,'timeout_seconds':300}]
+        task['requirements']=[{'id':'prepare-reference-debug','text':'Retain checked030 debug images and cell identity',
+            'bindings':[{'program':'app','kind':'function','symbol':'ref_debug_app::main'}],
+            'targets':['native'],'checks':['prepare-reference-debug']}]
+        taskfile=self.root/'task.json';taskfile.write_text(json.dumps(task)+'\n')
+        accepted=self.cli('task',taskfile,'--kind','run','--directory',self.root/'capture',timeout=900)
+        receipt=Path(accepted['output']);record=json.loads(receipt.read_text());check,=record['checks']
+        self.assertEqual(check['status'],'passed')
+        captured=json.loads((receipt.parent/'inputs/projects/app.json').read_text())
+        self.assertIn('nex.project-task-linkage/18',json.dumps(captured))
+        app=next(c for c in check['components'] if c['component']=='app')
+        retained=json.loads((receipt.parent/app['debug_session']).read_text())
+        self.cli('project','--kind','package','--component','app','--task-debug','--directory',self.root/'package',
+            *package_notices.flags(),timeout=900)
+        package=self.root/'package/apps/app';published=json.loads((package/'application.json').read_text())
+        self.assertIs(published['task_debug_provenance']['metadata_rewritten'],False)
+        packaged=json.loads((package/published['debug_session']).read_text())
+        for component in self.description['components']:shutil.rmtree(self.root/component)
+        shutil.rmtree(self.root/'.nex');taskfile.unlink()
+        for label,session in [('retained',retained),('package',packaged)]:
+            manifest=json.loads(Path(session['manifest']).read_text())
+            self.assertEqual(manifest['execution_task_abi'],'0x4e45585400000008')
+            self.assertTrue(all(Path(image['path']).is_file() for image in manifest['task_debug']['images']))
+            run,rows=self.lldb(session,['nex-task-break function ref_debug_leaf::work','run',
+                'nex-task-inspect state','nex-eval input+pure::offset()','continue'],label=label+'-lldb')
+            self.assertEqual(next(r['value']['value']['value'] for r in rows if r.get('schema')=='nex.task-value-inspection/1'),'41')
+            self.assertEqual(next(r['value'] for r in rows if r.get('schema')=='nex.task-expression/2'),'42')
+            self.assertIn('exited with status = 0',run.stdout)
+        replay=self.cli('task',receipt,'--kind','replay','--directory',self.root/'replay',timeout=900)
+        replay_path=Path(replay['output']);repeated=json.loads(replay_path.read_text());again,=repeated['checks']
+        self.assertEqual(again['status'],'passed');self.assertEqual(repeated['programs'],record['programs'])
+        replay_app=next(c for c in again['components'] if c['component']=='app')
+        session=json.loads((replay_path.parent/replay_app['debug_session']).read_text())
+        run,rows=self.lldb(session,['nex-task-break function ref_debug_leaf::work','run',
+            'nex-task-inspect state','nex-eval input+pure::offset()','continue'],label='replay-lldb')
+        self.assertEqual(next(r['value'] for r in rows if r.get('schema')=='nex.task-expression/2'),'42')
+        self.assertIn('exited with status = 0',run.stdout)
+
     def setUp(self):
         super().setUp();retained=os.environ.get('NEX_TASK_PROVIDER_DEBUG_OUTPUT')
         self.root=self.root.resolve()

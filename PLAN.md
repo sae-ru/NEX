@@ -1,3 +1,12 @@
+# Native reference provider debugging — development0.278.0
+
+Source-backed static/shared/mixed030 components use distinct debug record18/plan18
+while retaining execution ABI8. Cells and typed errors preserve one owner context
+across image calls, logical steps, source-aware pure watches and copied read-only
+views. Capture/package/replay retain actual owned sources and image identities.
+HTTP reference debugging, reference profiling, parallel state and complete
+current SDK/platform delivery remain open. [Contract](docs/reference-provider-debugging.md).
+
 # Source-only reference task debugging — development0.277.0
 
 Ordinary030 source task applications now select logical debugging, retain checked

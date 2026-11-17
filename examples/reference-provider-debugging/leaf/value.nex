@@ -1,0 +1,11 @@
+module ref_debug_leaf;
+import "../pure/value.nex" as pure;
+pub struct Fault{value:cell<i64>;}
+pub fn make(initial:i64)->cell<i64>!{state}{return cell_new(initial);}
+pub fn work(state:cell<i64>,text:cell<str>,input:i64)->i64!{task,state,throw}{
+ task_yield();
+ assert(cell_read(text)=="Я\u0000🧠");
+ cell_write(state,cell_read(state)+pure::offset());
+ task_yield();
+ throw(Fault(state));
+}

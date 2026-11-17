@@ -34,12 +34,12 @@ std::string read(const fs::path &p,uint64_t maximum){if(!fs::is_regular_file(p)|
 void taskLinkage(const JSON &value,const std::string &component,SourceLanguage language){
   const auto &o=object(value);
   const auto schema=o.getString("schema");
-  const bool managed=schema=="nex.project-static-task-linkage/6"||schema=="nex.project-task-linkage/17";
+  const bool managed=schema=="nex.project-static-task-linkage/6"||schema=="nex.project-task-linkage/17"||schema=="nex.project-task-linkage/18";
   const bool typed=managed||schema=="nex.project-static-task-linkage/5"||schema=="nex.project-task-linkage/14"||schema=="nex.project-task-linkage/15"||schema=="nex.project-task-linkage/16";
   const bool exceptions=typed||schema=="nex.project-static-task-linkage/4"||schema=="nex.project-task-linkage/11"||schema=="nex.project-task-linkage/12"||schema=="nex.project-task-linkage/13";
   const bool streams=exceptions||schema=="nex.project-static-task-linkage/3"||schema=="nex.project-task-linkage/8"||schema=="nex.project-task-linkage/9"||schema=="nex.project-task-linkage/10";
   const bool writes=streams||schema=="nex.project-static-task-linkage/2"||schema=="nex.project-task-linkage/5"||schema=="nex.project-task-linkage/6"||schema=="nex.project-task-linkage/7";
-  const bool debug=schema=="nex.project-task-linkage/16"||schema=="nex.project-task-linkage/13"||schema=="nex.project-task-linkage/4"||schema=="nex.project-task-linkage/7"||schema=="nex.project-task-linkage/10";
+  const bool debug=schema=="nex.project-task-linkage/18"||schema=="nex.project-task-linkage/16"||schema=="nex.project-task-linkage/13"||schema=="nex.project-task-linkage/4"||schema=="nex.project-task-linkage/7"||schema=="nex.project-task-linkage/10";
   const bool profiled=schema=="nex.project-task-linkage/15"||schema=="nex.project-task-linkage/12"||schema=="nex.project-task-linkage/3"||schema=="nex.project-task-linkage/6"||schema=="nex.project-task-linkage/9";
   const bool shared=debug||profiled||schema=="nex.project-task-linkage/17"||schema=="nex.project-task-linkage/14"||schema=="nex.project-task-linkage/11"||schema=="nex.project-task-linkage/2"||schema=="nex.project-task-linkage/5"||schema=="nex.project-task-linkage/8";
   if((managed&&language!=SourceLanguage::References030)||typed!=(isTypedSourceErrorLanguage(language))||exceptions!=(isPublicSourceExceptionLanguage(language))||streams!=(language==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(language))||writes!=(language==SourceLanguage::TaskWrites023||language==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(language)))fail("captured task linkage language/ABI differs");
@@ -285,7 +285,7 @@ void validateProjectCapturePlans(const JSON &capture,const std::string &director
     auto toolchain=inspectNativeToolchain(native);
     if(toolchain.hash!=text(record,"hash")||toolchain.manifest!=*record.get("manifest")||toolchain.inputs!=*record.get("identity"))throw Error("E_TASK_TOOLCHAIN","captured/current project toolchain data differs");
     ProjectBuildOptions options;options.kind="plan";options.component=text(object(capture),"component");options.configuration=configuration.str();options.compilerVersion=NEX_VERSION;options.compilerBuild=NEX_BUILD_ID;options.sourceLanguage=language;
-    for(const auto &entry:*expected.getAsArray())if(auto linkage=entry.getAsObject()->getObject("task_linkage"))options.taskDebug|=linkage->getString("schema")=="nex.project-task-linkage/16"||linkage->getString("schema")=="nex.project-task-linkage/4"||linkage->getString("schema")=="nex.project-task-linkage/7"||linkage->getString("schema")=="nex.project-task-linkage/10"||linkage->getString("schema")=="nex.project-task-linkage/13";
+    for(const auto &entry:*expected.getAsArray())if(auto linkage=entry.getAsObject()->getObject("task_linkage"))options.taskDebug|=linkage->getString("schema")=="nex.project-task-linkage/18"||linkage->getString("schema")=="nex.project-task-linkage/16"||linkage->getString("schema")=="nex.project-task-linkage/4"||linkage->getString("schema")=="nex.project-task-linkage/7"||linkage->getString("schema")=="nex.project-task-linkage/10"||linkage->getString("schema")=="nex.project-task-linkage/13";
     auto plan=buildProject(root.string(),(root/s.manifest).string(),readFile((root/s.manifest).string()),options);
     auto actual=object(plan).getArray("components"),entries=expected.getAsArray();if(!actual||!entries||actual->size()!=entries->size())fail("captured component selection changed");
     for(size_t i=0;i<entries->size();++i){

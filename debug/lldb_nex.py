@@ -1803,7 +1803,7 @@ def _private_module_task_manifest(context, codes=None):
 
 
 def _task_manifest(context):
-    if 'execution_task_abi' in context and (context.get('schema') != 'nex.debug/2' or
+    if 'execution_task_abi' in context and (context.get('schema') not in ('nex.debug/2', 'nex.debug/3') or
             context.get('language') != '0.30' or context['execution_task_abi'] != '0x4e45585400000008'):
         raise ValueError('invalid reference task execution ABI selection')
     view = context.get('task_debug')

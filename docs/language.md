@@ -1,5 +1,9 @@
 # NEX language specification 0.28
 
+Toolchain0.278 adds [reference provider debugging](reference-provider-debugging.md)
+through distinct record18/plan18 tooling metadata. It preserves source syntax,
+selected versions, canonical history and execution ABI8.
+
 Toolchain0.277 adds [source-only native reference task debugging](reference-task-debugging.md)
 and version-aware debug parsing. No source syntax, source version, canonical graph
 format or public runtime ABI changes. Inspection is copied diagnostic data.

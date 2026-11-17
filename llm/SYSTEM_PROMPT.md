@@ -177,7 +177,7 @@ For native reference providers, discover
 components use one application-owned heap and propagated ABI8 across the
 connected static/fixed-shared/mixed cohort, including pure providers. Keep code
 images loaded through frame/value retirement. Imported callables, external
-authority exports, provider debug/profile and runtime unload remain unsupported.
+authority exports, reference provider profiling and runtime unload remain unsupported.
 
 For repeated native host calls, discover
 `managed_references.source030_development.native_host_sessions` and read its guide.
@@ -191,7 +191,9 @@ For030 source-only task debugging, discover
 `nex-task-inspect NAME` reads a bounded copied graph at the current stable stop;
 cell identity, repeated aliases and truncation are explicit. DAP cell children
 are read-only and expire on resume. Pure watches do not gain state/IO authority
-and cannot reconstruct live cell graphs. Provider/HTTP/profile support is separate.
+and cannot reconstruct live cell graphs. Source-backed provider debugging uses record18/plan18 and catalogABI2;
+query `native_providers.debug_guide` under that same source030 capability.
+HTTP/profile support remains separate.
 Structured scopes use `with_tasks(workers, callback)`; `task_scope` is the
 callback's capability type. `with_tasks` and `task_wait` can deliver source errors:
 declare `throw` in their calling function/callback or handle them in lexical try.

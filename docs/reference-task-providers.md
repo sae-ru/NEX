@@ -1,6 +1,6 @@
 ---
 status: development
-applies_to: "toolchain 0.276.0; language 0.30; task ABI8"
+applies_to: "toolchain 0.278.0; language 0.30; task ABI8"
 owner: repository
 ---
 
@@ -60,7 +60,7 @@ schemas are [provider17](../llm/native-reference-task-provider.schema.json) and
 [linkage](../llm/project-reference-task-linkage.schema.json). Capture/replay uses
 the explicit new formats; relabeling an old record does not upgrade its ABI.
 
-Native provider logical debugging/profiling, HTTP project providers, shared-memory
+Native reference profiling, HTTP project providers, shared-memory
 parallel cells, arbitrary load/unload, public foreign cell interfaces and matching
 portable SDK/platform delivery remain open. Standalone/HTTP reference-task and
 TypeScript entries retain their separate contracts.
@@ -89,4 +89,5 @@ matching platform and complete SDK/archive acceptance remain required.
 
 Toolchain0.276 adds [persistent C++ host sessions](native-task-sessions.md) for
 checked ABI8 exports, retaining application state with separate per-call controls.
-This does not enable provider logical debugging/profile or hot unload.
+Toolchain0.278 adds [provider logical debugging](reference-provider-debugging.md)
+with record18 and plan18. Profiling and hot unload remain separate work.

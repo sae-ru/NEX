@@ -1,10 +1,15 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.277.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.278.0"
 owner: repository
 ---
 
 # Implementation sequence: items 1–6
+
+Toolchain0.278 adds [reference provider debugging](reference-provider-debugging.md):
+checked ABI8 state and source errors cross static/fixed-shared/mixed images with
+logical stacks, copied cell inspection and captured/relocated replay. HTTP/debug
+profile integration and full SDK/platform delivery remain separate.
 
 Toolchain0.277 adds [source-only native reference task debugging](reference-task-debugging.md)
 with live cell inspection, read-only DAP expansion and version-aware scalar
