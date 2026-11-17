@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.278.0; language 0.30; task ABI8"
+applies_to: "toolchain 0.279.0; language 0.30; task ABI8"
 owner: repository
 ---
 
@@ -76,7 +76,8 @@ collection cannot execute through pure watch evaluation. Use inspection to read
 the stopped payload. Reconstructing live cell graphs for watch calls remains a
 separate contract, including alias identity, lazy paths and cycles.
 
-HTTP logical debugging, profile builds,
+[Reference task profiles](reference-task-profiling.md) use a separate profile build.
+HTTP logical debugging/profiling,
 persistent native host-session debug launches, parallel reference transfer and
 matching complete SDK/platform delivery remain open. Existing sequential raw
 native inspection and reference-free logical debugging keep their contracts.

@@ -4,6 +4,7 @@
 #include "nex_host_windows.h"
 #endif
 #include "nex/task_limits.h"
+#include "nex_task_protocol.h"
 #include "nex/native_toolchain.h"
 #include "nex/incremental.h"
 #include "nex/native_images.h"
@@ -180,6 +181,7 @@ llvm::json::Value profileNative(const Program &p,const BuildResult &built,llvm::
   if(!buildMetadata)throw Error("E_PROFILE","invalid measured build metadata");
   auto requirements=buildMetadata->getObject("runtime_requirements");
   bool tasks=requirements&&requirements->getBoolean("tasks").value_or(false);
+  const bool ownerThread=tasks&&buildMetadata->getInteger("task_execution_abi")==nexrt::taskCodeManagedReferencesABI;
   const auto providerMetadata=buildMetadata->getObject("task_provider");
   const bool providers=tasks&&providerMetadata&&providerMetadata->getObject("profiling");
   std::optional<ProviderProfileBuild> providerBuild;llvm::json::Object providerSites;
@@ -291,11 +293,11 @@ llvm::json::Value profileNative(const Program &p,const BuildResult &built,llvm::
     (*report)["toolchain"]=NEX_VERSION;(*report)["language"]=programLanguage(p);(*report)["profile"]="profile";
     (*report)["started_unix_ms"]=int64_t(sinceEpoch);(*report)["scenario"]=options.scenario;
     (*report)["hardware"]=llvm::json::Object{{"target",llvm::sys::getDefaultTargetTriple()},{"cpu",llvm::sys::getHostCPUName().str()},{"hardware_threads",std::thread::hardware_concurrency()}};
-    if(tasks){(*report)["task_execution"]=taskExecutionJSON(*configured,*effective,"native",options.timeout);
+    if(tasks){(*report)["task_execution"]=taskExecutionJSON(*configured,*effective,"native",options.timeout,ownerThread);
       (*report->getObject("limits"))["timeout_seconds"]=options.timeout;
       (*report)["measurement"]=llvm::json::Object{{"time","source thread CPU and active elapsed segments; overlapping logical invocation lifetime; process duration is wall time"},
         {"scheduler","ready queue, blocked reason and physical drain wall intervals; executor CPU includes driver/cleanup overhead"},
-        {"memory","allocation-site managed handle/object shallow sizes; excludes Value aliases, dynamic backing, coroutine/scheduler backing and total RAM"},
+        {"memory","allocation-site managed handle/object shallow sizes; excludes Value aliases, dynamic backing, cell heap registry/index backing, coroutine/scheduler backing and total RAM"},
         {"coverage","reachable native task frames and ordinary helpers; no IO worker CPU or disk service measurement"}};
     }else{
     (*report)["limits"]=llvm::json::Object{{"events",options.events},{"functions",16384},{"stack_frames_per_thread",4096},{"live_allocations",1000000},{"timeout_seconds",options.timeout}};

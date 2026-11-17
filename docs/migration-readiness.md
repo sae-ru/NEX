@@ -1,10 +1,16 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.278.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.279.0"
 owner: repository
 ---
 
 # Language prerequisites for Java and Python migration
+
+Toolchain0.279 adds [native reference task profiling](reference-task-profiling.md)
+for standalone030 and source-backed static/shared/mixed provider builds. ABI8
+profile record19/plan19 preserve source invocation, component/image attribution
+and owned cyclic-state cleanup. HTTP/profile integration and complete current
+SDK/platform delivery remain separate.
 
 Toolchain0.278 adds [reference provider debugging](reference-provider-debugging.md):
 checked ABI8 state and source errors cross static/fixed-shared/mixed images with

@@ -1945,7 +1945,7 @@ NativeTaskApplicationStage parseNativeTaskApplicationStage(const llvm::json::Val
 }
 llvm::json::Object nativeTaskProviderJSON(const NativeTaskProviderInfo &info){
   const bool managed=info.managedReferences,shared=info.mode==NativeTaskLinkageMode::SharedFixed,typed=isTypedSourceErrorVersion(info.language),exceptions=typed||(info.language=="0.25"||info.language=="0.26"),streams=exceptions||info.language=="0.24",writes=streams||info.language=="0.23";
-  if(managed&&(info.language!="0.30"||info.profiling))throw Error("E_TASK_PROVIDER","reference task providers require030 owner-thread images; profiling remains pending");
+  if(managed&&info.language!="0.30")throw Error("E_TASK_PROVIDER","reference task providers require030 owner-thread images");
   if(!writes&&(info.taskFileWrites||!info.componentFileWrites.empty()))throw Error("E_TASK_PROVIDER","retained provider records cannot acquire write requirements");
   if(!streams&&(info.taskFileStreams||!info.componentFileStreams.empty()))throw Error("E_TASK_PROVIDER","retained provider records cannot acquire stream requirements");
   llvm::json::Array definitions;for(const auto &name:info.definitions)definitions.push_back(name);
@@ -1962,19 +1962,19 @@ llvm::json::Object nativeTaskProviderJSON(const NativeTaskProviderInfo &info){
   if(writes){result["task_file_writes"]=info.taskFileWrites;if(shared){llvm::json::Object flags;for(const auto &[name,enabled]:info.componentFileWrites)flags[name]=enabled;result["component_file_writes"]=std::move(flags);}}
   if(streams){result["task_file_streams"]=info.taskFileStreams;if(shared){llvm::json::Object flags;for(const auto &[name,enabled]:info.componentFileStreams)flags[name]=enabled;result["component_file_streams"]=std::move(flags);}}
   if(info.profiling&&info.debugging)throw Error("E_TASK_PROVIDER","task profile and debugger provider extensions conflict");
-  if(info.profiling){result["schema"]=typed?"nex.native-task-provider/15":exceptions?"nex.native-task-provider/12":streams?"nex.native-task-provider/9":writes?"nex.native-task-provider/6":"nex.native-task-provider/3";result["profiling"]=profileInfoJSON(*info.profiling);}
+  if(info.profiling){result["schema"]=managed?"nex.native-task-provider/19":typed?"nex.native-task-provider/15":exceptions?"nex.native-task-provider/12":streams?"nex.native-task-provider/9":writes?"nex.native-task-provider/6":"nex.native-task-provider/3";result["profiling"]=profileInfoJSON(*info.profiling);}
   if(info.debugging){result["schema"]=managed?"nex.native-task-provider/18":typed?"nex.native-task-provider/16":exceptions?"nex.native-task-provider/13":streams?"nex.native-task-provider/10":writes?"nex.native-task-provider/7":"nex.native-task-provider/4";result["debugging"]=nativeTaskDebugInfoJSON(*info.debugging);}
   return result;
 }
 NativeTaskProviderInfo parseNativeTaskProvider(const llvm::json::Value &value){
   auto invalid=[](){throw Error("E_TASK_PROVIDER","invalid or incompatible native task provider record");};
   const auto *o=value.getAsObject();if(!o)invalid();auto schema=o->getString("schema");
-  const bool managed=schema=="nex.native-task-provider/17"||schema=="nex.native-task-provider/18";
+  const bool managed=schema=="nex.native-task-provider/17"||schema=="nex.native-task-provider/18"||schema=="nex.native-task-provider/19";
   const bool typed=managed||schema=="nex.native-task-provider/14"||schema=="nex.native-task-provider/15"||schema=="nex.native-task-provider/16";
   const bool exceptions=typed||schema=="nex.native-task-provider/11"||schema=="nex.native-task-provider/12"||schema=="nex.native-task-provider/13";
   const bool streams=exceptions||schema=="nex.native-task-provider/8"||schema=="nex.native-task-provider/9"||schema=="nex.native-task-provider/10";
   const bool writes=streams||schema=="nex.native-task-provider/5"||schema=="nex.native-task-provider/6"||schema=="nex.native-task-provider/7";
-  const bool profiled=schema=="nex.native-task-provider/15"||schema=="nex.native-task-provider/3"||schema=="nex.native-task-provider/6"||schema=="nex.native-task-provider/9"||schema=="nex.native-task-provider/12";
+  const bool profiled=schema=="nex.native-task-provider/19"||schema=="nex.native-task-provider/15"||schema=="nex.native-task-provider/3"||schema=="nex.native-task-provider/6"||schema=="nex.native-task-provider/9"||schema=="nex.native-task-provider/12";
   const bool debugged=schema=="nex.native-task-provider/18"||schema=="nex.native-task-provider/16"||schema=="nex.native-task-provider/4"||schema=="nex.native-task-provider/7"||schema=="nex.native-task-provider/10"||schema=="nex.native-task-provider/13";
   const bool shared=(writes||profiled||debugged)?o->getString("mode")=="shared-fixed":schema=="nex.native-task-provider/2";
   const size_t baseSize=shared?(streams?22:writes?20:18):(streams?15:writes?14:13);
@@ -2059,7 +2059,6 @@ void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
   auto names=reachable(p,options.entry);for(const auto &entry:options.libraryExports){auto more=reachable(p,entry);names.insert(more.begin(),more.end());}
   if(options.managedTaskABI&&(!taskProviders||p.sourceLanguage!=SourceLanguage::References030))throw Error("E_TASK_PROVIDER","owner-thread provider selection requires a checked030 provider cohort");
   if(taskProviders&&managedReferences&&!options.managedTaskABI)throw Error("E_TASK_PROVIDER","reference provider images require an explicit connected owner-thread cohort",p.function(options.entry).span);
-  if(options.managedTaskABI&&options.profile=="profile")throw Error("E_CELL_TARGET","reference provider profiling remains pending",p.function(options.entry).span);
   if(options.managedTaskABI)for(const auto &name:names)if(usesParallelMap(p.function(name)))throw Error("E_CELL_CONCURRENCY","reference provider continuations require one owner thread",p.function(name).span);
   if(taskProviders){
     if(!isPublicTaskLanguage(p)||!options.projectLibraryABI||options.taskComponent.empty()||options.taskComponent.size()>256||options.taskComponent.find('\0')!=std::string::npos||
@@ -2110,7 +2109,6 @@ void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
     }
   }
   if(tasks){
-    if(managedReferences&&options.profile=="profile")throw Error("E_CELL_TARGET","reference task profiling remains pending",p.function(options.entry).span);
     if(server&&!supportsTaskFileStreams(p))throw Error("E_TASK_TARGET","task HTTP handlers require language0.24; explicitly migrate retained source history",p.function(options.entry).span);
     if(server&&(options.profile=="profile"||options.taskDebug))throw Error("E_OPTION","task HTTP profiling and logical debugging remain pending",p.function(options.entry).span);
     if(!taskProviders&&(options.libraryEntry||options.codeOnlyLibrary||options.deferredLink||options.functionsOnly||!options.libraries.empty()||!options.libraryExports.empty()))

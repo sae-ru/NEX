@@ -1,3 +1,31 @@
+# Native reference task profiling — development0.279.0
+
+Ordinary030 standalone and source-backed static/fixed-shared/mixed native task
+applications support profile builds. Record19/plan19 retain execution ABI8;
+reference-free ABI7 and all older source/record cohorts remain separate. One
+source invocation survives yields and image calls. Caught cell-valued errors
+mark the leaf aborted and its caller completed; heap close retires self-cycles.
+Reports now identify the owner-thread executor correctly and explicitly exclude
+cell registry/index backing from shallow tracked-object memory measurements.
+Read the [contract](docs/reference-task-profiling.md) and
+[example](examples/reference-task-profiling/README.md).
+
+The [focused receipt](docs/evidence/reference-task-profiling-0.279.0-2026-11-17.json)
+records28 distinct passing core/affected groups (17 core plus11 affected),
+including14 actual provider-profile scenarios. Schema validation accepts72 real
+record/plan observations and rejects48 ABI relabelings. Source/moved normal-install
+profiles cover controlled cleanup, captured source unions, replay and source-absent
+ordinary/profile package execution. Original fixture/resource failures are retained;
+the final affected run passes11/11. Final metadata refresh preserves262 execution
+files and makes the installed language pack match the compiled descriptor.
+The application packager recognizes ABI8 ordinary/profile records17/19 with
+matching030 language/descriptor checks; original metadata remains byte pinned.
+[Hosted0.278 core](docs/evidence/core-ci-0.278.0-2026-11-17.json) passed Linux/macOS
+at4dd4b721. Full current source/platform/portable SDK gates, HTTP task profiling
+and debugging, parallel reference transfer, host-session profile launches and
+remaining application/LLM work are open. Published SDK0.246.1 remains immutable;
+a moved normal installation retains its build-host dependencies.
+
 # Native reference provider debugging — development0.278.0
 
 Source-backed030 static/fixed-shared/mixed components retain ABI8 owner state

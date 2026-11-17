@@ -1,0 +1,6 @@
+module ref_profile_mid;
+import "../leaf/value.nex" as leaf;
+pub fn work(state:cell<i64>,text:cell<str>,input:i64)->i64!{task,state,throw}{
+ try{return leaf::work(state,text,input);}
+ catch(fault:leaf::Fault){assert(fault.value==state);return cell_read(fault.value);}
+}

@@ -1,0 +1,63 @@
+{
+  "schema": "nex.project-build/1",
+  "default_configuration": "measured",
+  "configurations": {
+    "debug": {
+      "profile": "debug",
+      "task_limits": {
+        "steps": 1000000,
+        "timeout_ms": 60000,
+        "workers": 2
+      }
+    },
+    "release": {
+      "profile": "release"
+    },
+    "measured": {
+      "profile": "profile",
+      "task_limits": {
+        "steps": 1000000,
+        "timeout_ms": 10000,
+        "workers": 2
+      }
+    }
+  },
+  "components": {
+    "pure": {
+      "kind": "static_library",
+      "root": "pure",
+      "entry": "pure/value.nex",
+      "entry_function": "offset"
+    },
+    "leaf": {
+      "kind": "static_library",
+      "root": "leaf",
+      "entry": "leaf/value.nex",
+      "entry_function": "work",
+      "exports": [
+        "make"
+      ],
+      "dependencies": {
+        "pure": "static"
+      }
+    },
+    "mid": {
+      "kind": "static_library",
+      "root": "mid",
+      "entry": "mid/value.nex",
+      "entry_function": "work",
+      "dependencies": {
+        "leaf": "static"
+      }
+    },
+    "app": {
+      "kind": "executable",
+      "root": "app",
+      "entry": "app/main.nex",
+      "dependencies": {
+        "leaf": "static",
+        "mid": "static"
+      }
+    }
+  }
+}

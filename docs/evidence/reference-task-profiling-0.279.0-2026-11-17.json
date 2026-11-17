@@ -1,0 +1,4218 @@
+{
+  "schema": "nex.reference-task-profiling-milestone/1",
+  "ok": true,
+  "toolchain": "0.279.0",
+  "base_commit": "4dd4b721ec96f0ae603cfae22af101d539968b69",
+  "platform": "macOS ARM64",
+  "scope": "Native030 owner-thread standalone and source-backed static/shared/mixed task profiles; not HTTP/GPU/parallel transfer or a portable SDK",
+  "compiler": {
+    "ok": true,
+    "shared_fields": [
+      "browser_workers",
+      "bytes_construction",
+      "cli_interface",
+      "compute",
+      "device",
+      "diagnostic_catalogue",
+      "dns_provider",
+      "effect_parameters",
+      "features_scope",
+      "foreign_trap_reporting",
+      "generic_features",
+      "gpu_codegen",
+      "http_client_provider",
+      "http_response_streams",
+      "http_storage_transactions",
+      "ieee_numeric_kernel",
+      "language_pack_contract",
+      "list_construction",
+      "llm_cost",
+      "llm_entry",
+      "managed_references",
+      "model",
+      "native_application_lifetime",
+      "native_core",
+      "native_debug_image_binding",
+      "native_debug_pages",
+      "native_debug_session",
+      "native_entry_abi",
+      "native_runtime_search",
+      "native_tool_arguments",
+      "opencl_codegen",
+      "patch_entities",
+      "project_capture_layout",
+      "project_languages",
+      "resource_executor",
+      "resource_regions",
+      "result_propagation",
+      "runtime_contracts",
+      "runtime_diagnostic_messages",
+      "scoped_discovery",
+      "source_concurrency",
+      "source_contracts",
+      "source_contracts_development",
+      "source_exception_prototype",
+      "source_exceptions",
+      "source_formatting",
+      "source_resources",
+      "standard_library",
+      "structured_tasks_runtime",
+      "task_debugging",
+      "task_execution_limits",
+      "task_external_completion",
+      "task_file_reads",
+      "task_file_streams",
+      "task_file_streams_host",
+      "task_file_streams_prototype",
+      "task_file_writes",
+      "task_file_writes_host",
+      "task_file_writes_prototype",
+      "task_foreign_prototype",
+      "task_network_transport",
+      "task_profile_collector",
+      "task_profiling",
+      "task_provider_debugging",
+      "task_provider_profiling",
+      "task_providers",
+      "task_shared_providers",
+      "task_value_retirement",
+      "tcp_provider",
+      "text_construction",
+      "wasm_features"
+    ],
+    "shared_field_count": 71,
+    "compared_JSON_values": 4764,
+    "errors": [],
+    "schema": "nex.language-pack-validation/1",
+    "compiler_sha256": "de3df775ccc8fbce63fb8763e1356359c5b289e70e96597abedf0c7ca0f326e8",
+    "manifest_sha256": "0976ffe0ff8c66530a2af3dfef52cbf01d754347847ff957783ccec335ce6ff7",
+    "language": "0.28",
+    "toolchain": "0.279.0",
+    "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+    "descriptor_hash": "168471c51358fc845e7310084666f8a7e9b13cc7b44bd7eba0b060da6741c75a"
+  },
+  "source_files_sha256": {
+    "VERSION": "6f5a0ce1b8aaff5dbe4a885ab0237aa7224bc1884e4d73feec2a0842f18450c7",
+    "src/backend.cpp": "de9b91a1f76abaa53dd18b104b3d24587d84495a804a295360e393200b9c4916",
+    "src/managed_references.cpp": "2245d458427d6a3909f13341b692f6a2c6b94be1dbb0ae56f538d8326313d3e7",
+    "src/project_build.cpp": "1ccf1f6c193dad57edf297fc4a5d5c9faa52feb54870880303c0638c222ee5d6",
+    "src/project_capture.cpp": "47ced19f4f2c42135d8b6eff6a462ada07742ea8a8a17ca41edda7337ff87b89",
+    "src/profiling.cpp": "644c76004ca478b9824ee191a89f87a1c300be5b64f2de100b52dcce575a5201",
+    "src/tasks.cpp": "f6ee1006e05c604a84fa1908b8a2d9f2879002c553f5e4a0a7460740ed84c9bf",
+    "tools/app_bundle.py": "d8769259cbf22d649361e7a983c1a76a9d2fc6b5cf28db0f3cb61cf79abdb2a2",
+    "tests/task_provider_profile.py": "63f53a41e67661e07f2305aed6c88bd547835ba90e5876f131fadb0e7359016b",
+    "tests/task_static_provider_boundary.cpp": "91d0b8a7f009ea8f869e17ef8160fb79841f7c55a0d4d7ab2a010fe0d9480edd",
+    "tests/reference_task_providers.py": "a1714f56ebebf87b1aca581183706934c29fc8750e69ffba9425d96985cb9e98",
+    "llm/SYSTEM_PROMPT.md": "30d42f3128ad4655adc5b6d3d378b6e8d82d2988a68b70a7e63dc94a93e0e764",
+    "llm/language-pack.json": "0976ffe0ff8c66530a2af3dfef52cbf01d754347847ff957783ccec335ce6ff7",
+    "llm/native-reference-task-provider.schema.json": "49bb454e08f419c5428608303ec050ba341a02c732a53413ebfa88f28efb363d",
+    "llm/native-profiled-task-provider.schema.json": "8bd0b2a30fbdb9fb54b056d8b0224da23a483e1e46cd4f5428d1692aa3db28a4",
+    "llm/project-reference-task-linkage.schema.json": "95008925faae5ee386c23fb97b8139e068693a73b0b9869009e266c44b9b3481"
+  },
+  "example_files_sha256": {
+    "examples/reference-task-profiling/README.md": "65ef284b03c9353d670fa1ec5c1fc4c36107199079f0bd0e2370d1995f5bc3f4",
+    "examples/reference-task-profiling/nex.build.json": "291a9d4ec2545e203c6e37cbf60ed7999019dd6f1afc8ccfbadfab92b84f8718",
+    "examples/reference-task-profiling/nex.json": "205dc91efdf4a393d07caefa8624721b57d018a8b569f81c3254b803d9775233",
+    "examples/reference-task-profiling/leaf/value.nex": "ba59a9d6ce27eda0be230b2ef8870b772f8d8d7b4e99b5d655b8b6721ab42bc4",
+    "examples/reference-task-profiling/app/main.nex": "c92c36a33c455da24bf4adc62173047f95eeda4ca1e635113d3756ff97270e36",
+    "examples/reference-task-profiling/mid/value.nex": "142bd5d198b60bc491e272d8218ffc01db6249829ce9053eba954e5bb06f511f",
+    "examples/reference-task-profiling/pure/value.nex": "dd6e1c9da3842f175afd4a5ce87788d949a056f9282aa38af1547052d9e9aeff"
+  },
+  "build": {
+    "command": "cmake --build build -j 4",
+    "exit_code": 0,
+    "stdout_sha256": "0c5f6b448b76cd88288d91d21110e75cfd4a0e81a8537eccc2105370157bd432",
+    "stderr_sha256": "78822eb95e9b759a59af8e508d867ee3bb6d1c35d1265b13f33f47ee31df7b56"
+  },
+  "core": {
+    "schema": "nex.ctest-verification/1",
+    "ok": true,
+    "ctest_exit_code": 0,
+    "selected_groups": [
+      "bytes_runtime_native",
+      "ctest_report_validation",
+      "diagnostic_catalogue",
+      "discovery",
+      "float_runtime_native",
+      "frontend_diagnostics_native",
+      "language_pack_contract",
+      "llm_cost_ledger",
+      "llm_local_collector",
+      "managed_reference_native_context",
+      "managed_references_frontend_reference",
+      "reference_tasks_development",
+      "task_frontend_native",
+      "test_tiers",
+      "typed_source_frontend_reference",
+      "value_owner_runtime",
+      "value_retirement_runtime"
+    ],
+    "required_fixture_groups": [],
+    "expected_groups": [
+      "bytes_runtime_native",
+      "ctest_report_validation",
+      "diagnostic_catalogue",
+      "discovery",
+      "float_runtime_native",
+      "frontend_diagnostics_native",
+      "language_pack_contract",
+      "llm_cost_ledger",
+      "llm_local_collector",
+      "managed_reference_native_context",
+      "managed_references_frontend_reference",
+      "reference_tasks_development",
+      "task_frontend_native",
+      "test_tiers",
+      "typed_source_frontend_reference",
+      "value_owner_runtime",
+      "value_retirement_runtime"
+    ],
+    "observed_groups": [
+      "llm_cost_ledger",
+      "llm_local_collector",
+      "ctest_report_validation",
+      "discovery",
+      "language_pack_contract",
+      "task_frontend_native",
+      "reference_tasks_development",
+      "frontend_diagnostics_native",
+      "value_owner_runtime",
+      "value_retirement_runtime",
+      "managed_references_frontend_reference",
+      "managed_reference_native_context",
+      "bytes_runtime_native",
+      "float_runtime_native",
+      "typed_source_frontend_reference",
+      "test_tiers",
+      "diagnostic_catalogue"
+    ],
+    "results": {
+      "passed": [
+        "llm_cost_ledger",
+        "llm_local_collector",
+        "ctest_report_validation",
+        "discovery",
+        "language_pack_contract",
+        "task_frontend_native",
+        "reference_tasks_development",
+        "frontend_diagnostics_native",
+        "value_owner_runtime",
+        "value_retirement_runtime",
+        "managed_references_frontend_reference",
+        "managed_reference_native_context",
+        "bytes_runtime_native",
+        "float_runtime_native",
+        "typed_source_frontend_reference",
+        "test_tiers",
+        "diagnostic_catalogue"
+      ],
+      "failed": [],
+      "skipped": []
+    },
+    "registry_sha256": "50dbb9b8a57d0a8b999f0e91f8c69b3890a7abcd4fc748d3065181ddea46be69",
+    "junit_sha256": "66f1d2e2b038d5b3e5bce070f047c1221082a93e33487cd0b7f68f1a82cd437c"
+  },
+  "affected": {
+    "groups": [
+      "docs_index",
+      "reference_task_providers",
+      "task_profile_collector_native",
+      "task_profile_native",
+      "task_profile_registry_native",
+      "task_profile_report_native",
+      "task_profile_runtime_native",
+      "task_profile_versioned_native",
+      "task_provider_profile_boundary_native",
+      "task_provider_profile_native",
+      "task_static_provider_boundary_native"
+    ],
+    "original_exit_code": 8,
+    "original_junit_sha256": "bc5dfe7836e208a87f60af4258e8dca3d83cbdcc6e7499f6386f6b91a601fc91",
+    "original_failure": "task_provider_profile_native: captured app_bundle.py changed before replay",
+    "resource_mismatch": {
+      "original_failure": "E_TASK_RESOURCE",
+      "differences": [
+        {
+          "resource": "tools/app_bundle.py",
+          "captured_sha256": "94eea498bf02aea24d670c2f2ab4047ef363f8c793719ec5ccfe2c08e70665a4",
+          "current_sha256": "d8769259cbf22d649361e7a983c1a76a9d2fc6b5cf28db0f3cb61cf79abdb2a2"
+        }
+      ],
+      "cause": "app_bundle.py was changed after the original capture and before replay; preserve its refusal",
+      "runtime_changes": false
+    },
+    "final_affected_exit_code": 0,
+    "final_junit_sha256": "d5a1549fae7d1c20a5581e6be5a402f4d20bce950cac6d9494e81dae3d20717c",
+    "final_passed_groups": [
+      "docs_index",
+      "reference_task_providers",
+      "task_profile_collector_native",
+      "task_profile_native",
+      "task_profile_registry_native",
+      "task_profile_report_native",
+      "task_profile_runtime_native",
+      "task_profile_versioned_native",
+      "task_provider_profile_boundary_native",
+      "task_provider_profile_native",
+      "task_static_provider_boundary_native"
+    ]
+  },
+  "unique_passed_group_count": 28,
+  "unique_passed_groups": [
+    "bytes_runtime_native",
+    "ctest_report_validation",
+    "diagnostic_catalogue",
+    "discovery",
+    "docs_index",
+    "float_runtime_native",
+    "frontend_diagnostics_native",
+    "language_pack_contract",
+    "llm_cost_ledger",
+    "llm_local_collector",
+    "managed_reference_native_context",
+    "managed_references_frontend_reference",
+    "reference_task_providers",
+    "reference_tasks_development",
+    "task_frontend_native",
+    "task_profile_collector_native",
+    "task_profile_native",
+    "task_profile_registry_native",
+    "task_profile_report_native",
+    "task_profile_runtime_native",
+    "task_profile_versioned_native",
+    "task_provider_profile_boundary_native",
+    "task_provider_profile_native",
+    "task_static_provider_boundary_native",
+    "test_tiers",
+    "typed_source_frontend_reference",
+    "value_owner_runtime",
+    "value_retirement_runtime"
+  ],
+  "source_matrix": [
+    {
+      "report": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/bb092b760e458b6ab5c8e4c142f524b823b1138bc4c770b35c9469c3dd27ab7d/profiles/run-2142888096-315421662.json",
+      "sha256": "3e7e0c9a1f7a6870e011d3c906a7803aca90143a2b8e26eee506209b594a0ed3",
+      "schema": "nex.profile/3",
+      "exit_code": 0,
+      "stdout": "42\n",
+      "build": {
+        "build_key": "bb092b760e458b6ab5c8e4c142f524b823b1138bc4c770b35c9469c3dd27ab7d",
+        "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+        "entry": "ref_profile_app::main",
+        "language": "0.30",
+        "revision": "ff5bd5328f9bc180cf0bfceebdab7a978007508e1934bcd52993450d8a079545",
+        "schema": "nex.profile-build/2",
+        "source_hash": "e0b3ecfaf7d1696573d9f3909fdb3262456346c5c322034fe6706d48cdfe6de8",
+        "task_limits": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "task_profile_catalog": "1537c2ae489a23ce05897ebc6fce4e5788befcb5866325e38e2048314009410c",
+        "toolchain": "0.279.0"
+      },
+      "task_execution": {
+        "backend": "native",
+        "configured": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "cooperative_deadline": true,
+        "effective": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "executor_workers": 1,
+        "identical_step_thresholds": false,
+        "step_model": "native resume and runtime polls",
+        "supervisor_timeout_seconds": 30
+      },
+      "completeness": {
+        "aggregates": true,
+        "cpu": true,
+        "elapsed": true,
+        "lifetime": true,
+        "memory": true,
+        "timeline": true
+      },
+      "tracked_memory": [
+        {
+          "allocations": 126,
+          "frees": 126,
+          "live": 0,
+          "live_shallow_bytes": 0,
+          "peak_live": 4,
+          "peak_shallow_bytes": 192,
+          "pool": "NEX handles"
+        },
+        {
+          "allocations": 38,
+          "frees": 38,
+          "live": 0,
+          "live_shallow_bytes": 0,
+          "peak_live": 16,
+          "peak_shallow_bytes": 2000,
+          "pool": "NEX objects (shallow)"
+        }
+      ],
+      "source_functions": [
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "7a5a916a4f44f1805ff071608e23830f5bb3a11a890b454618c90012997388da",
+          "name": "ref_profile_app::main",
+          "owner_image": "app",
+          "provider_component": "app"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "a8c323cfd99dc1245703e1d74608e4889eb1cbccc94d3339b8beccb133bb192c",
+          "name": "ref_profile_app::main::$lambda_0",
+          "owner_image": "app",
+          "provider_component": "app"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "7719153f9416ff8adb5b1781e2674af3882a87f382977464ecd6caa5ce5da99b",
+          "name": "ref_profile_app::main::$lambda_0::$lambda_1",
+          "owner_image": "app",
+          "provider_component": "app"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "96687f366a4bacd524f63c2c67d4803c18419265ce3fe642b4d90aace79dcd5c",
+          "name": "ref_profile_leaf::make",
+          "owner_image": "app",
+          "provider_component": "leaf"
+        },
+        {
+          "aborted": 1,
+          "calls": 1,
+          "completed": 0,
+          "content_hash": "a35f28983db471f977e49b1dfb3fd339083218a86ff67166e3016ae892c098ec",
+          "name": "ref_profile_leaf::work",
+          "owner_image": "app",
+          "provider_component": "leaf"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "be26caf9ad0e5b5184ff96d093c235a472c3b1d572d7915699f73837ebcf495d",
+          "name": "ref_profile_mid::work",
+          "owner_image": "app",
+          "provider_component": "mid"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "a6f203fc415e9d658feb3b0c3dfbe31237298382acf52b11ef948430fc9223e9",
+          "name": "ref_profile_pure::offset",
+          "owner_image": "app",
+          "provider_component": "pure"
+        }
+      ],
+      "images": [
+        {
+          "component": "pure",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/fb8c5efc01f42196df2741da83af87e5957e474a9e027b8c44f436a76fd8bcb4/libnex.a",
+          "sha256": "e7c8aac4813b1f3449d99b154be2cc508539ca5883998546f6ec720131171344",
+          "record_sha256": "75f1658cf9422964db628acf5c3ab1f0dea0b3ded0d110fe03845740cd5213cc",
+          "catalog_sha256": "f9f2d10ded64310d8d5be9c2538255a55dd16b28a7425448475ece79a1735bb0",
+          "execution_ABI": 8
+        },
+        {
+          "component": "leaf",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/7b10976c1b858922cda133d8c028601a142006e260898861ea26c48070c02196/libnex.a",
+          "sha256": "1cb3cc5b1827013413079795de3fcdbae1700d55a9f6e6b1d110dd62d1c79fae",
+          "record_sha256": "603d8360b129ef60782d653ccf1c94f8c2858471b485122cdfed4aa4c530e66c",
+          "catalog_sha256": "78a22dab2b858486ccab8f44c69192ebdf8706cd4b2ee8e17d9fcb54c507a176",
+          "execution_ABI": 8
+        },
+        {
+          "component": "mid",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/60892dd3c3f14fb650f448496f1d5e906f641ef4bd478727b825cbf843227118/libnex.a",
+          "sha256": "fd342e6e0e47f2981dc13408d3009fe41e38a4ea7b1a32c0c4a88aaedefef2b7",
+          "record_sha256": "9659671c1cba7ff7d207c6400a2a183749a22c8276f780ba41f81291cf55b355",
+          "catalog_sha256": "bfbcbc6d8a7314d5dfd6b6221b0046c5b255f4e2aa15cbcec63e28204fe7597f",
+          "execution_ABI": 8
+        },
+        {
+          "component": "app",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/bb092b760e458b6ab5c8e4c142f524b823b1138bc4c770b35c9469c3dd27ab7d/app",
+          "sha256": "6cf34536cf838ac31fb1e4d9a7d5961886f97478a9592b996e10a97540e00c94",
+          "record_sha256": "a202e6488b0f12c03bc1ffab5ff8a3564f1f387bf5a42c84644b7067f48e2105",
+          "catalog_sha256": "b492d734de26b8e0057dbb2c7c181dd20c4ce299718a29b187320e4b94c65994",
+          "execution_ABI": 8
+        }
+      ],
+      "plans": {
+        "pure": {
+          "execution_abi": 8,
+          "mode": "static",
+          "schema": "nex.project-task-linkage/19"
+        },
+        "leaf": {
+          "execution_abi": 8,
+          "mode": "static",
+          "schema": "nex.project-task-linkage/19"
+        },
+        "mid": {
+          "execution_abi": 8,
+          "mode": "static",
+          "schema": "nex.project-task-linkage/19"
+        },
+        "app": {
+          "execution_abi": 8,
+          "mode": "static",
+          "schema": "nex.project-task-linkage/19"
+        }
+      }
+    },
+    {
+      "report": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/bb092b760e458b6ab5c8e4c142f524b823b1138bc4c770b35c9469c3dd27ab7d/profiles/run-208478069-1695817814.json",
+      "sha256": "a1283928f709c3f84ab58636d2ca67259e2d9deb58c1d1336c88cd53a88a3e8d",
+      "schema": "nex.profile/3",
+      "exit_code": 0,
+      "stdout": "42\n",
+      "build": {
+        "build_key": "bb092b760e458b6ab5c8e4c142f524b823b1138bc4c770b35c9469c3dd27ab7d",
+        "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+        "entry": "ref_profile_app::main",
+        "language": "0.30",
+        "revision": "ff5bd5328f9bc180cf0bfceebdab7a978007508e1934bcd52993450d8a079545",
+        "schema": "nex.profile-build/2",
+        "source_hash": "e0b3ecfaf7d1696573d9f3909fdb3262456346c5c322034fe6706d48cdfe6de8",
+        "task_limits": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "task_profile_catalog": "1537c2ae489a23ce05897ebc6fce4e5788befcb5866325e38e2048314009410c",
+        "toolchain": "0.279.0"
+      },
+      "task_execution": {
+        "backend": "native",
+        "configured": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "cooperative_deadline": true,
+        "effective": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "executor_workers": 1,
+        "identical_step_thresholds": false,
+        "step_model": "native resume and runtime polls",
+        "supervisor_timeout_seconds": 30
+      },
+      "completeness": {
+        "aggregates": true,
+        "cpu": true,
+        "elapsed": true,
+        "lifetime": true,
+        "memory": true,
+        "timeline": false
+      },
+      "tracked_memory": [
+        {
+          "allocations": 126,
+          "frees": 126,
+          "live": 0,
+          "live_shallow_bytes": 0,
+          "peak_live": 4,
+          "peak_shallow_bytes": 192,
+          "pool": "NEX handles"
+        },
+        {
+          "allocations": 38,
+          "frees": 38,
+          "live": 0,
+          "live_shallow_bytes": 0,
+          "peak_live": 16,
+          "peak_shallow_bytes": 2000,
+          "pool": "NEX objects (shallow)"
+        }
+      ],
+      "source_functions": [
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "7a5a916a4f44f1805ff071608e23830f5bb3a11a890b454618c90012997388da",
+          "name": "ref_profile_app::main",
+          "owner_image": "app",
+          "provider_component": "app"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "a8c323cfd99dc1245703e1d74608e4889eb1cbccc94d3339b8beccb133bb192c",
+          "name": "ref_profile_app::main::$lambda_0",
+          "owner_image": "app",
+          "provider_component": "app"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "7719153f9416ff8adb5b1781e2674af3882a87f382977464ecd6caa5ce5da99b",
+          "name": "ref_profile_app::main::$lambda_0::$lambda_1",
+          "owner_image": "app",
+          "provider_component": "app"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "96687f366a4bacd524f63c2c67d4803c18419265ce3fe642b4d90aace79dcd5c",
+          "name": "ref_profile_leaf::make",
+          "owner_image": "app",
+          "provider_component": "leaf"
+        },
+        {
+          "aborted": 1,
+          "calls": 1,
+          "completed": 0,
+          "content_hash": "a35f28983db471f977e49b1dfb3fd339083218a86ff67166e3016ae892c098ec",
+          "name": "ref_profile_leaf::work",
+          "owner_image": "app",
+          "provider_component": "leaf"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "be26caf9ad0e5b5184ff96d093c235a472c3b1d572d7915699f73837ebcf495d",
+          "name": "ref_profile_mid::work",
+          "owner_image": "app",
+          "provider_component": "mid"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "a6f203fc415e9d658feb3b0c3dfbe31237298382acf52b11ef948430fc9223e9",
+          "name": "ref_profile_pure::offset",
+          "owner_image": "app",
+          "provider_component": "pure"
+        }
+      ],
+      "images": [
+        {
+          "component": "pure",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/fb8c5efc01f42196df2741da83af87e5957e474a9e027b8c44f436a76fd8bcb4/libnex.a",
+          "sha256": "e7c8aac4813b1f3449d99b154be2cc508539ca5883998546f6ec720131171344",
+          "record_sha256": "75f1658cf9422964db628acf5c3ab1f0dea0b3ded0d110fe03845740cd5213cc",
+          "catalog_sha256": "f9f2d10ded64310d8d5be9c2538255a55dd16b28a7425448475ece79a1735bb0",
+          "execution_ABI": 8
+        },
+        {
+          "component": "leaf",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/7b10976c1b858922cda133d8c028601a142006e260898861ea26c48070c02196/libnex.a",
+          "sha256": "1cb3cc5b1827013413079795de3fcdbae1700d55a9f6e6b1d110dd62d1c79fae",
+          "record_sha256": "603d8360b129ef60782d653ccf1c94f8c2858471b485122cdfed4aa4c530e66c",
+          "catalog_sha256": "78a22dab2b858486ccab8f44c69192ebdf8706cd4b2ee8e17d9fcb54c507a176",
+          "execution_ABI": 8
+        },
+        {
+          "component": "mid",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/60892dd3c3f14fb650f448496f1d5e906f641ef4bd478727b825cbf843227118/libnex.a",
+          "sha256": "fd342e6e0e47f2981dc13408d3009fe41e38a4ea7b1a32c0c4a88aaedefef2b7",
+          "record_sha256": "9659671c1cba7ff7d207c6400a2a183749a22c8276f780ba41f81291cf55b355",
+          "catalog_sha256": "bfbcbc6d8a7314d5dfd6b6221b0046c5b255f4e2aa15cbcec63e28204fe7597f",
+          "execution_ABI": 8
+        },
+        {
+          "component": "app",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/bb092b760e458b6ab5c8e4c142f524b823b1138bc4c770b35c9469c3dd27ab7d/app",
+          "sha256": "6cf34536cf838ac31fb1e4d9a7d5961886f97478a9592b996e10a97540e00c94",
+          "record_sha256": "a202e6488b0f12c03bc1ffab5ff8a3564f1f387bf5a42c84644b7067f48e2105",
+          "catalog_sha256": "b492d734de26b8e0057dbb2c7c181dd20c4ce299718a29b187320e4b94c65994",
+          "execution_ABI": 8
+        }
+      ],
+      "plans": {
+        "pure": {
+          "execution_abi": 8,
+          "mode": "static",
+          "schema": "nex.project-task-linkage/19"
+        },
+        "leaf": {
+          "execution_abi": 8,
+          "mode": "static",
+          "schema": "nex.project-task-linkage/19"
+        },
+        "mid": {
+          "execution_abi": 8,
+          "mode": "static",
+          "schema": "nex.project-task-linkage/19"
+        },
+        "app": {
+          "execution_abi": 8,
+          "mode": "static",
+          "schema": "nex.project-task-linkage/19"
+        }
+      }
+    },
+    {
+      "report": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/041856376b3b425c73ba88846096cb8a9fc306185ead84d63a133d525408cb61/profiles/run-1281496371-4067880003.json",
+      "sha256": "f2f9c3114f66c8627626a67b231da6381712cc61af3b0c83f7eaf5dec3b94691",
+      "schema": "nex.profile/3",
+      "exit_code": 0,
+      "stdout": "42\n",
+      "build": {
+        "build_key": "041856376b3b425c73ba88846096cb8a9fc306185ead84d63a133d525408cb61",
+        "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+        "entry": "ref_profile_app::main",
+        "language": "0.30",
+        "revision": "ff5bd5328f9bc180cf0bfceebdab7a978007508e1934bcd52993450d8a079545",
+        "schema": "nex.profile-build/2",
+        "source_hash": "e0b3ecfaf7d1696573d9f3909fdb3262456346c5c322034fe6706d48cdfe6de8",
+        "task_limits": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "task_profile_catalog": "a4b81d3cc30ef17b3a3b989127d05980e2e406243ea71c3cdeeceba391ef4153",
+        "toolchain": "0.279.0"
+      },
+      "task_execution": {
+        "backend": "native",
+        "configured": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "cooperative_deadline": true,
+        "effective": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "executor_workers": 1,
+        "identical_step_thresholds": false,
+        "step_model": "native resume and runtime polls",
+        "supervisor_timeout_seconds": 30
+      },
+      "completeness": {
+        "aggregates": true,
+        "cpu": true,
+        "elapsed": true,
+        "lifetime": true,
+        "memory": true,
+        "timeline": true
+      },
+      "tracked_memory": [
+        {
+          "allocations": 126,
+          "frees": 126,
+          "live": 0,
+          "live_shallow_bytes": 0,
+          "peak_live": 4,
+          "peak_shallow_bytes": 192,
+          "pool": "NEX handles"
+        },
+        {
+          "allocations": 38,
+          "frees": 38,
+          "live": 0,
+          "live_shallow_bytes": 0,
+          "peak_live": 16,
+          "peak_shallow_bytes": 2000,
+          "pool": "NEX objects (shallow)"
+        }
+      ],
+      "source_functions": [
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "7a5a916a4f44f1805ff071608e23830f5bb3a11a890b454618c90012997388da",
+          "name": "ref_profile_app::main",
+          "owner_image": "app",
+          "provider_component": "app"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "a8c323cfd99dc1245703e1d74608e4889eb1cbccc94d3339b8beccb133bb192c",
+          "name": "ref_profile_app::main::$lambda_0",
+          "owner_image": "app",
+          "provider_component": "app"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "7719153f9416ff8adb5b1781e2674af3882a87f382977464ecd6caa5ce5da99b",
+          "name": "ref_profile_app::main::$lambda_0::$lambda_1",
+          "owner_image": "app",
+          "provider_component": "app"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "96687f366a4bacd524f63c2c67d4803c18419265ce3fe642b4d90aace79dcd5c",
+          "name": "ref_profile_leaf::make",
+          "owner_image": "leaf",
+          "provider_component": "leaf"
+        },
+        {
+          "aborted": 1,
+          "calls": 1,
+          "completed": 0,
+          "content_hash": "a35f28983db471f977e49b1dfb3fd339083218a86ff67166e3016ae892c098ec",
+          "name": "ref_profile_leaf::work",
+          "owner_image": "leaf",
+          "provider_component": "leaf"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "be26caf9ad0e5b5184ff96d093c235a472c3b1d572d7915699f73837ebcf495d",
+          "name": "ref_profile_mid::work",
+          "owner_image": "mid",
+          "provider_component": "mid"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "a6f203fc415e9d658feb3b0c3dfbe31237298382acf52b11ef948430fc9223e9",
+          "name": "ref_profile_pure::offset",
+          "owner_image": "pure",
+          "provider_component": "pure"
+        }
+      ],
+      "images": [
+        {
+          "component": "pure",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/e6b8054994c1464af7ce0bab4a9fcc35d911a47b47f8d47425f3e46c26c89041/libnex_pure_e6b8054994c1464af7ce0bab4a9fcc35d911a47b47f8d47425f3e46c26c89041.dylib",
+          "sha256": "16516c9aedf59a34c67300e22cc38ec6606127a07ba4440b3b7a295b13869bc5",
+          "record_sha256": "0bf96da6095de635bd0595985798776dc30da92ee671c911e4b5ad734750cd1e",
+          "catalog_sha256": "60d27a08754a9c19eb26ad30eab1bef3476069824031cf06d6b8a273cbbfeb55",
+          "execution_ABI": 8
+        },
+        {
+          "component": "leaf",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/602a2417eb5d213ae851130fc12b3cbd24499724586c1876eab5bb7f7b3feb9e/libnex_leaf_602a2417eb5d213ae851130fc12b3cbd24499724586c1876eab5bb7f7b3feb9e.dylib",
+          "sha256": "8c7f40d924a7b29f7b0ce66ea1afb9b6e8bcf31614cebbfa0bcca6ec981ef0fc",
+          "record_sha256": "0f1a3e1fdf2998c8f8f0a22b377575ce9ce134859961df3400659e7003d66403",
+          "catalog_sha256": "5c20cc20ae92baac56547b801bc2cbe138913309f549b68561abbdd3de6365be",
+          "execution_ABI": 8
+        },
+        {
+          "component": "mid",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/f42cd5e16e311502eac92b6f654ed2c37a54abba80b0a4592719083ce6e37437/libnex_mid_f42cd5e16e311502eac92b6f654ed2c37a54abba80b0a4592719083ce6e37437.dylib",
+          "sha256": "07e9668cda0643e009aa7987ea332144727bbe11be3839bc9534208dba67d285",
+          "record_sha256": "9c90de67fd56750c2464a3faf5ef642b70779d54f3df71de373fd2280102f033",
+          "catalog_sha256": "aa5aad2005c554631e8e94f153709e3758b1df23816ca5310f4ca1ae47a9f78c",
+          "execution_ABI": 8
+        },
+        {
+          "component": "app",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/041856376b3b425c73ba88846096cb8a9fc306185ead84d63a133d525408cb61/app",
+          "sha256": "8499e39a4c64c1e82dbc39c47ae2694cefceae91775dc91f1604f6fd0198dff6",
+          "record_sha256": "557614ad6eae11086a0d1af7f8ca7ee680a850d66fbba773c54cfdeed522c1df",
+          "catalog_sha256": "28743a1ff5d641e28ea461fcaa4d36d0581f85a4946103738f0517f8600960e4",
+          "execution_ABI": 8
+        }
+      ],
+      "plans": {
+        "pure": {
+          "execution_abi": 8,
+          "mode": "shared-fixed",
+          "schema": "nex.project-task-linkage/19"
+        },
+        "leaf": {
+          "execution_abi": 8,
+          "mode": "shared-fixed",
+          "schema": "nex.project-task-linkage/19"
+        },
+        "mid": {
+          "execution_abi": 8,
+          "mode": "shared-fixed",
+          "schema": "nex.project-task-linkage/19"
+        },
+        "app": {
+          "execution_abi": 8,
+          "mode": "shared-fixed",
+          "schema": "nex.project-task-linkage/19"
+        }
+      }
+    },
+    {
+      "report": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/041856376b3b425c73ba88846096cb8a9fc306185ead84d63a133d525408cb61/profiles/run-1177203978-2697795665.json",
+      "sha256": "7101af00b7c8f21b0be1a9323fd0cd5f8241cc923acde246e7cfdcab1c756439",
+      "schema": "nex.profile/3",
+      "exit_code": 0,
+      "stdout": "42\n",
+      "build": {
+        "build_key": "041856376b3b425c73ba88846096cb8a9fc306185ead84d63a133d525408cb61",
+        "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+        "entry": "ref_profile_app::main",
+        "language": "0.30",
+        "revision": "ff5bd5328f9bc180cf0bfceebdab7a978007508e1934bcd52993450d8a079545",
+        "schema": "nex.profile-build/2",
+        "source_hash": "e0b3ecfaf7d1696573d9f3909fdb3262456346c5c322034fe6706d48cdfe6de8",
+        "task_limits": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "task_profile_catalog": "a4b81d3cc30ef17b3a3b989127d05980e2e406243ea71c3cdeeceba391ef4153",
+        "toolchain": "0.279.0"
+      },
+      "task_execution": {
+        "backend": "native",
+        "configured": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "cooperative_deadline": true,
+        "effective": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "executor_workers": 1,
+        "identical_step_thresholds": false,
+        "step_model": "native resume and runtime polls",
+        "supervisor_timeout_seconds": 30
+      },
+      "completeness": {
+        "aggregates": true,
+        "cpu": true,
+        "elapsed": true,
+        "lifetime": true,
+        "memory": true,
+        "timeline": false
+      },
+      "tracked_memory": [
+        {
+          "allocations": 126,
+          "frees": 126,
+          "live": 0,
+          "live_shallow_bytes": 0,
+          "peak_live": 4,
+          "peak_shallow_bytes": 192,
+          "pool": "NEX handles"
+        },
+        {
+          "allocations": 38,
+          "frees": 38,
+          "live": 0,
+          "live_shallow_bytes": 0,
+          "peak_live": 16,
+          "peak_shallow_bytes": 2000,
+          "pool": "NEX objects (shallow)"
+        }
+      ],
+      "source_functions": [
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "7a5a916a4f44f1805ff071608e23830f5bb3a11a890b454618c90012997388da",
+          "name": "ref_profile_app::main",
+          "owner_image": "app",
+          "provider_component": "app"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "a8c323cfd99dc1245703e1d74608e4889eb1cbccc94d3339b8beccb133bb192c",
+          "name": "ref_profile_app::main::$lambda_0",
+          "owner_image": "app",
+          "provider_component": "app"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "7719153f9416ff8adb5b1781e2674af3882a87f382977464ecd6caa5ce5da99b",
+          "name": "ref_profile_app::main::$lambda_0::$lambda_1",
+          "owner_image": "app",
+          "provider_component": "app"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "96687f366a4bacd524f63c2c67d4803c18419265ce3fe642b4d90aace79dcd5c",
+          "name": "ref_profile_leaf::make",
+          "owner_image": "leaf",
+          "provider_component": "leaf"
+        },
+        {
+          "aborted": 1,
+          "calls": 1,
+          "completed": 0,
+          "content_hash": "a35f28983db471f977e49b1dfb3fd339083218a86ff67166e3016ae892c098ec",
+          "name": "ref_profile_leaf::work",
+          "owner_image": "leaf",
+          "provider_component": "leaf"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "be26caf9ad0e5b5184ff96d093c235a472c3b1d572d7915699f73837ebcf495d",
+          "name": "ref_profile_mid::work",
+          "owner_image": "mid",
+          "provider_component": "mid"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "a6f203fc415e9d658feb3b0c3dfbe31237298382acf52b11ef948430fc9223e9",
+          "name": "ref_profile_pure::offset",
+          "owner_image": "pure",
+          "provider_component": "pure"
+        }
+      ],
+      "images": [
+        {
+          "component": "pure",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/e6b8054994c1464af7ce0bab4a9fcc35d911a47b47f8d47425f3e46c26c89041/libnex_pure_e6b8054994c1464af7ce0bab4a9fcc35d911a47b47f8d47425f3e46c26c89041.dylib",
+          "sha256": "16516c9aedf59a34c67300e22cc38ec6606127a07ba4440b3b7a295b13869bc5",
+          "record_sha256": "0bf96da6095de635bd0595985798776dc30da92ee671c911e4b5ad734750cd1e",
+          "catalog_sha256": "60d27a08754a9c19eb26ad30eab1bef3476069824031cf06d6b8a273cbbfeb55",
+          "execution_ABI": 8
+        },
+        {
+          "component": "leaf",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/602a2417eb5d213ae851130fc12b3cbd24499724586c1876eab5bb7f7b3feb9e/libnex_leaf_602a2417eb5d213ae851130fc12b3cbd24499724586c1876eab5bb7f7b3feb9e.dylib",
+          "sha256": "8c7f40d924a7b29f7b0ce66ea1afb9b6e8bcf31614cebbfa0bcca6ec981ef0fc",
+          "record_sha256": "0f1a3e1fdf2998c8f8f0a22b377575ce9ce134859961df3400659e7003d66403",
+          "catalog_sha256": "5c20cc20ae92baac56547b801bc2cbe138913309f549b68561abbdd3de6365be",
+          "execution_ABI": 8
+        },
+        {
+          "component": "mid",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/f42cd5e16e311502eac92b6f654ed2c37a54abba80b0a4592719083ce6e37437/libnex_mid_f42cd5e16e311502eac92b6f654ed2c37a54abba80b0a4592719083ce6e37437.dylib",
+          "sha256": "07e9668cda0643e009aa7987ea332144727bbe11be3839bc9534208dba67d285",
+          "record_sha256": "9c90de67fd56750c2464a3faf5ef642b70779d54f3df71de373fd2280102f033",
+          "catalog_sha256": "aa5aad2005c554631e8e94f153709e3758b1df23816ca5310f4ca1ae47a9f78c",
+          "execution_ABI": 8
+        },
+        {
+          "component": "app",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/041856376b3b425c73ba88846096cb8a9fc306185ead84d63a133d525408cb61/app",
+          "sha256": "8499e39a4c64c1e82dbc39c47ae2694cefceae91775dc91f1604f6fd0198dff6",
+          "record_sha256": "557614ad6eae11086a0d1af7f8ca7ee680a850d66fbba773c54cfdeed522c1df",
+          "catalog_sha256": "28743a1ff5d641e28ea461fcaa4d36d0581f85a4946103738f0517f8600960e4",
+          "execution_ABI": 8
+        }
+      ],
+      "plans": {
+        "pure": {
+          "execution_abi": 8,
+          "mode": "shared-fixed",
+          "schema": "nex.project-task-linkage/19"
+        },
+        "leaf": {
+          "execution_abi": 8,
+          "mode": "shared-fixed",
+          "schema": "nex.project-task-linkage/19"
+        },
+        "mid": {
+          "execution_abi": 8,
+          "mode": "shared-fixed",
+          "schema": "nex.project-task-linkage/19"
+        },
+        "app": {
+          "execution_abi": 8,
+          "mode": "shared-fixed",
+          "schema": "nex.project-task-linkage/19"
+        }
+      }
+    },
+    {
+      "report": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/8d8e1053854d42757908092db44258224d91a01eef4d3610ae51d3eae09ccbb6/profiles/run-189041830-2418219845.json",
+      "sha256": "9ef23d17a107be0ea8dbac092609f9d329ad538c220fc02b2ce9f619485f58f3",
+      "schema": "nex.profile/3",
+      "exit_code": 0,
+      "stdout": "42\n",
+      "build": {
+        "build_key": "8d8e1053854d42757908092db44258224d91a01eef4d3610ae51d3eae09ccbb6",
+        "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+        "entry": "ref_profile_app::main",
+        "language": "0.30",
+        "revision": "ff5bd5328f9bc180cf0bfceebdab7a978007508e1934bcd52993450d8a079545",
+        "schema": "nex.profile-build/2",
+        "source_hash": "e0b3ecfaf7d1696573d9f3909fdb3262456346c5c322034fe6706d48cdfe6de8",
+        "task_limits": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "task_profile_catalog": "78019bbcd3d873b0f0984d0554833611d942fce448379fcf8112ed5f779826ab",
+        "toolchain": "0.279.0"
+      },
+      "task_execution": {
+        "backend": "native",
+        "configured": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "cooperative_deadline": true,
+        "effective": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "executor_workers": 1,
+        "identical_step_thresholds": false,
+        "step_model": "native resume and runtime polls",
+        "supervisor_timeout_seconds": 30
+      },
+      "completeness": {
+        "aggregates": true,
+        "cpu": true,
+        "elapsed": true,
+        "lifetime": true,
+        "memory": true,
+        "timeline": true
+      },
+      "tracked_memory": [
+        {
+          "allocations": 126,
+          "frees": 126,
+          "live": 0,
+          "live_shallow_bytes": 0,
+          "peak_live": 4,
+          "peak_shallow_bytes": 192,
+          "pool": "NEX handles"
+        },
+        {
+          "allocations": 38,
+          "frees": 38,
+          "live": 0,
+          "live_shallow_bytes": 0,
+          "peak_live": 16,
+          "peak_shallow_bytes": 2000,
+          "pool": "NEX objects (shallow)"
+        }
+      ],
+      "source_functions": [
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "7a5a916a4f44f1805ff071608e23830f5bb3a11a890b454618c90012997388da",
+          "name": "ref_profile_app::main",
+          "owner_image": "app",
+          "provider_component": "app"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "a8c323cfd99dc1245703e1d74608e4889eb1cbccc94d3339b8beccb133bb192c",
+          "name": "ref_profile_app::main::$lambda_0",
+          "owner_image": "app",
+          "provider_component": "app"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "7719153f9416ff8adb5b1781e2674af3882a87f382977464ecd6caa5ce5da99b",
+          "name": "ref_profile_app::main::$lambda_0::$lambda_1",
+          "owner_image": "app",
+          "provider_component": "app"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "96687f366a4bacd524f63c2c67d4803c18419265ce3fe642b4d90aace79dcd5c",
+          "name": "ref_profile_leaf::make",
+          "owner_image": "leaf",
+          "provider_component": "leaf"
+        },
+        {
+          "aborted": 1,
+          "calls": 1,
+          "completed": 0,
+          "content_hash": "a35f28983db471f977e49b1dfb3fd339083218a86ff67166e3016ae892c098ec",
+          "name": "ref_profile_leaf::work",
+          "owner_image": "leaf",
+          "provider_component": "leaf"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "be26caf9ad0e5b5184ff96d093c235a472c3b1d572d7915699f73837ebcf495d",
+          "name": "ref_profile_mid::work",
+          "owner_image": "app",
+          "provider_component": "mid"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "a6f203fc415e9d658feb3b0c3dfbe31237298382acf52b11ef948430fc9223e9",
+          "name": "ref_profile_pure::offset",
+          "owner_image": "leaf",
+          "provider_component": "pure"
+        }
+      ],
+      "images": [
+        {
+          "component": "pure",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/ec646294e4e3db3f9c189301ab8ea05974b8d97ca8977ec0dab4c5fec0886a48/libnex.a",
+          "sha256": "67ef3991e530e149f5ffdd29ce546b266a6459135ccf50a7fc265434a3dd2ed8",
+          "record_sha256": "096c158eedf85bd92bb50715eb216d217b8ea6fdfe31cb008626df55a4f3a6db",
+          "catalog_sha256": "29a339c2ed9e7b65e162465e56a0d8a4412e5b687b19e0f5c0dc77263a3b3726",
+          "execution_ABI": 8
+        },
+        {
+          "component": "leaf",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/44d645c05295c7d2b2fe0225e2e587396c2ab4e59a6b931f95b5e28084972930/libnex_leaf_44d645c05295c7d2b2fe0225e2e587396c2ab4e59a6b931f95b5e28084972930.dylib",
+          "sha256": "25a03f4c58d98c0c29b3eca84d5996dba9b1c37079277d9f6692fe40c0ef5959",
+          "record_sha256": "347e83347f86df1afaa79a071f4bb1df4060f3047a9ebf1ce22af058f111eb9f",
+          "catalog_sha256": "0409f114ef4f1fd75eae4f537c205b09b71104a5d128c1d4ee0eadee2c600644",
+          "execution_ABI": 8
+        },
+        {
+          "component": "mid",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/9851c0fdd47d1f4050f2054367b34ce429c2a24604b0f548e67bbbae008321c5/libnex.a",
+          "sha256": "a39809ffa821c8171d8419c1481e1c410510e242dd00b13a8fe464749aa8c06a",
+          "record_sha256": "ee74767abe6552b441a31713af232002b116f005fd30e5edabdcdab0c1b5ef24",
+          "catalog_sha256": "4ab057a3f66832a980cfe63a7e1fa3d3e03fd722c498c8a1a21eee3b342b9f46",
+          "execution_ABI": 8
+        },
+        {
+          "component": "app",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/8d8e1053854d42757908092db44258224d91a01eef4d3610ae51d3eae09ccbb6/app",
+          "sha256": "c064554f09c531fe5f395b6c86a9c896bce5974c94150a138f8a3ddb715a6b58",
+          "record_sha256": "24e85220e7f66477c308056d945fafc29d62d729aa680e0591f49d674c0b818d",
+          "catalog_sha256": "5b51c8c0820d1e8e19b24180be1993616dd638d656388b9498f9600aa61b5a95",
+          "execution_ABI": 8
+        }
+      ],
+      "plans": {
+        "pure": {
+          "execution_abi": 8,
+          "mode": "shared-fixed",
+          "schema": "nex.project-task-linkage/19"
+        },
+        "leaf": {
+          "execution_abi": 8,
+          "mode": "shared-fixed",
+          "schema": "nex.project-task-linkage/19"
+        },
+        "mid": {
+          "execution_abi": 8,
+          "mode": "shared-fixed",
+          "schema": "nex.project-task-linkage/19"
+        },
+        "app": {
+          "execution_abi": 8,
+          "mode": "shared-fixed",
+          "schema": "nex.project-task-linkage/19"
+        }
+      }
+    },
+    {
+      "report": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/8d8e1053854d42757908092db44258224d91a01eef4d3610ae51d3eae09ccbb6/profiles/run-782786529-3288304477.json",
+      "sha256": "5421394f17c9634e88b604d7445cd8bba3131056bf63daf30b82cb65d14cac9e",
+      "schema": "nex.profile/3",
+      "exit_code": 0,
+      "stdout": "42\n",
+      "build": {
+        "build_key": "8d8e1053854d42757908092db44258224d91a01eef4d3610ae51d3eae09ccbb6",
+        "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+        "entry": "ref_profile_app::main",
+        "language": "0.30",
+        "revision": "ff5bd5328f9bc180cf0bfceebdab7a978007508e1934bcd52993450d8a079545",
+        "schema": "nex.profile-build/2",
+        "source_hash": "e0b3ecfaf7d1696573d9f3909fdb3262456346c5c322034fe6706d48cdfe6de8",
+        "task_limits": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "task_profile_catalog": "78019bbcd3d873b0f0984d0554833611d942fce448379fcf8112ed5f779826ab",
+        "toolchain": "0.279.0"
+      },
+      "task_execution": {
+        "backend": "native",
+        "configured": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "cooperative_deadline": true,
+        "effective": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "executor_workers": 1,
+        "identical_step_thresholds": false,
+        "step_model": "native resume and runtime polls",
+        "supervisor_timeout_seconds": 30
+      },
+      "completeness": {
+        "aggregates": true,
+        "cpu": true,
+        "elapsed": true,
+        "lifetime": true,
+        "memory": true,
+        "timeline": false
+      },
+      "tracked_memory": [
+        {
+          "allocations": 126,
+          "frees": 126,
+          "live": 0,
+          "live_shallow_bytes": 0,
+          "peak_live": 4,
+          "peak_shallow_bytes": 192,
+          "pool": "NEX handles"
+        },
+        {
+          "allocations": 38,
+          "frees": 38,
+          "live": 0,
+          "live_shallow_bytes": 0,
+          "peak_live": 16,
+          "peak_shallow_bytes": 2000,
+          "pool": "NEX objects (shallow)"
+        }
+      ],
+      "source_functions": [
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "7a5a916a4f44f1805ff071608e23830f5bb3a11a890b454618c90012997388da",
+          "name": "ref_profile_app::main",
+          "owner_image": "app",
+          "provider_component": "app"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "a8c323cfd99dc1245703e1d74608e4889eb1cbccc94d3339b8beccb133bb192c",
+          "name": "ref_profile_app::main::$lambda_0",
+          "owner_image": "app",
+          "provider_component": "app"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "7719153f9416ff8adb5b1781e2674af3882a87f382977464ecd6caa5ce5da99b",
+          "name": "ref_profile_app::main::$lambda_0::$lambda_1",
+          "owner_image": "app",
+          "provider_component": "app"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "96687f366a4bacd524f63c2c67d4803c18419265ce3fe642b4d90aace79dcd5c",
+          "name": "ref_profile_leaf::make",
+          "owner_image": "leaf",
+          "provider_component": "leaf"
+        },
+        {
+          "aborted": 1,
+          "calls": 1,
+          "completed": 0,
+          "content_hash": "a35f28983db471f977e49b1dfb3fd339083218a86ff67166e3016ae892c098ec",
+          "name": "ref_profile_leaf::work",
+          "owner_image": "leaf",
+          "provider_component": "leaf"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "be26caf9ad0e5b5184ff96d093c235a472c3b1d572d7915699f73837ebcf495d",
+          "name": "ref_profile_mid::work",
+          "owner_image": "app",
+          "provider_component": "mid"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "a6f203fc415e9d658feb3b0c3dfbe31237298382acf52b11ef948430fc9223e9",
+          "name": "ref_profile_pure::offset",
+          "owner_image": "leaf",
+          "provider_component": "pure"
+        }
+      ],
+      "images": [
+        {
+          "component": "pure",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/ec646294e4e3db3f9c189301ab8ea05974b8d97ca8977ec0dab4c5fec0886a48/libnex.a",
+          "sha256": "67ef3991e530e149f5ffdd29ce546b266a6459135ccf50a7fc265434a3dd2ed8",
+          "record_sha256": "096c158eedf85bd92bb50715eb216d217b8ea6fdfe31cb008626df55a4f3a6db",
+          "catalog_sha256": "29a339c2ed9e7b65e162465e56a0d8a4412e5b687b19e0f5c0dc77263a3b3726",
+          "execution_ABI": 8
+        },
+        {
+          "component": "leaf",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/44d645c05295c7d2b2fe0225e2e587396c2ab4e59a6b931f95b5e28084972930/libnex_leaf_44d645c05295c7d2b2fe0225e2e587396c2ab4e59a6b931f95b5e28084972930.dylib",
+          "sha256": "25a03f4c58d98c0c29b3eca84d5996dba9b1c37079277d9f6692fe40c0ef5959",
+          "record_sha256": "347e83347f86df1afaa79a071f4bb1df4060f3047a9ebf1ce22af058f111eb9f",
+          "catalog_sha256": "0409f114ef4f1fd75eae4f537c205b09b71104a5d128c1d4ee0eadee2c600644",
+          "execution_ABI": 8
+        },
+        {
+          "component": "mid",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/9851c0fdd47d1f4050f2054367b34ce429c2a24604b0f548e67bbbae008321c5/libnex.a",
+          "sha256": "a39809ffa821c8171d8419c1481e1c410510e242dd00b13a8fe464749aa8c06a",
+          "record_sha256": "ee74767abe6552b441a31713af232002b116f005fd30e5edabdcdab0c1b5ef24",
+          "catalog_sha256": "4ab057a3f66832a980cfe63a7e1fa3d3e03fd722c498c8a1a21eee3b342b9f46",
+          "execution_ABI": 8
+        },
+        {
+          "component": "app",
+          "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/8d8e1053854d42757908092db44258224d91a01eef4d3610ae51d3eae09ccbb6/app",
+          "sha256": "c064554f09c531fe5f395b6c86a9c896bce5974c94150a138f8a3ddb715a6b58",
+          "record_sha256": "24e85220e7f66477c308056d945fafc29d62d729aa680e0591f49d674c0b818d",
+          "catalog_sha256": "5b51c8c0820d1e8e19b24180be1993616dd638d656388b9498f9600aa61b5a95",
+          "execution_ABI": 8
+        }
+      ],
+      "plans": {
+        "pure": {
+          "execution_abi": 8,
+          "mode": "shared-fixed",
+          "schema": "nex.project-task-linkage/19"
+        },
+        "leaf": {
+          "execution_abi": 8,
+          "mode": "shared-fixed",
+          "schema": "nex.project-task-linkage/19"
+        },
+        "mid": {
+          "execution_abi": 8,
+          "mode": "shared-fixed",
+          "schema": "nex.project-task-linkage/19"
+        },
+        "app": {
+          "execution_abi": 8,
+          "mode": "shared-fixed",
+          "schema": "nex.project-task-linkage/19"
+        }
+      }
+    }
+  ],
+  "source_controls": [
+    {
+      "report": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_source_only_profile_and_control_cleanup/.nex/build/56e7bce1e362864bb2d6b1f63d817d8ae02e225a15f0b6dabedf2b4b2a237b6c/profiles/run-2420902484-3367496675.json",
+      "sha256": "b7bdd7727f6a5a0e9b7fbfc901bc86510654575087a091578b623a7a6774be6c",
+      "schema": "nex.profile/2",
+      "exit_code": 0,
+      "stdout": "42\n",
+      "build": {
+        "build_key": "56e7bce1e362864bb2d6b1f63d817d8ae02e225a15f0b6dabedf2b4b2a237b6c",
+        "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+        "entry": "ref_profile_app::main",
+        "language": "0.30",
+        "revision": "ff5bd5328f9bc180cf0bfceebdab7a978007508e1934bcd52993450d8a079545",
+        "schema": "nex.profile-build/1",
+        "source_hash": "e0b3ecfaf7d1696573d9f3909fdb3262456346c5c322034fe6706d48cdfe6de8",
+        "task_limits": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 16
+        },
+        "toolchain": "0.279.0"
+      },
+      "task_execution": {
+        "backend": "native",
+        "configured": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 16
+        },
+        "cooperative_deadline": true,
+        "effective": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 16
+        },
+        "executor_workers": 1,
+        "identical_step_thresholds": false,
+        "step_model": "native resume and runtime polls",
+        "supervisor_timeout_seconds": 30
+      },
+      "completeness": {
+        "aggregates": true,
+        "cpu": true,
+        "elapsed": true,
+        "lifetime": true,
+        "memory": true,
+        "timeline": true
+      },
+      "tracked_memory": [
+        {
+          "allocations": 126,
+          "frees": 126,
+          "live": 0,
+          "live_shallow_bytes": 0,
+          "peak_live": 4,
+          "peak_shallow_bytes": 192,
+          "pool": "NEX handles"
+        },
+        {
+          "allocations": 38,
+          "frees": 38,
+          "live": 0,
+          "live_shallow_bytes": 0,
+          "peak_live": 16,
+          "peak_shallow_bytes": 2000,
+          "pool": "NEX objects (shallow)"
+        }
+      ],
+      "source_functions": [
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "7a5a916a4f44f1805ff071608e23830f5bb3a11a890b454618c90012997388da",
+          "name": "ref_profile_app::main"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "a8c323cfd99dc1245703e1d74608e4889eb1cbccc94d3339b8beccb133bb192c",
+          "name": "ref_profile_app::main::$lambda_0"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "7719153f9416ff8adb5b1781e2674af3882a87f382977464ecd6caa5ce5da99b",
+          "name": "ref_profile_app::main::$lambda_0::$lambda_1"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "96687f366a4bacd524f63c2c67d4803c18419265ce3fe642b4d90aace79dcd5c",
+          "name": "ref_profile_leaf::make"
+        },
+        {
+          "aborted": 1,
+          "calls": 1,
+          "completed": 0,
+          "content_hash": "a35f28983db471f977e49b1dfb3fd339083218a86ff67166e3016ae892c098ec",
+          "name": "ref_profile_leaf::work"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "be26caf9ad0e5b5184ff96d093c235a472c3b1d572d7915699f73837ebcf495d",
+          "name": "ref_profile_mid::work"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "a6f203fc415e9d658feb3b0c3dfbe31237298382acf52b11ef948430fc9223e9",
+          "name": "ref_profile_pure::offset"
+        }
+      ]
+    },
+    {
+      "report": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_source_only_profile_and_control_cleanup/.nex/build/06f691b8bb8bcf91af47895ca2bbb45a13c6da5ee80cb793b5d18f672d3ce547/profiles/run-4215337075-2993725542.json",
+      "sha256": "9495a0420eff0529265124f12f2ef8ddff3cb2f69e02a1a7b7fe440b3df1e641",
+      "schema": "nex.profile/2",
+      "exit_code": 70,
+      "stdout": "",
+      "build": {
+        "build_key": "06f691b8bb8bcf91af47895ca2bbb45a13c6da5ee80cb793b5d18f672d3ce547",
+        "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+        "entry": "ref_profile_app::main",
+        "language": "0.30",
+        "revision": "3e4d3e6ef72b4990c185209b6b642624d39c5d1e366797f7c0b537e825be9265",
+        "schema": "nex.profile-build/1",
+        "source_hash": "b66c2fc436ec127b74cf251c76e336d21807e5e129a32a23827bd129edb7e6d5",
+        "task_limits": {
+          "steps": 1000,
+          "timeout_ms": 5000,
+          "workers": 16
+        },
+        "toolchain": "0.279.0"
+      },
+      "task_execution": {
+        "backend": "native",
+        "configured": {
+          "steps": 1000,
+          "timeout_ms": 5000,
+          "workers": 16
+        },
+        "cooperative_deadline": true,
+        "effective": {
+          "steps": 1000,
+          "timeout_ms": 5000,
+          "workers": 16
+        },
+        "executor_workers": 1,
+        "identical_step_thresholds": false,
+        "step_model": "native resume and runtime polls",
+        "supervisor_timeout_seconds": 30
+      },
+      "completeness": {
+        "aggregates": true,
+        "cpu": true,
+        "elapsed": true,
+        "lifetime": true,
+        "memory": true,
+        "timeline": true
+      },
+      "tracked_memory": [
+        {
+          "allocations": 513,
+          "frees": 513,
+          "live": 0,
+          "live_shallow_bytes": 0,
+          "peak_live": 4,
+          "peak_shallow_bytes": 192,
+          "pool": "NEX handles"
+        },
+        {
+          "allocations": 501,
+          "frees": 501,
+          "live": 0,
+          "live_shallow_bytes": 0,
+          "peak_live": 4,
+          "peak_shallow_bytes": 464,
+          "pool": "NEX objects (shallow)"
+        }
+      ],
+      "source_functions": [
+        {
+          "aborted": 1,
+          "calls": 1,
+          "completed": 0,
+          "content_hash": "9af98e962253bf6cd21a91454b7f2d65c203207d164f79e5433356722044964c",
+          "name": "ref_profile_app::main"
+        }
+      ]
+    },
+    {
+      "report": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_source_only_profile_and_control_cleanup/.nex/build/002ad35f226efdcf263c6b0e059771ddb792df885a263e33624de08cde49e80f/profiles/run-127732738-654172510.json",
+      "sha256": "7eef48437d00d9b93953d93b062d3a90c33bc3be59226293a47986a3d167c3d5",
+      "schema": "nex.profile/2",
+      "exit_code": 70,
+      "stdout": "",
+      "build": {
+        "build_key": "002ad35f226efdcf263c6b0e059771ddb792df885a263e33624de08cde49e80f",
+        "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+        "entry": "ref_profile_app::main",
+        "language": "0.30",
+        "revision": "3e4d3e6ef72b4990c185209b6b642624d39c5d1e366797f7c0b537e825be9265",
+        "schema": "nex.profile-build/1",
+        "source_hash": "b66c2fc436ec127b74cf251c76e336d21807e5e129a32a23827bd129edb7e6d5",
+        "task_limits": {
+          "steps": 9007199254740991,
+          "timeout_ms": 25,
+          "workers": 16
+        },
+        "toolchain": "0.279.0"
+      },
+      "task_execution": {
+        "backend": "native",
+        "configured": {
+          "steps": 9007199254740991,
+          "timeout_ms": 25,
+          "workers": 16
+        },
+        "cooperative_deadline": true,
+        "effective": {
+          "steps": 9007199254740991,
+          "timeout_ms": 25,
+          "workers": 16
+        },
+        "executor_workers": 1,
+        "identical_step_thresholds": false,
+        "step_model": "native resume and runtime polls",
+        "supervisor_timeout_seconds": 30
+      },
+      "completeness": {
+        "aggregates": true,
+        "cpu": true,
+        "elapsed": true,
+        "lifetime": true,
+        "memory": true,
+        "timeline": true
+      },
+      "tracked_memory": [
+        {
+          "allocations": 14689,
+          "frees": 14689,
+          "live": 0,
+          "live_shallow_bytes": 0,
+          "peak_live": 4,
+          "peak_shallow_bytes": 192,
+          "pool": "NEX handles"
+        },
+        {
+          "allocations": 14677,
+          "frees": 14677,
+          "live": 0,
+          "live_shallow_bytes": 0,
+          "peak_live": 4,
+          "peak_shallow_bytes": 464,
+          "pool": "NEX objects (shallow)"
+        }
+      ],
+      "source_functions": [
+        {
+          "aborted": 1,
+          "calls": 1,
+          "completed": 0,
+          "content_hash": "9af98e962253bf6cd21a91454b7f2d65c203207d164f79e5433356722044964c",
+          "name": "ref_profile_app::main"
+        }
+      ]
+    }
+  ],
+  "source_capture": {
+    "capture_receipt": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_profile_capture_replay_and_package_without_original_source/capture/receipt.json",
+    "sha256": "13d47987c44189bda1bd46bc5a5ae7401b2b8caa0f58edbb75c31c93fb5af5ee",
+    "captured_source_sha256": "df1fbac3345e93cd921416dffae59f7b3f332112c68f01136276315e6c5c9f40",
+    "profile": {
+      "report": "/Users/sae/projects/NEX/build/reference-task-profile-v1/affected-live-v2/test_reference_profile_capture_replay_and_package_without_original_source/capture/artifacts/measure-reference/profile.json",
+      "sha256": "ad577a405e9ea960a3cb8c1c52213414d2e56463cb46cf35205ba87a0e030d23",
+      "schema": "nex.profile/3",
+      "exit_code": 0,
+      "stdout": "42\n",
+      "build": {
+        "build_key": "24ae488b86d27e083299710fabb07cb94b79f1955ec3b27690a99010bfe261fe",
+        "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+        "entry": "ref_profile_app::main",
+        "language": "0.30",
+        "revision": "ff5bd5328f9bc180cf0bfceebdab7a978007508e1934bcd52993450d8a079545",
+        "schema": "nex.profile-build/2",
+        "source_hash": "e0b3ecfaf7d1696573d9f3909fdb3262456346c5c322034fe6706d48cdfe6de8",
+        "task_limits": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "task_profile_catalog": "60d93fd5ee8bc918121252f269324dff45ec6b423f099a6f8491ae48ff0b2f5e",
+        "toolchain": "0.279.0"
+      },
+      "task_execution": {
+        "backend": "native",
+        "configured": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "cooperative_deadline": true,
+        "effective": {
+          "steps": 1000000,
+          "timeout_ms": 10000,
+          "workers": 2
+        },
+        "executor_workers": 1,
+        "identical_step_thresholds": false,
+        "step_model": "native resume and runtime polls",
+        "supervisor_timeout_seconds": 158
+      },
+      "completeness": {
+        "aggregates": true,
+        "cpu": true,
+        "elapsed": true,
+        "lifetime": true,
+        "memory": true,
+        "timeline": false
+      },
+      "tracked_memory": [
+        {
+          "allocations": 126,
+          "frees": 126,
+          "live": 0,
+          "live_shallow_bytes": 0,
+          "peak_live": 4,
+          "peak_shallow_bytes": 192,
+          "pool": "NEX handles"
+        },
+        {
+          "allocations": 38,
+          "frees": 38,
+          "live": 0,
+          "live_shallow_bytes": 0,
+          "peak_live": 16,
+          "peak_shallow_bytes": 2000,
+          "pool": "NEX objects (shallow)"
+        }
+      ],
+      "source_functions": [
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "7a5a916a4f44f1805ff071608e23830f5bb3a11a890b454618c90012997388da",
+          "name": "ref_profile_app::main",
+          "owner_image": "app",
+          "provider_component": "app"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "a8c323cfd99dc1245703e1d74608e4889eb1cbccc94d3339b8beccb133bb192c",
+          "name": "ref_profile_app::main::$lambda_0",
+          "owner_image": "app",
+          "provider_component": "app"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "7719153f9416ff8adb5b1781e2674af3882a87f382977464ecd6caa5ce5da99b",
+          "name": "ref_profile_app::main::$lambda_0::$lambda_1",
+          "owner_image": "app",
+          "provider_component": "app"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "96687f366a4bacd524f63c2c67d4803c18419265ce3fe642b4d90aace79dcd5c",
+          "name": "ref_profile_leaf::make",
+          "owner_image": "leaf",
+          "provider_component": "leaf"
+        },
+        {
+          "aborted": 1,
+          "calls": 1,
+          "completed": 0,
+          "content_hash": "a35f28983db471f977e49b1dfb3fd339083218a86ff67166e3016ae892c098ec",
+          "name": "ref_profile_leaf::work",
+          "owner_image": "leaf",
+          "provider_component": "leaf"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "be26caf9ad0e5b5184ff96d093c235a472c3b1d572d7915699f73837ebcf495d",
+          "name": "ref_profile_mid::work",
+          "owner_image": "app",
+          "provider_component": "mid"
+        },
+        {
+          "aborted": 0,
+          "calls": 1,
+          "completed": 1,
+          "content_hash": "a6f203fc415e9d658feb3b0c3dfbe31237298382acf52b11ef948430fc9223e9",
+          "name": "ref_profile_pure::offset",
+          "owner_image": "leaf",
+          "provider_component": "pure"
+        }
+      ]
+    },
+    "source_absent": true,
+    "replay_ok": true,
+    "replay_programs_equal": true,
+    "package_manifest_sha256": "faca85363491ec018a8e5ba60c48c4dd22998504a18b52354948a59211c7cf24",
+    "ordinary_package_manifest_sha256": "5dde1a4e1bcdc3f85759151184c90697c67dff02086234be2143a8cb8c3bddf2",
+    "metadata_rewritten": false,
+    "raw_profile_sha256": "a39d6c74db47046064e04267c04b71b6ee62b30c9f67ac7360c17594cd7ed007",
+    "ordinary_package_exit_code": 0,
+    "packaged_raw_exit_code": 0,
+    "commands_sha256": "176a2a583740f250932580190fd17e871454a126d90197a03170799b65f2b23b"
+  },
+  "moved_install": {
+    "portable": false,
+    "host_dependencies_retained": true,
+    "compiler_matches_source": true,
+    "matrix": [
+      {
+        "report": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/131053451ca3f9ac8fd33d52a303a69cedf13f2bcf21baa3011ebb174fd9f7fb/profiles/run-152377183-541922145.json",
+        "sha256": "2816a44b2ed0d7e6c9643c8f1a7aaebe0203cf381c526094fc01d21ffe68ee08",
+        "schema": "nex.profile/3",
+        "exit_code": 0,
+        "stdout": "42\n",
+        "build": {
+          "build_key": "131053451ca3f9ac8fd33d52a303a69cedf13f2bcf21baa3011ebb174fd9f7fb",
+          "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+          "entry": "ref_profile_app::main",
+          "language": "0.30",
+          "revision": "ff5bd5328f9bc180cf0bfceebdab7a978007508e1934bcd52993450d8a079545",
+          "schema": "nex.profile-build/2",
+          "source_hash": "e0b3ecfaf7d1696573d9f3909fdb3262456346c5c322034fe6706d48cdfe6de8",
+          "task_limits": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 2
+          },
+          "task_profile_catalog": "95f9711dc9ee40efdf227c446c851d1a67ca436c2123bf86a74fa87bb0bd5cd2",
+          "toolchain": "0.279.0"
+        },
+        "task_execution": {
+          "backend": "native",
+          "configured": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 2
+          },
+          "cooperative_deadline": true,
+          "effective": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 2
+          },
+          "executor_workers": 1,
+          "identical_step_thresholds": false,
+          "step_model": "native resume and runtime polls",
+          "supervisor_timeout_seconds": 30
+        },
+        "completeness": {
+          "aggregates": true,
+          "cpu": true,
+          "elapsed": true,
+          "lifetime": true,
+          "memory": true,
+          "timeline": true
+        },
+        "tracked_memory": [
+          {
+            "allocations": 126,
+            "frees": 126,
+            "live": 0,
+            "live_shallow_bytes": 0,
+            "peak_live": 4,
+            "peak_shallow_bytes": 192,
+            "pool": "NEX handles"
+          },
+          {
+            "allocations": 38,
+            "frees": 38,
+            "live": 0,
+            "live_shallow_bytes": 0,
+            "peak_live": 16,
+            "peak_shallow_bytes": 2000,
+            "pool": "NEX objects (shallow)"
+          }
+        ],
+        "source_functions": [
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "7a5a916a4f44f1805ff071608e23830f5bb3a11a890b454618c90012997388da",
+            "name": "ref_profile_app::main",
+            "owner_image": "app",
+            "provider_component": "app"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "a8c323cfd99dc1245703e1d74608e4889eb1cbccc94d3339b8beccb133bb192c",
+            "name": "ref_profile_app::main::$lambda_0",
+            "owner_image": "app",
+            "provider_component": "app"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "7719153f9416ff8adb5b1781e2674af3882a87f382977464ecd6caa5ce5da99b",
+            "name": "ref_profile_app::main::$lambda_0::$lambda_1",
+            "owner_image": "app",
+            "provider_component": "app"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "96687f366a4bacd524f63c2c67d4803c18419265ce3fe642b4d90aace79dcd5c",
+            "name": "ref_profile_leaf::make",
+            "owner_image": "app",
+            "provider_component": "leaf"
+          },
+          {
+            "aborted": 1,
+            "calls": 1,
+            "completed": 0,
+            "content_hash": "a35f28983db471f977e49b1dfb3fd339083218a86ff67166e3016ae892c098ec",
+            "name": "ref_profile_leaf::work",
+            "owner_image": "app",
+            "provider_component": "leaf"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "be26caf9ad0e5b5184ff96d093c235a472c3b1d572d7915699f73837ebcf495d",
+            "name": "ref_profile_mid::work",
+            "owner_image": "app",
+            "provider_component": "mid"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "a6f203fc415e9d658feb3b0c3dfbe31237298382acf52b11ef948430fc9223e9",
+            "name": "ref_profile_pure::offset",
+            "owner_image": "app",
+            "provider_component": "pure"
+          }
+        ],
+        "images": [
+          {
+            "component": "pure",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/ddaaf04d7ee7814bf705991abaab46fb2e5a2bcf7c996b0499f481460326e384/libnex.a",
+            "sha256": "f910b1bddfe042c1a9781ecc10dcf081eca14d166b84efa9dd0b7263246b2caf",
+            "record_sha256": "24d933cd9ffbc65af87a86ca7ac7188f7b8ceaadae5fe909b4414c93d4d14d31",
+            "catalog_sha256": "fd1b4158fbda2652532e1e3d267684592bc97f1f7d4a9de5b8007e897bb90362",
+            "execution_ABI": 8
+          },
+          {
+            "component": "leaf",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/3ff21a44925d4f9f9e7584d6ec3504f2d0ede33e387455f275afddd445e176d8/libnex.a",
+            "sha256": "479554ae7ebffa1db301202dbb6814dab81083961d96453eda1625a10d09905b",
+            "record_sha256": "858da5c329e1b9161bbd8dd6e9bf1b114ac364756efa37ecdb70389b7f9ce54b",
+            "catalog_sha256": "6a8d65b63f6d37dc68cd06f321fcf4deab83e4dc40ecf5ec567dfdafb9dc211b",
+            "execution_ABI": 8
+          },
+          {
+            "component": "mid",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/30d25363e69aaba3a842b232c4f97c864ed1613f102995fc97babbdb1c0dd15f/libnex.a",
+            "sha256": "8cbed6c9f622ccc7f33b51eb68a20b1035845f577e9acbac2a15dc4a921c3a37",
+            "record_sha256": "47e7c0f416fe3d9b58a83c149fca9244d3568870e0c3a3e9c478f3075f927331",
+            "catalog_sha256": "26fb02e61e4ca49847182a0581d2b3aa3c8cedbf9aad12327e57dafe36349e50",
+            "execution_ABI": 8
+          },
+          {
+            "component": "app",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/131053451ca3f9ac8fd33d52a303a69cedf13f2bcf21baa3011ebb174fd9f7fb/app",
+            "sha256": "e9ceb4b37ea243db3ef3943e8c7cf269f7520f8b88ea232be7e23a5e2eee71f0",
+            "record_sha256": "403d673f70b2fdd041b463639b470f63a31bceda035edd0d4c3cb76fddbe77c3",
+            "catalog_sha256": "f60d560b8ffbc49df568dc200669bb1182e9102b84fa453bc076332fcbdcc500",
+            "execution_ABI": 8
+          }
+        ],
+        "plans": {
+          "pure": {
+            "execution_abi": 8,
+            "mode": "static",
+            "schema": "nex.project-task-linkage/19"
+          },
+          "leaf": {
+            "execution_abi": 8,
+            "mode": "static",
+            "schema": "nex.project-task-linkage/19"
+          },
+          "mid": {
+            "execution_abi": 8,
+            "mode": "static",
+            "schema": "nex.project-task-linkage/19"
+          },
+          "app": {
+            "execution_abi": 8,
+            "mode": "static",
+            "schema": "nex.project-task-linkage/19"
+          }
+        }
+      },
+      {
+        "report": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/131053451ca3f9ac8fd33d52a303a69cedf13f2bcf21baa3011ebb174fd9f7fb/profiles/run-1975270147-3543550871.json",
+        "sha256": "f9f41874143b4e7cfafe3947d384608d8ba2b9fbdd23e04bd39ae989dc6cc48c",
+        "schema": "nex.profile/3",
+        "exit_code": 0,
+        "stdout": "42\n",
+        "build": {
+          "build_key": "131053451ca3f9ac8fd33d52a303a69cedf13f2bcf21baa3011ebb174fd9f7fb",
+          "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+          "entry": "ref_profile_app::main",
+          "language": "0.30",
+          "revision": "ff5bd5328f9bc180cf0bfceebdab7a978007508e1934bcd52993450d8a079545",
+          "schema": "nex.profile-build/2",
+          "source_hash": "e0b3ecfaf7d1696573d9f3909fdb3262456346c5c322034fe6706d48cdfe6de8",
+          "task_limits": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 2
+          },
+          "task_profile_catalog": "95f9711dc9ee40efdf227c446c851d1a67ca436c2123bf86a74fa87bb0bd5cd2",
+          "toolchain": "0.279.0"
+        },
+        "task_execution": {
+          "backend": "native",
+          "configured": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 2
+          },
+          "cooperative_deadline": true,
+          "effective": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 2
+          },
+          "executor_workers": 1,
+          "identical_step_thresholds": false,
+          "step_model": "native resume and runtime polls",
+          "supervisor_timeout_seconds": 30
+        },
+        "completeness": {
+          "aggregates": true,
+          "cpu": true,
+          "elapsed": true,
+          "lifetime": true,
+          "memory": true,
+          "timeline": false
+        },
+        "tracked_memory": [
+          {
+            "allocations": 126,
+            "frees": 126,
+            "live": 0,
+            "live_shallow_bytes": 0,
+            "peak_live": 4,
+            "peak_shallow_bytes": 192,
+            "pool": "NEX handles"
+          },
+          {
+            "allocations": 38,
+            "frees": 38,
+            "live": 0,
+            "live_shallow_bytes": 0,
+            "peak_live": 16,
+            "peak_shallow_bytes": 2000,
+            "pool": "NEX objects (shallow)"
+          }
+        ],
+        "source_functions": [
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "7a5a916a4f44f1805ff071608e23830f5bb3a11a890b454618c90012997388da",
+            "name": "ref_profile_app::main",
+            "owner_image": "app",
+            "provider_component": "app"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "a8c323cfd99dc1245703e1d74608e4889eb1cbccc94d3339b8beccb133bb192c",
+            "name": "ref_profile_app::main::$lambda_0",
+            "owner_image": "app",
+            "provider_component": "app"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "7719153f9416ff8adb5b1781e2674af3882a87f382977464ecd6caa5ce5da99b",
+            "name": "ref_profile_app::main::$lambda_0::$lambda_1",
+            "owner_image": "app",
+            "provider_component": "app"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "96687f366a4bacd524f63c2c67d4803c18419265ce3fe642b4d90aace79dcd5c",
+            "name": "ref_profile_leaf::make",
+            "owner_image": "app",
+            "provider_component": "leaf"
+          },
+          {
+            "aborted": 1,
+            "calls": 1,
+            "completed": 0,
+            "content_hash": "a35f28983db471f977e49b1dfb3fd339083218a86ff67166e3016ae892c098ec",
+            "name": "ref_profile_leaf::work",
+            "owner_image": "app",
+            "provider_component": "leaf"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "be26caf9ad0e5b5184ff96d093c235a472c3b1d572d7915699f73837ebcf495d",
+            "name": "ref_profile_mid::work",
+            "owner_image": "app",
+            "provider_component": "mid"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "a6f203fc415e9d658feb3b0c3dfbe31237298382acf52b11ef948430fc9223e9",
+            "name": "ref_profile_pure::offset",
+            "owner_image": "app",
+            "provider_component": "pure"
+          }
+        ],
+        "images": [
+          {
+            "component": "pure",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/ddaaf04d7ee7814bf705991abaab46fb2e5a2bcf7c996b0499f481460326e384/libnex.a",
+            "sha256": "f910b1bddfe042c1a9781ecc10dcf081eca14d166b84efa9dd0b7263246b2caf",
+            "record_sha256": "24d933cd9ffbc65af87a86ca7ac7188f7b8ceaadae5fe909b4414c93d4d14d31",
+            "catalog_sha256": "fd1b4158fbda2652532e1e3d267684592bc97f1f7d4a9de5b8007e897bb90362",
+            "execution_ABI": 8
+          },
+          {
+            "component": "leaf",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/3ff21a44925d4f9f9e7584d6ec3504f2d0ede33e387455f275afddd445e176d8/libnex.a",
+            "sha256": "479554ae7ebffa1db301202dbb6814dab81083961d96453eda1625a10d09905b",
+            "record_sha256": "858da5c329e1b9161bbd8dd6e9bf1b114ac364756efa37ecdb70389b7f9ce54b",
+            "catalog_sha256": "6a8d65b63f6d37dc68cd06f321fcf4deab83e4dc40ecf5ec567dfdafb9dc211b",
+            "execution_ABI": 8
+          },
+          {
+            "component": "mid",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/30d25363e69aaba3a842b232c4f97c864ed1613f102995fc97babbdb1c0dd15f/libnex.a",
+            "sha256": "8cbed6c9f622ccc7f33b51eb68a20b1035845f577e9acbac2a15dc4a921c3a37",
+            "record_sha256": "47e7c0f416fe3d9b58a83c149fca9244d3568870e0c3a3e9c478f3075f927331",
+            "catalog_sha256": "26fb02e61e4ca49847182a0581d2b3aa3c8cedbf9aad12327e57dafe36349e50",
+            "execution_ABI": 8
+          },
+          {
+            "component": "app",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/131053451ca3f9ac8fd33d52a303a69cedf13f2bcf21baa3011ebb174fd9f7fb/app",
+            "sha256": "e9ceb4b37ea243db3ef3943e8c7cf269f7520f8b88ea232be7e23a5e2eee71f0",
+            "record_sha256": "403d673f70b2fdd041b463639b470f63a31bceda035edd0d4c3cb76fddbe77c3",
+            "catalog_sha256": "f60d560b8ffbc49df568dc200669bb1182e9102b84fa453bc076332fcbdcc500",
+            "execution_ABI": 8
+          }
+        ],
+        "plans": {
+          "pure": {
+            "execution_abi": 8,
+            "mode": "static",
+            "schema": "nex.project-task-linkage/19"
+          },
+          "leaf": {
+            "execution_abi": 8,
+            "mode": "static",
+            "schema": "nex.project-task-linkage/19"
+          },
+          "mid": {
+            "execution_abi": 8,
+            "mode": "static",
+            "schema": "nex.project-task-linkage/19"
+          },
+          "app": {
+            "execution_abi": 8,
+            "mode": "static",
+            "schema": "nex.project-task-linkage/19"
+          }
+        }
+      },
+      {
+        "report": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/14993f540a5155e8cf1229457b90f36acfc844a5ab6fdc9f3dcf089e3681fc29/profiles/run-2803058688-3841135380.json",
+        "sha256": "5f3f95e8728440bc2aaa23e1a6f1a98b382c70afeac0108f13a08bd037e2468c",
+        "schema": "nex.profile/3",
+        "exit_code": 0,
+        "stdout": "42\n",
+        "build": {
+          "build_key": "14993f540a5155e8cf1229457b90f36acfc844a5ab6fdc9f3dcf089e3681fc29",
+          "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+          "entry": "ref_profile_app::main",
+          "language": "0.30",
+          "revision": "ff5bd5328f9bc180cf0bfceebdab7a978007508e1934bcd52993450d8a079545",
+          "schema": "nex.profile-build/2",
+          "source_hash": "e0b3ecfaf7d1696573d9f3909fdb3262456346c5c322034fe6706d48cdfe6de8",
+          "task_limits": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 2
+          },
+          "task_profile_catalog": "8b7797ad5bd3894b5931590fbf11caa6b5fbb704266b9f61f6d9c12f2a36df32",
+          "toolchain": "0.279.0"
+        },
+        "task_execution": {
+          "backend": "native",
+          "configured": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 2
+          },
+          "cooperative_deadline": true,
+          "effective": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 2
+          },
+          "executor_workers": 1,
+          "identical_step_thresholds": false,
+          "step_model": "native resume and runtime polls",
+          "supervisor_timeout_seconds": 30
+        },
+        "completeness": {
+          "aggregates": true,
+          "cpu": true,
+          "elapsed": true,
+          "lifetime": true,
+          "memory": true,
+          "timeline": true
+        },
+        "tracked_memory": [
+          {
+            "allocations": 126,
+            "frees": 126,
+            "live": 0,
+            "live_shallow_bytes": 0,
+            "peak_live": 4,
+            "peak_shallow_bytes": 192,
+            "pool": "NEX handles"
+          },
+          {
+            "allocations": 38,
+            "frees": 38,
+            "live": 0,
+            "live_shallow_bytes": 0,
+            "peak_live": 16,
+            "peak_shallow_bytes": 2000,
+            "pool": "NEX objects (shallow)"
+          }
+        ],
+        "source_functions": [
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "7a5a916a4f44f1805ff071608e23830f5bb3a11a890b454618c90012997388da",
+            "name": "ref_profile_app::main",
+            "owner_image": "app",
+            "provider_component": "app"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "a8c323cfd99dc1245703e1d74608e4889eb1cbccc94d3339b8beccb133bb192c",
+            "name": "ref_profile_app::main::$lambda_0",
+            "owner_image": "app",
+            "provider_component": "app"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "7719153f9416ff8adb5b1781e2674af3882a87f382977464ecd6caa5ce5da99b",
+            "name": "ref_profile_app::main::$lambda_0::$lambda_1",
+            "owner_image": "app",
+            "provider_component": "app"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "96687f366a4bacd524f63c2c67d4803c18419265ce3fe642b4d90aace79dcd5c",
+            "name": "ref_profile_leaf::make",
+            "owner_image": "leaf",
+            "provider_component": "leaf"
+          },
+          {
+            "aborted": 1,
+            "calls": 1,
+            "completed": 0,
+            "content_hash": "a35f28983db471f977e49b1dfb3fd339083218a86ff67166e3016ae892c098ec",
+            "name": "ref_profile_leaf::work",
+            "owner_image": "leaf",
+            "provider_component": "leaf"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "be26caf9ad0e5b5184ff96d093c235a472c3b1d572d7915699f73837ebcf495d",
+            "name": "ref_profile_mid::work",
+            "owner_image": "mid",
+            "provider_component": "mid"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "a6f203fc415e9d658feb3b0c3dfbe31237298382acf52b11ef948430fc9223e9",
+            "name": "ref_profile_pure::offset",
+            "owner_image": "pure",
+            "provider_component": "pure"
+          }
+        ],
+        "images": [
+          {
+            "component": "pure",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/b173cf4a522d4b023fb064f581e376b5dc631c7559a5701394590e0c30c1eb54/libnex_pure_b173cf4a522d4b023fb064f581e376b5dc631c7559a5701394590e0c30c1eb54.dylib",
+            "sha256": "27eb0f839720450ce89f4cfb24aa29688d712d063392eeac26448f5f729ac297",
+            "record_sha256": "bd64b916861c3989197ae796ec6f7e536628c0f5c879ea5d38732b7396326557",
+            "catalog_sha256": "3d4371fd8ce4a2fdc117f83b65efe7a0bc47ac218e47e2d8a60364a3735a5cc3",
+            "execution_ABI": 8
+          },
+          {
+            "component": "leaf",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/9ba5a13a26a0f72601dc45c0fd53467914f6a781fd2c0db157f677cc3d57d7ba/libnex_leaf_9ba5a13a26a0f72601dc45c0fd53467914f6a781fd2c0db157f677cc3d57d7ba.dylib",
+            "sha256": "3b8633efd110683e6ecfbb2db739c3e7057adcaa674e87c78de82cbd8d28cf2d",
+            "record_sha256": "dda26f798854afaa3214ac894965e5d0648d53fad4f607bc798405957d84f562",
+            "catalog_sha256": "e0b5286bcdc9305993190032ec386c5af16212060a87691cd08ceb274df68a18",
+            "execution_ABI": 8
+          },
+          {
+            "component": "mid",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/fbe66c42ed032d64692a6eac998554bad0a1ff77cb9ed3dad0d3dd2637663ff3/libnex_mid_fbe66c42ed032d64692a6eac998554bad0a1ff77cb9ed3dad0d3dd2637663ff3.dylib",
+            "sha256": "b12e3c3b832e75789dbab750def79d76564e8cf8e092d41b9f9f251c43a828f5",
+            "record_sha256": "29c95c5d33293a6088873915ebcd00af5bd3fbde5ca2c5fad392c4a97c8e913e",
+            "catalog_sha256": "beb0cfe0638d3ff71406c98841d200cd5a3ae25a03187653a81538cd098b8267",
+            "execution_ABI": 8
+          },
+          {
+            "component": "app",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/14993f540a5155e8cf1229457b90f36acfc844a5ab6fdc9f3dcf089e3681fc29/app",
+            "sha256": "095d50e9ecee23ab765ed3609710b7a5a0b85645e06e29a29ae21cde72a49007",
+            "record_sha256": "6344dff2cc78af16db55a719a51342c8752d72867b778731c0f0f2e88a82b366",
+            "catalog_sha256": "826eb9f3af568fae42b12efb339748dc743b7bcd5c3ce21fde6db76654877e49",
+            "execution_ABI": 8
+          }
+        ],
+        "plans": {
+          "pure": {
+            "execution_abi": 8,
+            "mode": "shared-fixed",
+            "schema": "nex.project-task-linkage/19"
+          },
+          "leaf": {
+            "execution_abi": 8,
+            "mode": "shared-fixed",
+            "schema": "nex.project-task-linkage/19"
+          },
+          "mid": {
+            "execution_abi": 8,
+            "mode": "shared-fixed",
+            "schema": "nex.project-task-linkage/19"
+          },
+          "app": {
+            "execution_abi": 8,
+            "mode": "shared-fixed",
+            "schema": "nex.project-task-linkage/19"
+          }
+        }
+      },
+      {
+        "report": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/14993f540a5155e8cf1229457b90f36acfc844a5ab6fdc9f3dcf089e3681fc29/profiles/run-3067535107-2596978245.json",
+        "sha256": "fb901a81a9d012192012e0ecbd1d9a57b115767038a959a021a40e44f73260b4",
+        "schema": "nex.profile/3",
+        "exit_code": 0,
+        "stdout": "42\n",
+        "build": {
+          "build_key": "14993f540a5155e8cf1229457b90f36acfc844a5ab6fdc9f3dcf089e3681fc29",
+          "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+          "entry": "ref_profile_app::main",
+          "language": "0.30",
+          "revision": "ff5bd5328f9bc180cf0bfceebdab7a978007508e1934bcd52993450d8a079545",
+          "schema": "nex.profile-build/2",
+          "source_hash": "e0b3ecfaf7d1696573d9f3909fdb3262456346c5c322034fe6706d48cdfe6de8",
+          "task_limits": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 2
+          },
+          "task_profile_catalog": "8b7797ad5bd3894b5931590fbf11caa6b5fbb704266b9f61f6d9c12f2a36df32",
+          "toolchain": "0.279.0"
+        },
+        "task_execution": {
+          "backend": "native",
+          "configured": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 2
+          },
+          "cooperative_deadline": true,
+          "effective": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 2
+          },
+          "executor_workers": 1,
+          "identical_step_thresholds": false,
+          "step_model": "native resume and runtime polls",
+          "supervisor_timeout_seconds": 30
+        },
+        "completeness": {
+          "aggregates": true,
+          "cpu": true,
+          "elapsed": true,
+          "lifetime": true,
+          "memory": true,
+          "timeline": false
+        },
+        "tracked_memory": [
+          {
+            "allocations": 126,
+            "frees": 126,
+            "live": 0,
+            "live_shallow_bytes": 0,
+            "peak_live": 4,
+            "peak_shallow_bytes": 192,
+            "pool": "NEX handles"
+          },
+          {
+            "allocations": 38,
+            "frees": 38,
+            "live": 0,
+            "live_shallow_bytes": 0,
+            "peak_live": 16,
+            "peak_shallow_bytes": 2000,
+            "pool": "NEX objects (shallow)"
+          }
+        ],
+        "source_functions": [
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "7a5a916a4f44f1805ff071608e23830f5bb3a11a890b454618c90012997388da",
+            "name": "ref_profile_app::main",
+            "owner_image": "app",
+            "provider_component": "app"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "a8c323cfd99dc1245703e1d74608e4889eb1cbccc94d3339b8beccb133bb192c",
+            "name": "ref_profile_app::main::$lambda_0",
+            "owner_image": "app",
+            "provider_component": "app"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "7719153f9416ff8adb5b1781e2674af3882a87f382977464ecd6caa5ce5da99b",
+            "name": "ref_profile_app::main::$lambda_0::$lambda_1",
+            "owner_image": "app",
+            "provider_component": "app"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "96687f366a4bacd524f63c2c67d4803c18419265ce3fe642b4d90aace79dcd5c",
+            "name": "ref_profile_leaf::make",
+            "owner_image": "leaf",
+            "provider_component": "leaf"
+          },
+          {
+            "aborted": 1,
+            "calls": 1,
+            "completed": 0,
+            "content_hash": "a35f28983db471f977e49b1dfb3fd339083218a86ff67166e3016ae892c098ec",
+            "name": "ref_profile_leaf::work",
+            "owner_image": "leaf",
+            "provider_component": "leaf"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "be26caf9ad0e5b5184ff96d093c235a472c3b1d572d7915699f73837ebcf495d",
+            "name": "ref_profile_mid::work",
+            "owner_image": "mid",
+            "provider_component": "mid"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "a6f203fc415e9d658feb3b0c3dfbe31237298382acf52b11ef948430fc9223e9",
+            "name": "ref_profile_pure::offset",
+            "owner_image": "pure",
+            "provider_component": "pure"
+          }
+        ],
+        "images": [
+          {
+            "component": "pure",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/b173cf4a522d4b023fb064f581e376b5dc631c7559a5701394590e0c30c1eb54/libnex_pure_b173cf4a522d4b023fb064f581e376b5dc631c7559a5701394590e0c30c1eb54.dylib",
+            "sha256": "27eb0f839720450ce89f4cfb24aa29688d712d063392eeac26448f5f729ac297",
+            "record_sha256": "bd64b916861c3989197ae796ec6f7e536628c0f5c879ea5d38732b7396326557",
+            "catalog_sha256": "3d4371fd8ce4a2fdc117f83b65efe7a0bc47ac218e47e2d8a60364a3735a5cc3",
+            "execution_ABI": 8
+          },
+          {
+            "component": "leaf",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/9ba5a13a26a0f72601dc45c0fd53467914f6a781fd2c0db157f677cc3d57d7ba/libnex_leaf_9ba5a13a26a0f72601dc45c0fd53467914f6a781fd2c0db157f677cc3d57d7ba.dylib",
+            "sha256": "3b8633efd110683e6ecfbb2db739c3e7057adcaa674e87c78de82cbd8d28cf2d",
+            "record_sha256": "dda26f798854afaa3214ac894965e5d0648d53fad4f607bc798405957d84f562",
+            "catalog_sha256": "e0b5286bcdc9305993190032ec386c5af16212060a87691cd08ceb274df68a18",
+            "execution_ABI": 8
+          },
+          {
+            "component": "mid",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/fbe66c42ed032d64692a6eac998554bad0a1ff77cb9ed3dad0d3dd2637663ff3/libnex_mid_fbe66c42ed032d64692a6eac998554bad0a1ff77cb9ed3dad0d3dd2637663ff3.dylib",
+            "sha256": "b12e3c3b832e75789dbab750def79d76564e8cf8e092d41b9f9f251c43a828f5",
+            "record_sha256": "29c95c5d33293a6088873915ebcd00af5bd3fbde5ca2c5fad392c4a97c8e913e",
+            "catalog_sha256": "beb0cfe0638d3ff71406c98841d200cd5a3ae25a03187653a81538cd098b8267",
+            "execution_ABI": 8
+          },
+          {
+            "component": "app",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/14993f540a5155e8cf1229457b90f36acfc844a5ab6fdc9f3dcf089e3681fc29/app",
+            "sha256": "095d50e9ecee23ab765ed3609710b7a5a0b85645e06e29a29ae21cde72a49007",
+            "record_sha256": "6344dff2cc78af16db55a719a51342c8752d72867b778731c0f0f2e88a82b366",
+            "catalog_sha256": "826eb9f3af568fae42b12efb339748dc743b7bcd5c3ce21fde6db76654877e49",
+            "execution_ABI": 8
+          }
+        ],
+        "plans": {
+          "pure": {
+            "execution_abi": 8,
+            "mode": "shared-fixed",
+            "schema": "nex.project-task-linkage/19"
+          },
+          "leaf": {
+            "execution_abi": 8,
+            "mode": "shared-fixed",
+            "schema": "nex.project-task-linkage/19"
+          },
+          "mid": {
+            "execution_abi": 8,
+            "mode": "shared-fixed",
+            "schema": "nex.project-task-linkage/19"
+          },
+          "app": {
+            "execution_abi": 8,
+            "mode": "shared-fixed",
+            "schema": "nex.project-task-linkage/19"
+          }
+        }
+      },
+      {
+        "report": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/1ecdc366049498e4d24b187112ee4e3e912c88fdfc3a8ffec12e4f5caff5b93d/profiles/run-658128062-1059252623.json",
+        "sha256": "1b00cba080e48bf40112b729e2851ffc1a85c49c35a3d9c63487cabe0b0d074d",
+        "schema": "nex.profile/3",
+        "exit_code": 0,
+        "stdout": "42\n",
+        "build": {
+          "build_key": "1ecdc366049498e4d24b187112ee4e3e912c88fdfc3a8ffec12e4f5caff5b93d",
+          "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+          "entry": "ref_profile_app::main",
+          "language": "0.30",
+          "revision": "ff5bd5328f9bc180cf0bfceebdab7a978007508e1934bcd52993450d8a079545",
+          "schema": "nex.profile-build/2",
+          "source_hash": "e0b3ecfaf7d1696573d9f3909fdb3262456346c5c322034fe6706d48cdfe6de8",
+          "task_limits": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 2
+          },
+          "task_profile_catalog": "db1f7494347903270ec0d22525048fcc122c779638939eff6d57e234316eb934",
+          "toolchain": "0.279.0"
+        },
+        "task_execution": {
+          "backend": "native",
+          "configured": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 2
+          },
+          "cooperative_deadline": true,
+          "effective": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 2
+          },
+          "executor_workers": 1,
+          "identical_step_thresholds": false,
+          "step_model": "native resume and runtime polls",
+          "supervisor_timeout_seconds": 30
+        },
+        "completeness": {
+          "aggregates": true,
+          "cpu": true,
+          "elapsed": true,
+          "lifetime": true,
+          "memory": true,
+          "timeline": true
+        },
+        "tracked_memory": [
+          {
+            "allocations": 126,
+            "frees": 126,
+            "live": 0,
+            "live_shallow_bytes": 0,
+            "peak_live": 4,
+            "peak_shallow_bytes": 192,
+            "pool": "NEX handles"
+          },
+          {
+            "allocations": 38,
+            "frees": 38,
+            "live": 0,
+            "live_shallow_bytes": 0,
+            "peak_live": 16,
+            "peak_shallow_bytes": 2000,
+            "pool": "NEX objects (shallow)"
+          }
+        ],
+        "source_functions": [
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "7a5a916a4f44f1805ff071608e23830f5bb3a11a890b454618c90012997388da",
+            "name": "ref_profile_app::main",
+            "owner_image": "app",
+            "provider_component": "app"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "a8c323cfd99dc1245703e1d74608e4889eb1cbccc94d3339b8beccb133bb192c",
+            "name": "ref_profile_app::main::$lambda_0",
+            "owner_image": "app",
+            "provider_component": "app"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "7719153f9416ff8adb5b1781e2674af3882a87f382977464ecd6caa5ce5da99b",
+            "name": "ref_profile_app::main::$lambda_0::$lambda_1",
+            "owner_image": "app",
+            "provider_component": "app"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "96687f366a4bacd524f63c2c67d4803c18419265ce3fe642b4d90aace79dcd5c",
+            "name": "ref_profile_leaf::make",
+            "owner_image": "leaf",
+            "provider_component": "leaf"
+          },
+          {
+            "aborted": 1,
+            "calls": 1,
+            "completed": 0,
+            "content_hash": "a35f28983db471f977e49b1dfb3fd339083218a86ff67166e3016ae892c098ec",
+            "name": "ref_profile_leaf::work",
+            "owner_image": "leaf",
+            "provider_component": "leaf"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "be26caf9ad0e5b5184ff96d093c235a472c3b1d572d7915699f73837ebcf495d",
+            "name": "ref_profile_mid::work",
+            "owner_image": "app",
+            "provider_component": "mid"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "a6f203fc415e9d658feb3b0c3dfbe31237298382acf52b11ef948430fc9223e9",
+            "name": "ref_profile_pure::offset",
+            "owner_image": "leaf",
+            "provider_component": "pure"
+          }
+        ],
+        "images": [
+          {
+            "component": "pure",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/3256e9615b296326769c0e1acc10791e7303a52544784b5dd51fda63daf6eb55/libnex.a",
+            "sha256": "7fb48cd7e0d20501eb3133395693e4a47077205aeea28723c11a762efed959cb",
+            "record_sha256": "6fe968d7cf09dcc16a1e745d35feb74be6d5c4451909c54c4ce25fee535486f9",
+            "catalog_sha256": "c4e514489339c3ca67ac9c17302c8881a879074362e8af7f3d2b799df8f18581",
+            "execution_ABI": 8
+          },
+          {
+            "component": "leaf",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/8232c3086e96b0b5036b05878cea95f7087c2199d634c7b941bef5369be47ba2/libnex_leaf_8232c3086e96b0b5036b05878cea95f7087c2199d634c7b941bef5369be47ba2.dylib",
+            "sha256": "7c7deed93c2d45f406e84e4230a140f912ccee9d56ac93a18e5037e1083b4485",
+            "record_sha256": "087f35c8b3da1abd7ab02d376ed35718a782eeb5ec6adf53b246eac53ff1c39a",
+            "catalog_sha256": "85e024b1d3f2cd932169e0d6ba571a1a82730947132c1a4ac9497ffe900e7e21",
+            "execution_ABI": 8
+          },
+          {
+            "component": "mid",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/952571821ad7030c3bfaf213f7849566fc2eb3765fe7afae00b6ed841dce0a71/libnex.a",
+            "sha256": "5b7c8f55b73ebf4bb01da0459cb5b3bc5c1e12e1fe5bc437b74d3aaa25fc6463",
+            "record_sha256": "0259fab9020ef3cbf10a7a6a0e2e66e1749b5309513d282845dfa6002d007f42",
+            "catalog_sha256": "889f564ec499b5a6dc0f6062df8489426e61b42d23a543ed96f25e585b26692b",
+            "execution_ABI": 8
+          },
+          {
+            "component": "app",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/1ecdc366049498e4d24b187112ee4e3e912c88fdfc3a8ffec12e4f5caff5b93d/app",
+            "sha256": "168867cbbc242c8d68219c7992676c3b1d1f4674281f5a50980eed9e642e4122",
+            "record_sha256": "83762f2b5c337cd093c7ef32be74418fcc3e7edf0e8ed6e3225b423dd8d0131a",
+            "catalog_sha256": "04f26ef557954917b7910b745a65425a26c86dd918c4e5a70f6ab09cda782518",
+            "execution_ABI": 8
+          }
+        ],
+        "plans": {
+          "pure": {
+            "execution_abi": 8,
+            "mode": "shared-fixed",
+            "schema": "nex.project-task-linkage/19"
+          },
+          "leaf": {
+            "execution_abi": 8,
+            "mode": "shared-fixed",
+            "schema": "nex.project-task-linkage/19"
+          },
+          "mid": {
+            "execution_abi": 8,
+            "mode": "shared-fixed",
+            "schema": "nex.project-task-linkage/19"
+          },
+          "app": {
+            "execution_abi": 8,
+            "mode": "shared-fixed",
+            "schema": "nex.project-task-linkage/19"
+          }
+        }
+      },
+      {
+        "report": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/1ecdc366049498e4d24b187112ee4e3e912c88fdfc3a8ffec12e4f5caff5b93d/profiles/run-210518367-1212431624.json",
+        "sha256": "0cf16a4ae396425f71c43627957c8662cacc6759b6e63e3614ed5c9e8dd364f5",
+        "schema": "nex.profile/3",
+        "exit_code": 0,
+        "stdout": "42\n",
+        "build": {
+          "build_key": "1ecdc366049498e4d24b187112ee4e3e912c88fdfc3a8ffec12e4f5caff5b93d",
+          "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+          "entry": "ref_profile_app::main",
+          "language": "0.30",
+          "revision": "ff5bd5328f9bc180cf0bfceebdab7a978007508e1934bcd52993450d8a079545",
+          "schema": "nex.profile-build/2",
+          "source_hash": "e0b3ecfaf7d1696573d9f3909fdb3262456346c5c322034fe6706d48cdfe6de8",
+          "task_limits": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 2
+          },
+          "task_profile_catalog": "db1f7494347903270ec0d22525048fcc122c779638939eff6d57e234316eb934",
+          "toolchain": "0.279.0"
+        },
+        "task_execution": {
+          "backend": "native",
+          "configured": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 2
+          },
+          "cooperative_deadline": true,
+          "effective": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 2
+          },
+          "executor_workers": 1,
+          "identical_step_thresholds": false,
+          "step_model": "native resume and runtime polls",
+          "supervisor_timeout_seconds": 30
+        },
+        "completeness": {
+          "aggregates": true,
+          "cpu": true,
+          "elapsed": true,
+          "lifetime": true,
+          "memory": true,
+          "timeline": false
+        },
+        "tracked_memory": [
+          {
+            "allocations": 126,
+            "frees": 126,
+            "live": 0,
+            "live_shallow_bytes": 0,
+            "peak_live": 4,
+            "peak_shallow_bytes": 192,
+            "pool": "NEX handles"
+          },
+          {
+            "allocations": 38,
+            "frees": 38,
+            "live": 0,
+            "live_shallow_bytes": 0,
+            "peak_live": 16,
+            "peak_shallow_bytes": 2000,
+            "pool": "NEX objects (shallow)"
+          }
+        ],
+        "source_functions": [
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "7a5a916a4f44f1805ff071608e23830f5bb3a11a890b454618c90012997388da",
+            "name": "ref_profile_app::main",
+            "owner_image": "app",
+            "provider_component": "app"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "a8c323cfd99dc1245703e1d74608e4889eb1cbccc94d3339b8beccb133bb192c",
+            "name": "ref_profile_app::main::$lambda_0",
+            "owner_image": "app",
+            "provider_component": "app"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "7719153f9416ff8adb5b1781e2674af3882a87f382977464ecd6caa5ce5da99b",
+            "name": "ref_profile_app::main::$lambda_0::$lambda_1",
+            "owner_image": "app",
+            "provider_component": "app"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "96687f366a4bacd524f63c2c67d4803c18419265ce3fe642b4d90aace79dcd5c",
+            "name": "ref_profile_leaf::make",
+            "owner_image": "leaf",
+            "provider_component": "leaf"
+          },
+          {
+            "aborted": 1,
+            "calls": 1,
+            "completed": 0,
+            "content_hash": "a35f28983db471f977e49b1dfb3fd339083218a86ff67166e3016ae892c098ec",
+            "name": "ref_profile_leaf::work",
+            "owner_image": "leaf",
+            "provider_component": "leaf"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "be26caf9ad0e5b5184ff96d093c235a472c3b1d572d7915699f73837ebcf495d",
+            "name": "ref_profile_mid::work",
+            "owner_image": "app",
+            "provider_component": "mid"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "a6f203fc415e9d658feb3b0c3dfbe31237298382acf52b11ef948430fc9223e9",
+            "name": "ref_profile_pure::offset",
+            "owner_image": "leaf",
+            "provider_component": "pure"
+          }
+        ],
+        "images": [
+          {
+            "component": "pure",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/3256e9615b296326769c0e1acc10791e7303a52544784b5dd51fda63daf6eb55/libnex.a",
+            "sha256": "7fb48cd7e0d20501eb3133395693e4a47077205aeea28723c11a762efed959cb",
+            "record_sha256": "6fe968d7cf09dcc16a1e745d35feb74be6d5c4451909c54c4ce25fee535486f9",
+            "catalog_sha256": "c4e514489339c3ca67ac9c17302c8881a879074362e8af7f3d2b799df8f18581",
+            "execution_ABI": 8
+          },
+          {
+            "component": "leaf",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/8232c3086e96b0b5036b05878cea95f7087c2199d634c7b941bef5369be47ba2/libnex_leaf_8232c3086e96b0b5036b05878cea95f7087c2199d634c7b941bef5369be47ba2.dylib",
+            "sha256": "7c7deed93c2d45f406e84e4230a140f912ccee9d56ac93a18e5037e1083b4485",
+            "record_sha256": "087f35c8b3da1abd7ab02d376ed35718a782eeb5ec6adf53b246eac53ff1c39a",
+            "catalog_sha256": "85e024b1d3f2cd932169e0d6ba571a1a82730947132c1a4ac9497ffe900e7e21",
+            "execution_ABI": 8
+          },
+          {
+            "component": "mid",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/952571821ad7030c3bfaf213f7849566fc2eb3765fe7afae00b6ed841dce0a71/libnex.a",
+            "sha256": "5b7c8f55b73ebf4bb01da0459cb5b3bc5c1e12e1fe5bc437b74d3aaa25fc6463",
+            "record_sha256": "0259fab9020ef3cbf10a7a6a0e2e66e1749b5309513d282845dfa6002d007f42",
+            "catalog_sha256": "889f564ec499b5a6dc0f6062df8489426e61b42d23a543ed96f25e585b26692b",
+            "execution_ABI": 8
+          },
+          {
+            "component": "app",
+            "artifact": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/1ecdc366049498e4d24b187112ee4e3e912c88fdfc3a8ffec12e4f5caff5b93d/app",
+            "sha256": "168867cbbc242c8d68219c7992676c3b1d1f4674281f5a50980eed9e642e4122",
+            "record_sha256": "83762f2b5c337cd093c7ef32be74418fcc3e7edf0e8ed6e3225b423dd8d0131a",
+            "catalog_sha256": "04f26ef557954917b7910b745a65425a26c86dd918c4e5a70f6ab09cda782518",
+            "execution_ABI": 8
+          }
+        ],
+        "plans": {
+          "pure": {
+            "execution_abi": 8,
+            "mode": "shared-fixed",
+            "schema": "nex.project-task-linkage/19"
+          },
+          "leaf": {
+            "execution_abi": 8,
+            "mode": "shared-fixed",
+            "schema": "nex.project-task-linkage/19"
+          },
+          "mid": {
+            "execution_abi": 8,
+            "mode": "shared-fixed",
+            "schema": "nex.project-task-linkage/19"
+          },
+          "app": {
+            "execution_abi": 8,
+            "mode": "shared-fixed",
+            "schema": "nex.project-task-linkage/19"
+          }
+        }
+      }
+    ],
+    "controls": [
+      {
+        "report": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_source_only_profile_and_control_cleanup/.nex/build/20c8f1f9b37cc8a15d4575a6219128bdd200cf6813bbfc6ec86582b0d5903707/profiles/run-81051086-1176924750.json",
+        "sha256": "086c2eb83edd09382432e4e63ad35ec730e9a5d5a2ac73c5c8f963488a75f5f5",
+        "schema": "nex.profile/2",
+        "exit_code": 0,
+        "stdout": "42\n",
+        "build": {
+          "build_key": "20c8f1f9b37cc8a15d4575a6219128bdd200cf6813bbfc6ec86582b0d5903707",
+          "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+          "entry": "ref_profile_app::main",
+          "language": "0.30",
+          "revision": "ff5bd5328f9bc180cf0bfceebdab7a978007508e1934bcd52993450d8a079545",
+          "schema": "nex.profile-build/1",
+          "source_hash": "e0b3ecfaf7d1696573d9f3909fdb3262456346c5c322034fe6706d48cdfe6de8",
+          "task_limits": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 16
+          },
+          "toolchain": "0.279.0"
+        },
+        "task_execution": {
+          "backend": "native",
+          "configured": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 16
+          },
+          "cooperative_deadline": true,
+          "effective": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 16
+          },
+          "executor_workers": 1,
+          "identical_step_thresholds": false,
+          "step_model": "native resume and runtime polls",
+          "supervisor_timeout_seconds": 30
+        },
+        "completeness": {
+          "aggregates": true,
+          "cpu": true,
+          "elapsed": true,
+          "lifetime": true,
+          "memory": true,
+          "timeline": true
+        },
+        "tracked_memory": [
+          {
+            "allocations": 126,
+            "frees": 126,
+            "live": 0,
+            "live_shallow_bytes": 0,
+            "peak_live": 4,
+            "peak_shallow_bytes": 192,
+            "pool": "NEX handles"
+          },
+          {
+            "allocations": 38,
+            "frees": 38,
+            "live": 0,
+            "live_shallow_bytes": 0,
+            "peak_live": 16,
+            "peak_shallow_bytes": 2000,
+            "pool": "NEX objects (shallow)"
+          }
+        ],
+        "source_functions": [
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "7a5a916a4f44f1805ff071608e23830f5bb3a11a890b454618c90012997388da",
+            "name": "ref_profile_app::main"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "a8c323cfd99dc1245703e1d74608e4889eb1cbccc94d3339b8beccb133bb192c",
+            "name": "ref_profile_app::main::$lambda_0"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "7719153f9416ff8adb5b1781e2674af3882a87f382977464ecd6caa5ce5da99b",
+            "name": "ref_profile_app::main::$lambda_0::$lambda_1"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "96687f366a4bacd524f63c2c67d4803c18419265ce3fe642b4d90aace79dcd5c",
+            "name": "ref_profile_leaf::make"
+          },
+          {
+            "aborted": 1,
+            "calls": 1,
+            "completed": 0,
+            "content_hash": "a35f28983db471f977e49b1dfb3fd339083218a86ff67166e3016ae892c098ec",
+            "name": "ref_profile_leaf::work"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "be26caf9ad0e5b5184ff96d093c235a472c3b1d572d7915699f73837ebcf495d",
+            "name": "ref_profile_mid::work"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "a6f203fc415e9d658feb3b0c3dfbe31237298382acf52b11ef948430fc9223e9",
+            "name": "ref_profile_pure::offset"
+          }
+        ]
+      },
+      {
+        "report": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_source_only_profile_and_control_cleanup/.nex/build/5f71ca52091f82a68c2201a0e16aa3d5999f98a19ce98cad6724ccc70b1e0502/profiles/run-3948648409-2176041800.json",
+        "sha256": "354d85bee8881034a2e9188f2bce5d50685b713692ae9cb688b4830a65a3ad8b",
+        "schema": "nex.profile/2",
+        "exit_code": 70,
+        "stdout": "",
+        "build": {
+          "build_key": "5f71ca52091f82a68c2201a0e16aa3d5999f98a19ce98cad6724ccc70b1e0502",
+          "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+          "entry": "ref_profile_app::main",
+          "language": "0.30",
+          "revision": "3e4d3e6ef72b4990c185209b6b642624d39c5d1e366797f7c0b537e825be9265",
+          "schema": "nex.profile-build/1",
+          "source_hash": "b66c2fc436ec127b74cf251c76e336d21807e5e129a32a23827bd129edb7e6d5",
+          "task_limits": {
+            "steps": 1000,
+            "timeout_ms": 5000,
+            "workers": 16
+          },
+          "toolchain": "0.279.0"
+        },
+        "task_execution": {
+          "backend": "native",
+          "configured": {
+            "steps": 1000,
+            "timeout_ms": 5000,
+            "workers": 16
+          },
+          "cooperative_deadline": true,
+          "effective": {
+            "steps": 1000,
+            "timeout_ms": 5000,
+            "workers": 16
+          },
+          "executor_workers": 1,
+          "identical_step_thresholds": false,
+          "step_model": "native resume and runtime polls",
+          "supervisor_timeout_seconds": 30
+        },
+        "completeness": {
+          "aggregates": true,
+          "cpu": true,
+          "elapsed": true,
+          "lifetime": true,
+          "memory": true,
+          "timeline": true
+        },
+        "tracked_memory": [
+          {
+            "allocations": 513,
+            "frees": 513,
+            "live": 0,
+            "live_shallow_bytes": 0,
+            "peak_live": 4,
+            "peak_shallow_bytes": 192,
+            "pool": "NEX handles"
+          },
+          {
+            "allocations": 501,
+            "frees": 501,
+            "live": 0,
+            "live_shallow_bytes": 0,
+            "peak_live": 4,
+            "peak_shallow_bytes": 464,
+            "pool": "NEX objects (shallow)"
+          }
+        ],
+        "source_functions": [
+          {
+            "aborted": 1,
+            "calls": 1,
+            "completed": 0,
+            "content_hash": "9af98e962253bf6cd21a91454b7f2d65c203207d164f79e5433356722044964c",
+            "name": "ref_profile_app::main"
+          }
+        ]
+      },
+      {
+        "report": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_source_only_profile_and_control_cleanup/.nex/build/9aaba86af9106baaf325c750df0bdd2ef78c87b5c15e1054a23f5bd0f119eb49/profiles/run-1995207511-1839550998.json",
+        "sha256": "9195a27d9508e0447e6c66b2fca8a311700b2f2c3fae40a1f5f1c974927cde2c",
+        "schema": "nex.profile/2",
+        "exit_code": 70,
+        "stdout": "",
+        "build": {
+          "build_key": "9aaba86af9106baaf325c750df0bdd2ef78c87b5c15e1054a23f5bd0f119eb49",
+          "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+          "entry": "ref_profile_app::main",
+          "language": "0.30",
+          "revision": "3e4d3e6ef72b4990c185209b6b642624d39c5d1e366797f7c0b537e825be9265",
+          "schema": "nex.profile-build/1",
+          "source_hash": "b66c2fc436ec127b74cf251c76e336d21807e5e129a32a23827bd129edb7e6d5",
+          "task_limits": {
+            "steps": 9007199254740991,
+            "timeout_ms": 25,
+            "workers": 16
+          },
+          "toolchain": "0.279.0"
+        },
+        "task_execution": {
+          "backend": "native",
+          "configured": {
+            "steps": 9007199254740991,
+            "timeout_ms": 25,
+            "workers": 16
+          },
+          "cooperative_deadline": true,
+          "effective": {
+            "steps": 9007199254740991,
+            "timeout_ms": 25,
+            "workers": 16
+          },
+          "executor_workers": 1,
+          "identical_step_thresholds": false,
+          "step_model": "native resume and runtime polls",
+          "supervisor_timeout_seconds": 30
+        },
+        "completeness": {
+          "aggregates": true,
+          "cpu": true,
+          "elapsed": true,
+          "lifetime": true,
+          "memory": true,
+          "timeline": true
+        },
+        "tracked_memory": [
+          {
+            "allocations": 14856,
+            "frees": 14856,
+            "live": 0,
+            "live_shallow_bytes": 0,
+            "peak_live": 4,
+            "peak_shallow_bytes": 192,
+            "pool": "NEX handles"
+          },
+          {
+            "allocations": 14844,
+            "frees": 14844,
+            "live": 0,
+            "live_shallow_bytes": 0,
+            "peak_live": 4,
+            "peak_shallow_bytes": 464,
+            "pool": "NEX objects (shallow)"
+          }
+        ],
+        "source_functions": [
+          {
+            "aborted": 1,
+            "calls": 1,
+            "completed": 0,
+            "content_hash": "9af98e962253bf6cd21a91454b7f2d65c203207d164f79e5433356722044964c",
+            "name": "ref_profile_app::main"
+          }
+        ]
+      }
+    ],
+    "capture": {
+      "capture_receipt": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_profile_capture_replay_and_package_without_original_source/capture/receipt.json",
+      "sha256": "0b7ce2e379a6868457cab55d7cfa65fa43cb11b3367310e66b5def847b3ea620",
+      "captured_source_sha256": "c249d78d5b5a5cf69f51c676905e141475773aaca9b56dcd1edc177e7a84ec21",
+      "profile": {
+        "report": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_profile_capture_replay_and_package_without_original_source/capture/artifacts/measure-reference/profile.json",
+        "sha256": "b5b9df18249e71956e7937c72b5b13c4095beb482a2c0692d14c3f0ca8aa75e6",
+        "schema": "nex.profile/3",
+        "exit_code": 0,
+        "stdout": "42\n",
+        "build": {
+          "build_key": "736a984d71915da8b83c63b68d540a15b311c9c52ca5fe2b68e84674df2f6130",
+          "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+          "entry": "ref_profile_app::main",
+          "language": "0.30",
+          "revision": "ff5bd5328f9bc180cf0bfceebdab7a978007508e1934bcd52993450d8a079545",
+          "schema": "nex.profile-build/2",
+          "source_hash": "e0b3ecfaf7d1696573d9f3909fdb3262456346c5c322034fe6706d48cdfe6de8",
+          "task_limits": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 2
+          },
+          "task_profile_catalog": "7f4fbe1ca63deaa2f2b1169d85a64cedf3b8803c6176bb37d09498c05c7eebee",
+          "toolchain": "0.279.0"
+        },
+        "task_execution": {
+          "backend": "native",
+          "configured": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 2
+          },
+          "cooperative_deadline": true,
+          "effective": {
+            "steps": 1000000,
+            "timeout_ms": 10000,
+            "workers": 2
+          },
+          "executor_workers": 1,
+          "identical_step_thresholds": false,
+          "step_model": "native resume and runtime polls",
+          "supervisor_timeout_seconds": 157
+        },
+        "completeness": {
+          "aggregates": true,
+          "cpu": true,
+          "elapsed": true,
+          "lifetime": true,
+          "memory": true,
+          "timeline": false
+        },
+        "tracked_memory": [
+          {
+            "allocations": 126,
+            "frees": 126,
+            "live": 0,
+            "live_shallow_bytes": 0,
+            "peak_live": 4,
+            "peak_shallow_bytes": 192,
+            "pool": "NEX handles"
+          },
+          {
+            "allocations": 38,
+            "frees": 38,
+            "live": 0,
+            "live_shallow_bytes": 0,
+            "peak_live": 16,
+            "peak_shallow_bytes": 2000,
+            "pool": "NEX objects (shallow)"
+          }
+        ],
+        "source_functions": [
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "7a5a916a4f44f1805ff071608e23830f5bb3a11a890b454618c90012997388da",
+            "name": "ref_profile_app::main",
+            "owner_image": "app",
+            "provider_component": "app"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "a8c323cfd99dc1245703e1d74608e4889eb1cbccc94d3339b8beccb133bb192c",
+            "name": "ref_profile_app::main::$lambda_0",
+            "owner_image": "app",
+            "provider_component": "app"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "7719153f9416ff8adb5b1781e2674af3882a87f382977464ecd6caa5ce5da99b",
+            "name": "ref_profile_app::main::$lambda_0::$lambda_1",
+            "owner_image": "app",
+            "provider_component": "app"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "96687f366a4bacd524f63c2c67d4803c18419265ce3fe642b4d90aace79dcd5c",
+            "name": "ref_profile_leaf::make",
+            "owner_image": "leaf",
+            "provider_component": "leaf"
+          },
+          {
+            "aborted": 1,
+            "calls": 1,
+            "completed": 0,
+            "content_hash": "a35f28983db471f977e49b1dfb3fd339083218a86ff67166e3016ae892c098ec",
+            "name": "ref_profile_leaf::work",
+            "owner_image": "leaf",
+            "provider_component": "leaf"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "be26caf9ad0e5b5184ff96d093c235a472c3b1d572d7915699f73837ebcf495d",
+            "name": "ref_profile_mid::work",
+            "owner_image": "app",
+            "provider_component": "mid"
+          },
+          {
+            "aborted": 0,
+            "calls": 1,
+            "completed": 1,
+            "content_hash": "a6f203fc415e9d658feb3b0c3dfbe31237298382acf52b11ef948430fc9223e9",
+            "name": "ref_profile_pure::offset",
+            "owner_image": "leaf",
+            "provider_component": "pure"
+          }
+        ]
+      },
+      "source_absent": true,
+      "replay_ok": true,
+      "replay_programs_equal": true,
+      "package_manifest_sha256": "00a79148d541c8645f7f1e00124fd610b58a91831a2b66f1af659e63f2c1ab01",
+      "ordinary_package_manifest_sha256": "88074e1b0d9aa526a87b382f9f3513f9738b2b12fc6464ad010b53f882c2b421",
+      "metadata_rewritten": false,
+      "raw_profile_sha256": "872ed523ea993ef92915f157452d9ff3c37c79b302b297d1a1711d93e4dc5572",
+      "ordinary_package_exit_code": 0,
+      "packaged_raw_exit_code": 0,
+      "commands_sha256": "efebdc2273d9befaaf2d4ab7e60e3f5e4cdfa557f5200c8de5797f51c5d24d2f"
+    },
+    "capability_validation": {
+      "ok": true,
+      "shared_fields": [
+        "browser_workers",
+        "bytes_construction",
+        "cli_interface",
+        "compute",
+        "device",
+        "diagnostic_catalogue",
+        "dns_provider",
+        "effect_parameters",
+        "features_scope",
+        "foreign_trap_reporting",
+        "generic_features",
+        "gpu_codegen",
+        "http_client_provider",
+        "http_response_streams",
+        "http_storage_transactions",
+        "ieee_numeric_kernel",
+        "language_pack_contract",
+        "list_construction",
+        "llm_cost",
+        "llm_entry",
+        "managed_references",
+        "model",
+        "native_application_lifetime",
+        "native_core",
+        "native_debug_image_binding",
+        "native_debug_pages",
+        "native_debug_session",
+        "native_entry_abi",
+        "native_runtime_search",
+        "native_tool_arguments",
+        "opencl_codegen",
+        "patch_entities",
+        "project_capture_layout",
+        "project_languages",
+        "resource_executor",
+        "resource_regions",
+        "result_propagation",
+        "runtime_contracts",
+        "runtime_diagnostic_messages",
+        "scoped_discovery",
+        "source_concurrency",
+        "source_contracts",
+        "source_contracts_development",
+        "source_exception_prototype",
+        "source_exceptions",
+        "source_formatting",
+        "source_resources",
+        "standard_library",
+        "structured_tasks_runtime",
+        "task_debugging",
+        "task_execution_limits",
+        "task_external_completion",
+        "task_file_reads",
+        "task_file_streams",
+        "task_file_streams_host",
+        "task_file_streams_prototype",
+        "task_file_writes",
+        "task_file_writes_host",
+        "task_file_writes_prototype",
+        "task_foreign_prototype",
+        "task_network_transport",
+        "task_profile_collector",
+        "task_profiling",
+        "task_provider_debugging",
+        "task_provider_profiling",
+        "task_providers",
+        "task_shared_providers",
+        "task_value_retirement",
+        "tcp_provider",
+        "text_construction",
+        "wasm_features"
+      ],
+      "shared_field_count": 71,
+      "compared_JSON_values": 4764,
+      "errors": [],
+      "schema": "nex.language-pack-validation/1",
+      "compiler_sha256": "de3df775ccc8fbce63fb8763e1356359c5b289e70e96597abedf0c7ca0f326e8",
+      "manifest_sha256": "0976ffe0ff8c66530a2af3dfef52cbf01d754347847ff957783ccec335ce6ff7",
+      "language": "0.28",
+      "toolchain": "0.279.0",
+      "compiler_build": "8393b0460a08c5aff3323e0472df825df47c90b6c9e58920c98717191a87ec7b",
+      "descriptor_hash": "168471c51358fc845e7310084666f8a7e9b13cc7b44bd7eba0b060da6741c75a"
+    },
+    "final_metadata_refresh_execution_files_unchanged": true,
+    "execution_files_checked": 262,
+    "earlier_manifest_validation": {
+      "ok": false,
+      "reason": "manifest copy preceded final descriptor synchronization; metadata refreshed without changing the262 execution files",
+      "report_sha256": "51c4659dfeaeb67749e5fdd6f1de9d2be4c7aa2b92c4f240533d40120164e14c"
+    }
+  },
+  "schema_validation": {
+    "ok": true,
+    "schema": "nex.reference-profile-schema-validation/1",
+    "positive": [
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/ddaaf04d7ee7814bf705991abaab46fb2e5a2bcf7c996b0499f481460326e384/task-provider.json",
+        "sha256": "24d933cd9ffbc65af87a86ca7ac7188f7b8ceaadae5fe909b4414c93d4d14d31"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/ddaaf04d7ee7814bf705991abaab46fb2e5a2bcf7c996b0499f481460326e384/task-provider.json",
+        "sha256": "24d933cd9ffbc65af87a86ca7ac7188f7b8ceaadae5fe909b4414c93d4d14d31"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/3ff21a44925d4f9f9e7584d6ec3504f2d0ede33e387455f275afddd445e176d8/task-provider.json",
+        "sha256": "858da5c329e1b9161bbd8dd6e9bf1b114ac364756efa37ecdb70389b7f9ce54b"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/3ff21a44925d4f9f9e7584d6ec3504f2d0ede33e387455f275afddd445e176d8/task-provider.json",
+        "sha256": "858da5c329e1b9161bbd8dd6e9bf1b114ac364756efa37ecdb70389b7f9ce54b"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/30d25363e69aaba3a842b232c4f97c864ed1613f102995fc97babbdb1c0dd15f/task-provider.json",
+        "sha256": "47e7c0f416fe3d9b58a83c149fca9244d3568870e0c3a3e9c478f3075f927331"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/30d25363e69aaba3a842b232c4f97c864ed1613f102995fc97babbdb1c0dd15f/task-provider.json",
+        "sha256": "47e7c0f416fe3d9b58a83c149fca9244d3568870e0c3a3e9c478f3075f927331"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/131053451ca3f9ac8fd33d52a303a69cedf13f2bcf21baa3011ebb174fd9f7fb/task-provider.json",
+        "sha256": "403d673f70b2fdd041b463639b470f63a31bceda035edd0d4c3cb76fddbe77c3"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/131053451ca3f9ac8fd33d52a303a69cedf13f2bcf21baa3011ebb174fd9f7fb/task-provider.json",
+        "sha256": "403d673f70b2fdd041b463639b470f63a31bceda035edd0d4c3cb76fddbe77c3"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "pure",
+        "mode": "static"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "leaf",
+        "mode": "static"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "mid",
+        "mode": "static"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "app",
+        "mode": "static"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/ddaaf04d7ee7814bf705991abaab46fb2e5a2bcf7c996b0499f481460326e384/task-provider.json",
+        "sha256": "24d933cd9ffbc65af87a86ca7ac7188f7b8ceaadae5fe909b4414c93d4d14d31"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/ddaaf04d7ee7814bf705991abaab46fb2e5a2bcf7c996b0499f481460326e384/task-provider.json",
+        "sha256": "24d933cd9ffbc65af87a86ca7ac7188f7b8ceaadae5fe909b4414c93d4d14d31"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/3ff21a44925d4f9f9e7584d6ec3504f2d0ede33e387455f275afddd445e176d8/task-provider.json",
+        "sha256": "858da5c329e1b9161bbd8dd6e9bf1b114ac364756efa37ecdb70389b7f9ce54b"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/3ff21a44925d4f9f9e7584d6ec3504f2d0ede33e387455f275afddd445e176d8/task-provider.json",
+        "sha256": "858da5c329e1b9161bbd8dd6e9bf1b114ac364756efa37ecdb70389b7f9ce54b"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/30d25363e69aaba3a842b232c4f97c864ed1613f102995fc97babbdb1c0dd15f/task-provider.json",
+        "sha256": "47e7c0f416fe3d9b58a83c149fca9244d3568870e0c3a3e9c478f3075f927331"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/30d25363e69aaba3a842b232c4f97c864ed1613f102995fc97babbdb1c0dd15f/task-provider.json",
+        "sha256": "47e7c0f416fe3d9b58a83c149fca9244d3568870e0c3a3e9c478f3075f927331"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/131053451ca3f9ac8fd33d52a303a69cedf13f2bcf21baa3011ebb174fd9f7fb/task-provider.json",
+        "sha256": "403d673f70b2fdd041b463639b470f63a31bceda035edd0d4c3cb76fddbe77c3"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/131053451ca3f9ac8fd33d52a303a69cedf13f2bcf21baa3011ebb174fd9f7fb/task-provider.json",
+        "sha256": "403d673f70b2fdd041b463639b470f63a31bceda035edd0d4c3cb76fddbe77c3"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "pure",
+        "mode": "static"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "leaf",
+        "mode": "static"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "mid",
+        "mode": "static"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "app",
+        "mode": "static"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/b173cf4a522d4b023fb064f581e376b5dc631c7559a5701394590e0c30c1eb54/task-provider.json",
+        "sha256": "bd64b916861c3989197ae796ec6f7e536628c0f5c879ea5d38732b7396326557"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/b173cf4a522d4b023fb064f581e376b5dc631c7559a5701394590e0c30c1eb54/task-provider.json",
+        "sha256": "bd64b916861c3989197ae796ec6f7e536628c0f5c879ea5d38732b7396326557"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/9ba5a13a26a0f72601dc45c0fd53467914f6a781fd2c0db157f677cc3d57d7ba/task-provider.json",
+        "sha256": "dda26f798854afaa3214ac894965e5d0648d53fad4f607bc798405957d84f562"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/9ba5a13a26a0f72601dc45c0fd53467914f6a781fd2c0db157f677cc3d57d7ba/task-provider.json",
+        "sha256": "dda26f798854afaa3214ac894965e5d0648d53fad4f607bc798405957d84f562"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/fbe66c42ed032d64692a6eac998554bad0a1ff77cb9ed3dad0d3dd2637663ff3/task-provider.json",
+        "sha256": "29c95c5d33293a6088873915ebcd00af5bd3fbde5ca2c5fad392c4a97c8e913e"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/fbe66c42ed032d64692a6eac998554bad0a1ff77cb9ed3dad0d3dd2637663ff3/task-provider.json",
+        "sha256": "29c95c5d33293a6088873915ebcd00af5bd3fbde5ca2c5fad392c4a97c8e913e"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/14993f540a5155e8cf1229457b90f36acfc844a5ab6fdc9f3dcf089e3681fc29/task-provider.json",
+        "sha256": "6344dff2cc78af16db55a719a51342c8752d72867b778731c0f0f2e88a82b366"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/14993f540a5155e8cf1229457b90f36acfc844a5ab6fdc9f3dcf089e3681fc29/task-provider.json",
+        "sha256": "6344dff2cc78af16db55a719a51342c8752d72867b778731c0f0f2e88a82b366"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "pure",
+        "mode": "shared-fixed"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "leaf",
+        "mode": "shared-fixed"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "mid",
+        "mode": "shared-fixed"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "app",
+        "mode": "shared-fixed"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/b173cf4a522d4b023fb064f581e376b5dc631c7559a5701394590e0c30c1eb54/task-provider.json",
+        "sha256": "bd64b916861c3989197ae796ec6f7e536628c0f5c879ea5d38732b7396326557"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/b173cf4a522d4b023fb064f581e376b5dc631c7559a5701394590e0c30c1eb54/task-provider.json",
+        "sha256": "bd64b916861c3989197ae796ec6f7e536628c0f5c879ea5d38732b7396326557"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/9ba5a13a26a0f72601dc45c0fd53467914f6a781fd2c0db157f677cc3d57d7ba/task-provider.json",
+        "sha256": "dda26f798854afaa3214ac894965e5d0648d53fad4f607bc798405957d84f562"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/9ba5a13a26a0f72601dc45c0fd53467914f6a781fd2c0db157f677cc3d57d7ba/task-provider.json",
+        "sha256": "dda26f798854afaa3214ac894965e5d0648d53fad4f607bc798405957d84f562"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/fbe66c42ed032d64692a6eac998554bad0a1ff77cb9ed3dad0d3dd2637663ff3/task-provider.json",
+        "sha256": "29c95c5d33293a6088873915ebcd00af5bd3fbde5ca2c5fad392c4a97c8e913e"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/fbe66c42ed032d64692a6eac998554bad0a1ff77cb9ed3dad0d3dd2637663ff3/task-provider.json",
+        "sha256": "29c95c5d33293a6088873915ebcd00af5bd3fbde5ca2c5fad392c4a97c8e913e"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/14993f540a5155e8cf1229457b90f36acfc844a5ab6fdc9f3dcf089e3681fc29/task-provider.json",
+        "sha256": "6344dff2cc78af16db55a719a51342c8752d72867b778731c0f0f2e88a82b366"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/14993f540a5155e8cf1229457b90f36acfc844a5ab6fdc9f3dcf089e3681fc29/task-provider.json",
+        "sha256": "6344dff2cc78af16db55a719a51342c8752d72867b778731c0f0f2e88a82b366"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "pure",
+        "mode": "shared-fixed"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "leaf",
+        "mode": "shared-fixed"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "mid",
+        "mode": "shared-fixed"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "app",
+        "mode": "shared-fixed"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/3256e9615b296326769c0e1acc10791e7303a52544784b5dd51fda63daf6eb55/task-provider.json",
+        "sha256": "6fe968d7cf09dcc16a1e745d35feb74be6d5c4451909c54c4ce25fee535486f9"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/3256e9615b296326769c0e1acc10791e7303a52544784b5dd51fda63daf6eb55/task-provider.json",
+        "sha256": "6fe968d7cf09dcc16a1e745d35feb74be6d5c4451909c54c4ce25fee535486f9"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/8232c3086e96b0b5036b05878cea95f7087c2199d634c7b941bef5369be47ba2/task-provider.json",
+        "sha256": "087f35c8b3da1abd7ab02d376ed35718a782eeb5ec6adf53b246eac53ff1c39a"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/8232c3086e96b0b5036b05878cea95f7087c2199d634c7b941bef5369be47ba2/task-provider.json",
+        "sha256": "087f35c8b3da1abd7ab02d376ed35718a782eeb5ec6adf53b246eac53ff1c39a"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/952571821ad7030c3bfaf213f7849566fc2eb3765fe7afae00b6ed841dce0a71/task-provider.json",
+        "sha256": "0259fab9020ef3cbf10a7a6a0e2e66e1749b5309513d282845dfa6002d007f42"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/952571821ad7030c3bfaf213f7849566fc2eb3765fe7afae00b6ed841dce0a71/task-provider.json",
+        "sha256": "0259fab9020ef3cbf10a7a6a0e2e66e1749b5309513d282845dfa6002d007f42"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/1ecdc366049498e4d24b187112ee4e3e912c88fdfc3a8ffec12e4f5caff5b93d/task-provider.json",
+        "sha256": "83762f2b5c337cd093c7ef32be74418fcc3e7edf0e8ed6e3225b423dd8d0131a"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/1ecdc366049498e4d24b187112ee4e3e912c88fdfc3a8ffec12e4f5caff5b93d/task-provider.json",
+        "sha256": "83762f2b5c337cd093c7ef32be74418fcc3e7edf0e8ed6e3225b423dd8d0131a"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "pure",
+        "mode": "shared-fixed"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "leaf",
+        "mode": "shared-fixed"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "mid",
+        "mode": "shared-fixed"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "app",
+        "mode": "shared-fixed"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/3256e9615b296326769c0e1acc10791e7303a52544784b5dd51fda63daf6eb55/task-provider.json",
+        "sha256": "6fe968d7cf09dcc16a1e745d35feb74be6d5c4451909c54c4ce25fee535486f9"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/3256e9615b296326769c0e1acc10791e7303a52544784b5dd51fda63daf6eb55/task-provider.json",
+        "sha256": "6fe968d7cf09dcc16a1e745d35feb74be6d5c4451909c54c4ce25fee535486f9"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/8232c3086e96b0b5036b05878cea95f7087c2199d634c7b941bef5369be47ba2/task-provider.json",
+        "sha256": "087f35c8b3da1abd7ab02d376ed35718a782eeb5ec6adf53b246eac53ff1c39a"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/8232c3086e96b0b5036b05878cea95f7087c2199d634c7b941bef5369be47ba2/task-provider.json",
+        "sha256": "087f35c8b3da1abd7ab02d376ed35718a782eeb5ec6adf53b246eac53ff1c39a"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/952571821ad7030c3bfaf213f7849566fc2eb3765fe7afae00b6ed841dce0a71/task-provider.json",
+        "sha256": "0259fab9020ef3cbf10a7a6a0e2e66e1749b5309513d282845dfa6002d007f42"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/952571821ad7030c3bfaf213f7849566fc2eb3765fe7afae00b6ed841dce0a71/task-provider.json",
+        "sha256": "0259fab9020ef3cbf10a7a6a0e2e66e1749b5309513d282845dfa6002d007f42"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/1ecdc366049498e4d24b187112ee4e3e912c88fdfc3a8ffec12e4f5caff5b93d/task-provider.json",
+        "sha256": "83762f2b5c337cd093c7ef32be74418fcc3e7edf0e8ed6e3225b423dd8d0131a"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "path": "/Users/sae/projects/NEX/build/reference-task-profile-v1/moved-live-v3/test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles/.nex/build/1ecdc366049498e4d24b187112ee4e3e912c88fdfc3a8ffec12e4f5caff5b93d/task-provider.json",
+        "sha256": "83762f2b5c337cd093c7ef32be74418fcc3e7edf0e8ed6e3225b423dd8d0131a"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "pure",
+        "mode": "shared-fixed"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "leaf",
+        "mode": "shared-fixed"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "mid",
+        "mode": "shared-fixed"
+      },
+      {
+        "schema": "project-reference-task-linkage.schema.json",
+        "component": "app",
+        "mode": "shared-fixed"
+      }
+    ],
+    "negative": [
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-reference-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      },
+      {
+        "schema": "native-profiled-task-provider.schema.json",
+        "mutation": "ABI8 record relabeled as ABI7"
+      }
+    ],
+    "schemas_sha256": {
+      "task-debug-frame.schema.json": "568e837781da8541d97c7f3f3c422daef629ed85bb838b729e73ff30cecdb0f8",
+      "text-range.schema.json": "62be3e3976a6a70069a374c18d05fa03a901d7687e617c98046e2223952340bb",
+      "dap-native-page.schema.json": "3f959f44c417720136e9298fff31bf3c2f0eb9557d1e18df979bdf299457ee72",
+      "provider-task-debug-expression.schema.json": "0d3d852efecd2a04f3d2e7c57c165aaac14cb74e5bce4344ae3395ed7722e7a2",
+      "dns-targets.schema.json": "ac3473fc55379c964461c97cc0b33cb73931e4d47642bd2dd8a2263d990447d6",
+      "debug-session.schema.json": "c89b8da09f710abd7a479962b46768e4ff36befc54be211470790f055213891a",
+      "project-profiled-task-linkage.schema.json": "86056bb4611ca907ed72fa94139f1b420bd1ad7cdf24f6fb21db19207609ef4c",
+      "project-static-task-linkage.schema.json": "5ca1600b89b637884be2cef053ac7425a63fe35e893098887eab07aa54bb7681",
+      "task-debug-source-union.schema.json": "ce21d96d028f246516616414c9f0b96db76073bbf4513720ef83bf71f1bd0099",
+      "native-debug-task-provider.schema.json": "f7aa9464d09096bc87c0bee1ded778ef0da08f2b548d9b25e02db3af52034f3a",
+      "native-entry-abi.schema.json": "eae35f5bea73527fb438a4f625e0e06429da47a70105b8da1c9072369da7a7ec",
+      "project-write-task-linkage.schema.json": "cce533e7e0a55cd0b6cfb13cfc4e1ce61809be92802f247f274679b065e870ae",
+      "private-task-architecture-v2.schema.json": "90afbefecf172e94929e9d46090475c392dc8bfd16e21fd032aeed4ed6105c03",
+      "foreign-catalogue.schema.json": "8a4c5b6842cc44da2f5e76323255414c9e4ea0ccd3a1cc74e8bb9fff76fcc095",
+      "wasm-build.schema.json": "5434c11c4195e1a97d7fe27e4ba398409c41b9f5d0d4c6f1c03ce2316cbbdc68",
+      "project-capture.schema.json": "393b7c4de11f6458bf5adff3921be991a3bc1c3a8b27554633b2e8e6a0bd585b",
+      "native-write-task-provider.schema.json": "a62a89ef7c95dc5d06a02abdbd296cd02120921b894160a71af11d729dd24825",
+      "native-stream-task-provider.schema.json": "8bb4391652eb1878776cbd99498765f4d52b1a7130e8225dfa5e0e53ca0a8f0c",
+      "project-task-linkage.schema.json": "aa66d03a248e48a5c3285318353c657fdbf91bdb585ec4014058a88d41b70aba",
+      "frontend-diagnostics.schema.json": "626fbbca25fa9fc0694f3bac85db76320bbc2c16241dab9c651a2239caf859e5",
+      "native-task-provider.schema.json": "8c4b0a5d478c27752344c7be07f188712453fa6804a84b6d867cad6cbd1e33c0",
+      "tcp-targets.schema.json": "95e1560ac9c6e0203baae7657a26ab4d5f47f62cf4737ac25742cdae48946f3a",
+      "http-targets.schema.json": "ca9b77bbeab0b1cd8802cc738450e14645f82d9a3dc743a658feb5b23b2a08d7",
+      "editor-identifiers.schema.json": "2b54add960c4c42c250671e241dc2d9eccc4de372a73bc5cc408ea53586473a4",
+      "graph-snapshot.schema.json": "02f46bf9cca52d0cf6ec2faa5ec2e92a89b9590d7a9bffd2758e85705b712e47",
+      "toolchains.schema.json": "a6a284d8e0c8ead7ad31daf0f7bc6b32704234809b194578233c4dcdf61caed6",
+      "patch.schema.json": "33f9556ad3a2f39cc816d7a48ae9e2c19e098b4729c81fe06c01f318b4e4862f",
+      "diagnostic-catalogue-index.schema.json": "520a030943e7014cf5f3d73bff2a04be8a7b346b95a93cab7d2019ef4b625269",
+      "native-source-error-task-provider.schema.json": "2d37d35f73c90108b69fa0a9bcf83c871a4172e96c964ed182a15b64d0cbefd7",
+      "corpus.schema.json": "3c7df3e3065d899d71be72c59ecb38328c7ecc8815569fbd5a5872d893706f9a",
+      "project-action.schema.json": "6917ab6d0e968b24a08941000619c75fa64add26bb00d2a63f6e529b96588611",
+      "editor-references.schema.json": "2ec1c227d689bcec12063d44d26176009215199e0362ec08b768c06488b317a8",
+      "private-task-architecture-v4.schema.json": "fda31a73924f959de04ebda11aa463ee47149b2bfc8de08387739cdd38df38eb",
+      "task-debug-catalog.schema.json": "c99bf36139d831643d54c5ea46642672f24da00b6ba15daadf6d3dc36bd68eac",
+      "wasm-module.schema.json": "acc132497e23ddbe3802e206d434717b8c154d1824a13bb3bd9ed417bb719af8",
+      "history.schema.json": "f5c21ea90b346140dbd11c4fefd5bf3dbac063787f6aa460a59a9bf2d92b37b3",
+      "task-value-inspection.schema.json": "b8eb3dd0d74c176618c1eec85df130db547a23ad9e3d2284b6fb802501c03fd3",
+      "native-diagnostics.schema.json": "9999669d48b0e7d2dbe827150d733cf5bb18bdb6d9bff0c8499ae9c632745f71",
+      "discovery.schema.json": "56ac907b7ec509a3476cb65982be6820e9a5df3738b6da5f36a1412788e581b5",
+      "foreign-bundle.schema.json": "7440a138ec3fb89e4280cd6e1a334eb8bf37aaaabcf98a6b0323592420b869f7",
+      "server-workload.schema.json": "f7529ebd5cccd6b3233c618b04cb77a29d8e71d10f46964e0cb6ef337da47a47",
+      "task-profile-catalog.schema.json": "6e558dfb7e90397eaca1d96ae65f1b59182016e72632f4e00d1d7bd5064df9bd",
+      "editor-overlay.schema.json": "b7bc99e6a817e6212f4e0c3dc0e63df098442c6b8b399cf94bdd2c45e504d928",
+      "operations.schema.json": "abb0fb8bd2248af14ad432491508997f19b7bfec865da5f77c04d76c30f96e59",
+      "application-package.schema.json": "09ef2ba0bbc33884dda3b3341f3f93031f5eb9551e5e2fb66f38594f002cd587",
+      "native-profiled-task-provider.schema.json": "8bd0b2a30fbdb9fb54b056d8b0224da23a483e1e46cd4f5428d1692aa3db28a4",
+      "foreign-signature.schema.json": "860d0f70a4935d42af15800df918ab4197d2ac96cc19488542555cd8d3108020",
+      "debug-wire.schema.json": "37929a5d999e218ffc1eb48eceb2fbd89fa7afc7a2e4d399b7c29a5a1fb5a550",
+      "core-capsule.schema.json": "9e4c374de2e1efa214b28432170538e476bbd443627a41d7af1e4f8fe015d551",
+      "project-build.schema.json": "52948628d92a743c4e04c77393e70771aa8b20a70893b7f1652706f1eb3d8059",
+      "native-reference-task-provider.schema.json": "49bb454e08f419c5428608303ec050ba341a02c732a53413ebfa88f28efb363d",
+      "private-task-architecture-v3.schema.json": "228cef4d4ca5c9fd5123d27586e0368cb6d8feb8ea2bbe6db0cb299baa4ce8ca",
+      "migration-candidate.schema.json": "f555bd09de6849bdf80d41e878acf84aee2b00c7389d54f162543fb4d697bb8e",
+      "provider-task-debug-view.schema.json": "0ca7fc15b965d48beaa8f929be20c26536a1ec186e4c1c6c59fbd6335ec0061c",
+      "native-shared-task-provider.schema.json": "21ebed9cab71ac5ba0588c6ffd63922bf69b23276bcaa71ed814e0f34900c50d",
+      "server-workload-result.schema.json": "deb14143c7affad9384a97d7cc7acb413de7c3bbb51e661017c5ec53a3133ee9",
+      "project-package.schema.json": "aa1c945737e04977a4f5e9dbc8231aa75c3b745be6a3ca30e235d9e2c3ef2730",
+      "project-reference-task-linkage.schema.json": "95008925faae5ee386c23fb97b8139e068693a73b0b9869009e266c44b9b3481",
+      "project.schema.json": "e0cd7aee462e84c29f6a5e2f4aecaa884e9c4ef755f74cced7476b5919c2f194",
+      "verification.schema.json": "4666ed98fdb921c902194535d050d5e9304c0c6cbac557cb8fd2a93bf3038def",
+      "private-task-architecture-v6.schema.json": "19464c0f20061ba2ccf01ef50c50b50ee5627c57d13b055de6aad2a41f95f329",
+      "task-workload-state.schema.json": "c923ecaf93985ee3ea98d1a23711d5b4ebfbed5274c1af14568676cc3aa5e972",
+      "runtime-contracts.schema.json": "7d764fb29b9bed5254cebcccb729e6a64951472c9f4a80b1648277695b842c70",
+      "sdk-distribution.schema.json": "ecf04d829877ee3cde39f9aea98ee0a4780f8cdb3d700fd6ce654eae92c5c291",
+      "task-package-notices.schema.json": "cf3e2dcdd90ee79aceeeb6d537e0c90ac351221928b9810c5b494f46be7fcad0",
+      "cuda-emission.schema.json": "eb689570cb878fcbb9fc180af6d13e4b20ef960da70d2d2a222d848f6327a2e6",
+      "debug-frame.schema.json": "8b33157bf005dda176cd88e713f48bf0adafadc95f517edd1166d81bb54647f5",
+      "graph-query.schema.json": "b0a84eb6fea25d429b4b15302e59639696c5ec0b44f3f4fc68691405329033ee",
+      "project-source-error-task-linkage.schema.json": "e3cee77b3d3e9b208a33eb38830b05b0dbd53fc6d84ff965f9e9c8b1a9a58914",
+      "foreign-projection.schema.json": "23845508811562ccaf75929a534f9b184caf9b690246e0ce24ce527a555393c2",
+      "project-stream-task-linkage.schema.json": "3af56d615ce17f73ea3ff624fd9247615f6fb47dada996e5b547d03cda1beda5",
+      "foreign-package.schema.json": "b3adcb5ca2d937da801ae3c5bf7b26689b5da2bf7abb959df8b57649e386c793",
+      "opencl-emission.schema.json": "d109bf56982bbb733c83eb2f3aa74208b82400195e23faa0ab52ee2113f6d556",
+      "editor-analysis.schema.json": "d26c3aac8ce8ba45f4059cb48f0ecfc135e9b549e66e8bcd596c84b7f56b3576",
+      "private-task-architecture-v5.schema.json": "38137c38cf3dd05a62109d5a938555701f00ce13540cac4ad1f2eb666f1aafdb",
+      "project-foreign-projection.schema.json": "c9c73f8fad090037877674988b7599b5a5ab0d474214ac9b6a00b1d8eae5fc96",
+      "metal-emission.schema.json": "78994b59e52e238bc024721a63c3f8fe351a5be2ad3e79c2f0673fa48925846d",
+      "sdk-host.schema.json": "d5a26c5e5846746e6d778757da8d72a4b6003491461be20fadb854d699ef7312",
+      "typed-web-delivery.schema.json": "ba3e3ede9b2d93eb08e6db3c09913ef42307745bba47fa24247d06e3e4c21084",
+      "task-debug-view.schema.json": "e83b45cf85bedeb36567af066b1586ce3542bfad1d944797513393db9243cf76",
+      "project-typed-error-task-linkage.schema.json": "9a68c4b122d73e836247bb46850aba1be2928ce208a81e72e7ec011aee56dff6",
+      "provider-task-debug-frame.schema.json": "f415dfa3709cc11980434910fedf972a923793a486027ee193324d7ff5bfe15e",
+      "native-typed-error-task-provider.schema.json": "812c840231eb97de75f90cff1eb8f9184e2884b50ee58bbdb069fdafd76457a4",
+      "task-debug-expression.schema.json": "0b65e385ca2cea399cb3eb1112ae6e4136048c41ce9f6e3568bd26b4cd344a6f",
+      "graph-identity.schema.json": "23ea5e2673b02d8db37dffac882eddd01e280cf9641c05f3e1e7737528135817",
+      "toolchain.schema.json": "fafddad10f7d0a6bda90775d028e63666c588af4487e452afa7b83eaf8b75ebe",
+      "private-task-architecture.schema.json": "8a2845e89023d1fb70d81ff26efa135b706f438d6dc0db90f202b71c641134c0",
+      "diagnostic-explanation.schema.json": "9ab1776307200350454591eeb5b5ffa09a3f4f99c248c846f448a8b5cc8c76d5",
+      "core-report.schema.json": "e53042e50a0d67fe4bbc85673f1a54e8c638c059effbebba25fd59a94d097adc",
+      "task.schema.json": "925b3ad0438ae580a63f3bb8deb1ff02f1a3adc112f191a4ac86fa9583b00e38",
+      "foreign-catalogue-report.schema.json": "35de7b304b546ed69eee49a8f76a311ddc2a11d3535f889dbaa3718ed002cc7d",
+      "foreign-host.schema.json": "05cc32400adf2d3c164c9b79cdef1beefd26711a86b1140b170d5dc2e6fbe36c",
+      "debug-frame-v2.schema.json": "6302ff2b8a6876e42a6f4644262f1676ad6018633e3f81f2b90a7bce2b176f6a",
+      "foreign-binding.schema.json": "a1179bab098ff6639e8a72b6575ee979e0f084da06fd68eda224953cbb1bd321"
+    },
+    "native_execution": false
+  },
+  "original_prototype_failures": [
+    {
+      "path": "live-v1",
+      "reason": "fixture enum payload omitted its parameter name; E_PARSE"
+    },
+    {
+      "path": "live-v2",
+      "reason": "fixture used budgets instead of the task contract budget field; E_TASK"
+    },
+    {
+      "path": "live-v3",
+      "reason": "application packaging rejected the new reference profile record; fixed explicit ABI8/language/schema dispatch"
+    }
+  ],
+  "retained_contracts": {
+    "source_versions": [
+      "0.28",
+      "0.29",
+      "0.30"
+    ],
+    "ordinary_reference_records": 17,
+    "debug_reference_records": 18,
+    "typed_reference_free_execution_ABI": 7,
+    "managed_execution_ABI": 8,
+    "C_ABI": 1,
+    "source_grammar_changed": false
+  },
+  "complete_source_regression": false,
+  "portable_SDK": false,
+  "published_portable_SDK": "0.246.1 unchanged",
+  "pending": [
+    "HTTP task debug/profile",
+    "parallel reference transfer",
+    "persistent host-session profile launches",
+    "cell graph watch reconstruction",
+    "full current SDK/platform qualification",
+    "remaining application and LLM usability work",
+    "original full PLAN"
+  ],
+  "whole_goal_complete": false
+}

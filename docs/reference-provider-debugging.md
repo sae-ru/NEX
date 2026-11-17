@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.278.0; language 0.30; task ABI8"
+applies_to: "toolchain 0.279.0; language 0.30; task ABI8"
 owner: repository
 ---
 
@@ -82,7 +82,8 @@ modes, real DAP through a mixed image, typed-cell error propagation and
 capture/package/replay after removal of the original source/cache directories.
 Retained ABI7 provider-debug tests keep their own formats and scenarios.
 These are focused functional checks; full source/platform/portable SDK release
-qualification remains separate. HTTP reference debugging, reference profiling,
+qualification remains separate. [Reference task profiles](reference-task-profiling.md) use separate record19/plan19.
+HTTP reference debugging/profiling,
 parallel reference transfer and cell graph reconstruction for pure watches
 remain open.
 

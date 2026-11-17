@@ -55,7 +55,7 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.278.0 / language 0.28 / task ABIs 7/8**, in development.
+Current source: **toolchain 0.279.0 / language 0.28 / task ABIs 7/8**, in development.
 The compiler fallback remains0.28. `nex.json` selects0.28,0.29 or0.30 per project;
 new `nex init` projects select0.30. Language0.29 adds partial type lambdas and
 higher-order kinds;0.30 adds typed cells and the `state` effect. Retained projects
@@ -84,9 +84,10 @@ application context across static/shared images.
 returned file owners across serialized C++ host calls with fresh per-call limits.
 [Native task debugging](docs/reference-task-debugging.md) reads cell state in
 LLDB/NEX-DAP; [provider debugging](docs/reference-provider-debugging.md) covers
-static/shared/mixed source-backed images. HTTP debugging, reference profiling,
-parallel transfer and remaining [migration prerequisites](docs/migration-readiness.md)
-stay open. [Focused acceptance](docs/evidence/reference-provider-debugging-0.278.0-2026-11-17.json)
+static/shared/mixed source-backed images. [Reference task profiling](docs/reference-task-profiling.md)
+measures source calls/time and shallow tracked allocations in standalone/provider builds.
+HTTP debugging/profiling, parallel transfer and remaining [migration prerequisites](docs/migration-readiness.md)
+stay open. [Focused acceptance](docs/evidence/reference-task-profiling-0.279.0-2026-11-17.json)
 is separate from full SDK/platform gates.
 The [implementation sequence](docs/implementation-1-6.md) tracks remaining work.
 

@@ -34,13 +34,13 @@ std::string read(const fs::path &p,uint64_t maximum){if(!fs::is_regular_file(p)|
 void taskLinkage(const JSON &value,const std::string &component,SourceLanguage language){
   const auto &o=object(value);
   const auto schema=o.getString("schema");
-  const bool managed=schema=="nex.project-static-task-linkage/6"||schema=="nex.project-task-linkage/17"||schema=="nex.project-task-linkage/18";
+  const bool managed=schema=="nex.project-static-task-linkage/6"||schema=="nex.project-task-linkage/17"||schema=="nex.project-task-linkage/18"||schema=="nex.project-task-linkage/19";
   const bool typed=managed||schema=="nex.project-static-task-linkage/5"||schema=="nex.project-task-linkage/14"||schema=="nex.project-task-linkage/15"||schema=="nex.project-task-linkage/16";
   const bool exceptions=typed||schema=="nex.project-static-task-linkage/4"||schema=="nex.project-task-linkage/11"||schema=="nex.project-task-linkage/12"||schema=="nex.project-task-linkage/13";
   const bool streams=exceptions||schema=="nex.project-static-task-linkage/3"||schema=="nex.project-task-linkage/8"||schema=="nex.project-task-linkage/9"||schema=="nex.project-task-linkage/10";
   const bool writes=streams||schema=="nex.project-static-task-linkage/2"||schema=="nex.project-task-linkage/5"||schema=="nex.project-task-linkage/6"||schema=="nex.project-task-linkage/7";
   const bool debug=schema=="nex.project-task-linkage/18"||schema=="nex.project-task-linkage/16"||schema=="nex.project-task-linkage/13"||schema=="nex.project-task-linkage/4"||schema=="nex.project-task-linkage/7"||schema=="nex.project-task-linkage/10";
-  const bool profiled=schema=="nex.project-task-linkage/15"||schema=="nex.project-task-linkage/12"||schema=="nex.project-task-linkage/3"||schema=="nex.project-task-linkage/6"||schema=="nex.project-task-linkage/9";
+  const bool profiled=schema=="nex.project-task-linkage/19"||schema=="nex.project-task-linkage/15"||schema=="nex.project-task-linkage/12"||schema=="nex.project-task-linkage/3"||schema=="nex.project-task-linkage/6"||schema=="nex.project-task-linkage/9";
   const bool shared=debug||profiled||schema=="nex.project-task-linkage/17"||schema=="nex.project-task-linkage/14"||schema=="nex.project-task-linkage/11"||schema=="nex.project-task-linkage/2"||schema=="nex.project-task-linkage/5"||schema=="nex.project-task-linkage/8";
   if((managed&&language!=SourceLanguage::References030)||typed!=(isTypedSourceErrorLanguage(language))||exceptions!=(isPublicSourceExceptionLanguage(language))||streams!=(language==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(language))||writes!=(language==SourceLanguage::TaskWrites023||language==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(language)))fail("captured task linkage language/ABI differs");
   for(const auto &[key,_]:o)if(key!="schema"&&key!="component"&&key!="execution_abi"&&(!writes||key!="task_file_writes")&&(!streams||(key!="task_file_reads"&&key!="task_file_streams"))&&key!="definitions"&&key!="imports"&&key!="exports"&&(!profiled||key!="profiling")&&(!debug||key!="debugging")&&(!shared||(key!="mode"&&key!="load_closure")))fail("unknown captured task linkage field");

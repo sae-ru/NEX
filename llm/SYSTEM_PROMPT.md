@@ -177,7 +177,14 @@ For native reference providers, discover
 components use one application-owned heap and propagated ABI8 across the
 connected static/fixed-shared/mixed cohort, including pure providers. Keep code
 images loaded through frame/value retirement. Imported callables, external
-authority exports, reference provider profiling and runtime unload remain unsupported.
+authority exports and runtime unload remain unsupported.
+For profiling cells/tasks, discover
+`managed_references.source030_development.native_task_profiling` and read
+`docs/reference-task-profiling.md`. Ordinary source profiles retain schema2;
+static/shared/mixed provider profiles use record19/plan19 and schema3. Source
+continuations keep one heap owner; memory counters cover shallow tracked objects,
+not total RAM or heap-registry backing. Inspect completeness/drop flags before
+using a profile budget. HTTP task profiles remain unsupported.
 
 For repeated native host calls, discover
 `managed_references.source030_development.native_host_sessions` and read its guide.

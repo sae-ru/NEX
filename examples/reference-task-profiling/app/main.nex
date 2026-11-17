@@ -1,0 +1,16 @@
+module ref_profile_app;
+import "../leaf/value.nex" as leaf;
+import "../mid/value.nex" as mid;
+enum Link{End();Next(next:cell<Link>);}
+fn main()->unit!{task,state,throw,io}{
+ let cycle:cell<Link>=cell_new(Link::End());
+ cell_write(cycle,Link::Next(cycle));
+ let state:cell<i64>=leaf::make(41);
+ let text:cell<str>=cell_new("Я\u0000🧠");
+ let answer:i64=with_tasks(2,fn(scope:task_scope)->i64!{task,state,throw}{
+  let pending:task<i64>=task_spawn(scope,fn()->i64!{task,state,throw}{return mid::work(state,text,41);});
+  return task_wait(pending);
+ });
+ assert(answer==42&&cell_read(state)==42);
+ print(answer);
+}

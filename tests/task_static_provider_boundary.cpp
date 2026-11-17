@@ -57,6 +57,17 @@ int main(){std::filesystem::path root;try{
    auto wrong=llvm::json::Object(debugOwner);wrong["schema"]=schema;
    rejected([&]{(void)parseNativeTaskProvider(llvm::json::Value(std::move(wrong)));},"E_TASK_PROVIDER");
  }
+ managed.debugging.reset();
+ managed.profiling=NativeTaskProfileInfo{"task-profile-catalog.json",std::string(64,'b'),
+   {{"leaf","nex_task_profile_registry_leaf_v1",std::string(64,'d'),1,128}}};
+ auto profileOwner=nativeTaskProviderJSON(managed);
+ require(profileOwner.getString("schema")=="nex.native-task-provider/19","reference profile provider schema differs");
+ auto profileParsed=parseNativeTaskProvider(llvm::json::Value(llvm::json::Object(profileOwner)));
+ require(profileParsed.managedReferences&&bool(profileParsed.profiling),"profile metadata lost the reference execution owner");
+ for(auto schema:{"nex.native-task-provider/15","nex.native-task-provider/17","nex.native-task-provider/18"}){
+   auto wrong=llvm::json::Object(profileOwner);wrong["schema"]=schema;
+   rejected([&]{(void)parseNativeTaskProvider(llvm::json::Value(std::move(wrong)));},"E_TASK_PROVIDER");
+ }
  // The pure helper ABI is synchronous, but a callable must never escape it
  // into a task cohort and fail later when task_spawn needs a descriptor.
  for(const auto &source:std::vector<std::string>{

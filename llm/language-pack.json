@@ -5523,15 +5523,14 @@
       "genuine external owner"
     ],
     "pending": [
-      "public reference types and state effect",
-      "versioned public grammar and explicit history-preserving migration",
-      "public backend integration and whole-source acceptance",
-      "public entry integration, reference-valued host results and separate component/DLL context ownership",
+      "matching complete compiler/platform/SDK qualification",
+      "native HTTP logical debugging/profiling",
+      "persistent native host-session debug/profile launches and native UI controllers",
+      "live cell graph reconstruction for pure watches",
       "source finalizers and opaque native callback-cycle contracts",
       "cross-thread sharing, monitors and atomics",
-      "source debugger/profile integration",
       "weak references and finalization semantics",
-      "matching complete compiler/platform/SDK qualification"
+      "Java/Python class, nullable and dynamic protocols"
     ],
     "private_candidate": {
       "archival": false,
@@ -5858,7 +5857,8 @@
         "private_development_ABI_unchanged": "0x4e45585400003001",
         "native_profiles": [
           "debug",
-          "release"
+          "release",
+          "profile"
         ],
         "typescript": true,
         "typescript_map": "nex.typescript-map/4",
@@ -5867,7 +5867,7 @@
         "typed_diagnostics": "copied at owned entry boundaries; no live reference packet escapes",
         "cell_payload_task_capabilities": false,
         "task_provider_images": true,
-        "logical_debug_profile": false,
+        "logical_debug_profile": true,
         "parallel_transfer": false,
         "persistent_UI_context": false,
         "SDK_delivery_accepted": false,
@@ -5875,7 +5875,14 @@
         "native_HTTP_platforms": [
           "macOS",
           "Linux"
-        ]
+        ],
+        "logical_debug_profile_scope": "standalone; independent build selections; HTTP remains pending",
+        "native_HTTP_logical_debugging": false,
+        "native_HTTP_profiles": [
+          "debug",
+          "release"
+        ],
+        "native_HTTP_profiling": false
       },
       "task_reference_contexts": true,
       "persistent_UI": {
@@ -5950,7 +5957,8 @@
         "source_workers": 1,
         "profiles": [
           "debug",
-          "release"
+          "release",
+          "profile"
         ],
         "source_required": true,
         "checked_capture_replay": true,
@@ -5961,7 +5969,7 @@
         "parallel_transfer": false,
         "HTTP_project_providers": false,
         "runtime_unload": false,
-        "logical_debug_profile": false,
+        "logical_debug_profile": true,
         "stable_public_ABI": false,
         "SDK_delivery_accepted": false,
         "full_platform_acceptance": false,
@@ -5969,7 +5977,10 @@
         "debug_plan_schema": "nex.project-task-linkage/18",
         "debug_record_schema": "nex.native-task-provider/18",
         "logical_debugging": true,
-        "profiling": false
+        "profiling": true,
+        "profile_guide": "docs/reference-task-profiling.md",
+        "profile_plan_schema": "nex.project-task-linkage/19",
+        "profile_record_schema": "nex.native-task-provider/19"
       },
       "native_host_sessions": {
         "API": "nexrt::NativeTaskSession",
@@ -6026,6 +6037,32 @@
         "provider_catalog_ABI": 2,
         "provider_guide": "docs/reference-provider-debugging.md",
         "provider_introduced_toolchain": "0.278.0"
+      },
+      "native_task_profiling": {
+        "SDK_delivery_accepted": false,
+        "execution_task_ABI": 8,
+        "full_platform_acceptance": false,
+        "guide": "docs/reference-task-profiling.md",
+        "introduced_toolchain": "0.279.0",
+        "logical_lifetime": true,
+        "memory": "shallow Handle/Data allocations; excludes heap registry/index backing, dynamic payload buffers and total RAM",
+        "native_HTTP": false,
+        "one_application_heap": true,
+        "ordinary_CLI": true,
+        "parallel_transfer": false,
+        "profile_plan_schema": "nex.project-task-linkage/19",
+        "profile_record_schema": "nex.native-task-provider/19",
+        "provider_images": true,
+        "provider_report_schema": "nex.profile/3",
+        "selection": "nex profile FILE; nex project --kind profile with a profile configuration",
+        "simultaneous_logical_debug": false,
+        "single_image_report_schema": "nex.profile/2",
+        "source_CPU_and_active_elapsed": true,
+        "source_calls": true,
+        "source_language": "0.30",
+        "source_workers": 1,
+        "standalone": true,
+        "test": "tests/task_provider_profile.py"
       }
     }
   },

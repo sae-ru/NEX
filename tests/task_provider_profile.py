@@ -101,6 +101,130 @@ class TaskProviderProfiles(harness.ToolchainCase):
 
     def save(self):(self.root/'nex.build.json').write_text(json.dumps(self.description), newline="\n")
 
+    def reference_graph(self,mode):
+        example=harness.REPO/'examples/reference-task-profiling'
+        for name in ('app/main.nex','leaf/value.nex','mid/value.nex','pure/value.nex','nex.json'):
+            shutil.copy2(example/name,self.root/name)
+        self.description=json.loads((example/'nex.build.json').read_text())
+        if mode=='shared':
+            for name in ('pure','leaf','mid'):self.description['components'][name]['kind']='shared_library'
+            for value in self.description['components'].values():
+                value['dependencies']={name:'dynamic' for name in value.get('dependencies',{})}
+        elif mode=='mixed':
+            self.description['components']['leaf']['kind']='shared_library'
+            self.description['components']['mid']['dependencies']={'leaf':'dynamic'}
+            self.description['components']['app']['dependencies']={'mid':'static','leaf':'dynamic'}
+        self.save()
+
+    def reference_measurement(self,result,*,providers=True,exit_code=0,stdout='42\n',timeline=True):
+        session=result.get('observation',result)
+        self.assertEqual(session['schema'],'nex.profile-session/3' if providers else 'nex.profile-session/2')
+        self.assertEqual((session['exit_code'],session['stdout']),(exit_code,stdout),session)
+        saved=json.loads(Path(session['output']).read_text())
+        self.assertEqual(saved['language'],'0.30')
+        self.assertEqual(saved['task_execution']['executor_workers'],1)
+        for name in ('aggregates','memory','cpu','elapsed','lifetime'):self.assertTrue(saved['completeness'][name],name)
+        self.assertEqual(saved['completeness']['timeline'],timeline)
+        for name in ('dropped_tasks','dropped_invocations','dropped_guards','suppressed_hooks',
+                     'invalid_transitions','clock_failures','counter_overflows','serialization_overflows',
+                     'dropped_allocations','untracked_frees'):self.assertEqual(saved[name],0,name)
+        self.assertTrue(saved['tasks'])
+        self.assertTrue(all(t['terminal'] and t['active_invocations']==0 for t in saved['tasks']))
+        for row in saved['functions']:self.assertEqual(row['calls'],row['completed']+row['aborted'],row['name'])
+        for row in saved['invocations']:self.assertIn(row['outcome'],('completed','aborted'))
+        for pool in saved['memory']:
+            self.assertEqual((pool['live'],pool['live_shallow_bytes']),(0,0),pool)
+            self.assertEqual(pool['allocations'],pool['frees'],pool)
+        return saved
+
+    def test_reference_static_shared_mixed_source_counts_cells_errors_and_cycles(self):
+        # Each independent root has the same source oracle: one make/work/offset,
+        # one caught leaf error and a self-cycle retired by the application heap.
+        for mode in ('static','shared','mixed'):
+            with self.subTest(mode=mode):
+                self.reference_graph(mode)
+                self.assertEqual(self.cli('eval')['stdout'],'42\n')
+                self.assertEqual(self.project('run',configuration='release')['observation']['stdout'],'42\n')
+                result=self.project('profile');saved=self.reference_measurement(result)
+                functions={row['name']:row for row in saved['functions']}
+                for name in ('ref_profile_app::main','ref_profile_leaf::make','ref_profile_leaf::work',
+                             'ref_profile_mid::work','ref_profile_pure::offset'):
+                    self.assertEqual(functions[name]['calls'],1,name)
+                    self.assertEqual(functions[name]['aborted'],int(name=='ref_profile_leaf::work'),name)
+                work=next(index for index,row in enumerate(saved['functions']) if row['name']=='ref_profile_leaf::work')
+                invocation,=[row for row in saved['invocations'] if row['site']==work]
+                self.assertGreater(sum(row['invocation_id']==invocation['id'] for row in saved['segments']),1)
+                expected={'app':'app','leaf':'app','mid':'app','pure':'app'} if mode=='static' else (
+                    {'app':'app','leaf':'leaf','mid':'mid','pure':'pure'} if mode=='shared' else
+                    {'app':'app','leaf':'leaf','mid':'app','pure':'leaf'})
+                self.assertEqual({row['component']:row['owner_image'] for row in
+                    saved['task_provider_profile']['catalog']['registries']},expected)
+                for row in result['plan']['components']:
+                    self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/19')
+                    self.assertEqual(row['task_linkage']['execution_abi'],8)
+                for artifact in result['artifacts']:
+                    provider=json.loads((Path(artifact['artifact']).parent/'task-provider.json').read_text())
+                    self.assertEqual(provider['schema'],'nex.native-task-provider/19')
+                    self.assertEqual(provider['descriptor_abi'],int('4e45585400000008',16))
+                capped=self.project('profile','app','measured','--events','0')
+                self.reference_measurement(capped,timeline=False)
+
+    def test_reference_source_only_profile_and_control_cleanup(self):
+        self.reference_graph('static')
+        result=self.cli('profile',self.file,'--task-timeout-ms','10000')
+        saved=self.reference_measurement(result,providers=False)
+        self.assertEqual(saved['build']['language'],'0.30')
+        # Source control fails after allocating a live cycle and yielding.
+        self.file.write_text('module ref_profile_app;enum Link{End();Next(next:cell<Link>);}'
+            'fn main()->unit!{task,state}{let cycle:cell<Link>=cell_new(Link::End());'
+            'cell_write(cycle,Link::Next(cycle));while true{task_yield();}}',newline='\n')
+        for arguments,code in [(['--task-steps','1000'],'E_LIMIT'),
+                               (['--task-steps','9007199254740991','--task-timeout-ms','25'],'E_TIMEOUT')]:
+            limited=self.cli('profile',self.file,*arguments,ok=False)
+            self.reference_measurement(limited,providers=False,exit_code=70,stdout='')
+            self.assertIn(code,limited['stderr'])
+
+    def test_reference_profile_capture_replay_and_package_without_original_source(self):
+        self.reference_graph('mixed')
+        self.project('package','app','release','--directory',self.root/'release-package')
+        ordinary=self.root/'release-package/apps/app'
+        ordinary_manifest=json.loads((ordinary/'application.json').read_text())
+        self.assertFalse(ordinary_manifest['task_provenance']['metadata_rewritten'])
+        task=self.cli('task','nex.build.json','--kind','init','--component','app','--configuration','measured')
+        task['checks']=[{'id':'measure-reference','kind':'profile','program':'app','target':'native',
+            'configuration':'measured','entry':'ref_profile_app::main','scenario':'cells-errors-cycles',
+            'budget':{'max_calls':{'ref_profile_leaf::work':'1'},'max_peak_handles':'100000',
+                      'max_peak_objects':'100000'},'timeout_seconds':180}]
+        task['requirements']=[{'id':'measure-reference','text':'Preserve state and source attribution through measured provider calls',
+            'bindings':[{'program':'app','kind':'function','symbol':'ref_profile_app::main'}],
+            'targets':['native'],'checks':['measure-reference']}]
+        taskfile=self.root/'task.json';taskfile.write_text(json.dumps(task),newline='\n')
+        accepted=self.cli('task',taskfile,'--kind','run','--directory',self.root/'capture',timeout=900)
+        receipt=Path(accepted['output']);record=json.loads(receipt.read_text());check,=record['checks']
+        self.assertEqual(check['status'],'passed')
+        source_capture=json.loads((receipt.parent/'inputs/projects/app.json').read_text())
+        for component in source_capture['expectations']['measured']:
+            self.assertEqual(component['task_linkage']['schema'],'nex.project-task-linkage/19')
+            self.assertEqual(component['task_linkage']['execution_abi'],8)
+        measured=json.loads((receipt.parent/check['receipt']).read_text())
+        self.reference_measurement(measured['response'],timeline=False)
+        self.project('package','app','measured','--directory',self.root/'package')
+        package=self.root/'package/apps/app'
+        manifest=json.loads((package/'application.json').read_text())
+        self.assertFalse(manifest['task_profile_provenance']['metadata_rewritten'])
+        executable=package/('bin/app.exe' if os.name=='nt' else 'bin/app')
+        for name in ('app','leaf','mid','pure','.nex'):shutil.rmtree(self.root/name)
+        for name in ('nex.json','nex.build.json','task.json'):(self.root/name).unlink()
+        ordinary_run=self.process([ordinary/('bin/app.exe' if os.name=='nt' else 'bin/app')])
+        self.assertEqual((ordinary_run.returncode,ordinary_run.stdout),(0,'42\n'),ordinary_run.stderr)
+        raw=self.root/'packaged-raw.json'
+        observed=self.process([executable],env={'NEX_PROFILE_OUTPUT':str(raw)})
+        self.assertEqual((observed.returncode,observed.stdout),(0,'42\n'),observed.stderr)
+        actual=json.loads(raw.read_text());self.assertEqual(actual['schema'],'nex.profile-runtime/3')
+        self.assertTrue(all(pool['live']==0 and pool['allocations']==pool['frees'] for pool in actual['memory']))
+        replay=self.cli('task',receipt,'--kind','replay','--directory',self.root/'replay',timeout=900)
+        self.assertTrue(replay['ok']);self.assertEqual(replay['programs'],accepted['programs'])
+
     def environment(self,extra=None):
         value={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'}
         for name in ('NEX_FILES_ROOT','NEX_FILES_WRITE','NEX_FILES_LIMIT','NEX_PROFILE_OUTPUT','NEX_TRACY',

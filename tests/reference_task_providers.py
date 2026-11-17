@@ -140,16 +140,12 @@ assert replayed['ok'] and replayed['programs'] == captured['programs']
 
 rejections = []
 for name, mutate, code in [
-    ('profile', lambda r: None, 'E_CELL_TARGET'),
     ('imported-callable', lambda r: (r/'app/main.nex').write_text(
         'module provider_app;import "../leaf/value.nex" as leaf;'
         'fn main()->unit!{task,state}{let value:cell<i64>=leaf::make(1);'
         'let callback:fn(cell<i64>)->cell<i64>!{task,state}=leaf::bump;callback(value);}'), 'E_TASK_PROVIDER'),
 ]:
     root = fixture('reject-'+name, 'static')
-    if name == 'profile':
-        data = json.loads((root/'nex.build.json').read_text());data['configurations']['debug']['profile'] = 'profile'
-        (root/'nex.build.json').write_text(json.dumps(data)+'\n')
     mutate(root)
     denied = project(root, 'plan', 'debug', expected=1)
     assert denied['code'] == code, denied

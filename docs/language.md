@@ -1,5 +1,10 @@
 # NEX language specification 0.28
 
+Toolchain0.279 adds native profiling for030 reference tasks and source-backed
+static/shared/mixed providers. Profile record19/plan19 retain execution ABI8;
+source grammar, versions, canonical graph history and C ABI1 are unchanged.
+See [reference task profiling](reference-task-profiling.md).
+
 Toolchain0.278 adds [reference provider debugging](reference-provider-debugging.md)
 through distinct record18/plan18 tooling metadata. It preserves source syntax,
 selected versions, canonical history and execution ABI8.

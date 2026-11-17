@@ -1,3 +1,14 @@
+# Native reference task profiling — development0.279.0
+
+Standalone030 and source-backed static/shared/mixed task images now select
+profile instrumentation with explicit ABI8 profile record19/plan19. Source call
+counts, active segments, typed errors and cell-cycle retirement retain their
+semantics; captured profiling/replay and raw packaged measurements preserve
+source/component/image attribution. Ordinary ABI8 packages retain record17.
+HTTP profiling/debugging, parallel state, persistent host-session launches,
+complete current SDK/platform delivery and the original full plan remain open.
+[Contract](docs/reference-task-profiling.md).
+
 # Native reference provider debugging — development0.278.0
 
 Source-backed static/shared/mixed030 components use distinct debug record18/plan18

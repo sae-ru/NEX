@@ -412,6 +412,13 @@
           }
         }
       ]
+    },
+    {
+      "$ref": "native-reference-task-provider.schema.json",
+      "description": "ABI8 profile19; reference17/debug18 are excluded by the profile requirement.",
+      "required": [
+        "profiling"
+      ]
     }
   ],
   "$defs": {
