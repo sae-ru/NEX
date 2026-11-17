@@ -2,7 +2,6 @@
 from sqlite_fixture import connection as sqlite_connection
 import json
 from pathlib import Path
-import sqlite3
 import shutil
 import unittest
 import support as harness
@@ -110,18 +109,18 @@ class ProjectVersions(harness.ToolchainCase):
     def test_migration_keeps_modern_identity_extension_strict(self):
         self.ready()
         path=self.root/'.nex/graph.db'
-        with sqlite3.connect(path) as db:
+        with sqlite_connection(path) as db:
             namespace=db.execute("SELECT value FROM metadata WHERE key='identity_namespace'").fetchone()[0]
         for replacement in (None,'invalid'):
             with self.subTest(namespace=replacement):
-                with sqlite3.connect(path) as db:
+                with sqlite_connection(path) as db:
                     db.execute("DELETE FROM metadata WHERE key='identity_namespace'")
                     if replacement is not None:
                         db.execute("INSERT INTO metadata VALUES('identity_namespace',?)",(replacement,))
                 before=self.rows()
                 self.assertEqual(self.cli('migrate','--kind','plan',ok=False)['code'],'E_STORE')
                 self.assertEqual(self.rows(),before)
-                with sqlite3.connect(path) as db:
+                with sqlite_connection(path) as db:
                     db.execute("INSERT OR REPLACE INTO metadata VALUES('identity_namespace',?)",(namespace,))
 
     def library(self):

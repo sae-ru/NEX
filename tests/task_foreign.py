@@ -36,10 +36,9 @@ class TaskForeign(harness.ToolchainCase):
         task=self.cli('task',self.file,'--kind','init',env=self.env)
         for check in task['checks']:
             if check['kind']=='test':check['foreign_hash']=self.catalogue_report['hash']
-            # Replayed builds use a fresh captured-resource root and a cold
-            # runtime cache. ARM64 release compilation also exceeds the
-            # generated 60-second default; this case tests capture, not speed.
-            if check['kind']=='build':check['timeout_seconds']=300
+            # Native tests and builds can both compile a cold captured runtime.
+            # Allow that work on Windows and ARM64 under concurrent CTest load.
+            if check['kind'] in ('test','build'):check['timeout_seconds']=300
         self.save(task)
         return task
 

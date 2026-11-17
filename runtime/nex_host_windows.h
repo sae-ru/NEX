@@ -218,8 +218,10 @@ inline int openRegularDescriptor(const std::filesystem::path &path,int flags){
   if(flags&_O_RDWR)access|=GENERIC_READ;
   DWORD disposition=flags&_O_CREAT?(flags&_O_EXCL?CREATE_NEW:flags&_O_TRUNC?CREATE_ALWAYS:OPEN_ALWAYS):OPEN_EXISTING;
   PrivateSecurity security;SECURITY_ATTRIBUTES attributes{sizeof(attributes),&security.descriptor,FALSE};
+  // Use ordinary access checks for regular file data. Directory handles use
+  // backup semantics separately.
   Handle file(CreateFileW(path.c_str(),access,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-    flags&_O_CREAT?&attributes:nullptr,disposition,FILE_FLAG_OPEN_REPARSE_POINT|FILE_FLAG_BACKUP_SEMANTICS,nullptr));
+    flags&_O_CREAT?&attributes:nullptr,disposition,FILE_FLAG_OPEN_REPARSE_POINT,nullptr));
   auto id=identity(file.value);if(!id||id->directory){error(GetLastError());return -1;}
   auto fd=::_open_osfhandle(reinterpret_cast<intptr_t>(file.value),_O_BINARY|_O_NOINHERIT|(flags&_O_RDWR?_O_RDWR:writable?_O_WRONLY:_O_RDONLY));
   if(fd>=0)file.release();return fd;
@@ -244,7 +246,7 @@ inline int64_t readAt(int fd,void *buffer,size_t size,int64_t offset){
 }
 inline std::string readRegular(const std::filesystem::path &path,size_t limit){
   Handle file(CreateFileW(path.c_str(),GENERIC_READ,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,nullptr,
-    OPEN_EXISTING,FILE_FLAG_OPEN_REPARSE_POINT|FILE_FLAG_BACKUP_SEMANTICS,nullptr));
+    OPEN_EXISTING,FILE_FLAG_OPEN_REPARSE_POINT,nullptr));
   FILE_ATTRIBUTE_TAG_INFO info{};LARGE_INTEGER length{};
   if(file.value==INVALID_HANDLE_VALUE||GetFileType(file.value)!=FILE_TYPE_DISK||
      !GetFileInformationByHandleEx(file.value,FileAttributeTagInfo,&info,sizeof(info))||
