@@ -1,5 +1,6 @@
 #include "nex/core_dump.h"
 #include "nex/backend.h"
+#include "nex/debug_session.h"
 #include "nex/native_images.h"
 #include "nex/task_process.h"
 #include "nex/native_diagnostics.h"
@@ -230,7 +231,7 @@ JSON inspectCore(const CoreOptions &options){
   Temporary temporary{createTemporaryDirectory("nex-core")};auto request=temporary.path/"request.json";
   Object recordedImages;for(const auto &[current,recorded]:options.recordedImages)recordedImages[current]=recorded;
   writeFile(request.string(),json(Object{{"core",core.string()},{"manifest",path.string()},{"compiler",options.compiler},{"formatter",formatter},{"program",image.string()},{"recorded_program",options.recordedProgram},{"recorded_images",std::move(recordedImages)},{"expression",options.expression},{"thread",options.thread},{"frame",options.frame}}));
-  auto driver=std::getenv("NEX_LLDB");std::string lldb=driver?driver:"lldb";
+  auto lldb=nativeLLDBExecutable();
   auto script=resourceFile("debug/core_report.py");
   auto child=runTaskProcess({lldb,"--no-lldbinit","--batch","--no-use-colors","-o","settings set target.load-script-from-symbol-file false","-o","settings set symbols.enable-external-lookup false","-o","command script import "+json(script,false)},temporary.path.string(),{{"NEX_CORE_REQUEST",request.string()}},options.timeout,(temporary.path/"logs").string());
   input.samePath(core);if(input.sha()!=before)throw Error("E_CORE_CHANGED","core bytes changed during inspection");

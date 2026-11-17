@@ -22,6 +22,7 @@ class Campaign(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix='nex-campaign-control-')
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
+        self.windows_observer = os.environ.get('NEX_WINDOWS_JOB_OBSERVER')
 
     def review(self, task, materialized, path):
         item = a.catalogue()[task]
@@ -58,7 +59,7 @@ class Campaign(unittest.TestCase):
                     with self.subTest(task=task, language=language, variant=variant):
                         result = a.check(directory, task, language, out / name, compiler=NEX, cpp=cpp,
                             resources=REPO, cache=out / 'native-cache', review=review,
-                            windows_observer=os.environ.get('NEX_WINDOWS_JOB_OBSERVER'))
+                            windows_observer=self.windows_observer)
                         rows.append({'task': task, 'language': language, 'variant': variant,
                             'functional_passed': result['functional_passed'], 'accepted': result['accepted'],
                             'report': name + '/report.json'})
@@ -75,7 +76,8 @@ class Campaign(unittest.TestCase):
     def test_functional_success_is_not_source_review_and_pins_are_enforced(self):
         candidate = self.root / 'candidate'
         materialized = a.materialize('bounded-total', 'python', candidate, variant='solution')
-        report = a.check(candidate, 'bounded-total', 'python', self.root / 'functional-only')
+        report = a.check(candidate, 'bounded-total', 'python', self.root / 'functional-only',
+                         windows_observer=self.windows_observer)
         self.assertTrue(report['functional_passed']); self.assertFalse(report['accepted'])
         self.assertFalse(json.loads((self.root / 'functional-only/acceptance.json').read_bytes())['passed'])
         path = self.review('bounded-total', materialized, self.root / 'review.json')
@@ -91,17 +93,19 @@ class Campaign(unittest.TestCase):
         candidate = self.root / 'lookup'
         a.materialize('bounded-total', 'python', candidate)
         (candidate / 'candidate.py').write_text('def total(n):\n    return {0: 0, 1: 1, 10: 55, 100: 5050}.get(n, 0)\n')
-        visible = a.check(candidate, 'bounded-total', 'python', self.root / 'visible', visible_only=True)
+        visible = a.check(candidate, 'bounded-total', 'python', self.root / 'visible',
+                          windows_observer=self.windows_observer, visible_only=True)
         self.assertTrue(visible['functional_passed']); self.assertFalse(visible['accepted'])
-        actual = a.check(candidate, 'bounded-total', 'python', self.root / 'held-out')
+        actual = a.check(candidate, 'bounded-total', 'python', self.root / 'held-out',
+                         windows_observer=self.windows_observer)
         self.assertFalse(actual['functional_passed']); self.assertFalse(actual['accepted'])
 
     def test_owned_timeout_and_output_budgets(self):
-        if os.name == 'nt' and not os.environ.get('NEX_WINDOWS_JOB_OBSERVER'):
+        if os.name == 'nt' and not self.windows_observer:
             self.fail('Windows process checks require the existing calibrated private-job observer')
         row = a.command([sys.executable, '-I', '-B', '-c', 'import time;time.sleep(10)'],
                         self.root, os.environ.copy(), self.root, 'timeout', timeout=0.15,
-                        windows_observer=os.environ.get('NEX_WINDOWS_JOB_OBSERVER'))
+                        windows_observer=self.windows_observer)
         self.assertEqual(row['stopped'], 'timeout'); self.assertNotEqual(row['exit_code'], 0)
         if os.name != 'nt':
             row = a.command([sys.executable, '-I', '-B', '-c', 'import os\nwhile True: os.write(1,b"x"*65536)'],

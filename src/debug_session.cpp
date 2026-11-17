@@ -9,6 +9,7 @@
 #include "llvm/Support/SHA256.h"
 #include "llvm/ADT/StringExtras.h"
 #include "nex_json.h"
+#include "nex_platform.h"
 #include "nex_task_protocol.h"
 #include <filesystem>
 #include <array>
@@ -22,6 +23,9 @@
 #endif
 namespace nex {
 namespace fs=std::filesystem;
+std::string nativeLLDBExecutable(){
+  return nexrt::platform::environment("NEX_LLDB").value_or("lldb");
+}
 namespace {
 llvm::json::Value parseJSON(const std::string &text){auto v=llvm::json::parse(text);if(!v)throw Error("E_JSON",llvm::toString(v.takeError()));return std::move(*v);}
 std::string readBoundedText(const std::string &path,size_t limit,const std::string &label,const std::string &code){

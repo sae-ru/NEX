@@ -863,7 +863,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       }else if(options.kind=="debug"){
         observation=nativeDebugSession(item.program,built,root.string(),options.compiler,options.adapter,arguments);
         if(!options.machine&&options.adapter=="lldb"){
-          std::vector<std::string> command{"lldb",built.executable};
+          std::vector<std::string> command{nativeLLDBExecutable(),built.executable};
           for(const auto &value:nativeLLDBCommands(observation)){command.push_back("-o");command.push_back(value);}
           auto code=runInteractive(command,root);(*observation.getAsObject())["exit_code"]=code;(*observation.getAsObject())["ok"]=code==0;
         }

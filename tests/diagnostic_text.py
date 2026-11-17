@@ -83,8 +83,10 @@ fn main()->unit{}
             self.assertEqual(row['message_truncated'],truncated);self.assertFalse(row['code_truncated']);self.assertEqual(row['request_id'],'request')
         self.assertEqual(rows[-1]['message'],'legacy');self.assertEqual(rows[-1]['code'],'E_LEGACY')
         direct=subprocess.run([PROBE,'--direct-text'],capture_output=True,timeout=30)
-        self.assertEqual(direct.returncode,70);self.assertTrue(direct.stderr.startswith(b'E_RESULT: a\0b at source line 7\n'))
-        record=json.loads(next(line.removeprefix(b'NEX_NATIVE_TRAP ')for line in direct.stderr.splitlines()if line.startswith(b'NEX_NATIVE_TRAP ')))
+        self.assertEqual(direct.returncode,70)
+        lines=direct.stderr.splitlines()
+        self.assertEqual(lines[0],b'E_RESULT: a\0b at source line 7')
+        record=json.loads(next(line.removeprefix(b'NEX_NATIVE_TRAP ')for line in lines if line.startswith(b'NEX_NATIVE_TRAP ')))
         self.assertEqual(record['message'],'a\0b');self.assertFalse(record['message_truncated'])
 
 

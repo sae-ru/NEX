@@ -1219,7 +1219,7 @@ int run(const Options &o) {
     auto kind=o.get("--kind","lldb");if(kind!="lldb"&&kind!="dap"&&kind!="nex-dap")throw Error("E_OPTION","debug kind must be lldb, dap or nex-dap");
     auto session=nativeDebugSession(p,result,root.string(),o.compiler,kind,foreignArguments);
     if(o.has("--json")||kind!="lldb"){print(std::move(session));return 0;}
-    std::vector<std::string> args={"lldb",result.executable};
+    std::vector<std::string> args={nativeLLDBExecutable(),result.executable};
     for(const auto &command:nativeLLDBCommands(session)){args.push_back("-o");args.push_back(command);}
     args.insert(args.end(),o.extra.begin(),o.extra.end());return execute(args);
   }

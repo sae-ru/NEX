@@ -286,7 +286,7 @@ def main():
         code = 0 if result['matrix_complete'] and result['usage_complete_for_observed_calls'] else 1
         text = json.dumps(result, ensure_ascii=False, indent=2) + '\n'
         if args.output:
-            with args.output.open('x', encoding='utf-8') as stream:
+            with args.output.open('x', encoding='utf-8', newline='\n') as stream:
                 stream.write(text)
         if hasattr(sys.stdout, 'buffer'):
             sys.stdout.buffer.write(text.encode('utf-8'))

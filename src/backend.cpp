@@ -1593,15 +1593,20 @@ int executeNativeBuildTool(const std::vector<std::string> &arguments){
   auto command=arguments;std::filesystem::path response;
   if(bytes>65536||!llvm::sys::commandLineFitsWithinSystemLimits(arguments[0],refs)){
     response=std::filesystem::path(createTemporaryDirectory("nex-native-response"))/"arguments.rsp";
-    std::filesystem::permissions(response.parent_path(),std::filesystem::perms::owner_all);
     std::string text;
     for(size_t i=1;i<arguments.size();++i){
       text+='"';
       for(char c:arguments[i]){if(c=='\\'||c=='"')text+='\\';text+=c;}
       text+="\"\n";
     }
+#ifdef _WIN32
+    try{nexrt::host_windows::writePrivateFile(response,text);}
+    catch(const nexrt::DataError &error){throw Error(error.code,error.message);}
+#else
+    std::filesystem::permissions(response.parent_path(),std::filesystem::perms::owner_all);
     writeFile(response.string(),text);
     std::filesystem::permissions(response,std::filesystem::perms::owner_read|std::filesystem::perms::owner_write);
+#endif
     command={arguments[0],"@"+response.string()};
   }
   // LLVM tools create their own temporary files too (notably dsymutil).
