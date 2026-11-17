@@ -38,9 +38,10 @@ def source(folder,case):
 if a.entry_only or not a.migration_only:
     path=root/'tests/fixtures/managed-references/value-exports.nex'
     reference=json.loads(run([probe,'reference',path],out,'entry-reference').stdout)
-    result=json.loads(run([probe,'entry-test',path,out/'entry adapter 🧠\nline'],out,'entry-test').stdout)
+    entry_name="entry adapter 'quoted' % 🧠" if os.name=='nt' else 'entry adapter 🧠\nline'
+    result=json.loads(run([probe,'entry-test',path,out/entry_name],out,'entry-test').stdout)
     assert result['ok']and result['stdout']==reference['output']and not result['stderr'],result
-    report['entry_adapter']={'passed':True,'stdout':result['stdout'],'unicode_newline_path':True}
+    report['entry_adapter']={'passed':True,'stdout':result['stdout'],'unicode_newline_path':os.name!='nt'}
 if not a.migration_only and not a.entry_only:
     layout_file=out/'host.ll';run([clang,'-x','c','-S','-emit-llvm',os.devnull,'-o',layout_file],out,'host-layout')
     text=layout_file.read_text();triple=re.search(r'target triple = "(.*?)"',text)[1];layout=re.search(r'target datalayout = "(.*?)"',text)[1]

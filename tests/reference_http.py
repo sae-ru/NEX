@@ -244,7 +244,10 @@ for label, image in images:
         packets = [json.loads(line[len('NEX_SOURCE_EXCEPTION '):]) for line in stderr.splitlines() if line.startswith('NEX_SOURCE_EXCEPTION ')]
         assert len(packets) == 2 and all(row['code'] == 'reference_http_core::Fault' for row in packets), packets
 
-for kind, budget, timeout, expected_code in [('budget', 2000, 60000, 'E_LIMIT'), ('deadline', 100000000, 20, 'E_TIMEOUT'), ('cancel', 100000000, 30000, 'E_CANCELLED')]:
+# The deadline must leave time for the fixture's initial file operation to
+# publish the marker. Windows native file creation incurs a higher cold cost.
+deadline_ms = 500 if os.name == 'nt' else 20
+for kind, budget, timeout, expected_code in [('budget', 2000, 60000, 'E_LIMIT'), ('deadline', 100000000, deadline_ms, 'E_TIMEOUT'), ('cancel', 100000000, 30000, 'E_CANCELLED')]:
     server = Server(images[-1][1], 'control-'+kind, budget=budget, timeout=timeout)
     try:
         if kind == 'cancel':

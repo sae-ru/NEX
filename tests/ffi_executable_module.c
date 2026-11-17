@@ -10,15 +10,16 @@
 static nex_ffi_status callback(const nex_ffi_api_v1 *api,nex_ffi_call call,const nex_ffi_ref *args,uint64_t count,nex_ffi_ref *out,void *user){
  (void)args;(void)user;if(count!=1)return NEX_FFI_ARGUMENT;
  HMODULE image=NULL;if(!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS|GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,(LPCWSTR)&callback,&image))return NEX_FFI_INTERNAL;
- wchar_t directory[32768],worker[32768],notice[32768];DWORD length=GetModuleFileNameW(image,directory,32768);
+ wchar_t directory[32768],worker[32768],notice[32768],output[32768];DWORD length=GetModuleFileNameW(image,directory,32768);
  if(!length||length>=32768)return NEX_FFI_LIMIT;wchar_t *last=wcsrchr(directory,L'\\');if(!last)return NEX_FFI_INTERNAL;*last=0;
- if(swprintf(worker,32768,L"%ls\\worker",directory)<0||swprintf(notice,32768,L"%ls\\legal\\NOTICE",directory)<0)return NEX_FFI_LIMIT;
+ if(swprintf(worker,32768,L"%ls\\worker",directory)<0||swprintf(notice,32768,L"%ls\\legal\\NOTICE",directory)<0||
+    swprintf(output,32768,L"%ls\\fixture-output",directory)<0)return NEX_FFI_LIMIT;
  /* Check real ACL enforcement, rather than mapping POSIX mode bits. */
  HANDLE write=CreateFileW(notice,FILE_WRITE_DATA,7,NULL,OPEN_EXISTING,0,NULL);
  if(write!=INVALID_HANDLE_VALUE){CloseHandle(write);return NEX_FFI_INTERNAL;}
  if(GetLastError()!=ERROR_ACCESS_DENIED)return NEX_FFI_INTERNAL;
- write=CreateFileW(directory,FILE_ADD_FILE,7,NULL,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS,NULL);
- if(write!=INVALID_HANDLE_VALUE){CloseHandle(write);return NEX_FFI_INTERNAL;}
+ write=CreateFileW(output,FILE_WRITE_DATA,7,NULL,CREATE_NEW,FILE_ATTRIBUTE_NORMAL,NULL);
+ if(write!=INVALID_HANDLE_VALUE){CloseHandle(write);DeleteFileW(output);return NEX_FFI_INTERNAL;}
  if(GetLastError()!=ERROR_ACCESS_DENIED)return NEX_FFI_INTERNAL;
  STARTUPINFOW start={0};start.cb=sizeof(start);PROCESS_INFORMATION process={0};
  wchar_t command[32768];if(swprintf(command,32768,L"\"%ls\"",worker)<0)return NEX_FFI_LIMIT;
