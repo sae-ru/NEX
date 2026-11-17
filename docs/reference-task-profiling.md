@@ -75,10 +75,30 @@ code images. A packaged instrumented binary can write its raw report after the
 original source/cache directories have been removed. Packaging itself does not
 measure the program. See the retained [provider profiling contract](task-provider-profiling.md).
 
-HTTP task profiling, simultaneous logical-debug/profile instrumentation,
-persistent external host-session profile launches, parallel reference transfer,
-full current source/platform regression and portable SDK qualification remain
-separate work. This contract does not broaden GPU/NPU profiling.
+## HTTP workloads with reference tasks
+
+The development compiler supports a standalone `server` component whose 0.30
+tasks use owner-thread execution. Select a `profile` configuration and a pinned
+[HTTP workload](server-workload.md).
+
+```sh
+nex project --kind profile --component server --configuration measured \
+  --workload workload.json --profile-output profile.json -- \
+  --auth auth.json --database state.sqlite --workers 4
+```
+
+The server registers its source sites before starting request threads. Each
+request has its own heap and executes source tasks on its owner thread. The
+report aggregates source calls and task events across the workload, including
+warmup. Workload metrics record request outcomes and latencies separately.
+Effective task limits include the server's `--budget` and `--timeout-ms`
+alongside the compiled ceilings and `--nex-task-*` overrides. Source events do
+not carry HTTP request IDs or payloads. Full SDK and platform acceptance are
+separate gates.
+
+HTTP logical debugging, simultaneous debugging and profiling, shared task
+providers inside HTTP servers, persistent host-session profiling and live
+reference transfer across parallel workers remain open.
 
 По-русски: профилировщик считает вызовы, активное время и ожидания задач030,
 включая переходы между библиотеками и ошибки с объектами. После завершения

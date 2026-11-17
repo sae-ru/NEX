@@ -31,9 +31,9 @@ inline void appendTaskLimitArguments(std::vector<std::string> &arguments,
     "--task-timeout-ms",std::to_string(limits.timeoutMs),"--task-workers",std::to_string(limits.workers)});
 }
 inline nexrt::TaskExecutionLimits taskEffectiveLimits(const nexrt::TaskExecutionLimits &limits,
-                                                     const std::vector<std::string> &arguments) {
+                                                     const std::vector<std::string> &arguments,bool http=false) {
   std::vector<const char*> argv;for(const auto &argument:arguments)argv.push_back(argument.c_str());
-  try{return nexrt::parseTaskExecutionArguments(limits,int(argv.size()),argv.data());}
+  try{return http?nexrt::parseTaskHttpExecutionArguments(limits,int(argv.size()),argv.data()):nexrt::parseTaskExecutionArguments(limits,int(argv.size()),argv.data());}
   catch(const nexrt::DataError &error){throw Error(error.code,error.what());}
 }
 inline llvm::json::Object taskExecutionJSON(const nexrt::TaskExecutionLimits &configured,

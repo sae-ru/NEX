@@ -1,5 +1,6 @@
 #pragma once
 #include "nex_error.h"
+#include <algorithm>
 #include <cstdint>
 #include <optional>
 #include <string_view>
@@ -8,6 +9,8 @@ namespace nexrt {
 inline constexpr uint64_t maximumTaskExecutionSteps=UINT64_C(9007199254740991);
 inline constexpr uint64_t maximumTaskExecutionTimeoutMs=3600000;
 inline constexpr unsigned maximumTaskExecutionWorkers=16;
+inline constexpr uint64_t defaultTaskHttpSteps=1000000;
+inline constexpr uint64_t defaultTaskHttpTimeoutMs=5000;
 struct TaskExecutionLimits {
   uint64_t steps=1000000,timeoutMs=5000;
   unsigned workers=16;
@@ -58,5 +61,22 @@ inline TaskExecutionLimits parseTaskExecutionArguments(const TaskExecutionLimits
     else result.workers=static_cast<unsigned>(*value);
   }
   return result;
+}
+inline TaskExecutionLimits parseTaskHttpExecutionArguments(const TaskExecutionLimits &ceilings,int argc,const char *const *argv){
+  auto effective=parseTaskExecutionArguments(ceilings,argc,argv);
+  uint64_t requestSteps=defaultTaskHttpSteps,requestTimeout=defaultTaskHttpTimeoutMs;
+  for(int i=1;i<argc;i+=2){
+    std::string_view flag(argv[i]);
+    if(i+1>=argc)throw DataError("E_OPTION","server option requires a value");
+    if(flag=="--budget"||flag=="--timeout-ms"){
+      auto value=parseTaskLimitDecimal(argv[i+1],flag=="--budget"?100000000:60000);
+      if(!value)throw DataError("E_OPTION","invalid HTTP task request limit: "+std::string(flag));
+      if(flag=="--budget")requestSteps=*value;
+      else requestTimeout=*value;
+    }
+  }
+  effective.steps=std::min(effective.steps,requestSteps);
+  effective.timeoutMs=std::min(effective.timeoutMs,requestTimeout);
+  return effective;
 }
 }

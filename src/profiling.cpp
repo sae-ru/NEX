@@ -182,6 +182,8 @@ llvm::json::Value profileNative(const Program &p,const BuildResult &built,llvm::
   auto requirements=buildMetadata->getObject("runtime_requirements");
   bool tasks=requirements&&requirements->getBoolean("tasks").value_or(false);
   const bool ownerThread=tasks&&buildMetadata->getInteger("task_execution_abi")==nexrt::taskCodeManagedReferencesABI;
+  const auto finalKind=buildMetadata->getString("final_kind");
+  const bool server=finalKind=="http_server";
   const auto providerMetadata=buildMetadata->getObject("task_provider");
   const bool providers=tasks&&providerMetadata&&providerMetadata->getObject("profiling");
   std::optional<ProviderProfileBuild> providerBuild;llvm::json::Object providerSites;
@@ -191,14 +193,16 @@ llvm::json::Value profileNative(const Program &p,const BuildResult &built,llvm::
 #if !defined(__APPLE__) && !defined(__linux__) && !defined(_WIN32)
     throw Error("E_TASK_PROFILE","task profiling requires a macOS/Linux/Windows host executable");
 #endif
-    if(buildMetadata->getString("profile")!="profile"||buildMetadata->getString("final_kind")!="executable"||
+    if(buildMetadata->getString("profile")!="profile"||(finalKind!="executable"&&!server)||
        buildMetadata->getString("revision")!=revision(p)||buildMetadata->getString("key")!=built.key||
        buildMetadata->getString("compiler_build")!=NEX_BUILD_ID)
       throw Error("E_PROFILE","task profile build metadata does not match the selected executable");
+    if(server&&(!ownerThread||options.launcher.empty()))
+      throw Error("E_PROFILE","HTTP task profiling requires an owner-thread server and a pinned workload");
     requireNativeHost(built);
     auto limits=buildMetadata->get("task_limits");if(!limits)throw Error("E_PROFILE","task profile build omitted its limits");
     configured=parseTaskLimitsJSON(*limits,"E_PROFILE");auto arguments=options.arguments;arguments.insert(arguments.begin(),built.executable);
-    effective=taskEffectiveLimits(*configured,arguments);
+    effective=taskEffectiveLimits(*configured,arguments,server);
     auto entry=buildMetadata->getString("entry");if(!entry)throw Error("E_PROFILE","task profile build omitted its entry");
     expectedIdentity=llvm::json::Object{{"schema","nex.profile-build/1"},{"toolchain",NEX_VERSION},{"language",programLanguage(p)},
       {"revision",revision(p)},{"build_key",built.key},{"compiler_build",NEX_BUILD_ID},{"source_hash",hash(json(sourceBundle(p),false))},

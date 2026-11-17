@@ -194,6 +194,42 @@ class PublicProject(harness.ToolchainCase):
         self.assertEqual(failed['exit_code'],1);metrics=failed['observation']['workload'];self.assertFalse(metrics['ok']);self.assertEqual(metrics['error']['code'],'E_SERVER_WORKLOAD_RESPONSE')
         self.assertEqual(metrics['server_exit_code'],0);self.assertFalse((self.root/'.nex/graph.db').exists())
 
+    def test_profile_owner_thread_tasks_across_independent_requests(self):
+        project = self.root/'nex.json'
+        project.write_text(json.dumps({**json.loads(project.read_text()), 'language': '0.30'}), newline='\n')
+        layout = self.root/'nex.build.json'
+        manifest = json.loads(layout.read_text())
+        del manifest['components']['core']
+        del manifest['components']['server']['dependencies']
+        layout.write_text(json.dumps(manifest), newline='\n')
+        (self.root/'server/main.nex').write_text('''module workload::service;
+import "std/http.nex" as http;
+server fn increment(value:cell<i64>)->i64 !{task,state}{
+  task_yield(); cell_write(value,cell_read(value)+1); return cell_read(value);
+}
+server fn handle(request:http::Request)->http::Response !{task,state}{
+  let value:cell<i64>=cell_new(41);
+  return http::text_response(200,str(increment(value)));
+}
+''', newline='\n')
+        workload = definition()
+        workload['requests'][0]['expect']['text'] = '42'
+        self.workload.write_text(json.dumps(workload), newline='\n')
+        auth = self.root/'auth.json'
+        token = self.cli('token', '--auth', auth, '--user', 'bench')['token']
+        result = self.action('profile', '--', '--auth', auth, '--database', self.root/'state.sqlite',
+            '--workers', '4', '--budget', '750000', '--timeout-ms', '3500', '--nex-task-workers', '3',
+            env={'NEX_TEST_WORKLOAD_TOKEN': token})
+        profile = result['observation']
+        self.assertEqual(profile['schema'], 'nex.profile-session/2')
+        self.assertEqual(profile['workload']['completed_requests'], 16)
+        self.assertEqual(profile['task_execution']['executor_workers'], 1)
+        self.assertEqual(profile['task_execution']['effective'], {'steps':750000, 'timeout_ms':3500, 'workers':3})
+        functions = {row['name']: row for row in profile['functions']}
+        for name in ('handle', 'increment'):
+            self.assertEqual(functions['workload::service::'+name]['calls'], 16)
+        self.assertTrue(all(pool['live']==0 and pool['allocations']==pool['frees'] for pool in profile['memory']))
+
     def test_operator_change_during_measurement_rejects_the_reviewed_workload(self):
         value=definition();value['phases']=[{'concurrency':1,'iterations':512}];value['warmup']=0
         self.workload.write_text(json.dumps(value), newline="\n")

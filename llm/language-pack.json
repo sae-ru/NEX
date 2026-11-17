@@ -5878,13 +5878,14 @@
           "macOS",
           "Linux"
         ],
-        "logical_debug_profile_scope": "standalone; independent build selections; HTTP remains pending",
+        "logical_debug_profile_scope": "independent native builds; HTTP profiling with pinned workload; HTTP logical debugging pending",
         "native_HTTP_logical_debugging": false,
         "native_HTTP_profiles": [
           "debug",
-          "release"
+          "release",
+          "profile"
         ],
-        "native_HTTP_profiling": false
+        "native_HTTP_profiling": true
       },
       "task_reference_contexts": true,
       "persistent_UI": {
@@ -6048,7 +6049,9 @@
         "introduced_toolchain": "0.279.0",
         "logical_lifetime": true,
         "memory": "shallow Handle/Data allocations; excludes heap registry/index backing, dynamic payload buffers and total RAM",
-        "native_HTTP": false,
+        "native_HTTP": true,
+        "native_HTTP_scope": "standalone owner-thread server with a pinned HTTP workload",
+        "native_HTTP_test": "tests/server_workload.py",
         "one_application_heap": true,
         "ordinary_CLI": true,
         "parallel_transfer": false,

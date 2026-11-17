@@ -1220,6 +1220,11 @@ public:
       if(profiling){taskProfileMetadata(*tasks);if(!profileRegistryAccessor.empty()){
         auto registry=metadataArray("nex_task_profile_registry_data_","!llvm.struct<(i64, !llvm.ptr, i64, !llvm.ptr)>",{{int64_t(1),taskProfileTable,int64_t(tasks->size()),rawGlobal(profileComponent)}});
         out<<"  func.func @"<<profileRegistryAccessor<<"() -> !llvm.ptr {\n";auto value=fresh();line(value+" = llvm.mlir.addressof @"+registry+" : !llvm.ptr",main.span);line("func.return "+value+" : !llvm.ptr",main.span);out<<"  }\n";
+      }else if(libraryEntry&&main.realm=="server"){
+        out<<"  func.func @nex_server_task_profile_prepare() {\n";
+        auto table=fresh();line(table+" = llvm.mlir.addressof @"+taskProfileTable+" : !llvm.ptr",main.span);
+        call("nex_task_profile_prepare",{{table,Type::Str},constant(tasks->size(),Type::I64,main.span)},Type::Unit,main.span);
+        line("func.return",main.span);out<<"  }\n";
       }}
       TaskFileRequirements fileRequirements;for(const auto &ir:*tasks)fileRequirements.include(p,ir);
       const bool imageFileReads=taskImageFileReads||fileRequirements.reads;
@@ -2111,7 +2116,8 @@ void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
   }
   if(tasks){
     if(server&&!supportsTaskFileStreams(p))throw Error("E_TASK_TARGET","task HTTP handlers require language0.24; explicitly migrate retained source history",p.function(options.entry).span);
-    if(server&&(options.profile=="profile"||options.taskDebug))throw Error("E_OPTION","task HTTP profiling and logical debugging remain pending",p.function(options.entry).span);
+    if(server&&(options.taskDebug||(options.profile=="profile"&&!managedReferences)))
+      throw Error("E_OPTION","task HTTP profiling requires source0.30 owner-thread execution; HTTP logical debugging remains pending",p.function(options.entry).span);
     if(!taskProviders&&(options.libraryEntry||options.codeOnlyLibrary||options.deferredLink||options.functionsOnly||!options.libraries.empty()||!options.libraryExports.empty()))
       throw Error("E_TASK_PROVIDER","task descriptors require one standalone image; native libraries, project providers and deferred linking remain pending",p.function(options.entry).span);
     for(const auto &name:names){

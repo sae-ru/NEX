@@ -16,7 +16,7 @@
 #ifdef NEX_HTTP_FILES_ENABLED
 #include "nex_files.h"
 #endif
-#ifdef NEX_PRIVATE_TASK_PROFILE_HTTP
+#if defined(NEX_PRIVATE_TASK_PROFILE_HTTP) || defined(NEX_TASK_PROFILE_ENABLED)
 #include "nex_profile.h"
 #endif
 #ifdef NEX_ASYNC_TASKS
@@ -38,6 +38,9 @@
 #ifdef NEX_ASYNC_TASKS
 extern "C" nexrt::Handle *nex_server_task_dispatch(nexrt::Handle *request,unsigned workers);
 extern "C" const nexrt::TaskExecutionLimits *nex_server_task_limits();
+#if defined(NEX_TASK_PROFILE_ENABLED) && !defined(NEX_PRIVATE_TASK_PROFILE_HTTP)
+extern "C" void nex_server_task_profile_prepare();
+#endif
 #else
 extern "C" nexrt::Handle *nex_server_dispatch(nexrt::Handle *request);
 #endif
@@ -180,6 +183,9 @@ int main(int argc,char **argv){
     // The collector is prepared by the private host before workers start.
     // These are common per-request limits, not a process-wide execution budget.
     nexrt::taskProfileLimits(c.taskLimits,{c.budget,c.timeout,c.taskLimits.workers});
+#elif defined(NEX_TASK_PROFILE_ENABLED)
+    nex_server_task_profile_prepare();
+    nexrt::taskProfileLimits(*nex_server_task_limits(),{c.budget,c.timeout,c.taskLimits.workers});
 #endif
 #ifdef NEX_FOREIGN_ENABLED
     if(c.foreign.empty())c.foreign=nexrt::packagedForeignCatalogue();
