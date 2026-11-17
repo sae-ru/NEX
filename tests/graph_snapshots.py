@@ -178,7 +178,11 @@ class GraphSnapshots(harness.ToolchainCase):
         self.assertFalse(descriptor['snapshot_external_artifacts_included'])
         guide=self.cli('guide','--kind','snapshot')
         self.assertEqual(guide['text'],(harness.REPO/'docs/snapshots.md').read_text())
-        self.assertIn('nex recover',self.cli('guide','--kind','prompt')['text'])
+        prompt=self.cli('guide','--kind','prompt')['text']
+        self.assertIn('llm/DETAILED_CODING_RULES.md',prompt)
+        details=(harness.REPO/'llm/DETAILED_CODING_RULES.md').read_text(encoding='utf-8')
+        self.assertIn('nex snapshot',details)
+        self.assertIn('nex recover',details)
 
     def test_capture_and_recovery_do_not_need_sdk_or_physical_source(self):
         self.ready();before=self.rows();self.file.unlink()
