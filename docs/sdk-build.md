@@ -113,6 +113,10 @@ The OpenSSL prefix must include the CLI, libraries, provider modules and
 configuration used with that installation. Select the Wasm linker from the
 all-target Clang dependency set.
 
+Windows native HTTP and FFI builds capture the selected `openssl/` header
+tree with the runtime inputs. The target compiler supplies its own platform C
+headers even when the OpenSSL prefix also contains producer-system headers.
+
 ```powershell
 python -B tools/windows/sdk_distribution.py `
   --sdk C:\path\installed --output C:\path\new-distribution `

@@ -96,9 +96,10 @@ map3. Snapshot/history/archive identities are unchanged.
 heap across serialized events. Native [task-provider images](reference-task-providers.md)
 support checked static, fixed shared and mixed components. Standalone and
 source-backed native applications support [logical debugging](reference-provider-debugging.md)
-and [profiling](reference-task-profiling.md). Standalone HTTP servers can profile
-owner-thread tasks with a pinned workload. HTTP logical debugging and live
-reference transfer across parallel workers remain open. Sequential code-only
+and [profiling](reference-task-profiling.md). Standalone HTTP servers support
+[logical debugging](server-debugging.md#owner-thread-http-tasks-in-030) and
+workload profiling of owner-thread tasks. Live reference transfer across
+parallel workers remains open. Sequential code-only
 native libraries retain their enclosing [host/application context](reference-library-abi.md).
 Runtime-embedding reference libraries and Wasm references retain explicit
 `E_CELL_TARGET` boundaries. Reference-free entry behavior is preserved.

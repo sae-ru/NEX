@@ -83,9 +83,9 @@ capture/package/replay after removal of the original source/cache directories.
 Retained ABI7 provider-debug tests keep their own formats and scenarios.
 These are focused functional checks; full source/platform/portable SDK release
 qualification remains separate. [Reference task profiles](reference-task-profiling.md) use separate record19/plan19.
-HTTP reference debugging/profiling,
-parallel reference transfer and cell graph reconstruction for pure watches
-remain open.
+HTTP task-provider debugging/profiling, parallel reference transfer and cell
+graph reconstruction for pure watches remain open. Standalone 0.30 HTTP task
+handlers have a [separate debug launch](server-debugging.md#owner-thread-http-tasks-in-030).
 
 По-русски: один объект может проходить через несколько статических и динамических
 библиотек, а отладчик сохраняет его идентичность и логический стек. Можно перейти

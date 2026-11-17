@@ -127,6 +127,60 @@ server fn handle(request:http::Request)->http::Response!{db}{
         output=''.join(m.get('body',{}).get('output','') for m in client.pending if m.get('event')=='output')
         self.assertNotIn('E_INTERNAL_LEAK',output)
 
+    def owner_thread_task_server(self):
+        manifest = self.root/'nex.json'
+        manifest.write_text(json.dumps({**json.loads(manifest.read_text()), 'language': '0.30'}), newline='\n')
+        layout = self.root/'nex.build.json'
+        project = json.loads(layout.read_text())
+        del project['components']['core']
+        del project['components']['service']['dependencies']
+        project['configurations']['debug']['task_limits'] = {'steps':1000000, 'timeout_ms':60000, 'workers':4}
+        layout.write_text(json.dumps(project), newline='\n')
+        (self.root/'service/main.nex').write_text('''module debug_service;
+import "std/http.nex" as http;
+server fn after(value:cell<i64>)->i64 !{task,state}{
+  task_yield(); return cell_read(value);
+}
+server fn handle(request:http::Request)->http::Response !{task,state}{
+  let value:cell<i64>=cell_new(42);
+  return http::json_response(200,encode_json(after(value)));
+}
+''', newline='\n')
+
+    def test_owner_thread_http_task_launch_descriptor(self):
+        self.owner_thread_task_server()
+        session = self.descriptor()['observation']
+        self.assertEqual(session['application_kind'], 'http_server')
+        self.assertTrue(session['launch']['nexTaskDebug'])
+        self.assertTrue(session['task_debug']['deadline_advances_while_stopped'])
+        execution = session['task_debug']['task_execution']
+        self.assertEqual((execution['executor_workers'], execution['effective']['workers']), (1,4))
+        self.assertFalse(self.database.exists())
+
+    @unittest.skipUnless(LIVE,'opt-in real HTTP/DAP worker debugging')
+    def test_live_owner_thread_http_task_cell_inspection(self):
+        self.owner_thread_task_server()
+        token = self.cli('token','--user','debug-user','--auth',self.auth)['token']
+        session = self.descriptor()['observation']
+        client,pid,port = self.start(session,['debug_service::after'])
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        try:
+            request = executor.submit(self.send_request,port,token)
+            client.event('stopped')
+            task = client.request('threads')['nex']['selected']
+            frame = client.request('stackTrace',{'threadId':task})['stackFrames'][0]['id']
+            scope = client.request('scopes',{'frameId':frame})['scopes'][0]['variablesReference']
+            values = client.request('variables',{'variablesReference':scope})['variables']
+            cell = next(row for row in values if row['name']=='value')
+            fields = client.request('variables',{'variablesReference':cell['variablesReference']})['variables']
+            self.assertEqual(next(row for row in fields if row['name']=='value')['value'],'42')
+            client.request('continue',{'threadId':task})
+            self.assertEqual(request.result(timeout=30),(200,'42'))
+            self.stop_server(client,pid)
+        finally:
+            client.close()
+            executor.shutdown(wait=True,cancel_futures=True)
+
     @unittest.skipUnless(LIVE,'opt-in real HTTP/DAP worker debugging')
     def test_live_worker_request_and_provider_frames_after_original_source_deletion(self):
         token=self.cli('token','--user','debug-user','--auth',self.auth)['token']

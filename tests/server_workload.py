@@ -229,6 +229,12 @@ server fn handle(request:http::Request)->http::Response !{task,state}{
         for name in ('handle', 'increment'):
             self.assertEqual(functions['workload::service::'+name]['calls'], 16)
         self.assertTrue(all(pool['live']==0 and pool['allocations']==pool['frees'] for pool in profile['memory']))
+        if os.name == 'nt':
+            artifact = next(row for row in result['artifacts'] if row['component']=='server')
+            metadata = json.loads(Path(artifact['metadata']).read_bytes())
+            header = Path(self.cli('doctor')['native_openssl_include'])/'openssl/ssl.h'
+            self.assertEqual(metadata['runtime_inputs']['openssl/ssl.h'], hashlib.sha256(header.read_bytes()).hexdigest())
+            self.assertNotIn('math.h', metadata['runtime_inputs'])
 
     def test_operator_change_during_measurement_rejects_the_reviewed_workload(self):
         value=definition();value['phases']=[{'concurrency':1,'iterations':512}];value['warmup']=0

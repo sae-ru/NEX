@@ -1,9 +1,10 @@
 # NEX language specification 0.28
 
-The development compiler profiles owner-thread task execution in standalone
-0.30 HTTP servers with pinned workloads. Each request retains its own heap and
-existing limits. The [profiling contract](reference-task-profiling.md#http-workloads-with-reference-tasks)
-adds no source syntax, graph format or runtime ABI.
+The development compiler supports logical debugging and pinned-workload
+profiling of owner-thread tasks in standalone 0.30 HTTP servers. Each request
+retains its own heap and existing limits. These tools add no source syntax,
+graph format or runtime ABI. See [server debugging](server-debugging.md#owner-thread-http-tasks-in-030)
+and [workload profiling](reference-task-profiling.md#http-workloads-with-reference-tasks).
 
 Toolchain0.280.1 preserves native owner-thread task deadline/cancellation outcomes
 at reference-context acquisition. This runtime correction adds no source syntax,

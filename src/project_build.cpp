@@ -294,7 +294,9 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
     if(!native.entry.empty()&&usesTaskEffects(program,native.entry)){
       native.taskLimits=configuration.taskLimits;native.taskLimitsSpecified=configuration.taskLimitsSpecified;
       if((options.kind=="debug"||options.taskDebug)&&(c.kind=="executable"||c.kind=="server")){
-        if(configuration.profile!="debug"||c.kind!="executable"||!options.foreign.empty())fail("task debug requires a native debug task application without HTTP or foreign code","E_TASK_DEBUG");
+        if(configuration.profile!="debug"||!options.foreign.empty()||
+           (c.kind=="server"&&!usesOwnerThreadTasks(program,{native.entry})))
+          fail("task debug requires a debug task application or a standalone owner-thread HTTP handler, without foreign code","E_TASK_DEBUG");
         if(options.adapter=="dap")fail("logical source task debugging requires lldb or nex-dap; raw DAP is pending","E_TASK_DEBUG");
         native.taskDebug=true;
       }

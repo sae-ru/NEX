@@ -1256,6 +1256,11 @@ public:
       if(taskDebug){taskDebugMetadata(*tasks);if(!debugRegistryAccessor.empty()){
         auto registry=metadataArray("nex_task_debug_registry_data_","!llvm.struct<(i64, !llvm.ptr, i64, !llvm.ptr)>",{{int64_t(1),taskDebugTable,int64_t(tasks->size()),rawGlobal(debugComponent)}});
         out<<"  func.func @"<<debugRegistryAccessor<<"() -> !llvm.ptr {\n";auto value=fresh();line(value+" = llvm.mlir.addressof @"+registry+" : !llvm.ptr",main.span);line("func.return "+value+" : !llvm.ptr",main.span);out<<"  }\n";
+      }else if(libraryEntry&&main.realm=="server"){
+        out<<"  func.func @nex_server_task_debug_prepare() {\n";
+        auto table=fresh();line(table+" = llvm.mlir.addressof @"+taskDebugTable+" : !llvm.ptr",main.span);
+        call("nex_task_debug_prepare",{{table,Type::Str},constant(tasks->size(),Type::I64,main.span)},Type::Unit,main.span);
+        line("func.return",main.span);out<<"  }\n";
       }}
     }
     const auto &names=selected?*selected:completeNames;
@@ -2116,8 +2121,8 @@ void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
   }
   if(tasks){
     if(server&&!supportsTaskFileStreams(p))throw Error("E_TASK_TARGET","task HTTP handlers require language0.24; explicitly migrate retained source history",p.function(options.entry).span);
-    if(server&&(options.taskDebug||(options.profile=="profile"&&!managedReferences)))
-      throw Error("E_OPTION","task HTTP profiling requires source0.30 owner-thread execution; HTTP logical debugging remains pending",p.function(options.entry).span);
+    if(server&&(options.taskDebug||options.profile=="profile")&&!managedReferences)
+      throw Error("E_OPTION","task HTTP profiling and logical debugging require source0.30 owner-thread execution",p.function(options.entry).span);
     if(!taskProviders&&(options.libraryEntry||options.codeOnlyLibrary||options.deferredLink||options.functionsOnly||!options.libraries.empty()||!options.libraryExports.empty()))
       throw Error("E_TASK_PROVIDER","task descriptors require one standalone image; native libraries, project providers and deferred linking remain pending",p.function(options.entry).span);
     for(const auto &name:names){
@@ -2457,6 +2462,15 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     }
   }
   if(storage)runtimeFiles["sqlite3.h"]=readFile((std::filesystem::path(toolchain.sqliteInclude)/"sqlite3.h").string());
+  if(windows&&(server||foreign)){
+    // The Windows producer can share a distribution prefix with OpenSSL.
+    // Capture the selected library's header namespace without adding that
+    // prefix's C system headers to the target compiler's search path.
+    const auto headers=std::filesystem::path(toolchain.opensslInclude)/"openssl";
+    for(const auto &entry:std::filesystem::recursive_directory_iterator(headers))
+      if(entry.is_regular_file())
+        runtimeFiles["openssl/"+entry.path().lexically_relative(headers).generic_string()]=readFile(entry.path().string());
+  }
   if(!options.foreignCatalogue.empty()&&(!foreign||options.libraryEntry||options.foreignCatalogue!="../foreign/host.json"))
     throw Error("E_PACKAGE","invalid packaged foreign catalogue build configuration");
   std::string runtimeIdentity=options.foreignCatalogue+":files="+std::to_string(files)+":parallel="+std::to_string(parallel)+":tasks="+std::to_string(tasks)+":managed_tasks="+std::to_string(managedTasks)+":task_debug="+std::to_string(options.taskDebug);for(const auto &[file,source]:runtimeFiles)runtimeIdentity+=file+source;
@@ -2840,15 +2854,22 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     if(!std::filesystem::is_regular_file(cached)||!std::filesystem::is_regular_file(marker)||readFile(marker.string())!=hash(readFile(cached.string()))+"\n"){
       auto temporary=cache/("runtime-"+std::to_string(std::random_device{}())+".o");
       auto arguments=command({"-std=c++20","-c",source,"-I",runtimeProjection.string(),"-o",temporary.string(),"-g",optimization});
-      if(foreign)arguments.insert(arguments.end(),{"-I",toolchain.opensslInclude,"-pthread","-DNEX_FOREIGN_ENABLED"});
+      if(foreign){
+        if(!windows)arguments.insert(arguments.end(),{"-I",toolchain.opensslInclude});
+        arguments.insert(arguments.end(),{"-pthread","-DNEX_FOREIGN_ENABLED"});
+      }
       if(parallel||tasks)arguments.insert(arguments.end(),{"-pthread","-DNEX_STRUCTURED_WORKERS"});
       if(component=="nex_resource_executor.cpp"&&!windows)arguments.push_back("-pthread");
       if(tasks)arguments.push_back("-DNEX_ASYNC_TASKS");
       if(managedTasks)arguments.push_back("-DNEX_MANAGED_TASKS");
       if(options.taskDebug)arguments.push_back("-DNEX_TASK_DEBUG_ENABLED");
       if(!options.foreignCatalogue.empty())arguments.push_back("-DNEX_FOREIGN_DEFAULT="+json(options.foreignCatalogue,false));
-      if(component=="http_main.cpp")arguments.insert(arguments.end(),{"-I",toolchain.opensslInclude,"-pthread"});
+      if(component=="http_main.cpp"){
+        if(!windows&&!foreign)arguments.insert(arguments.end(),{"-I",toolchain.opensslInclude});
+        arguments.push_back("-pthread");
+      }
       if(component=="http_main.cpp"&&files)arguments.push_back("-DNEX_HTTP_FILES_ENABLED");
+      if(component=="http_main.cpp"&&options.taskDebug)arguments.push_back("-DNEX_PUBLIC_HTTP_TASK_DEBUG");
       if(options.profile=="profile")arguments.push_back("-fno-omit-frame-pointer");
       if(options.positionIndependent)arguments.push_back("-fPIC");
       if(profiling){

@@ -96,9 +96,10 @@ alongside the compiled ceilings and `--nex-task-*` overrides. Source events do
 not carry HTTP request IDs or payloads. Full SDK and platform acceptance are
 separate gates.
 
-HTTP logical debugging, simultaneous debugging and profiling, shared task
-providers inside HTTP servers, persistent host-session profiling and live
-reference transfer across parallel workers remain open.
+Standalone HTTP logical debugging uses a separate debug build. Simultaneous
+debugging and profiling, shared task providers inside HTTP servers, persistent
+host-session profiling and live reference transfer across parallel workers
+remain open.
 
 По-русски: профилировщик считает вызовы, активное время и ожидания задач030,
 включая переходы между библиотеками и ошибки с объектами. После завершения

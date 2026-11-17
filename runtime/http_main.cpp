@@ -41,6 +41,9 @@ extern "C" const nexrt::TaskExecutionLimits *nex_server_task_limits();
 #if defined(NEX_TASK_PROFILE_ENABLED) && !defined(NEX_PRIVATE_TASK_PROFILE_HTTP)
 extern "C" void nex_server_task_profile_prepare();
 #endif
+#ifdef NEX_PUBLIC_HTTP_TASK_DEBUG
+extern "C" void nex_server_task_debug_prepare();
+#endif
 #else
 extern "C" nexrt::Handle *nex_server_dispatch(nexrt::Handle *request);
 #endif
@@ -173,6 +176,9 @@ std::string mime(const fs::path &path){
 int main(int argc,char **argv){
   try{
     auto c=config(argc,argv);
+#ifdef NEX_PUBLIC_HTTP_TASK_DEBUG
+    nex_server_task_debug_prepare();
+#endif
 #ifdef NEX_HTTP_FILES_ENABLED
     // The operator chooses this capability explicitly. Pin its physical root
     // before workers start; each request receives a separate lexical child.

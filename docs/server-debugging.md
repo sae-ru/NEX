@@ -32,6 +32,19 @@ stack/scopes/watch requests: a request normally runs on a worker thread.
 Watches inspect stopped values without running inferior code. Discard old
 frame/value references after continuing.
 
+## Owner-thread HTTP tasks in 0.30
+
+The development compiler accepts a standalone 0.30 HTTP handler that uses
+owner-thread tasks. Launch through `nex-dap` or LLDB in a `debug` configuration.
+The runtime registers task source sites before starting the listener. Set a
+logical breakpoint by the NEX function's qualified name. When a request stops,
+use the selected logical task for stack, scopes and read-only cell inspection.
+After continuing, discard the previous frame and value references. Each request
+keeps its own heap. The configured request deadline continues while stopped.
+
+This path supports standalone task handlers. HTTP task-provider images,
+debugging foreign task code, and instrumented server packaging remain open.
+
 ## VS Code0.7
 
 Open a trusted physical workspace with the matching compiler configured. Add:

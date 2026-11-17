@@ -1098,7 +1098,9 @@ int run(const Options &o) {
     buildOptions.profile="profile";
   }
   if(o.command=="debug"&&usesTaskEffects(p,buildOptions.entry)){
-    if(buildOptions.profile!="debug"||buildOptions.target=="server"||buildOptions.libraryEntry||!o.get("--foreign").empty())throw Error("E_TASK_DEBUG","task debug requires a standalone native debug executable; server/provider/profile task debugging is pending",p.function(buildOptions.entry).span);
+    if(buildOptions.profile!="debug"||buildOptions.libraryEntry||!o.get("--foreign").empty()||
+       (buildOptions.target=="server"&&!usesOwnerThreadTasks(p,{buildOptions.entry})))
+      throw Error("E_TASK_DEBUG","task debug requires a native debug executable or a standalone owner-thread HTTP handler, without foreign code",p.function(buildOptions.entry).span);
     if(o.get("--kind","lldb")=="dap")throw Error("E_TASK_DEBUG","logical source task debugging requires lldb or nex-dap; raw DAP is pending",p.function(buildOptions.entry).span);
     buildOptions.taskDebug=true;
   }

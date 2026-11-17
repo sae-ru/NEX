@@ -5878,8 +5878,8 @@
           "macOS",
           "Linux"
         ],
-        "logical_debug_profile_scope": "independent native builds; HTTP profiling with pinned workload; HTTP logical debugging pending",
-        "native_HTTP_logical_debugging": false,
+        "logical_debug_profile_scope": "independent native builds; standalone HTTP task handlers; HTTP profiling with pinned workload",
+        "native_HTTP_logical_debugging": true,
         "native_HTTP_profiles": [
           "debug",
           "release",
@@ -6026,7 +6026,9 @@
         "inspection_schema_file": "llm/task-value-inspection.schema.json",
         "introduced_toolchain": "0.277.0",
         "logical_steps": true,
-        "native_HTTP": false,
+        "native_HTTP": true,
+        "native_HTTP_scope": "standalone owner-thread task handlers; read-only LLDB/DAP",
+        "native_HTTP_test": "tests/server_debug.py",
         "ordinary_CLI": true,
         "parallel_transfer": false,
         "profiling": false,

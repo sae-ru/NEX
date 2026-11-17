@@ -149,7 +149,10 @@ Array symbolFiles(const fs::path &image){
 }
 std::vector<std::string> flags(const NativeToolchain &tools,const fs::path &projection,const std::string &profile,bool foreign,bool sharedProfile){
   std::vector<std::string> f={"-std=c++20","-I",projection.string(),"-g",profile=="debug"?"-O0":"-O2","-fPIC"};
-  if(foreign)f.insert(f.end(),{"-I",tools.opensslInclude,"-pthread","-DNEX_FOREIGN_ENABLED"});
+  if(foreign){
+    if(tools.windowsRuntime.empty())f.insert(f.end(),{"-I",tools.opensslInclude});
+    f.insert(f.end(),{"-pthread","-DNEX_FOREIGN_ENABLED"});
+  }
   if(profile=="profile"){
     f.insert(f.end(),{"-fno-omit-frame-pointer","-pthread"});
     for(const auto *name:{"NEX_PROFILE_ENABLED","TRACY_ENABLE","TRACY_ON_DEMAND","TRACY_DELAYED_INIT","TRACY_MANUAL_LIFETIME","TRACY_ONLY_LOCALHOST","TRACY_NO_BROADCAST","TRACY_NO_CODE_TRANSFER","TRACY_NO_CALLSTACK","TRACY_NO_SYSTEM_TRACING","TRACY_NO_SAMPLING","TRACY_NO_CRASH_HANDLER","TRACY_NO_FRAME_IMAGE"})f.push_back(std::string("-D")+name);
@@ -474,7 +477,8 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
         // The common runtime supports the union of all images. This server
         // entry only configures foreign authority when its own closure needs it.
         auto args=flags(tools,projection,profile,stage.build.getObject("runtime_requirements")->getBoolean("foreign").value_or(false),false);
-        args.insert(args.end(),{"-I",tools.opensslInclude,"-pthread"});auto object=folder/"http_main.o";compile(tools,projection/"http_main.cpp",object,args);linkInputs.push_back(object.string());
+        if(!windows)args.insert(args.end(),{"-I",tools.opensslInclude});
+        args.push_back("-pthread");auto object=folder/"http_main.o";compile(tools,projection/"http_main.cpp",object,args);linkInputs.push_back(object.string());
         auto bridge=folder/"server-bridge.cpp";auto symbol=nativeSymbol(input.program->function(input.options.entry).name);
         writeFile(bridge.string(),"#include \"nex_host.h\"\nextern \"C\" nexrt::Handle *"+symbol+"(nexrt::Handle*);extern \"C\" nexrt::Handle *nex_server_dispatch(nexrt::Handle *p){return "+symbol+"(p);}\n");compile(tools,bridge,folder/"server-bridge.o",compileFlags);linkInputs.push_back((folder/"server-bridge.o").string());linkInputs.insert(linkInputs.end(),{tools.opensslSSL,tools.opensslCrypto,"-pthread"});
       }

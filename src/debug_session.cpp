@@ -9,6 +9,7 @@
 #include "llvm/Support/SHA256.h"
 #include "llvm/ADT/StringExtras.h"
 #include "nex_json.h"
+#include "nex_task_protocol.h"
 #include <filesystem>
 #include <array>
 #include <cerrno>
@@ -120,9 +121,11 @@ llvm::json::Value nativeDebugSession(const Program &p,const BuildResult &built,
   auto debug=debugManifest->getAsObject();llvm::json::Object taskControl;
   if(tasks){
     const bool provider=debug->getString("schema")=="nex.debug/3";
+    const bool server=build->getString("kind")=="http_server";
+    const bool ownerThread=build->getInteger("task_execution_abi")==nexrt::taskCodeManagedReferencesABI;
     auto view=debug->getObject("task_debug");auto limits=build->get("task_limits");
     if(kind=="dap")throw Error("E_TASK_DEBUG","logical source task debugging requires lldb or nex-dap; raw DAP is pending");
-    if(!supportsTaskFileReads(p)||build->getString("kind")!="executable"||build->getString("profile")!="debug"||build->getBoolean("task_debug")!=true||
+    if(!supportsTaskFileReads(p)||(server&&(!ownerThread||provider))||build->getString("profile")!="debug"||build->getBoolean("task_debug")!=true||
        debug->getString("schema")!=(provider?"nex.debug/3":"nex.debug/2")||debug->getString("language")!=programLanguage(p)||debug->getString("revision")!=revision(p)||debug->getString("build_key")!=built.key||
        debug->getString("program")!=built.executable||debug->getString("compiler_build")!=NEX_BUILD_ID||debug->getString("source_hash")!=hash(json(sourceBundle(p),false))||
        !view||view->getString("schema")!=(provider?"nex.task-debug-view/2":"nex.task-debug-view/1")||view->getInteger("abi")!=(provider?2:1)||view->getString("metadata_hash")!=build->getString("task_debug_metadata_hash")||
@@ -133,9 +136,9 @@ llvm::json::Value nativeDebugSession(const Program &p,const BuildResult &built,
     }
     auto configured=parseTaskLimitsJSON(*limits,"E_DEBUG");
     if(json(llvm::json::Value(taskLimitsJSON(configured)),false)!=json(*limits,false))throw Error("E_DEBUG","task debug limits are not canonical");
-    auto argv=arguments;argv.insert(argv.begin(),built.executable);auto effective=taskEffectiveLimits(configured,argv);
+    auto argv=arguments;argv.insert(argv.begin(),built.executable);auto effective=taskEffectiveLimits(configured,argv,server);
     taskControl=llvm::json::Object{{"schema",provider?"nex.task-debug-session/2":"nex.task-debug-session/1"},{"catalog_abi",provider?2:1},{"deadline_advances_while_stopped",true},
-      {"task_execution",taskExecutionJSON(configured,effective,"native")}};
+      {"task_execution",taskExecutionJSON(configured,effective,"native",0,ownerThread)}};
     if(provider){taskControl["registry_abi"]=1;taskControl["metadata_hash"]=view->getString("metadata_hash")->str();taskControl["catalog_hash"]=view->getString("catalog_hash")->str();taskControl["source_union_hash"]=view->getString("source_union_hash")->str();}
   }
   llvm::json::Array commands{
