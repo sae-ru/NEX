@@ -233,7 +233,9 @@ server fn handle(request:http::Request)->http::Response !{task,state}{
             artifact = next(row for row in result['artifacts'] if row['component']=='server')
             metadata = json.loads(Path(artifact['metadata']).read_bytes())
             header = Path(self.cli('doctor')['native_openssl_include'])/'openssl/ssl.h'
-            self.assertEqual(metadata['runtime_inputs']['openssl/ssl.h'], hashlib.sha256(header.read_bytes()).hexdigest())
+            projected = Path(metadata['runtime_source_projection'])/'openssl/ssl.h'
+            self.assertEqual(projected.read_bytes(), header.read_bytes())
+            self.assertIn('openssl/ssl.h', metadata['runtime_inputs'])
             self.assertNotIn('math.h', metadata['runtime_inputs'])
 
     def test_operator_change_during_measurement_rejects_the_reviewed_workload(self):
