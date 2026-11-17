@@ -103,6 +103,35 @@ declared prerequisites. The 0.246.1 macOS run completed this full sequence;
 its source, configuration, notices, source-test and distribution hashes are
 preserved in the linked receipts. `live` was false for that archive.
 
+## Windows x86-64
+
+Build and install the selected commit with the native Windows compiler and its
+pinned UCRT dependencies. From that checkout, run the native Windows
+[distribution driver](../tools/windows/sdk_distribution.py) with the ordinary
+CMake installation and the catalogue of packages supplying its actual files.
+The OpenSSL prefix must include the CLI, libraries, provider modules and
+configuration used with that installation. Select the Wasm linker from the
+all-target Clang dependency set.
+
+```powershell
+python -B tools/windows/sdk_distribution.py `
+  --sdk C:\path\installed --output C:\path\new-distribution `
+  --notices C:\path\sdk-notices.json --openssl-prefix C:\path\clang64 `
+  --wasm-linker C:\path\clang64\bin\wasm-ld.exe `
+  --node C:\path\node.exe --npm C:\path\npm.cmd --npm-cache C:\path\npm-cache `
+  --live --lldb C:\path\lldb.exe --lldb-dap C:\path\lldb-dap.exe
+```
+
+The driver assembles and inventories the native SDK, then runs the maintained
+browser and installed workflows at the relocated and archive-restored paths.
+Acceptance resolves native tools, Wasm tools, headers and libraries inside the
+candidate. Python, Node/npm and the selected LLDB tools are external
+prerequisites. Use `--forbid-source` to require absent source paths on the
+qualification host. The default network profile requires IPv6. On a Windows
+host that intentionally denies it, select `--network-profile windows-ipv6-denied`
+so the receipt records that exact scope. The driver creates a report and an
+archive checksum after the two installed checks pass.
+
 ## Local 0.177 macOS smoke
 
 A local Release install/move/archive/restore smoke was run on macOS ARM64: the
@@ -141,6 +170,5 @@ Linux dependencies use the pinned container recipe; macOS uses explicit local
 installations and their notices. This is not a claim of byte-identical compiler
 builds across hosts or of a hermetic macOS dependency installation. Final
 archive inventories and actual moved/restored observations retain their scope.
-Windows-native source/portable distribution orchestration remains pending;
-Windows is explicitly rejected by this configuration schema rather than counted
-as a successful Linux or macOS delivery.
+`sdk_build.py` orchestrates macOS and Linux from committed source. On Windows,
+the native source build and the distribution driver are separate commands.
