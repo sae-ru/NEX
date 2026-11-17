@@ -1,0 +1,28 @@
+{
+  "schema": "nex.ci-independent-verification/1",
+  "ok": true,
+  "source_commit": "b02514eb31c7255b97dea7b3a1e06c832c6e23bc",
+  "run_id": 44100147200,
+  "jobs": [
+    {
+      "platform": "linux",
+      "groups": 17,
+      "passed": 17,
+      "failed": [],
+      "skipped": [],
+      "raw_registry_sha256": "381b26243c208d3728bd2d9fddd5d16bd91ce29bf694da34309386e2779bce0b",
+      "raw_junit_sha256": "4d90b7aea7edfe5e64441f6e7069ce24b9ae14cda7b7a3ff37ec0cbbb13b297e",
+      "stored_receipt_matches": true
+    },
+    {
+      "platform": "macos",
+      "groups": 17,
+      "passed": 17,
+      "failed": [],
+      "skipped": [],
+      "raw_registry_sha256": "40dfaf94af9a24174eedddc1331b4ddaa3ccbb7123dfaec6aa755578713a0a82",
+      "raw_junit_sha256": "0bb53cf675619c8a6bf4fccf6583d15e77e3b6bb9b1dee3c1b2c2930441469c4",
+      "stored_receipt_matches": true
+    }
+  ]
+}

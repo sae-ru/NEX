@@ -197,7 +197,7 @@ advertised project source languages and toolchain by the same script.
 | [Public025 provider integration candidate](project-build.md) | — | — |
 | [Public025 provider integration candidate](task-provider-debugging.md) | — | — |
 | [Public025 provider integration candidate](task-provider-profiling.md) | — | — |
-| [Qualified SDK: 0.246.1 / language 0.28 / task ABI 7](sdk.md) | — | — |
+| [Qualified SDK: 0.280.1 / language 0.28 / task ABIs 7/8](sdk.md) | — | — |
 | [Repeatable development configuration](development-build.md) | — | — |
 | [Scalar WebAssembly design history](wasm-design.md) | — | — |
 | [Scoped compiler discovery](discovery.md) | — | — |

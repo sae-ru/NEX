@@ -8,13 +8,13 @@
 
 После распаковки SDK добавьте его `bin` в PATH и выполните `nex doctor --json`:
 отчёт показывает установленную версию. Затем переходите к созданию приложения.
-Рецепт скачивания ниже относится к отдельно проверенному опубликованному0.246.1.
+Рецепт скачивания ниже относится к отдельно проверенному опубликованному0.280.1.
 Новые проекты `nex init` текущей исходной версии выбирают язык0.30;
 существующие проекты сохраняют язык, указанный в их `nex.json`.
 
 ## Установить SDK для macOS ARM64
 
-[SDK 0.246.1](releases/0.246.1.json) требует macOS 27.0+ на ARM64, Apple command-line
+[SDK 0.280.1](releases/0.280.1.json) требует macOS 27.0+ на ARM64, Apple command-line
 tools с macOS SDK и Python 3.10+. Для веб-сборок нужны также Node.js 22.18+ и npm.
 Переносимый архив для разработки включает выбранный компилятор и зависимости
 библиотек. Храните весь распакованный каталог вместе.
@@ -22,26 +22,26 @@ tools с macOS SDK и Python 3.10+. Для веб-сборок нужны так
 Скачайте, проверьте SHA256 и распакуйте:
 
 ```sh
-curl -fL -o nex-sdk-0.246.1-macos-arm64-development.tar.gz \
-  https://github.com/sae-ru/NEX/releases/download/v0.246.1/nex-sdk-0.246.1-macos-arm64-development.tar.gz
-echo 'd583cb214f4831207253a14a84927386195cecd652ffd4744a8b3bd4f0aae2aa  nex-sdk-0.246.1-macos-arm64-development.tar.gz' | shasum -a 256 -c -
+curl -fL -o nex-sdk-0.280.1-macos-arm64-development.tar.gz \
+  https://github.com/sae-ru/NEX/releases/download/v0.280.1/nex-sdk-0.280.1-macos-arm64-development.tar.gz
+echo '6d52a14f076c8382c06a6ac1f78d1b5e05f49553471116759a0c6f79eab3fa57  nex-sdk-0.280.1-macos-arm64-development.tar.gz' | shasum -a 256 -c -
 mkdir -p "$HOME/.local/nex"
-tar -xzf nex-sdk-0.246.1-macos-arm64-development.tar.gz -C "$HOME/.local/nex"
-export PATH="$HOME/.local/nex/nex-sdk-0.246.1-macos-arm64-development/bin:$PATH"
+tar -xzf nex-sdk-0.280.1-macos-arm64-development.tar.gz -C "$HOME/.local/nex"
+export PATH="$HOME/.local/nex/nex-sdk-0.280.1-macos-arm64-development/bin:$PATH"
 export SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
 nex doctor --json
 nex describe --kind index --json
 ```
 
-[Результаты приёмки](evidence/sdk-current-0.246.1-2026-11-15.json) закрепляют
+[Результаты приёмки](evidence/sdk-current-0.280.1-2026-11-17.json) закрепляют
 исходный коммит, архив и проверки перенесённой/восстановленной установок.
-Подписи ad-hoc; Developer ID, notarization и полная матрица живой отладки SDK
-остаются отдельными этапами. Для Windows/Linux используйте сборку исходников
+Живые LLDB/DAP прошли приёмку этого архива. Подписи ad-hoc; Developer ID
+и notarization остаются отдельными этапами. Для Windows/Linux используйте сборку исходников
 ниже и руководство соответствующей платформы.
 
 ## Собрать актуальную версию
 
-Установите C++20, CMake3.25+, LLVM **и MLIR22.1.x или 23.1.x**, SQLite3.37+, OpenSSL **3**,
+Установите C++20, CMake3.25+, LLVM **и MLIR22.1.x или 23.1.x**, SQLite3.37+, OpenSSL **3 или4**,
 Z3 с файлами разработки и Python3.10+. Для веба/TypeScript нужны Node.js22.18+
 и npm. Нативному исполнению нужен компилятор/SDK целевой платформы, живой
 отладке — совместимый LLDB. Сохраняйте `web/package-lock.json` репозитория.

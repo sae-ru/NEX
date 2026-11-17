@@ -6,7 +6,17 @@ new owned directory, builds/tests/installs it, then delegates relocation,
 source-free acceptance, normalized archive creation and restored acceptance to
 the existing platform helper. It never overwrites an SDK or previous attempt.
 
-The [0.246.1 macOS execution](evidence/sdk-current-0.246.1-2026-11-15.json)
+The [published0.280.1 macOS delivery](evidence/sdk-current-0.280.1-2026-11-17.json)
+uses a fresh committed source export and all-target Release build. Its attached
+orchestrator runs source and distribution gates concurrently after installation,
+in separate directories. Both moved/restored SDKs passed43 phases with live
+debugging and browser builds. Source coverage explicitly combines387 full-run
+groups and the corrected16-case snapshot group on the same compiler/resources;
+the original documentation-assertion failure is retained. This is not a passing
+unmodified `sdk_build.py` invocation. The archive and14 public assets were
+verified after anonymous download; Linux/Windows delivery keeps its own scope.
+
+The earlier [0.246.1 macOS execution](evidence/sdk-current-0.246.1-2026-11-15.json)
 completed this command from committed source `3b008a4e`: 2655 tracked source
 files, a fresh all-target Release build, all 351 configured source test groups,
 installation and 41 phases each after relocation and archive restoration.

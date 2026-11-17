@@ -9,7 +9,9 @@ owner: repository
 The0.280 source SDK attempt exposed a deadline/context diagnostic race in the
 native host-session phase. The0.280.1 runtime correction retains the original
 deadline/cancellation outcome in temporary owner-thread continuation scopes.
-The failed snapshot remains immutable; matching qualification is still required.
+The failed snapshot remains immutable. The [published0.280.1 macOS SDK](releases/0.280.1.json)
+records explicit source coverage and43 moved/restored phases; complete
+Linux/Windows portable delivery retains separate qualification.
 
 The0.280 SDK workflow adds required [Workboard consumption](sdk-workboard.md)
 as phase43: installed native/reference/browser application behavior, SQL/file

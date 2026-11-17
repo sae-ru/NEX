@@ -8,13 +8,13 @@ are available through the ordinary CLI.
 
 After unpacking an SDK, add its `bin` directory to PATH and run `nex doctor --json`.
 Its report identifies the installed version. Continue at [Create an application](#create-an-application).
-The download recipe below retains the separately qualified published0.246.1 archive.
+The download recipe below selects the qualified published0.280.1 archive.
 New source-built `nex init` projects select language0.30; existing projects keep
 the language explicitly selected in their `nex.json`.
 
 ## Install the macOS ARM64 SDK
 
-[SDK 0.246.1](releases/0.246.1.json) requires macOS 27.0+ on ARM64, Apple command-line
+[SDK 0.280.1](releases/0.280.1.json) requires macOS 27.0+ on ARM64, Apple command-line
 tools with a macOS SDK and Python 3.10+. Web builds also require Node.js 22.18+
 and npm. This portable development archive includes its selected compiler and
 library dependencies. Keep its entire directory together.
@@ -22,21 +22,21 @@ library dependencies. Keep its entire directory together.
 Download, verify and extract it:
 
 ```sh
-curl -fL -o nex-sdk-0.246.1-macos-arm64-development.tar.gz \
-  https://github.com/sae-ru/NEX/releases/download/v0.246.1/nex-sdk-0.246.1-macos-arm64-development.tar.gz
-echo 'd583cb214f4831207253a14a84927386195cecd652ffd4744a8b3bd4f0aae2aa  nex-sdk-0.246.1-macos-arm64-development.tar.gz' | shasum -a 256 -c -
+curl -fL -o nex-sdk-0.280.1-macos-arm64-development.tar.gz \
+  https://github.com/sae-ru/NEX/releases/download/v0.280.1/nex-sdk-0.280.1-macos-arm64-development.tar.gz
+echo '6d52a14f076c8382c06a6ac1f78d1b5e05f49553471116759a0c6f79eab3fa57  nex-sdk-0.280.1-macos-arm64-development.tar.gz' | shasum -a 256 -c -
 mkdir -p "$HOME/.local/nex"
-tar -xzf nex-sdk-0.246.1-macos-arm64-development.tar.gz -C "$HOME/.local/nex"
-export PATH="$HOME/.local/nex/nex-sdk-0.246.1-macos-arm64-development/bin:$PATH"
+tar -xzf nex-sdk-0.280.1-macos-arm64-development.tar.gz -C "$HOME/.local/nex"
+export PATH="$HOME/.local/nex/nex-sdk-0.280.1-macos-arm64-development/bin:$PATH"
 export SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
 nex doctor --json
 nex describe --kind index --json
 ```
 
-The [release receipts](evidence/sdk-current-0.246.1-2026-11-15.json) identify the
+The [release receipts](evidence/sdk-current-0.280.1-2026-11-17.json) identify the
 exact source, archive and moved/restored acceptance. Signatures are ad-hoc;
-Developer ID signing/notarization and the full live SDK debugger matrix remain
-separate work. For Windows/Linux, use the source instructions below and the
+Live LLDB/DAP is qualified for this archive; Developer ID signing/notarization
+remain separate work. For Windows/Linux, use the source instructions below and the
 matching platform guide.
 
 ## Build the current version

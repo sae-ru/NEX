@@ -56,72 +56,61 @@ platform acceptance.
 ## Development status
 
 Current source: **toolchain 0.280.1 / language 0.28 / task ABIs 7/8**, in development.
-The [control correction](docs/evidence/native-owner-control-0.280.1-2026-11-17.json)
-preserves timeout/cancellation outcomes in borrowed native task scopes.
-The [source and delivery record](docs/evidence/sdk-example-inventory-0.280.1-2026-11-17.json)
-passes388 source groups at04298bd0. All43 moved SDK phases executed successfully;
-final validation exposed ten omitted example hashes. The corrected collector
-passes core17 and the actual standard-library backend/receipt workflow.
-Matching archive qualification remains pending. The [bounded LLM entry](docs/llm-entry-v2.md)
-retains full detailed rules and a separately versioned local study; no new
-observed model trial or token saving is claimed.
-The compiler fallback remains0.28. `nex.json` selects0.28,0.29 or0.30 per project;
-new `nex init` projects select0.30. Language0.29 adds partial type lambdas and
-higher-order kinds;0.30 adds typed cells and the `state` effect. Retained projects
-preserve their selected version and require explicit migration to change it.
+The compiler fallback remains0.28. Projects explicitly select0.28,0.29 or0.30;
+new `nex init` projects select0.30. Existing graphs need an explicit migration.
 
-[Owner-thread storage](docs/task-storage.md) lets030 server tasks use blocking
-SQLite operations in their existing invocation/HTTP transaction. Native task
-graphs with storage select ABI8 even without cells. The
-[Workboard application](examples/workboard/README.md) combines persistent UI,
-HTTP tasks, SQLite, file export/restore and a dedicated summary Worker.
-[Focused acceptance](docs/evidence/workboard-task-storage-0.280.0-2026-11-17.json)
-and complete SDK/platform delivery remain separate scopes.
+The [macOS ARM64 SDK0.280.1](docs/releases/0.280.1.json) is published from
+`bfb34928`, qualified at main `b02514eb`. [Source coverage](docs/evidence/sdk-current-0.280.1-2026-11-17.json)
+combines387 groups from the full run with all16 tests in the corrected snapshot
+group, on the same compiler/resources. Its only correction follows the compact
+prompt to the detailed rules; the original failed receipt is attached.
+This covers388 groups and is explicitly not one passing full invocation.
+Moved and archive-restored installations each passed **43 phases**, including
+locked production browser builds, full networking and live LLDB/DAP debugging.
+[Download](https://github.com/sae-ru/NEX/releases/tag/v0.280.1) ·
+[Install](docs/getting-started.en.md#install-the-macos-arm64-sdk).
+[Core CI](docs/evidence/core-ci-0.280.1-2026-11-17.json) passed17 groups each on
+macOS/Linux at the qualification main; the full Linux source/installed run has
+its own scope. [SDK0.246.1](docs/releases/0.246.1.json) retains its original bytes.
 
-Libraries provide [hash containers](docs/hash-containers.md),
-[ordered maps](docs/ordered-containers.md) and [queues/heaps](docs/sequence-containers.md).
-[Java int](docs/java-integers.md)/[long](docs/java-long.md) are explicit domains;
-the [IEEE kernel](docs/ieee-numeric.md) still has no source types.
-[Source030](docs/references030.md) supports references through native libraries,
-HTTP, structured tasks, persistent UI and [native host sessions](docs/native-task-sessions.md).
-Native [debugging](docs/reference-provider-debugging.md) and
+Source030 supports typed cells, [structured reference tasks](docs/reference-tasks.md),
+[persistent UI](docs/persistent-ui.md), native libraries and
+[persistent C++ host sessions](docs/native-task-sessions.md).
+[Native debugging](docs/reference-provider-debugging.md) and
 [profiling](docs/reference-task-profiling.md) cover source-backed provider images.
-HTTP debugging/profiling, parallel reference transfer and other
-[migration prerequisites](docs/migration-readiness.md) remain open.
-The [implementation sequence](docs/implementation-1-6.md) tracks remaining work.
+[Workboard](examples/workboard/README.md) joins a browser UI, HTTP/tasks, SQLite,
+file export/restore and a summary Worker; it is a required SDK consumption phase.
+Ordinary libraries include [hash containers](docs/hash-containers.md),
+[ordered maps](docs/ordered-containers.md) and [queues/heaps](docs/sequence-containers.md).
+[Java int](docs/java-integers.md)/[long](docs/java-long.md) have explicit domains;
+the [IEEE kernel](docs/ieee-numeric.md) still has no source types.
 
-The immutable [macOS ARM64 SDK0.246.1](docs/releases/0.246.1.json) passed
-351 source groups and41 phases each after relocation/archive restoration,
-with locked browser builds and full network checks, at its recorded source.
-[Download](https://github.com/sae-ru/NEX/releases/tag/v0.246.1) and
-[install](docs/getting-started.en.md#install-the-macos-arm64-sdk).
-Current source/SDK qualification remains separate. See [CI scope](docs/ci.md).
-
-Browser applications support workers, custom CSS/assets/HTML/React components
-and generated file hashes. iOS/Android projects share that checked web output;
-macOS embeds it through `nex://app/`. Recorded builds and UI interactions are
-listed below, with delivery gaps kept separate.
+The [bounded LLM entry](docs/llm-entry-v2.md) has a4058-byte common contract and
+preserves the full detailed rules. A separately frozen local Qwen study is next;
+no new observed model result or comparative token saving is claimed.
 
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|
-| macOS ARM64 | [0.280.1 source388/388 and inventory correction](docs/evidence/sdk-example-inventory-0.280.1-2026-11-17.json); [immutable SDK0.246.1](docs/releases/0.246.1.json); [physical Metal M5 Max candidate](docs/evidence/owned-metal-sdk-candidate-0.280.1-2026-11-17.json) | corrected current SDK archive, extended interactive web/mobile matrices, signing |
-| Astra Linux 1.7 x86-64 | [0.280.1 build, core17/17, native app](docs/evidence/stands-current-0.280.1-2026-11-17.json) | extended/browser/SDK groups |
-| Fedora 45 x86-64 | [0.280.1 Clang23 build, core17/17, native app](docs/evidence/stands-current-0.280.1-2026-11-17.json) | extended/browser/SDK groups |
-| Windows 11 x86-64 | [0.280.1 core17 unique groups, native app, CUDA35/35](docs/evidence/stands-current-0.280.1-2026-11-17.json) | extended/browser/SDK groups; intentional IPv6 restrictions retain a separate scope |
-| iOS Simulator | [Debug/Release, install/launch, actual UI, test-driver input](docs/evidence/mobile-ios-release-0.244.0-2026-11-13.json) | device signing/store delivery |
-| Android emulator | [signed release APK, launch, add interaction](docs/evidence/mobile-android-release-signed-0.244.0-2026-11-13.json) | Play Store delivery |
-| macOS desktop app | [standalone embedded app, live input](docs/evidence/desktop-macos-interaction-0.244.0-2026-11-13.json) | Developer ID, notarization |
-| CIX ARM64 | [0.280.1 core17/17 +12 Mali GPU/8 Zhouyi NPU](docs/evidence/stands-current-0.280.1-2026-11-17.json) | extended source regression and portable SDK installation |
-| RK3588 ARM64 | [0.280.1 Ubuntu24 ARM64-container core17/17 +49 GPU/30 NPU](docs/evidence/stands-current-0.280.1-2026-11-17.json) | native Jammy qualification and portable SDK |
+| macOS ARM64 | [SDK0.280.1,43 phases per installation](docs/releases/0.280.1.json); [same-compiler Metal15 pairs/32 kernels](docs/evidence/sdk-current-0.280.1-2026-11-17.json) | signing/notarization, extended interactive web/mobile matrices |
+| Astra Linux1.7 x86-64 | [0.280.1 build, core17/17, native app](docs/evidence/stands-current-0.280.1-2026-11-17.json) | extended/browser groups, portable SDK |
+| Fedora45 x86-64 | [0.280.1 Clang23 build, core17/17, native app](docs/evidence/stands-current-0.280.1-2026-11-17.json) | extended/browser groups, portable SDK |
+| Windows11 x86-64 | [0.280.1 core17 unique groups, native app, CUDA35/35](docs/evidence/stands-current-0.280.1-2026-11-17.json) | extended/browser groups, portable SDK; IPv6 intentionally restricted |
+| CIX ARM64 | [0.280.1 core17/17,12 Mali GPU/8 Zhouyi NPU](docs/evidence/stands-current-0.280.1-2026-11-17.json) | extended regression, portable SDK |
+| RK3588 ARM64 | [0.280.1 Ubuntu24 ARM64-container core17/17,49 GPU/30 NPU](docs/evidence/stands-current-0.280.1-2026-11-17.json) | native Jammy qualification, portable SDK |
+| iOS Simulator | [Debug/Release, launch and actual UI input](docs/evidence/mobile-ios-release-0.244.0-2026-11-13.json) | device signing/store delivery |
+| Android emulator | [signed release APK, launch and add interaction](docs/evidence/mobile-android-release-signed-0.244.0-2026-11-13.json) | Play Store delivery |
+| macOS desktop app | [standalone embedded app, live input](docs/evidence/desktop-macos-interaction-0.244.0-2026-11-13.json) | Developer ID/notarization |
 
-CUDA/OpenCL emission remains bounded. General GPU/NPU compilation, Apple NPU,
-native desktop UI, Studio, conversion, signed installers and cross-model token
-savings remain [planned work](PLAN.md). Older device receipts do not qualify
-the current compiler/archive.
+HTTP reference-task debugging/profiling, parallel reference transfer, general
+GPU/NPU compilation, Apple NPU, native desktop UI, Studio, converters and other
+[migration prerequisites](docs/migration-readiness.md) remain open. The
+[implementation sequence](docs/implementation-1-6.md) and [original PLAN](PLAN.md)
+retain these requirements. CUDA/OpenCL emission covers its advertised subsets.
 
-[STATUS.md](STATUS.md) and [versioned evidence](docs/evidence/) retain the
-history, exact source/compiler/archive identities, original failures and scope
-of each result. An earlier SDK's acceptance does not qualify a new archive.
+[STATUS.md](STATUS.md), [CI scope](docs/ci.md) and [versioned evidence](docs/evidence/)
+retain exact source/compiler/archive identities, original failures and each
+result's scope. The SDK uses ad-hoc signatures and requires macOS27 ARM64,
+Apple SDK, Python and Node/npm for web builds.
 
 ## Build and use
 

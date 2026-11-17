@@ -1,3 +1,20 @@
+# Published macOS SDK0.280.1 — explicit source coverage and portable installation
+
+[SDK0.280.1](docs/releases/0.280.1.json) is public with14 assets; anonymous
+downloads match every recorded SHA256. Compiler/resource source is bfb34928;
+qualification main/tag b02514eb changes only an unpackaged documentation test.
+The full frozen source run passed387 groups and failed the old compact-prompt
+assertion in graph_snapshots. All16 cases of the corrected group passed on the
+same frozen compiler/resources; the original failure remains attached. Combined
+coverage includes388 groups without skips, not one passing full invocation.
+Moved and archive-restored SDKs each passed43 phases with live LLDB/DAP, production
+browser builds, full networking, native030 sessions and Workboard. The same
+bundled compiler passed15 native/reference Metal pairs and32 physical kernels.
+Exact identities and scope are in [the delivery receipt](docs/evidence/sdk-current-0.280.1-2026-11-17.json).
+Portable Linux/Windows SDKs, remaining migration prerequisites, local model
+measurement and the original PLAN remain open. Historical failures below and
+the immutable0.246.1 archive are preserved.
+
 # Bounded LLM entry and SDK resource inventory — development0.280.1
 
 The [immutable04298bd0 source baseline](docs/evidence/sdk-example-inventory-0.280.1-2026-11-17.json)

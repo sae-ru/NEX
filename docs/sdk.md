@@ -1,30 +1,39 @@
-# Qualified SDK: 0.246.1 / language 0.28 / task ABI 7
+# Qualified SDK: 0.280.1 / language 0.28 / task ABIs 7/8
 
-The current immutable macOS ARM64 development release is
-[0.246.1](releases/0.246.1.json), built from source `3b008a4e618e8ee6d8789a39b3105928c36d35d6`.
-Download [`nex-sdk-0.246.1-macos-arm64-development.tar.gz`](https://github.com/sae-ru/NEX/releases/download/v0.246.1/nex-sdk-0.246.1-macos-arm64-development.tar.gz).
+The current macOS ARM64 development release is [0.280.1](releases/0.280.1.json).
+Compiler/resource snapshot: `bfb3492814acf33e9fd62c5d10a70895eac6d1b0`;
+qualification main/tag: `b02514eb31c7255b97dea7b3a1e06c832c6e23bc`. The additional commit changes only an
+unpackaged documentation test. Archives are never silently repacked.
+Download [`nex-sdk-0.280.1-macos-arm64-development.tar.gz`](https://github.com/sae-ru/NEX/releases/download/v0.280.1/nex-sdk-0.280.1-macos-arm64-development.tar.gz).
 
 ```text
-SHA256 d583cb214f4831207253a14a84927386195cecd652ffd4744a8b3bd4f0aae2aa
+SHA256 6d52a14f076c8382c06a6ac1f78d1b5e05f49553471116759a0c6f79eab3fa57
 ```
 
-The archive contains **4091 inventory files** (125,504,440 bytes).
-The complete source-to-archive command passed all **351/351** configured macOS
-source test groups. Relocated and archive-restored installations each passed
-**41 phases / 851 commands**, including real locked browser builds and the full
-network profile. [Exact receipts](evidence/sdk-current-0.246.1-2026-11-15.json)
-also record installed semantic-rename, generic-effect and new-project regressions.
+The archive contains **4388 inventory files** (126,823,033 bytes).
+[Explicit source coverage](evidence/sdk-current-0.280.1-2026-11-17.json)
+combines387 passing groups from the full run and the corrected16-case snapshot
+group, on the same frozen compiler/resources. All388 groups are covered, with
+zero skips; the original failed receipt is retained. This is not a single passing
+full invocation. Relocated and archive-restored installations each passed
+**43 phases**, including030 libraries/sessions, Workboard, actual production
+browser builds, full networking and live LLDB/DAP. The release contains14
+independently verified public assets and their SHA256SUMS.
 
-Requires macOS **27.0+ on ARM64**, an Apple command-line tools/SDK installation,
-Python 3.10+ and Node.js 22.18+/npm for web builds. Keep `bin/nex` and `share/nex`
-together and set `SDKROOT` for native builds; follow the
-[installation commands](getting-started.en.md#install-the-macos-arm64-sdk).
-The archive is ad-hoc signed; Developer ID signing/notarization and the full live
-SDK debugger matrix are not qualified. Complete portable Windows/Linux SDK
-delivery and new physical GPU/NPU acceptance retain separate scopes.
+The same SDK compiler executed15 native/reference Metal pairs and32 physical
+kernels on Apple M5 Max, covering the existing owned U8 Add/Affine provider.
+Other providers and general GPU compilation retain separate scopes.
 
-The prior [0.246.0 release](releases/0.246.0.json) keeps its original archive and
-receipts. No earlier binary was silently repacked.
+Requires macOS **27.0+ on ARM64**, Apple command-line tools/macOS SDK, Python3.10+
+and Node.js22.18+/npm for web builds. Live debugging uses host LLDB/lldb-dap.
+Keep `bin/nex` and `share/nex` together and set `SDKROOT` for native builds;
+follow the [installation commands](getting-started.en.md#install-the-macos-arm64-sdk).
+Signatures are ad-hoc; Developer ID/notarization and current portable
+Windows/Linux SDK delivery remain pending.
+
+The prior [0.246.1 release](releases/0.246.1.json) keeps its original archive and
+receipts. The language, remaining integrations and original PLAN are still in
+development. Query the actual compiler for capabilities.
 
 ## Historical record: 0.162.0
 
