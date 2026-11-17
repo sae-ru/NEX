@@ -186,6 +186,16 @@ controls. Typed source errors preserve the session; fatal/control exits close it
 Retain code images and explicit file grants through value/resource retirement.
 This does not add stable C/Swift/JNI cell transport or native UI controllers.
 
+For030 source-only task debugging, discover
+`managed_references.source030_development.native_task_debugging`.
+`nex-task-inspect NAME` reads a bounded copied graph at the current stable stop;
+cell identity, repeated aliases and truncation are explicit. DAP cell children
+are read-only and expire on resume. Pure watches do not gain state/IO authority
+and cannot reconstruct live cell graphs. Provider/HTTP/profile support is separate.
+Structured scopes use `with_tasks(workers, callback)`; `task_scope` is the
+callback's capability type. `with_tasks` and `task_wait` can deliver source errors:
+declare `throw` in their calling function/callback or handle them in lexical try.
+
 Evaluate expressions once, left to right; preserve lazy boolean branches and
 the selected match arm. Use checked exhaustive patterns, actual generic bounds,
 traits and exact callable signatures/effects/realms. Retrieve the relevant guide

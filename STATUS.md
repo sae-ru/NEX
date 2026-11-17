@@ -1,3 +1,27 @@
+# Source-only reference task debugging — development0.277.0
+
+Ordinary030 native source task applications select logical LLDB/NEX-DAP debugging
+with checked ABI8 metadata. `nex-task-inspect` reads bounded copied cell graphs:
+alias/cycle identity, Unicode/NUL payloads, retained source state and explicit
+truncation. NEX-DAP expands read-only cells and invalidates references on resume.
+The compiler now parses frame types/expressions under their actual source version,
+so unrelated pure scalar watches work in frames containing cells. Source cell
+operations do not gain pure watch authority. Read [the contract](docs/reference-task-debugging.md).
+
+[Focused evidence](docs/evidence/reference-task-debugging-0.277.0-2026-11-17.json)
+records25 distinct core/affected groups. The17-test logical-debugger group passes
+with the final DAP truncation view; two new actual LLDB/DAP cases also pass from
+a moved normal installation. The original1000-item DAP setup passes with120s
+client stop observation and the same60s NEX deadline; the normal cap-boundary
+fixture uses65 items for its64-item prefix. Original type-parser, DAP setup,
+client-observation and root-alias failures remain recorded.
+
+[Hosted0.276 core](docs/evidence/core-ci-0.276.0-2026-11-17.json) passed Linux/macOS
+at its own commit. Reference provider/HTTP/profile integration, cell watch graph
+reconstruction, parallel transfer, persistent native UI and matching complete
+source/platform/portable SDK delivery remain open. Portable SDK0.246.1 is unchanged;
+the ordinary relocated installation retains host dependencies.
+
 # Persistent native task sessions — development0.276.0
 
 The matching-runtime C++ `NativeTaskSession` keeps application cells and returned

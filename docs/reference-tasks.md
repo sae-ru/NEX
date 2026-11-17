@@ -6,6 +6,10 @@ owner: repository
 
 # References in structured tasks
 
+Toolchain0.277 adds [source-only native reference task debugging](reference-task-debugging.md).
+Toolchain0.276 adds [persistent C++ host sessions](native-task-sessions.md).
+The historical pending notes below retain their milestone scopes.
+
 Toolchain0.275 adds [native provider images](reference-task-providers.md): one
 owner-thread ABI8 cohort across connected static, fixed shared and mixed project
 components. Retained ABI7 providers remain separate. Native provider debug/

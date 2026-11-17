@@ -1,5 +1,9 @@
 # Logical native task debugging
 
+Toolchain0.277 adds [source-only030 reference task debugging](reference-task-debugging.md)
+with explicit ABI8 selection and copied read-only cell inspection. Retained
+reference-free source/tooling below keeps its stated historical scope.
+
 This source-only catalogABI1 debugger was checked in the preserved0.115/language0.20
 checkpoint, including actual LLDB/NEX-DAP, composite139 and matching installedSDK27.
 See [its exact evidence](evidence/toolchain-0.115.0-task-debug.json). Query

@@ -2110,7 +2110,7 @@ void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
     }
   }
   if(tasks){
-    if(managedReferences&&(options.profile=="profile"||options.taskDebug))throw Error("E_CELL_TARGET","reference tasks support debug/release builds; logical debugging/profiling remains pending",p.function(options.entry).span);
+    if(managedReferences&&options.profile=="profile")throw Error("E_CELL_TARGET","reference task profiling remains pending",p.function(options.entry).span);
     if(server&&!supportsTaskFileStreams(p))throw Error("E_TASK_TARGET","task HTTP handlers require language0.24; explicitly migrate retained source history",p.function(options.entry).span);
     if(server&&(options.profile=="profile"||options.taskDebug))throw Error("E_OPTION","task HTTP profiling and logical debugging remain pending",p.function(options.entry).span);
     if(!taskProviders&&(options.libraryEntry||options.codeOnlyLibrary||options.deferredLink||options.functionsOnly||!options.libraries.empty()||!options.libraryExports.empty()))
@@ -2706,6 +2706,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     if(!objectArchive&&driverABI.isOSDarwin())for(const auto &path:{"debug-symbols.complete","app.dSYM/Contents/Info.plist","app.dSYM/Contents/Resources/DWARF/app"})item("root_symbols",path);
   }
   auto debugRecord=llvm::json::Object{{"schema",options.taskDebug?"nex.debug/2":"nex.debug/1"},{"toolchain",NEX_VERSION},{"language",programLanguage(p)},{"runtime_view","nex.runtime-view/3"},{"expression_protocol",options.taskDebug?"nex.task-debug-expression/1":"nex.debug-expression/3"},{"compiler_build",NEX_BUILD_ID},{"source_hash",hash(json(sourceBundle(p),false))},{"revision",revision(p)},{"build_key",key},{"program",result.executable},{"profile",options.profile},{ "target",target},{"compiler_target",compilerTarget},{"host_compatible",toolchain.hostCompatible},{"formatter",formatterFile},{"formatter_hash",hash(formatter)},{"dap_adapter",adapterFile},{"dap_adapter_hash",hash(dapAdapter)},{"heap_types",std::move(heapTypes)},{"sources",std::move(debugSources)},{"source_map",std::move(debugSourceMap)},{"functions",std::move(debugFunctions)}};
+  if(options.taskDebug&&managedTasks)debugRecord["execution_task_abi"]="0x4e45585400000008";
   if(options.taskDebug&&!taskProviders)debugRecord["task_debug"]=llvm::json::Object{{"schema","nex.task-debug-view/1"},{"abi",nexrt::taskDebugCatalogABI},
     {"catalog_symbol","nex_task_debug_catalog_v1"},{"marker_symbol","nex_task_debug_stop_marker"},{"metadata_hash",taskDebugHash},
     {"image_sha256",""},{"image_uuid",""},{"deadline_advances_while_stopped",true},

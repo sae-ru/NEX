@@ -322,10 +322,16 @@ class Bridge:
                 start, count = args.get('start', 0), args.get('count', 0)
                 if type(start) is not int or type(count) is not int or start < 0 or count < 0:
                     raise ValueError('invalid logical variables page')
-                variables = [{'name': entry['name'], 'type': entry['type'],
-                              'value': entry.get('preview', '<' + entry.get('unavailable', 'unavailable') + '>'),
-                              'variablesReference': 0, 'presentationHint': {'attributes': ['readOnly']}}
-                             for entry in result['variables'][start:start + min(count or 1000, 1000)]]
+                variables = []
+                for entry in result['variables'][start:start + min(count or 1000, 1000)]:
+                    if 'inspection' in entry:
+                        variable = self.inspected_variable(entry['name'], entry['inspection'])
+                        variable['type'] = entry['type']
+                    else:
+                        variable = {'name': entry['name'], 'type': entry['type'],
+                                    'value': entry.get('preview', '<' + entry.get('unavailable', 'unavailable') + '>'),
+                                    'variablesReference': 0, 'presentationHint': {'attributes': ['readOnly']}}
+                    variables.append(variable)
                 return self.response(request, {'variables': variables, 'nex': result})
             return self.response(request, result if command in ('setBreakpoints', 'setFunctionBreakpoints') else {})
         except (KeyError, TypeError, ValueError) as error:
@@ -397,7 +403,63 @@ class Bridge:
                 result['namedVariables'] = len(records[descriptor['record']]) if 'record' in descriptor else 1 if 'ok' in value else 2
         return result
 
+    def inspected_variable(self, name, node):
+        kind = node['kind']
+        if kind == 'cell':
+            display_value = 'cell@%x' % int(node['identity']) + (' <closed>' if not node['live'] else ' <alias>' if node.get('alias') else '')
+        elif kind in ('record', 'enum'):
+            display_value = node['type']
+        elif kind == 'list':
+            display_value = '[%d items]' % node['length']
+        elif kind in ('file', 'resource'):
+            display_value = '<' + kind + ' ' + node['identity'] + '>'
+        elif kind == 'unavailable':
+            display_value = '<' + node['reason'] + '>'
+        elif kind == 'opaque':
+            display_value = '<' + node['type'] + '>'
+        elif kind in ('str', 'bool'):
+            display_value = json.dumps(node['value'], ensure_ascii=False)
+        else:
+            display_value = str(node.get('value', kind)) if kind in ('i64', 'f64', 'bytes') else kind
+        if node.get('truncated'):
+            display_value += ' … (truncated)'
+        result = {'name': name, 'type': node.get('type', kind), 'value': display_value,
+                  'variablesReference': 0, 'presentationHint': {'attributes': ['readOnly']}}
+        if kind in ('cell', 'record', 'enum', 'list', 'ok', 'error'):
+            result['variablesReference'] = self.allocate({'inspection': node})
+        return result
+
+    def inspection_children(self, request, node):
+        args = request.get('arguments', {})
+        start, count = args.get('start', 0), args.get('count', 0)
+        if type(start) is not int or type(count) is not int or start < 0 or count < 0 or args.get('filter') not in (None, 'named', 'indexed'):
+            raise ValueError('invalid inspected value page')
+        kind = node['kind']
+        fields = []
+        if kind == 'cell':
+            fields = [('identity', {'kind': 'str', 'value': node['identity']}), ('live', {'kind': 'bool', 'value': node['live']})]
+            if 'value' in node:
+                fields.append(('value', node['value']))
+            if node.get('alias'):
+                fields.append(('alias', {'kind': 'bool', 'value': True}))
+        elif kind in ('record', 'enum'):
+            fields = [(field['name'], field['value']) for field in node['fields']]
+        elif kind == 'list':
+            fields = [('[%d]' % i, value) for i, value in enumerate(node['items'])]
+        elif kind in ('ok', 'error'):
+            fields = [('value', node['value'])]
+            if 'code' in node:
+                fields.insert(0, ('code', {'kind': 'str', 'value': node['code']}))
+        if node.get('truncated'):
+            fields.append(('<truncated>', {'kind': 'unavailable', 'reason': 'bounded snapshot; remaining children omitted'}))
+        if args.get('filter') == ('named' if kind == 'list' else 'indexed'):
+            fields = []
+        return self.response(request, {'variables': [self.inspected_variable(name, value) for name, value in fields[start:start+min(count or 256, 256)]],
+                                       'nex': {'copied_inspection': True, 'read_only': True}})
+
     def children(self, request, stored):
+        if 'inspection' in stored:
+            return self.inspection_children(request, stored['inspection'])
         args = request.get('arguments', {})
         start, count = args.get('start', 0), args.get('count', 0)
         if type(start) is not int or type(count) is not int or start < 0 or count < 0:

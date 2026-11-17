@@ -1,6 +1,6 @@
-"""Actual private task-debug images, all-stop LLDB capture and logical control.
+"""Actual native task-debug images, all-stop LLDB capture and logical control.
 
-The builder selects debug instrumentation without enabling the public CLI guard.
+Retained private builders and ordinary030 CLI launches have separate scopes.
 No LLDB expression command, inferior function, or Value retain is used here.
 """
 from host_fixture import debugger_tool
@@ -44,6 +44,106 @@ def reader_module():
 
 
 class TaskDebugging(harness.ToolchainCase):
+    def reference_source(self):
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.30','entry':'main.nex'}))
+        self.source('''module task_cells;
+struct Link {next:list<cell<Link>>;}
+fn after(state:cell<i64>,input:i64)->unit!{task,state}{task_yield();assert(cell_read(state)==42);assert(input==41);}
+fn before(state:cell<i64>,alias:cell<i64>,cycle:cell<Link>,text:cell<str>,large:cell<list<i64>>,input:i64)->unit!{task,state}{
+ task_yield();
+ assert(state==alias);
+ cell_write(state,cell_read(state)+1);
+ after(state,input);
+}
+fn main()->unit!{task,state,io,throw}{
+ let state:cell<i64>=cell_new(41);
+ let cycle:cell<Link>=cell_new(Link([]));
+ cell_write(cycle,Link([cycle]));
+ let large:cell<list<i64>>=cell_new(list(65,fn(i:i64)->i64{return i;}));
+ let text:cell<str>=cell_new("Я\\u0000🧠");
+ with_tasks(2,fn(scope:task_scope)->unit!{task,state,throw}{
+  let pending:task<unit>=task_spawn(scope,fn()->unit!{task,state}{before(state,state,cycle,text,large,41);});
+  task_wait(pending);
+ });
+ print(cell_read(state));
+}
+''')
+        session=self.cli('debug',self.file,'--kind','nex-dap','--task-timeout-ms','60000',timeout=180)
+        (self.root/'reference-session.json').write_text(json.dumps(session,ensure_ascii=False,indent=2)+'\n')
+        return {'executable':session['launch']['program'],'debug_manifest':session['manifest']}
+
+    def test_reference_tasks_live_cells_alias_cycle_unicode_and_steps(self):
+        built=self.reference_source()
+        run,rows=self.lldb(built,[encoded('function_breakpoints',breakpoints=[{'name':'task_cells::before'},{'name':'task_cells::after'}]),
+            'run','nex-task-values','nex-task-inspect state','nex-task-inspect alias',
+            'nex-task-inspect cycle','nex-task-inspect text','nex-task-inspect large','nex-eval input+1',
+            'nex-task-next','continue','nex-task-inspect state','nex-task-out','continue'])
+        views=[row for row in rows if row.get('schema')=='nex.task-value-inspection/1']
+        self.assertEqual(len(views),6,run.stdout)
+        state,alias,cycle,text,large,changed=[v['value'] for v in views]
+        self.assertEqual(state['identity'],alias['identity'])
+        self.assertEqual(state['value'],{'kind':'i64','value':'41'})
+        self.assertEqual(changed['value'],{'kind':'i64','value':'42'})
+        repeated=cycle['value']['fields'][0]['value']['items'][0]
+        self.assertTrue(repeated['alias']);self.assertEqual(repeated['identity'],cycle['identity'])
+        self.assertEqual(text['value'],{'kind':'str','value':'Я\0🧠'})
+        self.assertTrue(all(not row['truncated'] for row in views if row['binding']!='large'))
+        self.assertEqual(large['value']['length'],65);self.assertEqual(len(large['value']['items']),64)
+        self.assertTrue(views[4]['truncated'])
+        watches=[row for row in rows if row.get('schema')=='nex.task-expression/1']
+        self.assertEqual(watches[0]['value'],'42')
+
+    def test_reference_tasks_actual_dap_cell_children_and_stale_inspection(self):
+        from debugging import DAP
+        trace=[]
+        class RecordedDAP(DAP):
+            def send(self,command,arguments=None):
+                trace.append({'request':command,'arguments':arguments})
+                return super().send(command,arguments)
+            def wait(self,predicate,timeout=20):
+                message=super().wait(predicate,timeout);trace.append({'response_or_event':message});return message
+        built=self.reference_source();manifest=json.loads(Path(built['debug_manifest']).read_text())
+        backend=debugger_tool('lldb-dap')
+        if not backend and sys.platform=='darwin':backend=subprocess.check_output(['xcrun','--find','lldb-dap'],text=True).strip()
+        self.assertTrue(backend,'this acceptance requires actual lldb-dap')
+        adapter=RecordedDAP([sys.executable,manifest['dap_adapter'],'--backend',backend],self.root)
+        try:
+            adapter.request('initialize',{'clientID':'nex-cell-test','adapterID':'nex','linesStartAt1':True,'columnsStartAt1':True,'pathFormat':'path'})
+            launch=adapter.send('launch',{'program':built['executable'],'cwd':str(self.root),'stopOnEntry':False,'nexTaskDebug':True,
+                'initCommands':['settings set target.disable-aslr false','command script import '+json.dumps(manifest['formatter']),
+                                'nex-load-debug '+json.dumps(str(Path(built['debug_manifest'])))+' --compiler '+json.dumps(harness.NEX)]})
+            adapter.event('initialized')
+            adapter.request('setFunctionBreakpoints',{'breakpoints':[{'name':'task_cells::before'}]})
+            adapter.request('configurationDone')
+            adapter.wait(lambda m:m.get('type')=='response' and m.get('request_seq')==launch)
+            adapter.event('stopped')
+            tasks=adapter.request('threads')['nex'];selected=tasks['selected']
+            self.assertTrue(any(row['id']!=selected and row['state']=='blocked' for row in tasks['tasks']))
+            frame=adapter.request('stackTrace',{'threadId':selected})['stackFrames'][0]['id']
+            scope=adapter.request('scopes',{'frameId':frame})['scopes'][0]['variablesReference']
+            locals=adapter.request('variables',{'variablesReference':scope})['variables']
+            state=next(row for row in locals if row['name']=='state');self.assertTrue(state['variablesReference'])
+            children=adapter.request('variables',{'variablesReference':state['variablesReference']})['variables']
+            self.assertEqual(next(row for row in children if row['name']=='value')['value'],'41')
+            self.assertTrue(all('readOnly' in row['presentationHint']['attributes'] for row in children))
+            large=next(row for row in locals if row['name']=='large')
+            wrapper=adapter.request('variables',{'variablesReference':large['variablesReference']})['variables']
+            sequence=next(row for row in wrapper if row['name']=='value')
+            self.assertIn('truncated',sequence['value'])
+            prefix=adapter.request('variables',{'variablesReference':sequence['variablesReference']})['variables']
+            self.assertEqual(len(prefix),65);self.assertEqual(prefix[-1]['name'],'<truncated>')
+            expression=adapter.send('evaluate',{'expression':'cell_read(state)','frameId':frame,'context':'watch'})
+            rejected=adapter.wait(lambda m:m.get('type')=='response' and m.get('request_seq')==expression)
+            self.assertFalse(rejected['success'])
+            adapter.request('next',{'threadId':selected});adapter.event('stopped')
+            stale=adapter.send('variables',{'variablesReference':state['variablesReference']})
+            self.assertFalse(adapter.wait(lambda m:m.get('type')=='response' and m.get('request_seq')==stale)['success'])
+            adapter.request('continue',{'threadId':selected});adapter.event('exited')
+        finally:
+            trace.append({'remaining_messages':adapter.pending})
+            (self.root/'reference-dap-messages.json').write_text(json.dumps(trace,ensure_ascii=False,indent=2)+'\n')
+            adapter.close()
+
     def setUp(self):
         super().setUp()
         retained=os.environ.get('NEX_TASK_DEBUG_OUTPUT')

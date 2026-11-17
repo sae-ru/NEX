@@ -1,5 +1,9 @@
 # NEX language specification 0.28
 
+Toolchain0.277 adds [source-only native reference task debugging](reference-task-debugging.md)
+and version-aware debug parsing. No source syntax, source version, canonical graph
+format or public runtime ABI changes. Inspection is copied diagnostic data.
+
 Toolchain0.276 adds [persistent native host task sessions](native-task-sessions.md)
 with an application-owned heap and per-invocation limits. This matching-runtime
 C++ boundary adds no source production, source version, graph identity or ABI.

@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.276.0"
+applies_to: "language 0.28; toolchain 0.277.0"
 owner: repository
 generated_from: README.md#development-status
 ---
@@ -12,7 +12,7 @@ It reports recorded evidence, not a live observation of devices or remote jobs.
 For syntax and capabilities, query the selected compiler. For detailed history,
 use [STATUS](../STATUS.md); for next work, use [development priorities](development-priorities.md).
 
-Current source: **toolchain 0.276.0 / language 0.28 / task ABIs 7/8**, in development.
+Current source: **toolchain 0.277.0 / language 0.28 / task ABIs 7/8**, in development.
 The compiler fallback remains0.28. `nex.json` selects0.28,0.29 or0.30 per project;
 new `nex init` projects select0.30. Language0.29 adds partial type lambdas and
 higher-order kinds;0.30 adds typed cells and the `state` effect. Retained projects
@@ -39,8 +39,10 @@ reference/native/TypeScript and native HTTP entries.
 application context across static/shared images.
 [Persistent native task sessions](native-task-sessions.md) retain cells and
 returned file owners across serialized C++ host calls with fresh per-call limits.
-Parallel transfer, live cell inspection and remaining [migration prerequisites](migration-readiness.md)
-stay open. [Focused acceptance](evidence/native-task-sessions-0.276.0-2026-11-17.json)
+[Source-only logical task debugging](reference-task-debugging.md) adds
+read-only cell inspection and DAP expansion. Provider debug/profile, parallel
+transfer and remaining [migration prerequisites](migration-readiness.md)
+stay open. [Focused acceptance](evidence/reference-task-debugging-0.277.0-2026-11-17.json)
 is separate from full SDK/platform gates.
 The [implementation sequence](implementation-1-6.md) tracks remaining work.
 

@@ -1,10 +1,15 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.276.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.277.0"
 owner: repository
 ---
 
 # Implementation sequence: items 1–6
+
+Toolchain0.277 adds [source-only native reference task debugging](reference-task-debugging.md)
+with live cell inspection, read-only DAP expansion and version-aware scalar
+watches. Provider/HTTP/profile integration, cell watch reconstruction and full
+SDK/platform qualification remain open.
 
 Toolchain0.276 adds [persistent native task sessions](native-task-sessions.md)
 for matching-runtime C++ hosts: checked030 exports retain application state and

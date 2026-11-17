@@ -1,0 +1,265 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nex-lang.org/schema/task-value-inspection-1.json",
+  "title": "NEX copied logical-task value inspection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "stop",
+    "binding",
+    "value",
+    "truncated",
+    "limits"
+  ],
+  "properties": {
+    "schema": {
+      "const": "nex.task-value-inspection/1"
+    },
+    "stop": {
+      "$ref": "task-debug-frame.schema.json#/properties/stop"
+    },
+    "binding": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+    },
+    "value": {
+      "$ref": "#/$defs/node"
+    },
+    "truncated": {
+      "type": "boolean"
+    },
+    "limits": {
+      "const": {
+        "nodes": 256,
+        "depth": 8,
+        "text_bytes": 16384,
+        "items": 64,
+        "byte_prefix": 256
+      }
+    }
+  },
+  "$defs": {
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "i64",
+            "bool",
+            "f64",
+            "str",
+            "bytes",
+            "file",
+            "resource",
+            "opaque",
+            "unavailable",
+            "cell",
+            "list",
+            "record",
+            "enum",
+            "ok",
+            "error"
+          ]
+        },
+        "value": {
+          "oneOf": [
+            {
+              "type": [
+                "string",
+                "boolean"
+              ]
+            },
+            {
+              "$ref": "#/$defs/node"
+            }
+          ]
+        },
+        "identity": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "live": {
+          "type": "boolean"
+        },
+        "alias": {
+          "const": true
+        },
+        "type": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "code": {
+          "type": "string"
+        },
+        "length": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "fields": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "value"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "value": {
+                "$ref": "#/$defs/node"
+              }
+            }
+          }
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "cell"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "identity",
+              "live"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "file",
+                  "resource"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "identity"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "i64",
+                  "bool",
+                  "f64",
+                  "str",
+                  "bytes",
+                  "ok",
+                  "error"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "value"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "list"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "length",
+              "items"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "record",
+                  "enum"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "length",
+              "type",
+              "fields"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "opaque"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "type"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "unavailable"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "reason"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

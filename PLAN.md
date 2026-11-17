@@ -1,3 +1,12 @@
+# Source-only reference task debugging — development0.277.0
+
+Ordinary030 source task applications now select logical debugging, retain checked
+ABI8 metadata and expose copied read-only cell graphs in LLDB/NEX-DAP. Alias and
+cycle identities remain explicit; source-version-aware parsing preserves scalar
+watches in frames with cells. Reference-provider/HTTP/profile integration, cell
+watch reconstruction and complete SDK/platform delivery remain open. Read the
+[contract](docs/reference-task-debugging.md).
+
 # Persistent native host sessions — development0.276.0
 
 Checked030 ABI8 exports now have a matching-runtime C++ session API retaining

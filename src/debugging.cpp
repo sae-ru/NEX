@@ -101,7 +101,7 @@ JSON inspectCheckedExpression(const std::string &path,const Object &m,const JSON
   for(const auto &value:*bindings){const auto &b=object(value);fields(b,task?std::set<std::string>{"name","type","binding_id","value","unavailable"}:std::set<std::string>{"name","type","value","unavailable"});auto local=required(b,"name"),type=required(b,"type");
     if(task){auto selected=logicalBindings.find(local);if(selected==logicalBindings.end()||b.getInteger("binding_id")!=selected->second->getInteger("id")||type!=required(*selected->second,"type"))throw Error("E_DEBUG_FRAME","binding is not visible at the selected logical point");if(selected->second->getBoolean("opaque").value_or(true)&&b.get("value"))throw Error("E_DEBUG_VALUE","logical authority values are opaque");}
     if(local.empty()||local.size()>256||type.empty()||type.size()>4096||!declared[local].contains(type)||types.contains(local))throw Error("E_DEBUG_FRAME","binding is not a unique declared name/type in the selected function: "+local);
-    auto t=resolveType(p,parseType(type));if(typeName(t)!=type)throw Error("E_DEBUG_FRAME","frame requires canonical NEX type names");types.emplace(local,std::move(t));
+    auto t=resolveType(p,parseTypeVersioned(type,p.sourceLanguage));if(typeName(t)!=type)throw Error("E_DEBUG_FRAME","frame requires canonical NEX type names");types.emplace(local,std::move(t));
     if(b.get("value")&&b.get("unavailable"))throw Error("E_DEBUG_FRAME","binding cannot be both captured and unavailable");
     if(auto wire=b.get("value"))values[local]=*wire;else required(b,"unavailable");
   }
@@ -137,7 +137,7 @@ JSON inspectCheckedExpression(const std::string &path,const Object &m,const JSON
   }
   auto watchLabel="<watch:"+name+">";E expression;Type type;std::string frontendPhase="parse";
   try{
-  expression=privateSource?parseSourceExceptionWatchPrototype(source,watchLabel,1024):parseExpression(source,watchLabel,1024);
+  expression=privateSource?parseSourceExceptionWatchPrototype(source,watchLabel,1024):parseExpressionVersioned(source,watchLabel,1024,p.sourceLanguage);
   std::vector<std::pair<E,unsigned>> pending{{expression,0}};std::vector<std::pair<S,unsigned>> statements;
   while(!pending.empty()||!statements.empty()){
     if(!pending.empty()){

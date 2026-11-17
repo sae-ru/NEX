@@ -1,0 +1,2664 @@
+{
+  "schema": "nex.reference-task-debugging-milestone/1",
+  "ok": true,
+  "toolchain": "0.277.0",
+  "base_commit": "990672f879c243513a896666e3140edf2d7a9faf",
+  "platform": "macOS-27.2.1-arm64-arm-64bit-Mach-O",
+  "scope": "Source-only native030 owner-thread logical debugging with copied cell views; ordinary pure watches retain their effect boundary.",
+  "compiler": {
+    "ok": true,
+    "shared_fields": [
+      "browser_workers",
+      "bytes_construction",
+      "cli_interface",
+      "compute",
+      "device",
+      "diagnostic_catalogue",
+      "dns_provider",
+      "effect_parameters",
+      "features_scope",
+      "foreign_trap_reporting",
+      "generic_features",
+      "gpu_codegen",
+      "http_client_provider",
+      "http_response_streams",
+      "http_storage_transactions",
+      "ieee_numeric_kernel",
+      "language_pack_contract",
+      "list_construction",
+      "llm_cost",
+      "llm_entry",
+      "managed_references",
+      "model",
+      "native_application_lifetime",
+      "native_core",
+      "native_debug_image_binding",
+      "native_debug_pages",
+      "native_debug_session",
+      "native_entry_abi",
+      "native_runtime_search",
+      "native_tool_arguments",
+      "opencl_codegen",
+      "patch_entities",
+      "project_capture_layout",
+      "project_languages",
+      "resource_executor",
+      "resource_regions",
+      "result_propagation",
+      "runtime_contracts",
+      "runtime_diagnostic_messages",
+      "scoped_discovery",
+      "source_concurrency",
+      "source_contracts",
+      "source_contracts_development",
+      "source_exception_prototype",
+      "source_exceptions",
+      "source_formatting",
+      "source_resources",
+      "standard_library",
+      "structured_tasks_runtime",
+      "task_debugging",
+      "task_execution_limits",
+      "task_external_completion",
+      "task_file_reads",
+      "task_file_streams",
+      "task_file_streams_host",
+      "task_file_streams_prototype",
+      "task_file_writes",
+      "task_file_writes_host",
+      "task_file_writes_prototype",
+      "task_foreign_prototype",
+      "task_network_transport",
+      "task_profile_collector",
+      "task_profiling",
+      "task_provider_debugging",
+      "task_provider_profiling",
+      "task_providers",
+      "task_shared_providers",
+      "task_value_retirement",
+      "tcp_provider",
+      "text_construction",
+      "wasm_features"
+    ],
+    "shared_field_count": 71,
+    "compared_JSON_values": 4721,
+    "errors": [],
+    "schema": "nex.language-pack-validation/1",
+    "compiler_sha256": "c00bcdc0c3bb693327392a1459018ca30ec99367970342e68aeee61553dc45c1",
+    "manifest_sha256": "dbe4c6e33374c12c796817439cc8d2305715b00280eb7afb2be74ba3eee8f097",
+    "language": "0.28",
+    "toolchain": "0.277.0",
+    "compiler_build": "a488174a432dc2ba787caac2eafb078b61b9e4983fcf5a1233cd153fbcec8d94",
+    "descriptor_hash": "ce6eb9791c6933cd1fd851e9b2d7c9dd6a72e8adfbcf3597a07f80005bacf22d"
+  },
+  "source_files_sha256": {
+    "VERSION": "1ed9549219e4fe39fe2929caff3601cf3e05e3b77272e69edc09e3d7146b1e3f",
+    "include/nex/language.h": "66242ed84a35e827b4bb6eb04db89020758688e1dff43fb48dce2fa2d982d73a",
+    "src/language.cpp": "5abe68540de698143f0749e337a7b70b45524a5c9875df4768e08e8be7ece09b",
+    "src/debugging.cpp": "b68cde5251a01b893b5a9dd8ea849702519392c2c5852c52de9168e563481f83",
+    "src/backend.cpp": "ecba4f280b76981b9e97cc5524b075918919977b8a66413b623c2d421c84963c",
+    "src/managed_references.cpp": "17db4b3f081563f39ea7666651c3f6e0d5fdc89adbea6de79a220de077b996ce",
+    "debug/lldb_nex.py": "1904f8115da1a4428909ec0ed32e51a793c972f2b2c92af5482e355201ba7f87",
+    "debug/nex_dap.py": "63b700dcdeca1a63a582f949b438026068c5e4de54e440d287dd951eb80acce9",
+    "tests/task_debugging.py": "4255ccbb833a1837e4452f19879181a8534b328eeab4bf230b3e7ccc4d36fb6f",
+    "llm/language-pack.json": "dbe4c6e33374c12c796817439cc8d2305715b00280eb7afb2be74ba3eee8f097",
+    "llm/task-value-inspection.schema.json": "b8eb3dd0d74c176618c1eec85df130db547a23ad9e3d2284b6fb802501c03fd3"
+  },
+  "build": {
+    "command": "cmake --build build -j 4",
+    "exit_code": 0,
+    "stdout_sha256": "e32274eda9c4b9887dae01b848771d8943406ad86f1cd775fbb5194a02be0fb0",
+    "stderr_sha256": "a8eed92be89d09fae58702eb82617e4cca0e44ee0b65ee0dd3b6352b1823bdde"
+  },
+  "core": {
+    "schema": "nex.ctest-verification/1",
+    "ok": true,
+    "ctest_exit_code": 0,
+    "selected_groups": [
+      "bytes_runtime_native",
+      "ctest_report_validation",
+      "diagnostic_catalogue",
+      "discovery",
+      "float_runtime_native",
+      "frontend_diagnostics_native",
+      "language_pack_contract",
+      "llm_cost_ledger",
+      "llm_local_collector",
+      "managed_reference_native_context",
+      "managed_references_frontend_reference",
+      "reference_tasks_development",
+      "task_frontend_native",
+      "test_tiers",
+      "typed_source_frontend_reference",
+      "value_owner_runtime",
+      "value_retirement_runtime"
+    ],
+    "required_fixture_groups": [],
+    "expected_groups": [
+      "bytes_runtime_native",
+      "ctest_report_validation",
+      "diagnostic_catalogue",
+      "discovery",
+      "float_runtime_native",
+      "frontend_diagnostics_native",
+      "language_pack_contract",
+      "llm_cost_ledger",
+      "llm_local_collector",
+      "managed_reference_native_context",
+      "managed_references_frontend_reference",
+      "reference_tasks_development",
+      "task_frontend_native",
+      "test_tiers",
+      "typed_source_frontend_reference",
+      "value_owner_runtime",
+      "value_retirement_runtime"
+    ],
+    "observed_groups": [
+      "llm_cost_ledger",
+      "llm_local_collector",
+      "ctest_report_validation",
+      "discovery",
+      "language_pack_contract",
+      "task_frontend_native",
+      "reference_tasks_development",
+      "frontend_diagnostics_native",
+      "value_owner_runtime",
+      "value_retirement_runtime",
+      "managed_references_frontend_reference",
+      "managed_reference_native_context",
+      "bytes_runtime_native",
+      "float_runtime_native",
+      "typed_source_frontend_reference",
+      "test_tiers",
+      "diagnostic_catalogue"
+    ],
+    "results": {
+      "passed": [
+        "llm_cost_ledger",
+        "llm_local_collector",
+        "ctest_report_validation",
+        "discovery",
+        "language_pack_contract",
+        "task_frontend_native",
+        "reference_tasks_development",
+        "frontend_diagnostics_native",
+        "value_owner_runtime",
+        "value_retirement_runtime",
+        "managed_references_frontend_reference",
+        "managed_reference_native_context",
+        "bytes_runtime_native",
+        "float_runtime_native",
+        "typed_source_frontend_reference",
+        "test_tiers",
+        "diagnostic_catalogue"
+      ],
+      "failed": [],
+      "skipped": []
+    },
+    "registry_sha256": "3233ad85847b0309c34188b4e2ce7f63a978320f947f2db9a090339a478e18b5",
+    "junit_sha256": "220a41787f9fac23bb24f81a68d40e753bc286600ba31efffeccb48010a041db"
+  },
+  "ctest_runs": [
+    {
+      "name": "affected-v1",
+      "ctest_exit_code": 0,
+      "groups": [
+        "string_debug_provider",
+        "dap_transport",
+        "task_debug_runtime_native",
+        "task_debug_registry_native",
+        "task_debugging_native",
+        "task_debug_ir_native",
+        "task_debug_versioned_native",
+        "docs_index"
+      ],
+      "junit_sha256": "f3ab89e66f6c45b4c1bf8d2f271cd66dea34529bdae1f38641d93e18d06cf725",
+      "log_sha256": "c1cf73ad123c3a24d6c8f9100d2803a042a1715ed37d5efdb0fe86c3280baceb"
+    },
+    {
+      "name": "final-debug-v1",
+      "ctest_exit_code": 0,
+      "groups": [
+        "task_debugging_native"
+      ],
+      "junit_sha256": "132b9fd78d4a0f1f677eab3bdf3d4835bc586155473e0169cc6398442f0d680a",
+      "log_sha256": "fb434cd9ce7ca14465eb7a65dd07a4c6e7fadca0a801042dcb6709d1701dd7b0"
+    },
+    {
+      "name": "final-debug-v2",
+      "ctest_exit_code": 0,
+      "groups": [
+        "task_debugging_native"
+      ],
+      "junit_sha256": "9772cded44bf801c51155cf3a79bfa280b3b7d8f813abadf5ce7c32fea6684ad",
+      "log_sha256": "af275c953f1d286b7105fc7347cf53f805a5edf8d43ea2c899a6f66c87f1520a"
+    }
+  ],
+  "unique_passed_groups": [
+    "bytes_runtime_native",
+    "ctest_report_validation",
+    "dap_transport",
+    "diagnostic_catalogue",
+    "discovery",
+    "docs_index",
+    "float_runtime_native",
+    "frontend_diagnostics_native",
+    "language_pack_contract",
+    "llm_cost_ledger",
+    "llm_local_collector",
+    "managed_reference_native_context",
+    "managed_references_frontend_reference",
+    "reference_tasks_development",
+    "string_debug_provider",
+    "task_debug_ir_native",
+    "task_debug_registry_native",
+    "task_debug_runtime_native",
+    "task_debug_versioned_native",
+    "task_debugging_native",
+    "task_frontend_native",
+    "test_tiers",
+    "typed_source_frontend_reference",
+    "value_owner_runtime",
+    "value_retirement_runtime"
+  ],
+  "unique_passed_group_count": 25,
+  "live_qualification": [
+    {
+      "kind": "full-live-v3",
+      "stopped_child_and_waiting_parent": {
+        "schema": "nex.task-debug-tasks/1",
+        "tasks": [
+          {
+            "id": 1,
+            "generation": 1,
+            "state": "blocked",
+            "wait_reason": "future",
+            "wait_target": 2,
+            "worker_id": "7728134",
+            "run_epoch": 1,
+            "source_available": true,
+            "not_started": false,
+            "terminal": false,
+            "origin_task_id": 0,
+            "origin_frame_id": 0,
+            "function": "task_cells::main::$lambda_1",
+            "file": "/Users/sae/projects/NEX/build/reference-debug-v1/full-live-v3/test_reference_tasks_actual_dap_cell_children_and_stale_inspection/.nex/build/source-anchors/8d820ae0a4d4fd86c7173af10392201a5217fdb00e153670439217797114490a/source.nex",
+            "line": 18,
+            "column": 3
+          },
+          {
+            "id": 2,
+            "generation": 1,
+            "state": "running",
+            "wait_reason": "none",
+            "wait_target": 0,
+            "worker_id": "7728134",
+            "run_epoch": 1,
+            "source_available": true,
+            "not_started": false,
+            "terminal": false,
+            "origin_task_id": 1,
+            "origin_frame_id": 68,
+            "function": "task_cells::before",
+            "file": "/Users/sae/projects/NEX/build/reference-debug-v1/full-live-v3/test_reference_tasks_actual_dap_cell_children_and_stale_inspection/.nex/build/source-anchors/8d820ae0a4d4fd86c7173af10392201a5217fdb00e153670439217797114490a/source.nex",
+            "line": 4,
+            "column": 1
+          }
+        ],
+        "stop_id": "1257",
+        "selected": 2,
+        "dropped_tasks": 0,
+        "dropped_frames": 0,
+        "invalid_transitions": 0
+      },
+      "compiler_sha256": "c00bcdc0c3bb693327392a1459018ca30ec99367970342e68aeee61553dc45c1",
+      "llvm_source_manifests": [
+        {
+          "source_sha256": "54907e9d3ff5f97ec8d5ae97a182633b3b5d7a80def7ede1f43dd4c9e5c15fca",
+          "manifest_sha256": "1b87e3b5fccc507ac9c84a1a00c47c535db9f7471675a7631a3f49a3e7d47bff",
+          "formatter_sha256": "82c8501df0f6ff603b46fc87fae8d2939c9f9264cb467260fd024d51423dce1d",
+          "dap_sha256": "63493cd7c89a943e72caa855110a052c41b8c438b2f5e152d854277e3e89d32b",
+          "execution_task_abi": "0x4e45585400000008",
+          "image_sha256": "d2153a95fe8c9fb9ed2c619ed4703185d40418002be7729ae4f79e1c6677e710"
+        },
+        {
+          "source_sha256": "54907e9d3ff5f97ec8d5ae97a182633b3b5d7a80def7ede1f43dd4c9e5c15fca",
+          "manifest_sha256": "1bd10412bd1cb184919c9fa299ca1d2921a22ef14cb6a34dd27df62465b99937",
+          "formatter_sha256": "82c8501df0f6ff603b46fc87fae8d2939c9f9264cb467260fd024d51423dce1d",
+          "dap_sha256": "63493cd7c89a943e72caa855110a052c41b8c438b2f5e152d854277e3e89d32b",
+          "execution_task_abi": "0x4e45585400000008",
+          "image_sha256": "5338614cdf5a4aee00e2ebe03d4401ce74722ecbf4840525d6f02e599bba37f5"
+        }
+      ],
+      "lldb_commands": [
+        {
+          "command": "nex-task-request-encoded eyJjb21tYW5kIjogImZ1bmN0aW9uX2JyZWFrcG9pbnRzIiwgImFyZ3VtZW50cyI6IHsiYnJlYWtwb2ludHMiOiBbeyJuYW1lIjogInRhc2tfY2VsbHM6OmJlZm9yZSJ9LCB7Im5hbWUiOiAidGFza19jZWxsczo6YWZ0ZXIifV19fQ==",
+          "succeeded": true,
+          "output_sha256": "a257b84fcf1b844b6661a324684ffe42000f93d1dc942a814251d43c92b90741"
+        },
+        {
+          "command": "nex-task-values",
+          "succeeded": true,
+          "output_sha256": "cac30663feaf0b211053e061bdd6fb8d5e5364dc2d891ef6bf1d4a18518dc348"
+        },
+        {
+          "command": "nex-task-inspect state",
+          "succeeded": true,
+          "output_sha256": "b4f6dfb884f83dd1bc3f8d5abc49e29f00b5e85e8c17b580f943cffa69d72323"
+        },
+        {
+          "command": "nex-task-inspect alias",
+          "succeeded": true,
+          "output_sha256": "8a08bd33b65c9969f03202f30b5e0f9edcd82b08073c767a66215e5c96e2b940"
+        },
+        {
+          "command": "nex-task-inspect cycle",
+          "succeeded": true,
+          "output_sha256": "c7500f3526c3a1199ab02cbca6a7b69b762c026122e2ea2216a0278c5465cc5f"
+        },
+        {
+          "command": "nex-task-inspect text",
+          "succeeded": true,
+          "output_sha256": "0bbb91b1a194771d9281c67ec8c2597b338bfb49cd751223144d176f62a6760d"
+        },
+        {
+          "command": "nex-task-inspect large",
+          "succeeded": true,
+          "output_sha256": "abf2441e37daeb67650afdfb11f2bf4995f48b873aa65a9a143c3fff2d5d663a"
+        },
+        {
+          "command": "nex-eval input+1",
+          "succeeded": true,
+          "output_sha256": "8ed36ff312dbd6cf4b3c09063f55381600236d33bd2668c3391a77dc9318aacc"
+        },
+        {
+          "command": "nex-task-next",
+          "succeeded": true,
+          "output_sha256": "2d5a02edb68a1b16c294da1e89166a0ea147a48649508916fcf5334d3e323e54"
+        },
+        {
+          "command": "nex-task-inspect state",
+          "succeeded": true,
+          "output_sha256": "844cf6c6416aa08c4a8d3019b162baec4869237f63fc4b94029041ef93d2b48a"
+        },
+        {
+          "command": "nex-task-out",
+          "succeeded": true,
+          "output_sha256": "2d5a02edb68a1b16c294da1e89166a0ea147a48649508916fcf5334d3e323e54"
+        }
+      ],
+      "inspections": [
+        {
+          "schema": "nex.task-value-inspection/1",
+          "stop": {
+            "process_id": "18086",
+            "process_epoch": "1",
+            "stop_id": "1257",
+            "task_id": "2",
+            "task_generation": "1",
+            "frame_id": "70",
+            "publication": "10",
+            "visit": "4",
+            "point_id": 1
+          },
+          "binding": "state",
+          "value": {
+            "kind": "cell",
+            "identity": "4350176296",
+            "live": true,
+            "value": {
+              "kind": "i64",
+              "value": "41"
+            }
+          },
+          "truncated": false,
+          "limits": {
+            "nodes": 256,
+            "depth": 8,
+            "text_bytes": 16384,
+            "items": 64,
+            "byte_prefix": 256
+          }
+        },
+        {
+          "schema": "nex.task-value-inspection/1",
+          "stop": {
+            "process_id": "18086",
+            "process_epoch": "1",
+            "stop_id": "1257",
+            "task_id": "2",
+            "task_generation": "1",
+            "frame_id": "70",
+            "publication": "10",
+            "visit": "4",
+            "point_id": 1
+          },
+          "binding": "alias",
+          "value": {
+            "kind": "cell",
+            "identity": "4350176296",
+            "live": true,
+            "value": {
+              "kind": "i64",
+              "value": "41"
+            }
+          },
+          "truncated": false,
+          "limits": {
+            "nodes": 256,
+            "depth": 8,
+            "text_bytes": 16384,
+            "items": 64,
+            "byte_prefix": 256
+          }
+        },
+        {
+          "schema": "nex.task-value-inspection/1",
+          "stop": {
+            "process_id": "18086",
+            "process_epoch": "1",
+            "stop_id": "1257",
+            "task_id": "2",
+            "task_generation": "1",
+            "frame_id": "70",
+            "publication": "10",
+            "visit": "4",
+            "point_id": 1
+          },
+          "binding": "cycle",
+          "value": {
+            "kind": "cell",
+            "identity": "4350177272",
+            "live": true,
+            "value": {
+              "kind": "record",
+              "length": 1,
+              "type": "task_cells::Link",
+              "fields": [
+                {
+                  "name": "next",
+                  "value": {
+                    "kind": "list",
+                    "length": 1,
+                    "items": [
+                      {
+                        "kind": "cell",
+                        "identity": "4350177272",
+                        "live": true,
+                        "alias": true
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "truncated": false,
+          "limits": {
+            "nodes": 256,
+            "depth": 8,
+            "text_bytes": 16384,
+            "items": 64,
+            "byte_prefix": 256
+          }
+        },
+        {
+          "schema": "nex.task-value-inspection/1",
+          "stop": {
+            "process_id": "18086",
+            "process_epoch": "1",
+            "stop_id": "1257",
+            "task_id": "2",
+            "task_generation": "1",
+            "frame_id": "70",
+            "publication": "10",
+            "visit": "4",
+            "point_id": 1
+          },
+          "binding": "text",
+          "value": {
+            "kind": "cell",
+            "identity": "531217449304",
+            "live": true,
+            "value": {
+              "kind": "str",
+              "value": "Я\u0000🧠"
+            }
+          },
+          "truncated": false,
+          "limits": {
+            "nodes": 256,
+            "depth": 8,
+            "text_bytes": 16384,
+            "items": 64,
+            "byte_prefix": 256
+          }
+        },
+        {
+          "schema": "nex.task-value-inspection/1",
+          "stop": {
+            "process_id": "18086",
+            "process_epoch": "1",
+            "stop_id": "1257",
+            "task_id": "2",
+            "task_generation": "1",
+            "frame_id": "70",
+            "publication": "10",
+            "visit": "4",
+            "point_id": 1
+          },
+          "binding": "large",
+          "value": {
+            "kind": "cell",
+            "identity": "531217448984",
+            "live": true,
+            "value": {
+              "kind": "list",
+              "length": 65,
+              "items": [
+                {
+                  "kind": "i64",
+                  "value": "0"
+                },
+                {
+                  "kind": "i64",
+                  "value": "1"
+                },
+                {
+                  "kind": "i64",
+                  "value": "2"
+                },
+                {
+                  "kind": "i64",
+                  "value": "3"
+                },
+                {
+                  "kind": "i64",
+                  "value": "4"
+                },
+                {
+                  "kind": "i64",
+                  "value": "5"
+                },
+                {
+                  "kind": "i64",
+                  "value": "6"
+                },
+                {
+                  "kind": "i64",
+                  "value": "7"
+                },
+                {
+                  "kind": "i64",
+                  "value": "8"
+                },
+                {
+                  "kind": "i64",
+                  "value": "9"
+                },
+                {
+                  "kind": "i64",
+                  "value": "10"
+                },
+                {
+                  "kind": "i64",
+                  "value": "11"
+                },
+                {
+                  "kind": "i64",
+                  "value": "12"
+                },
+                {
+                  "kind": "i64",
+                  "value": "13"
+                },
+                {
+                  "kind": "i64",
+                  "value": "14"
+                },
+                {
+                  "kind": "i64",
+                  "value": "15"
+                },
+                {
+                  "kind": "i64",
+                  "value": "16"
+                },
+                {
+                  "kind": "i64",
+                  "value": "17"
+                },
+                {
+                  "kind": "i64",
+                  "value": "18"
+                },
+                {
+                  "kind": "i64",
+                  "value": "19"
+                },
+                {
+                  "kind": "i64",
+                  "value": "20"
+                },
+                {
+                  "kind": "i64",
+                  "value": "21"
+                },
+                {
+                  "kind": "i64",
+                  "value": "22"
+                },
+                {
+                  "kind": "i64",
+                  "value": "23"
+                },
+                {
+                  "kind": "i64",
+                  "value": "24"
+                },
+                {
+                  "kind": "i64",
+                  "value": "25"
+                },
+                {
+                  "kind": "i64",
+                  "value": "26"
+                },
+                {
+                  "kind": "i64",
+                  "value": "27"
+                },
+                {
+                  "kind": "i64",
+                  "value": "28"
+                },
+                {
+                  "kind": "i64",
+                  "value": "29"
+                },
+                {
+                  "kind": "i64",
+                  "value": "30"
+                },
+                {
+                  "kind": "i64",
+                  "value": "31"
+                },
+                {
+                  "kind": "i64",
+                  "value": "32"
+                },
+                {
+                  "kind": "i64",
+                  "value": "33"
+                },
+                {
+                  "kind": "i64",
+                  "value": "34"
+                },
+                {
+                  "kind": "i64",
+                  "value": "35"
+                },
+                {
+                  "kind": "i64",
+                  "value": "36"
+                },
+                {
+                  "kind": "i64",
+                  "value": "37"
+                },
+                {
+                  "kind": "i64",
+                  "value": "38"
+                },
+                {
+                  "kind": "i64",
+                  "value": "39"
+                },
+                {
+                  "kind": "i64",
+                  "value": "40"
+                },
+                {
+                  "kind": "i64",
+                  "value": "41"
+                },
+                {
+                  "kind": "i64",
+                  "value": "42"
+                },
+                {
+                  "kind": "i64",
+                  "value": "43"
+                },
+                {
+                  "kind": "i64",
+                  "value": "44"
+                },
+                {
+                  "kind": "i64",
+                  "value": "45"
+                },
+                {
+                  "kind": "i64",
+                  "value": "46"
+                },
+                {
+                  "kind": "i64",
+                  "value": "47"
+                },
+                {
+                  "kind": "i64",
+                  "value": "48"
+                },
+                {
+                  "kind": "i64",
+                  "value": "49"
+                },
+                {
+                  "kind": "i64",
+                  "value": "50"
+                },
+                {
+                  "kind": "i64",
+                  "value": "51"
+                },
+                {
+                  "kind": "i64",
+                  "value": "52"
+                },
+                {
+                  "kind": "i64",
+                  "value": "53"
+                },
+                {
+                  "kind": "i64",
+                  "value": "54"
+                },
+                {
+                  "kind": "i64",
+                  "value": "55"
+                },
+                {
+                  "kind": "i64",
+                  "value": "56"
+                },
+                {
+                  "kind": "i64",
+                  "value": "57"
+                },
+                {
+                  "kind": "i64",
+                  "value": "58"
+                },
+                {
+                  "kind": "i64",
+                  "value": "59"
+                },
+                {
+                  "kind": "i64",
+                  "value": "60"
+                },
+                {
+                  "kind": "i64",
+                  "value": "61"
+                },
+                {
+                  "kind": "i64",
+                  "value": "62"
+                },
+                {
+                  "kind": "i64",
+                  "value": "63"
+                }
+              ],
+              "truncated": true
+            }
+          },
+          "truncated": true,
+          "limits": {
+            "nodes": 256,
+            "depth": 8,
+            "text_bytes": 16384,
+            "items": 64,
+            "byte_prefix": 256
+          }
+        },
+        {
+          "schema": "nex.task-value-inspection/1",
+          "stop": {
+            "process_id": "18086",
+            "process_epoch": "1",
+            "stop_id": "1279",
+            "task_id": "2",
+            "task_generation": "1",
+            "frame_id": "71",
+            "publication": "34",
+            "visit": "15",
+            "point_id": 1
+          },
+          "binding": "state",
+          "value": {
+            "kind": "cell",
+            "identity": "4350176296",
+            "live": true,
+            "value": {
+              "kind": "i64",
+              "value": "42"
+            }
+          },
+          "truncated": false,
+          "limits": {
+            "nodes": 256,
+            "depth": 8,
+            "text_bytes": 16384,
+            "items": 64,
+            "byte_prefix": 256
+          }
+        }
+      ],
+      "dap_trace_sha256": "225091e547de7171e30624678f7c1b574b40b2b6ab2591781b1a91de6797849c",
+      "dap_responses": [
+        {
+          "command": "initialize",
+          "success": true,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": null,
+          "success": null,
+          "event": "initialized",
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "setFunctionBreakpoints",
+          "success": true,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "configurationDone",
+          "success": true,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "launch",
+          "success": true,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": null,
+          "success": null,
+          "event": "stopped",
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "threads",
+          "success": true,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "stackTrace",
+          "success": true,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "scopes",
+          "success": true,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "variables",
+          "success": true,
+          "event": null,
+          "variables": [
+            {
+              "name": "alias",
+              "value": "cell@100b21828",
+              "variablesReference": 2
+            },
+            {
+              "name": "cycle",
+              "value": "cell@100b21bf8",
+              "variablesReference": 3
+            },
+            {
+              "name": "input",
+              "value": "41",
+              "variablesReference": 0
+            },
+            {
+              "name": "large",
+              "value": "cell@100b21708",
+              "variablesReference": 4
+            },
+            {
+              "name": "state",
+              "value": "cell@100b21828",
+              "variablesReference": 5
+            },
+            {
+              "name": "text",
+              "value": "cell@100b220d8",
+              "variablesReference": 6
+            }
+          ],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "variables",
+          "success": true,
+          "event": null,
+          "variables": [
+            {
+              "name": "identity",
+              "value": "\"4306638888\"",
+              "variablesReference": 0
+            },
+            {
+              "name": "live",
+              "value": "true",
+              "variablesReference": 0
+            },
+            {
+              "name": "value",
+              "value": "41",
+              "variablesReference": 0
+            }
+          ],
+          "nex_copied_inspection": true
+        },
+        {
+          "command": "variables",
+          "success": true,
+          "event": null,
+          "variables": [
+            {
+              "name": "identity",
+              "value": "\"4306638600\"",
+              "variablesReference": 0
+            },
+            {
+              "name": "live",
+              "value": "true",
+              "variablesReference": 0
+            },
+            {
+              "name": "value",
+              "value": "[65 items] … (truncated)",
+              "variablesReference": 7
+            }
+          ],
+          "nex_copied_inspection": true
+        },
+        {
+          "command": "variables",
+          "success": true,
+          "event": null,
+          "variables": [
+            {
+              "name": "[0]",
+              "value": "0",
+              "variablesReference": 0
+            },
+            {
+              "name": "[1]",
+              "value": "1",
+              "variablesReference": 0
+            },
+            {
+              "name": "[2]",
+              "value": "2",
+              "variablesReference": 0
+            },
+            {
+              "name": "[3]",
+              "value": "3",
+              "variablesReference": 0
+            },
+            {
+              "name": "[4]",
+              "value": "4",
+              "variablesReference": 0
+            },
+            {
+              "name": "[5]",
+              "value": "5",
+              "variablesReference": 0
+            },
+            {
+              "name": "[6]",
+              "value": "6",
+              "variablesReference": 0
+            },
+            {
+              "name": "[7]",
+              "value": "7",
+              "variablesReference": 0
+            },
+            {
+              "name": "[8]",
+              "value": "8",
+              "variablesReference": 0
+            },
+            {
+              "name": "[9]",
+              "value": "9",
+              "variablesReference": 0
+            },
+            {
+              "name": "[10]",
+              "value": "10",
+              "variablesReference": 0
+            },
+            {
+              "name": "[11]",
+              "value": "11",
+              "variablesReference": 0
+            },
+            {
+              "name": "[12]",
+              "value": "12",
+              "variablesReference": 0
+            },
+            {
+              "name": "[13]",
+              "value": "13",
+              "variablesReference": 0
+            },
+            {
+              "name": "[14]",
+              "value": "14",
+              "variablesReference": 0
+            },
+            {
+              "name": "[15]",
+              "value": "15",
+              "variablesReference": 0
+            },
+            {
+              "name": "[16]",
+              "value": "16",
+              "variablesReference": 0
+            },
+            {
+              "name": "[17]",
+              "value": "17",
+              "variablesReference": 0
+            },
+            {
+              "name": "[18]",
+              "value": "18",
+              "variablesReference": 0
+            },
+            {
+              "name": "[19]",
+              "value": "19",
+              "variablesReference": 0
+            },
+            {
+              "name": "[20]",
+              "value": "20",
+              "variablesReference": 0
+            },
+            {
+              "name": "[21]",
+              "value": "21",
+              "variablesReference": 0
+            },
+            {
+              "name": "[22]",
+              "value": "22",
+              "variablesReference": 0
+            },
+            {
+              "name": "[23]",
+              "value": "23",
+              "variablesReference": 0
+            },
+            {
+              "name": "[24]",
+              "value": "24",
+              "variablesReference": 0
+            },
+            {
+              "name": "[25]",
+              "value": "25",
+              "variablesReference": 0
+            },
+            {
+              "name": "[26]",
+              "value": "26",
+              "variablesReference": 0
+            },
+            {
+              "name": "[27]",
+              "value": "27",
+              "variablesReference": 0
+            },
+            {
+              "name": "[28]",
+              "value": "28",
+              "variablesReference": 0
+            },
+            {
+              "name": "[29]",
+              "value": "29",
+              "variablesReference": 0
+            },
+            {
+              "name": "[30]",
+              "value": "30",
+              "variablesReference": 0
+            },
+            {
+              "name": "[31]",
+              "value": "31",
+              "variablesReference": 0
+            },
+            {
+              "name": "[32]",
+              "value": "32",
+              "variablesReference": 0
+            },
+            {
+              "name": "[33]",
+              "value": "33",
+              "variablesReference": 0
+            },
+            {
+              "name": "[34]",
+              "value": "34",
+              "variablesReference": 0
+            },
+            {
+              "name": "[35]",
+              "value": "35",
+              "variablesReference": 0
+            },
+            {
+              "name": "[36]",
+              "value": "36",
+              "variablesReference": 0
+            },
+            {
+              "name": "[37]",
+              "value": "37",
+              "variablesReference": 0
+            },
+            {
+              "name": "[38]",
+              "value": "38",
+              "variablesReference": 0
+            },
+            {
+              "name": "[39]",
+              "value": "39",
+              "variablesReference": 0
+            },
+            {
+              "name": "[40]",
+              "value": "40",
+              "variablesReference": 0
+            },
+            {
+              "name": "[41]",
+              "value": "41",
+              "variablesReference": 0
+            },
+            {
+              "name": "[42]",
+              "value": "42",
+              "variablesReference": 0
+            },
+            {
+              "name": "[43]",
+              "value": "43",
+              "variablesReference": 0
+            },
+            {
+              "name": "[44]",
+              "value": "44",
+              "variablesReference": 0
+            },
+            {
+              "name": "[45]",
+              "value": "45",
+              "variablesReference": 0
+            },
+            {
+              "name": "[46]",
+              "value": "46",
+              "variablesReference": 0
+            },
+            {
+              "name": "[47]",
+              "value": "47",
+              "variablesReference": 0
+            },
+            {
+              "name": "[48]",
+              "value": "48",
+              "variablesReference": 0
+            },
+            {
+              "name": "[49]",
+              "value": "49",
+              "variablesReference": 0
+            },
+            {
+              "name": "[50]",
+              "value": "50",
+              "variablesReference": 0
+            },
+            {
+              "name": "[51]",
+              "value": "51",
+              "variablesReference": 0
+            },
+            {
+              "name": "[52]",
+              "value": "52",
+              "variablesReference": 0
+            },
+            {
+              "name": "[53]",
+              "value": "53",
+              "variablesReference": 0
+            },
+            {
+              "name": "[54]",
+              "value": "54",
+              "variablesReference": 0
+            },
+            {
+              "name": "[55]",
+              "value": "55",
+              "variablesReference": 0
+            },
+            {
+              "name": "[56]",
+              "value": "56",
+              "variablesReference": 0
+            },
+            {
+              "name": "[57]",
+              "value": "57",
+              "variablesReference": 0
+            },
+            {
+              "name": "[58]",
+              "value": "58",
+              "variablesReference": 0
+            },
+            {
+              "name": "[59]",
+              "value": "59",
+              "variablesReference": 0
+            },
+            {
+              "name": "[60]",
+              "value": "60",
+              "variablesReference": 0
+            },
+            {
+              "name": "[61]",
+              "value": "61",
+              "variablesReference": 0
+            },
+            {
+              "name": "[62]",
+              "value": "62",
+              "variablesReference": 0
+            },
+            {
+              "name": "[63]",
+              "value": "63",
+              "variablesReference": 0
+            },
+            {
+              "name": "<truncated>",
+              "value": "<bounded snapshot; remaining children omitted>",
+              "variablesReference": 0
+            }
+          ],
+          "nex_copied_inspection": true
+        },
+        {
+          "command": "evaluate",
+          "success": false,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "next",
+          "success": true,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": null,
+          "success": null,
+          "event": "stopped",
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "variables",
+          "success": false,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "continue",
+          "success": true,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": null,
+          "success": null,
+          "event": "exited",
+          "variables": [],
+          "nex_copied_inspection": null
+        }
+      ]
+    },
+    {
+      "kind": "moved-child-v1",
+      "stopped_child_and_waiting_parent": {
+        "schema": "nex.task-debug-tasks/1",
+        "tasks": [
+          {
+            "id": 1,
+            "generation": 1,
+            "state": "blocked",
+            "wait_reason": "future",
+            "wait_target": 2,
+            "worker_id": "7726231",
+            "run_epoch": 1,
+            "source_available": true,
+            "not_started": false,
+            "terminal": false,
+            "origin_task_id": 0,
+            "origin_frame_id": 0,
+            "function": "task_cells::main::$lambda_1",
+            "file": "/Users/sae/projects/NEX/build/reference-debug-v1/moved-child-v1/test_reference_tasks_actual_dap_cell_children_and_stale_inspection/.nex/build/source-anchors/8d820ae0a4d4fd86c7173af10392201a5217fdb00e153670439217797114490a/source.nex",
+            "line": 18,
+            "column": 3
+          },
+          {
+            "id": 2,
+            "generation": 1,
+            "state": "running",
+            "wait_reason": "none",
+            "wait_target": 0,
+            "worker_id": "7726231",
+            "run_epoch": 1,
+            "source_available": true,
+            "not_started": false,
+            "terminal": false,
+            "origin_task_id": 1,
+            "origin_frame_id": 68,
+            "function": "task_cells::before",
+            "file": "/Users/sae/projects/NEX/build/reference-debug-v1/moved-child-v1/test_reference_tasks_actual_dap_cell_children_and_stale_inspection/.nex/build/source-anchors/8d820ae0a4d4fd86c7173af10392201a5217fdb00e153670439217797114490a/source.nex",
+            "line": 4,
+            "column": 1
+          }
+        ],
+        "stop_id": "1257",
+        "selected": 2,
+        "dropped_tasks": 0,
+        "dropped_frames": 0,
+        "invalid_transitions": 0
+      },
+      "compiler_sha256": "c00bcdc0c3bb693327392a1459018ca30ec99367970342e68aeee61553dc45c1",
+      "llvm_source_manifests": [
+        {
+          "source_sha256": "54907e9d3ff5f97ec8d5ae97a182633b3b5d7a80def7ede1f43dd4c9e5c15fca",
+          "manifest_sha256": "53200edc3855fb87d1dbe46cea967f976751f4028b6da351e6786be845129680",
+          "formatter_sha256": "82c8501df0f6ff603b46fc87fae8d2939c9f9264cb467260fd024d51423dce1d",
+          "dap_sha256": "63493cd7c89a943e72caa855110a052c41b8c438b2f5e152d854277e3e89d32b",
+          "execution_task_abi": "0x4e45585400000008",
+          "image_sha256": "eadda62d3abc647bb4db68018cc2c4e8be86deedcaf459662751dc885903108c"
+        },
+        {
+          "source_sha256": "54907e9d3ff5f97ec8d5ae97a182633b3b5d7a80def7ede1f43dd4c9e5c15fca",
+          "manifest_sha256": "cb4a0f904d101f050ae7e5d8d285a0f1f0be92938e6a17de5bf73d0bc25b4132",
+          "formatter_sha256": "82c8501df0f6ff603b46fc87fae8d2939c9f9264cb467260fd024d51423dce1d",
+          "dap_sha256": "63493cd7c89a943e72caa855110a052c41b8c438b2f5e152d854277e3e89d32b",
+          "execution_task_abi": "0x4e45585400000008",
+          "image_sha256": "7b11e683e0e3f35bea08416659e4a0d461455fb95c4a6e62b6cd250f5be08ed5"
+        }
+      ],
+      "lldb_commands": [
+        {
+          "command": "nex-task-request-encoded eyJjb21tYW5kIjogImZ1bmN0aW9uX2JyZWFrcG9pbnRzIiwgImFyZ3VtZW50cyI6IHsiYnJlYWtwb2ludHMiOiBbeyJuYW1lIjogInRhc2tfY2VsbHM6OmJlZm9yZSJ9LCB7Im5hbWUiOiAidGFza19jZWxsczo6YWZ0ZXIifV19fQ==",
+          "succeeded": true,
+          "output_sha256": "2e82340f3eba45756a82a6de636b69315db939bf57383455a458c7232e19914f"
+        },
+        {
+          "command": "nex-task-values",
+          "succeeded": true,
+          "output_sha256": "becf458b80735224bf58f6765ed8e3c3faf621adb9b50cdb10714d3a25434b20"
+        },
+        {
+          "command": "nex-task-inspect state",
+          "succeeded": true,
+          "output_sha256": "66a097b1ade457c18390de9f7b4c871678c4cb29804c7f82fd1f796f3f04f545"
+        },
+        {
+          "command": "nex-task-inspect alias",
+          "succeeded": true,
+          "output_sha256": "c8995e9c0e4ffb41725e6e4fa96f8b68160a231c72f402622a8c4f7ce9b4aeda"
+        },
+        {
+          "command": "nex-task-inspect cycle",
+          "succeeded": true,
+          "output_sha256": "56cac2bc4f300106ee29813f4dbf3487e331fb2e4ba73658085c97f7338e270d"
+        },
+        {
+          "command": "nex-task-inspect text",
+          "succeeded": true,
+          "output_sha256": "0ed5d59d7bb0efd0bf03edd37cdf30b15acd9a213bf663ab9f72e18647b39a3d"
+        },
+        {
+          "command": "nex-task-inspect large",
+          "succeeded": true,
+          "output_sha256": "1ae626b5d7ec4bb3a520df03601281ce3d096e82ce334bb2473df214661470be"
+        },
+        {
+          "command": "nex-eval input+1",
+          "succeeded": true,
+          "output_sha256": "27322c6f8be24fa7a737b6bb114f8baec1069f4bbc2c122eec64dc08d58e6f0f"
+        },
+        {
+          "command": "nex-task-next",
+          "succeeded": true,
+          "output_sha256": "2d5a02edb68a1b16c294da1e89166a0ea147a48649508916fcf5334d3e323e54"
+        },
+        {
+          "command": "nex-task-inspect state",
+          "succeeded": true,
+          "output_sha256": "9de5ac640f8a482626fb907b5666aef06e66ddf9057879016eec91a5fdf67050"
+        },
+        {
+          "command": "nex-task-out",
+          "succeeded": true,
+          "output_sha256": "2d5a02edb68a1b16c294da1e89166a0ea147a48649508916fcf5334d3e323e54"
+        }
+      ],
+      "inspections": [
+        {
+          "schema": "nex.task-value-inspection/1",
+          "stop": {
+            "process_id": "17701",
+            "process_epoch": "1",
+            "stop_id": "1257",
+            "task_id": "2",
+            "task_generation": "1",
+            "frame_id": "70",
+            "publication": "10",
+            "visit": "4",
+            "point_id": 1
+          },
+          "binding": "state",
+          "value": {
+            "kind": "cell",
+            "identity": "4382075944",
+            "live": true,
+            "value": {
+              "kind": "i64",
+              "value": "41"
+            }
+          },
+          "truncated": false,
+          "limits": {
+            "nodes": 256,
+            "depth": 8,
+            "text_bytes": 16384,
+            "items": 64,
+            "byte_prefix": 256
+          }
+        },
+        {
+          "schema": "nex.task-value-inspection/1",
+          "stop": {
+            "process_id": "17701",
+            "process_epoch": "1",
+            "stop_id": "1257",
+            "task_id": "2",
+            "task_generation": "1",
+            "frame_id": "70",
+            "publication": "10",
+            "visit": "4",
+            "point_id": 1
+          },
+          "binding": "alias",
+          "value": {
+            "kind": "cell",
+            "identity": "4382075944",
+            "live": true,
+            "value": {
+              "kind": "i64",
+              "value": "41"
+            }
+          },
+          "truncated": false,
+          "limits": {
+            "nodes": 256,
+            "depth": 8,
+            "text_bytes": 16384,
+            "items": 64,
+            "byte_prefix": 256
+          }
+        },
+        {
+          "schema": "nex.task-value-inspection/1",
+          "stop": {
+            "process_id": "17701",
+            "process_epoch": "1",
+            "stop_id": "1257",
+            "task_id": "2",
+            "task_generation": "1",
+            "frame_id": "70",
+            "publication": "10",
+            "visit": "4",
+            "point_id": 1
+          },
+          "binding": "cycle",
+          "value": {
+            "kind": "cell",
+            "identity": "4382076920",
+            "live": true,
+            "value": {
+              "kind": "record",
+              "length": 1,
+              "type": "task_cells::Link",
+              "fields": [
+                {
+                  "name": "next",
+                  "value": {
+                    "kind": "list",
+                    "length": 1,
+                    "items": [
+                      {
+                        "kind": "cell",
+                        "identity": "4382076920",
+                        "live": true,
+                        "alias": true
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "truncated": false,
+          "limits": {
+            "nodes": 256,
+            "depth": 8,
+            "text_bytes": 16384,
+            "items": 64,
+            "byte_prefix": 256
+          }
+        },
+        {
+          "schema": "nex.task-value-inspection/1",
+          "stop": {
+            "process_id": "17701",
+            "process_epoch": "1",
+            "stop_id": "1257",
+            "task_id": "2",
+            "task_generation": "1",
+            "frame_id": "70",
+            "publication": "10",
+            "visit": "4",
+            "point_id": 1
+          },
+          "binding": "text",
+          "value": {
+            "kind": "cell",
+            "identity": "4382078168",
+            "live": true,
+            "value": {
+              "kind": "str",
+              "value": "Я\u0000🧠"
+            }
+          },
+          "truncated": false,
+          "limits": {
+            "nodes": 256,
+            "depth": 8,
+            "text_bytes": 16384,
+            "items": 64,
+            "byte_prefix": 256
+          }
+        },
+        {
+          "schema": "nex.task-value-inspection/1",
+          "stop": {
+            "process_id": "17701",
+            "process_epoch": "1",
+            "stop_id": "1257",
+            "task_id": "2",
+            "task_generation": "1",
+            "frame_id": "70",
+            "publication": "10",
+            "visit": "4",
+            "point_id": 1
+          },
+          "binding": "large",
+          "value": {
+            "kind": "cell",
+            "identity": "4382075656",
+            "live": true,
+            "value": {
+              "kind": "list",
+              "length": 65,
+              "items": [
+                {
+                  "kind": "i64",
+                  "value": "0"
+                },
+                {
+                  "kind": "i64",
+                  "value": "1"
+                },
+                {
+                  "kind": "i64",
+                  "value": "2"
+                },
+                {
+                  "kind": "i64",
+                  "value": "3"
+                },
+                {
+                  "kind": "i64",
+                  "value": "4"
+                },
+                {
+                  "kind": "i64",
+                  "value": "5"
+                },
+                {
+                  "kind": "i64",
+                  "value": "6"
+                },
+                {
+                  "kind": "i64",
+                  "value": "7"
+                },
+                {
+                  "kind": "i64",
+                  "value": "8"
+                },
+                {
+                  "kind": "i64",
+                  "value": "9"
+                },
+                {
+                  "kind": "i64",
+                  "value": "10"
+                },
+                {
+                  "kind": "i64",
+                  "value": "11"
+                },
+                {
+                  "kind": "i64",
+                  "value": "12"
+                },
+                {
+                  "kind": "i64",
+                  "value": "13"
+                },
+                {
+                  "kind": "i64",
+                  "value": "14"
+                },
+                {
+                  "kind": "i64",
+                  "value": "15"
+                },
+                {
+                  "kind": "i64",
+                  "value": "16"
+                },
+                {
+                  "kind": "i64",
+                  "value": "17"
+                },
+                {
+                  "kind": "i64",
+                  "value": "18"
+                },
+                {
+                  "kind": "i64",
+                  "value": "19"
+                },
+                {
+                  "kind": "i64",
+                  "value": "20"
+                },
+                {
+                  "kind": "i64",
+                  "value": "21"
+                },
+                {
+                  "kind": "i64",
+                  "value": "22"
+                },
+                {
+                  "kind": "i64",
+                  "value": "23"
+                },
+                {
+                  "kind": "i64",
+                  "value": "24"
+                },
+                {
+                  "kind": "i64",
+                  "value": "25"
+                },
+                {
+                  "kind": "i64",
+                  "value": "26"
+                },
+                {
+                  "kind": "i64",
+                  "value": "27"
+                },
+                {
+                  "kind": "i64",
+                  "value": "28"
+                },
+                {
+                  "kind": "i64",
+                  "value": "29"
+                },
+                {
+                  "kind": "i64",
+                  "value": "30"
+                },
+                {
+                  "kind": "i64",
+                  "value": "31"
+                },
+                {
+                  "kind": "i64",
+                  "value": "32"
+                },
+                {
+                  "kind": "i64",
+                  "value": "33"
+                },
+                {
+                  "kind": "i64",
+                  "value": "34"
+                },
+                {
+                  "kind": "i64",
+                  "value": "35"
+                },
+                {
+                  "kind": "i64",
+                  "value": "36"
+                },
+                {
+                  "kind": "i64",
+                  "value": "37"
+                },
+                {
+                  "kind": "i64",
+                  "value": "38"
+                },
+                {
+                  "kind": "i64",
+                  "value": "39"
+                },
+                {
+                  "kind": "i64",
+                  "value": "40"
+                },
+                {
+                  "kind": "i64",
+                  "value": "41"
+                },
+                {
+                  "kind": "i64",
+                  "value": "42"
+                },
+                {
+                  "kind": "i64",
+                  "value": "43"
+                },
+                {
+                  "kind": "i64",
+                  "value": "44"
+                },
+                {
+                  "kind": "i64",
+                  "value": "45"
+                },
+                {
+                  "kind": "i64",
+                  "value": "46"
+                },
+                {
+                  "kind": "i64",
+                  "value": "47"
+                },
+                {
+                  "kind": "i64",
+                  "value": "48"
+                },
+                {
+                  "kind": "i64",
+                  "value": "49"
+                },
+                {
+                  "kind": "i64",
+                  "value": "50"
+                },
+                {
+                  "kind": "i64",
+                  "value": "51"
+                },
+                {
+                  "kind": "i64",
+                  "value": "52"
+                },
+                {
+                  "kind": "i64",
+                  "value": "53"
+                },
+                {
+                  "kind": "i64",
+                  "value": "54"
+                },
+                {
+                  "kind": "i64",
+                  "value": "55"
+                },
+                {
+                  "kind": "i64",
+                  "value": "56"
+                },
+                {
+                  "kind": "i64",
+                  "value": "57"
+                },
+                {
+                  "kind": "i64",
+                  "value": "58"
+                },
+                {
+                  "kind": "i64",
+                  "value": "59"
+                },
+                {
+                  "kind": "i64",
+                  "value": "60"
+                },
+                {
+                  "kind": "i64",
+                  "value": "61"
+                },
+                {
+                  "kind": "i64",
+                  "value": "62"
+                },
+                {
+                  "kind": "i64",
+                  "value": "63"
+                }
+              ],
+              "truncated": true
+            }
+          },
+          "truncated": true,
+          "limits": {
+            "nodes": 256,
+            "depth": 8,
+            "text_bytes": 16384,
+            "items": 64,
+            "byte_prefix": 256
+          }
+        },
+        {
+          "schema": "nex.task-value-inspection/1",
+          "stop": {
+            "process_id": "17701",
+            "process_epoch": "1",
+            "stop_id": "1279",
+            "task_id": "2",
+            "task_generation": "1",
+            "frame_id": "71",
+            "publication": "34",
+            "visit": "15",
+            "point_id": 1
+          },
+          "binding": "state",
+          "value": {
+            "kind": "cell",
+            "identity": "4382075944",
+            "live": true,
+            "value": {
+              "kind": "i64",
+              "value": "42"
+            }
+          },
+          "truncated": false,
+          "limits": {
+            "nodes": 256,
+            "depth": 8,
+            "text_bytes": 16384,
+            "items": 64,
+            "byte_prefix": 256
+          }
+        }
+      ],
+      "dap_trace_sha256": "c8a067ee61d117d6ca101243d3e49ac8763d2ffd4d1591e167136eb949c2b802",
+      "dap_responses": [
+        {
+          "command": "initialize",
+          "success": true,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": null,
+          "success": null,
+          "event": "initialized",
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "setFunctionBreakpoints",
+          "success": true,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "configurationDone",
+          "success": true,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "launch",
+          "success": true,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": null,
+          "success": null,
+          "event": "stopped",
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "threads",
+          "success": true,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "stackTrace",
+          "success": true,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "scopes",
+          "success": true,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "variables",
+          "success": true,
+          "event": null,
+          "variables": [
+            {
+              "name": "alias",
+              "value": "cell@100aa3748",
+              "variablesReference": 2
+            },
+            {
+              "name": "cycle",
+              "value": "cell@100aa3b18",
+              "variablesReference": 3
+            },
+            {
+              "name": "input",
+              "value": "41",
+              "variablesReference": 0
+            },
+            {
+              "name": "large",
+              "value": "cell@766502c018",
+              "variablesReference": 4
+            },
+            {
+              "name": "state",
+              "value": "cell@100aa3748",
+              "variablesReference": 5
+            },
+            {
+              "name": "text",
+              "value": "cell@766502c158",
+              "variablesReference": 6
+            }
+          ],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "variables",
+          "success": true,
+          "event": null,
+          "variables": [
+            {
+              "name": "identity",
+              "value": "\"4306122568\"",
+              "variablesReference": 0
+            },
+            {
+              "name": "live",
+              "value": "true",
+              "variablesReference": 0
+            },
+            {
+              "name": "value",
+              "value": "41",
+              "variablesReference": 0
+            }
+          ],
+          "nex_copied_inspection": true
+        },
+        {
+          "command": "variables",
+          "success": true,
+          "event": null,
+          "variables": [
+            {
+              "name": "identity",
+              "value": "\"508500819992\"",
+              "variablesReference": 0
+            },
+            {
+              "name": "live",
+              "value": "true",
+              "variablesReference": 0
+            },
+            {
+              "name": "value",
+              "value": "[65 items] … (truncated)",
+              "variablesReference": 7
+            }
+          ],
+          "nex_copied_inspection": true
+        },
+        {
+          "command": "variables",
+          "success": true,
+          "event": null,
+          "variables": [
+            {
+              "name": "[0]",
+              "value": "0",
+              "variablesReference": 0
+            },
+            {
+              "name": "[1]",
+              "value": "1",
+              "variablesReference": 0
+            },
+            {
+              "name": "[2]",
+              "value": "2",
+              "variablesReference": 0
+            },
+            {
+              "name": "[3]",
+              "value": "3",
+              "variablesReference": 0
+            },
+            {
+              "name": "[4]",
+              "value": "4",
+              "variablesReference": 0
+            },
+            {
+              "name": "[5]",
+              "value": "5",
+              "variablesReference": 0
+            },
+            {
+              "name": "[6]",
+              "value": "6",
+              "variablesReference": 0
+            },
+            {
+              "name": "[7]",
+              "value": "7",
+              "variablesReference": 0
+            },
+            {
+              "name": "[8]",
+              "value": "8",
+              "variablesReference": 0
+            },
+            {
+              "name": "[9]",
+              "value": "9",
+              "variablesReference": 0
+            },
+            {
+              "name": "[10]",
+              "value": "10",
+              "variablesReference": 0
+            },
+            {
+              "name": "[11]",
+              "value": "11",
+              "variablesReference": 0
+            },
+            {
+              "name": "[12]",
+              "value": "12",
+              "variablesReference": 0
+            },
+            {
+              "name": "[13]",
+              "value": "13",
+              "variablesReference": 0
+            },
+            {
+              "name": "[14]",
+              "value": "14",
+              "variablesReference": 0
+            },
+            {
+              "name": "[15]",
+              "value": "15",
+              "variablesReference": 0
+            },
+            {
+              "name": "[16]",
+              "value": "16",
+              "variablesReference": 0
+            },
+            {
+              "name": "[17]",
+              "value": "17",
+              "variablesReference": 0
+            },
+            {
+              "name": "[18]",
+              "value": "18",
+              "variablesReference": 0
+            },
+            {
+              "name": "[19]",
+              "value": "19",
+              "variablesReference": 0
+            },
+            {
+              "name": "[20]",
+              "value": "20",
+              "variablesReference": 0
+            },
+            {
+              "name": "[21]",
+              "value": "21",
+              "variablesReference": 0
+            },
+            {
+              "name": "[22]",
+              "value": "22",
+              "variablesReference": 0
+            },
+            {
+              "name": "[23]",
+              "value": "23",
+              "variablesReference": 0
+            },
+            {
+              "name": "[24]",
+              "value": "24",
+              "variablesReference": 0
+            },
+            {
+              "name": "[25]",
+              "value": "25",
+              "variablesReference": 0
+            },
+            {
+              "name": "[26]",
+              "value": "26",
+              "variablesReference": 0
+            },
+            {
+              "name": "[27]",
+              "value": "27",
+              "variablesReference": 0
+            },
+            {
+              "name": "[28]",
+              "value": "28",
+              "variablesReference": 0
+            },
+            {
+              "name": "[29]",
+              "value": "29",
+              "variablesReference": 0
+            },
+            {
+              "name": "[30]",
+              "value": "30",
+              "variablesReference": 0
+            },
+            {
+              "name": "[31]",
+              "value": "31",
+              "variablesReference": 0
+            },
+            {
+              "name": "[32]",
+              "value": "32",
+              "variablesReference": 0
+            },
+            {
+              "name": "[33]",
+              "value": "33",
+              "variablesReference": 0
+            },
+            {
+              "name": "[34]",
+              "value": "34",
+              "variablesReference": 0
+            },
+            {
+              "name": "[35]",
+              "value": "35",
+              "variablesReference": 0
+            },
+            {
+              "name": "[36]",
+              "value": "36",
+              "variablesReference": 0
+            },
+            {
+              "name": "[37]",
+              "value": "37",
+              "variablesReference": 0
+            },
+            {
+              "name": "[38]",
+              "value": "38",
+              "variablesReference": 0
+            },
+            {
+              "name": "[39]",
+              "value": "39",
+              "variablesReference": 0
+            },
+            {
+              "name": "[40]",
+              "value": "40",
+              "variablesReference": 0
+            },
+            {
+              "name": "[41]",
+              "value": "41",
+              "variablesReference": 0
+            },
+            {
+              "name": "[42]",
+              "value": "42",
+              "variablesReference": 0
+            },
+            {
+              "name": "[43]",
+              "value": "43",
+              "variablesReference": 0
+            },
+            {
+              "name": "[44]",
+              "value": "44",
+              "variablesReference": 0
+            },
+            {
+              "name": "[45]",
+              "value": "45",
+              "variablesReference": 0
+            },
+            {
+              "name": "[46]",
+              "value": "46",
+              "variablesReference": 0
+            },
+            {
+              "name": "[47]",
+              "value": "47",
+              "variablesReference": 0
+            },
+            {
+              "name": "[48]",
+              "value": "48",
+              "variablesReference": 0
+            },
+            {
+              "name": "[49]",
+              "value": "49",
+              "variablesReference": 0
+            },
+            {
+              "name": "[50]",
+              "value": "50",
+              "variablesReference": 0
+            },
+            {
+              "name": "[51]",
+              "value": "51",
+              "variablesReference": 0
+            },
+            {
+              "name": "[52]",
+              "value": "52",
+              "variablesReference": 0
+            },
+            {
+              "name": "[53]",
+              "value": "53",
+              "variablesReference": 0
+            },
+            {
+              "name": "[54]",
+              "value": "54",
+              "variablesReference": 0
+            },
+            {
+              "name": "[55]",
+              "value": "55",
+              "variablesReference": 0
+            },
+            {
+              "name": "[56]",
+              "value": "56",
+              "variablesReference": 0
+            },
+            {
+              "name": "[57]",
+              "value": "57",
+              "variablesReference": 0
+            },
+            {
+              "name": "[58]",
+              "value": "58",
+              "variablesReference": 0
+            },
+            {
+              "name": "[59]",
+              "value": "59",
+              "variablesReference": 0
+            },
+            {
+              "name": "[60]",
+              "value": "60",
+              "variablesReference": 0
+            },
+            {
+              "name": "[61]",
+              "value": "61",
+              "variablesReference": 0
+            },
+            {
+              "name": "[62]",
+              "value": "62",
+              "variablesReference": 0
+            },
+            {
+              "name": "[63]",
+              "value": "63",
+              "variablesReference": 0
+            },
+            {
+              "name": "<truncated>",
+              "value": "<bounded snapshot; remaining children omitted>",
+              "variablesReference": 0
+            }
+          ],
+          "nex_copied_inspection": true
+        },
+        {
+          "command": "evaluate",
+          "success": false,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "next",
+          "success": true,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": null,
+          "success": null,
+          "event": "stopped",
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "variables",
+          "success": false,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": "continue",
+          "success": true,
+          "event": null,
+          "variables": [],
+          "nex_copied_inspection": null
+        },
+        {
+          "command": null,
+          "success": null,
+          "event": "exited",
+          "variables": [],
+          "nex_copied_inspection": null
+        }
+      ]
+    }
+  ],
+  "ordinary_installation": {
+    "portable": false,
+    "moved_compiler_matches": true,
+    "host_dependencies_retained": true,
+    "runtime_debugger_inputs_match": true,
+    "tests_passed": 2,
+    "language_pack_validation": {
+      "ok": true,
+      "shared_fields": [
+        "browser_workers",
+        "bytes_construction",
+        "cli_interface",
+        "compute",
+        "device",
+        "diagnostic_catalogue",
+        "dns_provider",
+        "effect_parameters",
+        "features_scope",
+        "foreign_trap_reporting",
+        "generic_features",
+        "gpu_codegen",
+        "http_client_provider",
+        "http_response_streams",
+        "http_storage_transactions",
+        "ieee_numeric_kernel",
+        "language_pack_contract",
+        "list_construction",
+        "llm_cost",
+        "llm_entry",
+        "managed_references",
+        "model",
+        "native_application_lifetime",
+        "native_core",
+        "native_debug_image_binding",
+        "native_debug_pages",
+        "native_debug_session",
+        "native_entry_abi",
+        "native_runtime_search",
+        "native_tool_arguments",
+        "opencl_codegen",
+        "patch_entities",
+        "project_capture_layout",
+        "project_languages",
+        "resource_executor",
+        "resource_regions",
+        "result_propagation",
+        "runtime_contracts",
+        "runtime_diagnostic_messages",
+        "scoped_discovery",
+        "source_concurrency",
+        "source_contracts",
+        "source_contracts_development",
+        "source_exception_prototype",
+        "source_exceptions",
+        "source_formatting",
+        "source_resources",
+        "standard_library",
+        "structured_tasks_runtime",
+        "task_debugging",
+        "task_execution_limits",
+        "task_external_completion",
+        "task_file_reads",
+        "task_file_streams",
+        "task_file_streams_host",
+        "task_file_streams_prototype",
+        "task_file_writes",
+        "task_file_writes_host",
+        "task_file_writes_prototype",
+        "task_foreign_prototype",
+        "task_network_transport",
+        "task_profile_collector",
+        "task_profiling",
+        "task_provider_debugging",
+        "task_provider_profiling",
+        "task_providers",
+        "task_shared_providers",
+        "task_value_retirement",
+        "tcp_provider",
+        "text_construction",
+        "wasm_features"
+      ],
+      "shared_field_count": 71,
+      "compared_JSON_values": 4721,
+      "errors": [],
+      "schema": "nex.language-pack-validation/1",
+      "compiler_sha256": "c00bcdc0c3bb693327392a1459018ca30ec99367970342e68aeee61553dc45c1",
+      "manifest_sha256": "dbe4c6e33374c12c796817439cc8d2305715b00280eb7afb2be74ba3eee8f097",
+      "language": "0.28",
+      "toolchain": "0.277.0",
+      "compiler_build": "a488174a432dc2ba787caac2eafb078b61b9e4983fcf5a1233cd153fbcec8d94",
+      "descriptor_hash": "ce6eb9791c6933cd1fd851e9b2d7c9dd6a72e8adfbcf3597a07f80005bacf22d"
+    }
+  },
+  "scaled_DAP": {
+    "items": 1000,
+    "source_sha256": "882ad464694af0e1d8984f732b1ca969e757a816ebe3ef2245a59e82b8e70e13",
+    "variant_sha256": "d4384db83df5e00e3a7d8db56ad56dc78e214284c2a6c0f0807db7b14308a76b",
+    "trace_sha256": "d221e2e6905ebd1aa0183db1f827f9cabbbb6fa089a850587a4419e8632ba057",
+    "client_stop_wait_seconds": 120,
+    "NEX_task_timeout_ms": 60000,
+    "result": "test_reference_tasks_actual_dap_cell_children_and_stale_inspection (__main__.TaskDebugging.test_reference_tasks_actual_dap_cell_children_and_stale_inspection) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 60.538s\n\nOK\n",
+    "scope": "Same runtime controls and assertions, longer client observation; records whole test time including preparation."
+  },
+  "retained_failures": [
+    {
+      "stage": "live-v1",
+      "stderr_sha256": "dac3d4205f65f76c11f11eb1ebe140030641feb28aa45407f448c5437a091028",
+      "stderr": "test_reference_tasks_live_cells_alias_cycle_unicode_and_steps (__main__.TaskDebugging.test_reference_tasks_live_cells_alias_cycle_unicode_and_steps) ... FAIL\ntest_reference_tasks_actual_dap_cell_children_and_stale_inspection (__main__.TaskDebugging.test_reference_tasks_actual_dap_cell_children_and_stale_inspection) ... ERROR\n\n======================================================================\nERROR: test_reference_tasks_actual_dap_cell_children_and_stale_inspection (__main__.TaskDebugging.test_reference_tasks_actual_dap_cell_children_and_stale_inspection)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/sae/projects/NEX/tests/task_debugging.py\", line 112, in test_reference_tasks_actual_dap_cell_children_and_stale_inspection\n    adapter.event('stopped')\n    ~~~~~~~~~~~~~^^^^^^^^^^^\n  File \"/Users/sae/projects/NEX/tests/debugging.py\", line 286, in event\n    return self.wait(lambda m: m.get(\"type\") == \"event\" and m.get(\"event\") == event).get(\"body\", {})\n           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/sae/projects/NEX/tests/task_debugging.py\", line 97, in wait\n    message=super().wait(predicate,timeout);trace.append({'response_or_event':message});return message\n  File \"/Users/sae/projects/NEX/tests/debugging.py\", line 271, in wait\n    message = self.messages.get(timeout=max(.01, deadline - time.monotonic()))\n  File \"/Users/sae/.hermes/tools/python-3.14.9+20261021-darwin-arm64/lib/python3.14/queue.py\", line 209, in get\n    raise Empty\n_queue.Empty\n\n======================================================================\nFAIL: test_reference_tasks_live_cells_alias_cycle_unicode_and_steps (__main__.TaskDebugging.test_reference_tasks_live_cells_alias_cycle_unicode_and_steps)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/sae/projects/NEX/tests/task_debugging.py\", line 72, in test_reference_tasks_live_cells_alias_cycle_unicode_and_steps\n    run,rows=self.lldb(built,[encoded('function_breakpoints',breakpoints=[{'name':'task_cells::before'},{'name':'task_cells::after'}]),\n             ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        'run','nex-task-values','nex-task-inspect state','nex-task-inspect alias',\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        'nex-task-inspect cycle','nex-task-inspect text','nex-eval input+1',\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        'nex-task-next','continue','nex-task-inspect state','nex-task-out','continue'])\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/sae/projects/NEX/tests/task_debugging.py\", line 267, in lldb\n    self.assertTrue(result['succeeded'], result['command']+': '+result['error'])\n    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: False is not true : nex-eval input+1: error: {\"code\": \"E_GENERIC_ARITY\", \"column\": 1, \"file\": \"\", \"line\": 1, \"message\": \"type is not generic: cell\", \"ok\": false, \"schema\": \"nex.diagnostic/1\", \"stdout\": \"\"}\n\n\n----------------------------------------------------------------------\nRan 2 tests in 45.092s\n\nFAILED (failures=1, errors=1)\n"
+    },
+    {
+      "stage": "live-v2",
+      "stderr_sha256": "79a724d194c7b42594cc7726a9f12e1a3c913a66c3ffb1614ea53bff7664fbb3",
+      "stderr": "test_reference_tasks_live_cells_alias_cycle_unicode_and_steps (__main__.TaskDebugging.test_reference_tasks_live_cells_alias_cycle_unicode_and_steps) ... ok\ntest_reference_tasks_actual_dap_cell_children_and_stale_inspection (__main__.TaskDebugging.test_reference_tasks_actual_dap_cell_children_and_stale_inspection) ... ERROR\n\n======================================================================\nERROR: test_reference_tasks_actual_dap_cell_children_and_stale_inspection (__main__.TaskDebugging.test_reference_tasks_actual_dap_cell_children_and_stale_inspection)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/sae/projects/NEX/tests/task_debugging.py\", line 115, in test_reference_tasks_actual_dap_cell_children_and_stale_inspection\n    adapter.event('stopped')\n    ~~~~~~~~~~~~~^^^^^^^^^^^\n  File \"/Users/sae/projects/NEX/tests/debugging.py\", line 286, in event\n    return self.wait(lambda m: m.get(\"type\") == \"event\" and m.get(\"event\") == event).get(\"body\", {})\n           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/sae/projects/NEX/tests/task_debugging.py\", line 100, in wait\n    message=super().wait(predicate,timeout);trace.append({'response_or_event':message});return message\n  File \"/Users/sae/projects/NEX/tests/debugging.py\", line 271, in wait\n    message = self.messages.get(timeout=max(.01, deadline - time.monotonic()))\n  File \"/Users/sae/.hermes/tools/python-3.14.9+20261021-darwin-arm64/lib/python3.14/queue.py\", line 209, in get\n    raise Empty\n_queue.Empty\n\n----------------------------------------------------------------------\nRan 2 tests in 96.207s\n\nFAILED (errors=1)\n"
+    },
+    {
+      "stage": "live-v3",
+      "stderr_sha256": "6351660e36861681d15e8f99958e0289c2b22a31b16e5276c16659f3fa1923e1",
+      "stderr": "test_reference_tasks_actual_dap_cell_children_and_stale_inspection (__main__.TaskDebugging.test_reference_tasks_actual_dap_cell_children_and_stale_inspection) ... ERROR\n\n======================================================================\nERROR: test_reference_tasks_actual_dap_cell_children_and_stale_inspection (__main__.TaskDebugging.test_reference_tasks_actual_dap_cell_children_and_stale_inspection)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/sae/projects/NEX/tests/task_debugging.py\", line 122, in test_reference_tasks_actual_dap_cell_children_and_stale_inspection\n    self.assertEqual(next(row for row in children if row['name']=='value')['value'],'41')\n                     ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nStopIteration\n\n----------------------------------------------------------------------\nRan 1 test in 14.553s\n\nFAILED (errors=1)\n"
+    },
+    {
+      "stage": "scaled-dap-v1",
+      "stderr_sha256": "ff6f4d5e8dd1ca675bbdeedf66ee69de1f43401074414e958f612835b461b20a",
+      "stderr": "TaskDebugging (unittest.loader._FailedTest.TaskDebugging) ... ERROR\n\n======================================================================\nERROR: TaskDebugging (unittest.loader._FailedTest.TaskDebugging)\n----------------------------------------------------------------------\nAttributeError: module '__main__' has no attribute 'TaskDebugging'\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n"
+    },
+    {
+      "stage": "child-live-v1",
+      "stderr_sha256": "e1628863836794f985da72119dbca8699400a54453402982daff23fb22b05fca",
+      "stderr": "test_reference_tasks_live_cells_alias_cycle_unicode_and_steps (__main__.TaskDebugging.test_reference_tasks_live_cells_alias_cycle_unicode_and_steps) ... FAIL\ntest_reference_tasks_actual_dap_cell_children_and_stale_inspection (__main__.TaskDebugging.test_reference_tasks_actual_dap_cell_children_and_stale_inspection) ... FAIL\n\n======================================================================\nFAIL: test_reference_tasks_live_cells_alias_cycle_unicode_and_steps (__main__.TaskDebugging.test_reference_tasks_live_cells_alias_cycle_unicode_and_steps)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/sae/projects/NEX/tests/task_debugging.py\", line 76, in test_reference_tasks_live_cells_alias_cycle_unicode_and_steps\n    built=self.reference_source()\n  File \"/Users/sae/projects/NEX/tests/task_debugging.py\", line 71, in reference_source\n    session=self.cli('debug',self.file,'--kind','nex-dap','--task-timeout-ms','60000',timeout=180)\n  File \"/Users/sae/projects/NEX/tests/support.py\", line 104, in cli\n    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 1 != 0 : {\n  \"code\": \"E_NAME\",\n  \"column\": 2,\n  \"file\": \"main.nex\",\n  \"frontend\": {\n    \"code_hash\": \"9ba941ce5dfb3d8221b4a269ae57f4db78d205a8c58b6592dbb67ae46aa98858\",\n    \"compiler\": {\n      \"build\": \"a488174a432dc2ba787caac2eafb078b61b9e4983fcf5a1233cd153fbcec8d94\",\n      \"version\": \"0.277.0\"\n    },\n    \"entry\": {\n      \"bytes\": 8,\n      \"data\": \"main.nex\",\n      \"encoding\": \"utf-8\",\n      \"hash\": \"8f885ece5385d440460ed6ee84a35d37a989f29cf302e1e257d32d969986b31e\",\n      \"truncated\": false\n    },\n    \"id\": \"234ef282171656d3973fe658ce847c6b79a29a12f04aeb2bd29da262e537eb53\",\n    \"input_bytes\": 881,\n    \"input_files\": 1,\n    \"input_kind\": \"project\",\n    \"language\": \"0.30\",\n    \"location\": {\n      \"byte_begin\": 664,\n      \"byte_end\": 674,\n      \"kind\": \"diagnostic_span\"\n    },\n    \"message_hash\": \"26e604bf3988939c1cedf94b677be1a72c0fa22efa7a10940dff5e410548aa36\",\n    \"phase\": \"check\",\n    \"preview\": {\n      \"byte_begin\": 0,\n      \"byte_end\": 881,\n      \"data\": \"module task_cells;\\nstruct Link {next:list<cell<Link>>;}\\nfn after(state:cell<i64>,input:i64)->unit!{task,state}{task_yield();assert(cell_read(state)==42);assert(input==41);}\\nfn before(state:cell<i64>,alias:cell<i64>,cycle:cell<Link>,text:cell<str>,large:cell<list<i64>>,input:i64)->unit!{task,state}{\\n task_yield();\\n assert(state==alias);\\n cell_write(state,cell_read(state)+1);\\n after(state,input);\\n}\\nfn main()->unit!{task,state,io}{\\n let state:cell<i64>=cell_new(41);\\n let cycle:cell<Link>=cell_new(Link([]));\\n cell_write(cycle,Link([cycle]));\\n let large:cell<list<i64>>=cell_new(list(65,fn(i:i64)->i64{return i;}));\\n let text:cell<str>=cell_new(\\\"Я\\\\u0000🧠\\\");\\n task_scope(fn(scope:task_scope)->unit!{task,state}{\\n  let pending:task<unit>=task_spawn(scope,fn()->unit!{task,state}{before(state,state,cycle,text,large,41);});\\n  task_wait(pending);\\n });\\n print(cell_read(state));\\n}\\n\",\n      \"encoding\": \"utf-8\",\n      \"focus_fully_visible\": true,\n      \"truncated_after\": false,\n      \"truncated_before\": false\n    },\n    \"reported_key\": {\n      \"bytes\": 8,\n      \"data\": \"main.nex\",\n      \"encoding\": \"utf-8\",\n      \"hash\": \"8f885ece5385d440460ed6ee84a35d37a989f29cf302e1e257d32d969986b31e\",\n      \"truncated\": false\n    },\n    \"schema\": \"nex.frontend-diagnostic/1\",\n    \"source\": {\n      \"bytes\": 881,\n      \"hash\": \"76730cbd8aa9adabe52f6653faa08743e00f83e6898f8f4ad0281d1193cb3cce\",\n      \"key\": {\n        \"bytes\": 8,\n        \"data\": \"main.nex\",\n        \"encoding\": \"utf-8\",\n        \"hash\": \"8f885ece5385d440460ed6ee84a35d37a989f29cf302e1e257d32d969986b31e\",\n        \"truncated\": false\n      },\n      \"sha256\": \"a2cd124bbf41de8ad6e69a98f14a1e263f8bb39283597f91c1dfc8ceef4ca2ff\",\n      \"utf8\": true\n    },\n    \"source_inputs_complete\": true,\n    \"source_inputs_hash\": \"57b954bc9bab1b3a3c5967ed478faa12cf61b50ada27af49611ec2a09f76b458\"\n  },\n  \"line\": 16,\n  \"message\": \"unknown function 'task_scope'\",\n  \"ok\": false,\n  \"schema\": \"nex.diagnostic/1\",\n  \"stdout\": \"\"\n}\n\n\n======================================================================\nFAIL: test_reference_tasks_actual_dap_cell_children_and_stale_inspection (__main__.TaskDebugging.test_reference_tasks_actual_dap_cell_children_and_stale_inspection)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/sae/projects/NEX/tests/task_debugging.py\", line 105, in test_reference_tasks_actual_dap_cell_children_and_stale_inspection\n    built=self.reference_source();manifest=json.loads(Path(built['debug_manifest']).read_text())\n  File \"/Users/sae/projects/NEX/tests/task_debugging.py\", line 71, in reference_source\n    session=self.cli('debug',self.file,'--kind','nex-dap','--task-timeout-ms','60000',timeout=180)\n  File \"/Users/sae/projects/NEX/tests/support.py\", line 104, in cli\n    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 1 != 0 : {\n  \"code\": \"E_NAME\",\n  \"column\": 2,\n  \"file\": \"main.nex\",\n  \"frontend\": {\n    \"code_hash\": \"9ba941ce5dfb3d8221b4a269ae57f4db78d205a8c58b6592dbb67ae46aa98858\",\n    \"compiler\": {\n      \"build\": \"a488174a432dc2ba787caac2eafb078b61b9e4983fcf5a1233cd153fbcec8d94\",\n      \"version\": \"0.277.0\"\n    },\n    \"entry\": {\n      \"bytes\": 8,\n      \"data\": \"main.nex\",\n      \"encoding\": \"utf-8\",\n      \"hash\": \"8f885ece5385d440460ed6ee84a35d37a989f29cf302e1e257d32d969986b31e\",\n      \"truncated\": false\n    },\n    \"id\": \"234ef282171656d3973fe658ce847c6b79a29a12f04aeb2bd29da262e537eb53\",\n    \"input_bytes\": 881,\n    \"input_files\": 1,\n    \"input_kind\": \"project\",\n    \"language\": \"0.30\",\n    \"location\": {\n      \"byte_begin\": 664,\n      \"byte_end\": 674,\n      \"kind\": \"diagnostic_span\"\n    },\n    \"message_hash\": \"26e604bf3988939c1cedf94b677be1a72c0fa22efa7a10940dff5e410548aa36\",\n    \"phase\": \"check\",\n    \"preview\": {\n      \"byte_begin\": 0,\n      \"byte_end\": 881,\n      \"data\": \"module task_cells;\\nstruct Link {next:list<cell<Link>>;}\\nfn after(state:cell<i64>,input:i64)->unit!{task,state}{task_yield();assert(cell_read(state)==42);assert(input==41);}\\nfn before(state:cell<i64>,alias:cell<i64>,cycle:cell<Link>,text:cell<str>,large:cell<list<i64>>,input:i64)->unit!{task,state}{\\n task_yield();\\n assert(state==alias);\\n cell_write(state,cell_read(state)+1);\\n after(state,input);\\n}\\nfn main()->unit!{task,state,io}{\\n let state:cell<i64>=cell_new(41);\\n let cycle:cell<Link>=cell_new(Link([]));\\n cell_write(cycle,Link([cycle]));\\n let large:cell<list<i64>>=cell_new(list(65,fn(i:i64)->i64{return i;}));\\n let text:cell<str>=cell_new(\\\"Я\\\\u0000🧠\\\");\\n task_scope(fn(scope:task_scope)->unit!{task,state}{\\n  let pending:task<unit>=task_spawn(scope,fn()->unit!{task,state}{before(state,state,cycle,text,large,41);});\\n  task_wait(pending);\\n });\\n print(cell_read(state));\\n}\\n\",\n      \"encoding\": \"utf-8\",\n      \"focus_fully_visible\": true,\n      \"truncated_after\": false,\n      \"truncated_before\": false\n    },\n    \"reported_key\": {\n      \"bytes\": 8,\n      \"data\": \"main.nex\",\n      \"encoding\": \"utf-8\",\n      \"hash\": \"8f885ece5385d440460ed6ee84a35d37a989f29cf302e1e257d32d969986b31e\",\n      \"truncated\": false\n    },\n    \"schema\": \"nex.frontend-diagnostic/1\",\n    \"source\": {\n      \"bytes\": 881,\n      \"hash\": \"76730cbd8aa9adabe52f6653faa08743e00f83e6898f8f4ad0281d1193cb3cce\",\n      \"key\": {\n        \"bytes\": 8,\n        \"data\": \"main.nex\",\n        \"encoding\": \"utf-8\",\n        \"hash\": \"8f885ece5385d440460ed6ee84a35d37a989f29cf302e1e257d32d969986b31e\",\n        \"truncated\": false\n      },\n      \"sha256\": \"a2cd124bbf41de8ad6e69a98f14a1e263f8bb39283597f91c1dfc8ceef4ca2ff\",\n      \"utf8\": true\n    },\n    \"source_inputs_complete\": true,\n    \"source_inputs_hash\": \"57b954bc9bab1b3a3c5967ed478faa12cf61b50ada27af49611ec2a09f76b458\"\n  },\n  \"line\": 16,\n  \"message\": \"unknown function 'task_scope'\",\n  \"ok\": false,\n  \"schema\": \"nex.diagnostic/1\",\n  \"stdout\": \"\"\n}\n\n\n----------------------------------------------------------------------\nRan 2 tests in 0.120s\n\nFAILED (failures=2)\n"
+    },
+    {
+      "stage": "child-live-v2",
+      "stderr_sha256": "df9a775aebfa3225ae1f5f5f08dddfcfec2af376d67ccec2507f6514df69766b",
+      "stderr": "test_reference_tasks_live_cells_alias_cycle_unicode_and_steps (__main__.TaskDebugging.test_reference_tasks_live_cells_alias_cycle_unicode_and_steps) ... FAIL\ntest_reference_tasks_actual_dap_cell_children_and_stale_inspection (__main__.TaskDebugging.test_reference_tasks_actual_dap_cell_children_and_stale_inspection) ... FAIL\n\n======================================================================\nFAIL: test_reference_tasks_live_cells_alias_cycle_unicode_and_steps (__main__.TaskDebugging.test_reference_tasks_live_cells_alias_cycle_unicode_and_steps)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/sae/projects/NEX/tests/task_debugging.py\", line 76, in test_reference_tasks_live_cells_alias_cycle_unicode_and_steps\n    built=self.reference_source()\n  File \"/Users/sae/projects/NEX/tests/task_debugging.py\", line 71, in reference_source\n    session=self.cli('debug',self.file,'--kind','nex-dap','--task-timeout-ms','60000',timeout=180)\n  File \"/Users/sae/projects/NEX/tests/support.py\", line 104, in cli\n    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 1 != 0 : {\n  \"code\": \"E_EFFECT\",\n  \"column\": 2,\n  \"file\": \"main.nex\",\n  \"frontend\": {\n    \"code_hash\": \"3724d330265ce05b4bab152bd20c9480fd16f98ec2502aa324fd43a8a8f68966\",\n    \"compiler\": {\n      \"build\": \"a488174a432dc2ba787caac2eafb078b61b9e4983fcf5a1233cd153fbcec8d94\",\n      \"version\": \"0.277.0\"\n    },\n    \"entry\": {\n      \"bytes\": 8,\n      \"data\": \"main.nex\",\n      \"encoding\": \"utf-8\",\n      \"hash\": \"8f885ece5385d440460ed6ee84a35d37a989f29cf302e1e257d32d969986b31e\",\n      \"truncated\": false\n    },\n    \"id\": \"2b79ad3251e80bc53067356954ee050c98a14f870a45b6dcd281e75c9a287740\",\n    \"input_bytes\": 883,\n    \"input_files\": 1,\n    \"input_kind\": \"project\",\n    \"language\": \"0.30\",\n    \"location\": {\n      \"byte_begin\": 664,\n      \"byte_end\": 674,\n      \"kind\": \"diagnostic_span\"\n    },\n    \"message_hash\": \"e085dcf5dd1d4ab76c0a2f1d908b6e04ba8d922bbbfefd657068e2127b74153f\",\n    \"phase\": \"check\",\n    \"preview\": {\n      \"byte_begin\": 0,\n      \"byte_end\": 883,\n      \"data\": \"module task_cells;\\nstruct Link {next:list<cell<Link>>;}\\nfn after(state:cell<i64>,input:i64)->unit!{task,state}{task_yield();assert(cell_read(state)==42);assert(input==41);}\\nfn before(state:cell<i64>,alias:cell<i64>,cycle:cell<Link>,text:cell<str>,large:cell<list<i64>>,input:i64)->unit!{task,state}{\\n task_yield();\\n assert(state==alias);\\n cell_write(state,cell_read(state)+1);\\n after(state,input);\\n}\\nfn main()->unit!{task,state,io}{\\n let state:cell<i64>=cell_new(41);\\n let cycle:cell<Link>=cell_new(Link([]));\\n cell_write(cycle,Link([cycle]));\\n let large:cell<list<i64>>=cell_new(list(65,fn(i:i64)->i64{return i;}));\\n let text:cell<str>=cell_new(\\\"Я\\\\u0000🧠\\\");\\n with_tasks(2,fn(scope:task_scope)->unit!{task,state}{\\n  let pending:task<unit>=task_spawn(scope,fn()->unit!{task,state}{before(state,state,cycle,text,large,41);});\\n  task_wait(pending);\\n });\\n print(cell_read(state));\\n}\\n\",\n      \"encoding\": \"utf-8\",\n      \"focus_fully_visible\": true,\n      \"truncated_after\": false,\n      \"truncated_before\": false\n    },\n    \"reported_key\": {\n      \"bytes\": 8,\n      \"data\": \"main.nex\",\n      \"encoding\": \"utf-8\",\n      \"hash\": \"8f885ece5385d440460ed6ee84a35d37a989f29cf302e1e257d32d969986b31e\",\n      \"truncated\": false\n    },\n    \"schema\": \"nex.frontend-diagnostic/1\",\n    \"source\": {\n      \"bytes\": 883,\n      \"hash\": \"d34404edbe7b3d51eaacf7568e646a28a6806bb61cf3d10d9ca06c2729ef6490\",\n      \"key\": {\n        \"bytes\": 8,\n        \"data\": \"main.nex\",\n        \"encoding\": \"utf-8\",\n        \"hash\": \"8f885ece5385d440460ed6ee84a35d37a989f29cf302e1e257d32d969986b31e\",\n        \"truncated\": false\n      },\n      \"sha256\": \"e8e234afe5bef7b89742ae1a02cd8bbe12112bbb0cb33b357db319ed4ecc13f8\",\n      \"utf8\": true\n    },\n    \"source_inputs_complete\": true,\n    \"source_inputs_hash\": \"65d9983b76c8fb18f00130a3bf932795b04db245eaa6b1380c540d456968e415\"\n  },\n  \"line\": 16,\n  \"message\": \"with_tasks may deliver a task source exception and requires throw or a lexical try\",\n  \"ok\": false,\n  \"schema\": \"nex.diagnostic/1\",\n  \"stdout\": \"\"\n}\n\n\n======================================================================\nFAIL: test_reference_tasks_actual_dap_cell_children_and_stale_inspection (__main__.TaskDebugging.test_reference_tasks_actual_dap_cell_children_and_stale_inspection)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/sae/projects/NEX/tests/task_debugging.py\", line 105, in test_reference_tasks_actual_dap_cell_children_and_stale_inspection\n    built=self.reference_source();manifest=json.loads(Path(built['debug_manifest']).read_text())\n  File \"/Users/sae/projects/NEX/tests/task_debugging.py\", line 71, in reference_source\n    session=self.cli('debug',self.file,'--kind','nex-dap','--task-timeout-ms','60000',timeout=180)\n  File \"/Users/sae/projects/NEX/tests/support.py\", line 104, in cli\n    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 1 != 0 : {\n  \"code\": \"E_EFFECT\",\n  \"column\": 2,\n  \"file\": \"main.nex\",\n  \"frontend\": {\n    \"code_hash\": \"3724d330265ce05b4bab152bd20c9480fd16f98ec2502aa324fd43a8a8f68966\",\n    \"compiler\": {\n      \"build\": \"a488174a432dc2ba787caac2eafb078b61b9e4983fcf5a1233cd153fbcec8d94\",\n      \"version\": \"0.277.0\"\n    },\n    \"entry\": {\n      \"bytes\": 8,\n      \"data\": \"main.nex\",\n      \"encoding\": \"utf-8\",\n      \"hash\": \"8f885ece5385d440460ed6ee84a35d37a989f29cf302e1e257d32d969986b31e\",\n      \"truncated\": false\n    },\n    \"id\": \"2b79ad3251e80bc53067356954ee050c98a14f870a45b6dcd281e75c9a287740\",\n    \"input_bytes\": 883,\n    \"input_files\": 1,\n    \"input_kind\": \"project\",\n    \"language\": \"0.30\",\n    \"location\": {\n      \"byte_begin\": 664,\n      \"byte_end\": 674,\n      \"kind\": \"diagnostic_span\"\n    },\n    \"message_hash\": \"e085dcf5dd1d4ab76c0a2f1d908b6e04ba8d922bbbfefd657068e2127b74153f\",\n    \"phase\": \"check\",\n    \"preview\": {\n      \"byte_begin\": 0,\n      \"byte_end\": 883,\n      \"data\": \"module task_cells;\\nstruct Link {next:list<cell<Link>>;}\\nfn after(state:cell<i64>,input:i64)->unit!{task,state}{task_yield();assert(cell_read(state)==42);assert(input==41);}\\nfn before(state:cell<i64>,alias:cell<i64>,cycle:cell<Link>,text:cell<str>,large:cell<list<i64>>,input:i64)->unit!{task,state}{\\n task_yield();\\n assert(state==alias);\\n cell_write(state,cell_read(state)+1);\\n after(state,input);\\n}\\nfn main()->unit!{task,state,io}{\\n let state:cell<i64>=cell_new(41);\\n let cycle:cell<Link>=cell_new(Link([]));\\n cell_write(cycle,Link([cycle]));\\n let large:cell<list<i64>>=cell_new(list(65,fn(i:i64)->i64{return i;}));\\n let text:cell<str>=cell_new(\\\"Я\\\\u0000🧠\\\");\\n with_tasks(2,fn(scope:task_scope)->unit!{task,state}{\\n  let pending:task<unit>=task_spawn(scope,fn()->unit!{task,state}{before(state,state,cycle,text,large,41);});\\n  task_wait(pending);\\n });\\n print(cell_read(state));\\n}\\n\",\n      \"encoding\": \"utf-8\",\n      \"focus_fully_visible\": true,\n      \"truncated_after\": false,\n      \"truncated_before\": false\n    },\n    \"reported_key\": {\n      \"bytes\": 8,\n      \"data\": \"main.nex\",\n      \"encoding\": \"utf-8\",\n      \"hash\": \"8f885ece5385d440460ed6ee84a35d37a989f29cf302e1e257d32d969986b31e\",\n      \"truncated\": false\n    },\n    \"schema\": \"nex.frontend-diagnostic/1\",\n    \"source\": {\n      \"bytes\": 883,\n      \"hash\": \"d34404edbe7b3d51eaacf7568e646a28a6806bb61cf3d10d9ca06c2729ef6490\",\n      \"key\": {\n        \"bytes\": 8,\n        \"data\": \"main.nex\",\n        \"encoding\": \"utf-8\",\n        \"hash\": \"8f885ece5385d440460ed6ee84a35d37a989f29cf302e1e257d32d969986b31e\",\n        \"truncated\": false\n      },\n      \"sha256\": \"e8e234afe5bef7b89742ae1a02cd8bbe12112bbb0cb33b357db319ed4ecc13f8\",\n      \"utf8\": true\n    },\n    \"source_inputs_complete\": true,\n    \"source_inputs_hash\": \"65d9983b76c8fb18f00130a3bf932795b04db245eaa6b1380c540d456968e415\"\n  },\n  \"line\": 16,\n  \"message\": \"with_tasks may deliver a task source exception and requires throw or a lexical try\",\n  \"ok\": false,\n  \"schema\": \"nex.diagnostic/1\",\n  \"stdout\": \"\"\n}\n\n\n----------------------------------------------------------------------\nRan 2 tests in 0.121s\n\nFAILED (failures=2)\n"
+    }
+  ],
+  "corrections": [
+    "030 frame types/expressions parse under their actual checked source version rather than fallback028.",
+    "ABI8 selection is explicit and independently checked against the loaded execution descriptor.",
+    "DAP test launch uses the explicit nexTaskDebug mode.",
+    "Cell-root cycle detection is per local graph while node/text budgets remain shared, so an earlier alias does not hide another local payload.",
+    "A1000-item instrumented setup exceeded the20s client stop observation; it passed with120s observation and unchanged60s NEX execution deadline.",
+    "The independent scale wrapper initially loaded unittest into the wrong module; no inferior ran in that attempt."
+  ],
+  "complete_source_regression": false,
+  "portable_SDK": false,
+  "published_portable_SDK": "0.246.1 unchanged",
+  "pending": [
+    "Reference provider-image and HTTP logical debug integration",
+    "Cell watch graph reconstruction and alias/cycle semantics",
+    "Reference profiling and parallel transfer",
+    "Persistent native UI and host-session debugger lifecycle",
+    "Matching complete source/platform/portable SDK acceptance",
+    "Remaining application/library/LLM and migration roadmap"
+  ],
+  "whole_goal_complete": false
+}

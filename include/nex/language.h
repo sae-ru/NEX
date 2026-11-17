@@ -273,6 +273,8 @@ E parseSourceExceptionWatchPrototype(std::string source,std::string path,unsigne
 S parseStatement(std::string source,std::string path,unsigned maxTokens=0);
 P parsePattern(std::string source,std::string path,unsigned maxTokens=0);
 Type parseType(std::string source);
+Type parseTypeVersioned(std::string source,SourceLanguage language);
+E parseExpressionVersioned(std::string source,std::string path,unsigned maxTokens,SourceLanguage language);
 void bindExpression(const Program &program,const std::string &function,E expression);
 Type checkExpression(Program &program,const std::string &function,E expression,const std::map<std::string,Type> &locals);
 llvm::json::Value evaluateSourceExceptionWatchPrototype(const Program &,E,const std::map<std::string,Type> &,

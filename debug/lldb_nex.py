@@ -324,6 +324,14 @@ def _preview(value, depth=0, budget=None):
         return "<file " + _file_identity(data) + ">"
     if kind == 12:
         return "<resource " + _external_resource_identity(data) + ">"
+    if kind == 13:
+        items = _ExactVector(data)
+        identity = 'cell@%x' % data.GetLoadAddress()
+        if items.size == 0:
+            return identity + '<closed>'
+        if items.size != 1:
+            raise ValueError('managed cell has an incompatible payload layout')
+        return identity + '(' + _preview(items.GetChildAtIndex(0), depth + 1, budget) + ')'
     items = _vector(data)
     size = items.GetNumChildren()
     if kind in (1, 2, 5):
@@ -373,10 +381,12 @@ class Children:
             if data is None:
                 return False
             self.kind = _member(data, "kind").GetValueAsUnsigned()
-            if self.kind in (1, 2, 3, 4, 5, 6, 7):
+            if self.kind in (1, 2, 3, 4, 5, 6, 7, 13):
                 self.data = data
-                self.items = _ExactBytes(data) if self.kind == 7 else _ExactVector(data) if self.kind == 1 else _vector(data)
+                self.items = _ExactBytes(data) if self.kind == 7 else _ExactVector(data) if self.kind in (1, 13) else _vector(data)
                 size = self.items.GetNumChildren()
+                if self.kind == 13 and size not in (0, 1):
+                    raise ValueError('managed cell has an incompatible payload layout')
                 # Indexed roots remain lazy: lldb-dap can request a page beyond
                 # the bounded text preview without constructing prior children.
                 # DAP represents counts and indices as signed32 integers.
@@ -400,6 +410,8 @@ class Children:
                     return _member(self.data, "text").Clone("code" if self.kind == 4 else "<case>" if self.kind == 5 else "<target>")
                 index -= 1
             name = "[%d]" % index
+            if self.kind == 13:
+                name = 'value'
             if self.kind in (2, 5, 6):
                 name = json.loads(_string(_vector(self.data, "names").GetChildAtIndex(index)))
             elif self.kind in (3, 4):
@@ -1791,6 +1803,9 @@ def _private_module_task_manifest(context, codes=None):
 
 
 def _task_manifest(context):
+    if 'execution_task_abi' in context and (context.get('schema') != 'nex.debug/2' or
+            context.get('language') != '0.30' or context['execution_task_abi'] != '0x4e45585400000008'):
+        raise ValueError('invalid reference task execution ABI selection')
     view = context.get('task_debug')
     provider = context.get('schema') == 'nex.debug/3'
     private = context.get('schema') in ('nex.private-task-debug/1','nex.private-task-debug/2')
@@ -2110,6 +2125,8 @@ class _TaskCatalog:
                         '0.29': 0x4e45585400000007, '0.30': 0x4e45585400000007}.get(language)
         if self.context.get('schema') in ('nex.private-task-debug/1','nex.private-task-debug/2') and language == '0.25-prototype':
             expected_abi = int(self.context['descriptor_abi'],16)
+        if self.context.get('execution_task_abi') == '0x4e45585400000008':
+            expected_abi = 0x4e45585400000008
         if expected_abi is None:
             raise ValueError('unknown task source language')
         if descriptor[5] != expected_abi or descriptor[6] != code[11]:
@@ -2359,6 +2376,87 @@ def _task_completion_marker(frame,bp_loc,internal_dict):
         return True
 
 
+def _inspect_value(value, budget, depth=0):
+    """Copied diagnostic data only: no inferior evaluation or owner retention."""
+    if budget['nodes'] <= 0:
+        budget['truncated'] = True
+        return {'kind': 'unavailable', 'reason': 'inspection node/depth limit'}
+    budget['nodes'] -= 1
+    if depth >= 8:
+        budget['truncated'] = True
+        return {'kind': 'unavailable', 'reason': 'inspection node/depth limit'}
+    try:
+        raw = value.GetNonSyntheticValue()
+        if raw.GetTypeName() == 'nexrt::Value':
+            tag = _integer(_member(raw, 'tag'))
+            if tag in (0, 1):
+                number = _integer(_member(raw, 'scalar'), signed=True)
+                if tag == 1 and number not in (0, 1):
+                    raise ValueError('noncanonical inspected boolean')
+                return {'kind': 'bool' if tag == 1 else 'i64', 'value': bool(number) if tag == 1 else str(number)}
+            if tag == 3:
+                return {'kind': 'f64', 'value': _format_float(_floating(raw, True))}
+        data = _data(value)
+        kind = _integer(_member(data, 'kind'))
+        if kind == 0:
+            return {'kind': 'str', 'value': _raw_string(_member(data, 'text'), budget)}
+        if kind == 7:
+            binary = _ExactBytes(data)
+            count = min(binary.size, max(0, min(256, budget['bytes']//2)))
+            budget['bytes'] -= count*2
+            if count < binary.size:
+                budget['truncated'] = True
+            return {'kind': 'bytes', 'length': binary.size, 'value': base64.b64encode(binary.read(0, count)).decode('ascii'), 'truncated': count < binary.size}
+        if kind in (8, 12):
+            return {'kind': 'file' if kind == 8 else 'resource', 'identity': _file_identity(data) if kind == 8 else _external_resource_identity(data)}
+        if kind in (6, 9, 10, 11):
+            return {'kind': 'opaque', 'type': {6: 'function', 9: 'task_scope', 10: 'task', 11: 'channel'}[kind]}
+        items = _ExactVector(data)
+        if kind == 13:
+            identity = str(data.GetLoadAddress())
+            if items.size not in (0, 1) or not 0 < int(identity) < 2**64:
+                raise ValueError('invalid inspected cell layout or identity')
+            result = {'kind': 'cell', 'identity': identity, 'live': items.size == 1}
+            if identity in budget['cells']:
+                result['alias'] = True
+                return result
+            budget['cells'].add(identity)
+            if items.size:
+                result['value'] = _inspect_value(items.GetChildAtIndex(0), budget, depth+1)
+            return result
+        if kind in (1, 2, 5):
+            count = min(items.size, 64, max(0, budget['nodes']))
+            result = {'kind': {1: 'list', 2: 'record', 5: 'enum'}[kind], 'length': items.size}
+            if kind != 1:
+                result['type'] = _raw_string(_member(data, 'text'), budget)
+                names = _ExactVector(data, 'names')
+                if names.size != items.size:
+                    raise ValueError('inspected nominal field layout differs')
+            children = []
+            for index in range(count):
+                if budget['nodes'] <= 0:
+                    break
+                child = _inspect_value(items.GetChildAtIndex(index), budget, depth+1)
+                children.append(child if kind == 1 else {'name': _raw_string(names.GetChildAtIndex(index), budget), 'value': child})
+            result['items' if kind == 1 else 'fields'] = children
+            if len(children) < items.size:
+                result['truncated'] = budget['truncated'] = True
+            return result
+        if kind in (3, 4) and items.size == 1:
+            result = {'kind': 'ok' if kind == 3 else 'error', 'value': _inspect_value(items.GetChildAtIndex(0), budget, depth+1)}
+            if kind == 4:
+                result['code'] = _raw_string(_member(data, 'text'), budget)
+            return result
+        raise ValueError('incompatible inspected runtime kind')
+    except Exception as error:
+        budget['truncated'] = True
+        return {'kind': 'unavailable', 'reason': str(error)[:256]}
+
+
+def _inspection_budget():
+    return {'nodes': 256, 'bytes': 16384, 'cells': set(), 'truncated': False}
+
+
 def _task_stopped(debugger, compiler=True, task_id=None, frame_index=0):
     view = _TaskCatalog(debugger)
     if compiler and not view.context.get('_compiler'):
@@ -2569,14 +2667,34 @@ def _task_request(debugger, request):
                 rows[-1]['source_identity'] = _task_function_source_identity(function)
         return {'schema': 'nex.task-debug-stack/1', 'task_id': identity, 'generation': task[3],
                 'stop_id': str(view.stop_id), 'frames': rows}
+    if command == 'inspect':
+        name = args.get('binding')
+        if not isinstance(name, str) or not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', name):
+            raise ValueError('inspection requires one visible source binding')
+        _, _, snapshot, values = _task_stopped(debugger, False, identity, args.get('frame_index', 0))
+        if name not in values:
+            raise ValueError('inspection binding is unavailable or opaque')
+        budget = _inspection_budget()
+        value = _inspect_value(values[name], budget)
+        _fresh(view.process, snapshot)
+        return {'schema': 'nex.task-value-inspection/1', 'stop': snapshot['stop'], 'binding': name,
+                'value': value, 'truncated': budget['truncated'],
+                'limits': {'nodes': 256, 'depth': 8, 'text_bytes': 16384, 'items': 64, 'byte_prefix': 256}}
     if command == 'values':
         _, _, snapshot, values = _task_stopped(debugger, False, identity, args.get('frame_index', 0))
         rows = []
+        inspection = _inspection_budget()
         for binding in snapshot['bindings']:
             row = dict(binding)
             if binding['name'] in values:
                 try:
                     row['preview'] = _preview(values[binding['name']])[:4096]
+                    if binding['type'].startswith('cell<'):
+                        # Each local is an independently expandable graph. Keep
+                        # global read bounds, but terminate cycles per root so
+                        # an earlier alias cannot hide this root's payload.
+                        inspection['cells'] = set()
+                        row['inspection'] = _inspect_value(values[binding['name']], inspection)
                     row.pop('unavailable', None)
                 except Exception as error:
                     row['unavailable'] = str(error)[:512]
@@ -2753,6 +2871,10 @@ def task_command(debugger, command, result, internal_dict):
                 raise ValueError('usage: nex-task-break function NAME | line FILE LINE')
             result.PutCString(json.dumps(_task_request(debugger, request), ensure_ascii=False))
             return
+        if name == 'inspect':
+            if not words:
+                raise ValueError('usage: nex-task-inspect BINDING [TASK_ID [FRAME_INDEX]]')
+            arguments['binding'] = words.pop(0)
         if words:
             if len(words) > 2 or any(not word.isascii() or not word.isdecimal() for word in words):
                 raise ValueError('usage: nex-task tasks|select|stack|values|next|in|out [TASK_ID [FRAME_INDEX]]')
@@ -2768,7 +2890,7 @@ def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand('command script add -f ' + __name__ + '.task_request_encoded nex-task-request-encoded')
     debugger.HandleCommand('command script add -f ' + __name__ + '.task_command nex-task')
     for alias, command in (('nex-tasks', 'tasks'), ('nex-task-select', 'select'), ('nex-task-stack', 'stack'),
-                           ('nex-task-values', 'values'), ('nex-task-break', 'break'), ('nex-task-next', 'next'),
+                           ('nex-task-values', 'values'), ('nex-task-inspect', 'inspect'), ('nex-task-break', 'break'), ('nex-task-next', 'next'),
                            ('nex-task-in', 'in'), ('nex-task-out', 'out')):
         debugger.HandleCommand('command alias ' + alias + ' nex-task ' + command)
     debugger.HandleCommand("command script add -f " + __name__ + ".operation nex-operation")
