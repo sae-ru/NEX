@@ -70,8 +70,11 @@ Static components absorbed into another image do not acquire a fabricated DSO.
 Checked watch evaluation runs in the explicitly selected external compiler.
 It reloads the embedded source context, derives the module plan and debug context
 again, and compares every source/consumer/function/catalog identity before
-checking the expression. A `nex.private-task-debug-frame/2` capture retains the
-same build/source/catalog and stop identities. Captures remain inspectable with
+checking the expression. LLDB and NEX-DAP allow up to 15 seconds for each
+compiler request and 25 seconds for the full private module capture. The
+program's own deadline continues to advance while the debugger waits. A
+`nex.private-task-debug-frame/2` capture retains the same build, source, catalog
+and stop identities. Captures remain inspectable with
 matching compiler/manifest after the process exits and source files disappear.
 File/scope/task/channel authority remains opaque; a File diagnostic identity and
 pure equality do not grant IO. Effectful and unavailable resource watches retain

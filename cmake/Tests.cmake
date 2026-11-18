@@ -289,10 +289,13 @@ add_executable(nex_task_provider_profile_report_probe tests/task_provider_profil
 target_link_libraries(nex_task_provider_profile_report_probe PRIVATE nex_native_backend nex_frontend)
 target_compile_options(nex_task_provider_profile_report_probe PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME task_provider_profile_native COMMAND ${Python3_EXECUTABLE} -u -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_provider_profile.py $<TARGET_FILE:nex> --report-probe $<TARGET_FILE:nex_task_provider_profile_report_probe> ${NEX_TEST_PACKAGE_NOTICES_ARGS})
-# Profile capture/replay builds several provider images. The full four-job
-# Ubuntu run exceeded1200s; its unchanged14 methods pass alone in925s.
-# Run this compiler-heavy group on its own within the existing wall budget.
+# Profile capture and replay build several provider images. Keep the group
+# serial so the compiler processes have dedicated resources.
 set_tests_properties(task_provider_profile_native PROPERTIES COST 60 TIMEOUT 1200 RUN_SERIAL TRUE)
+if(WIN32)
+  # The Windows release run reached 1200 seconds after 12 of the 14 methods passed.
+  set_tests_properties(task_provider_profile_native PROPERTIES TIMEOUT 1800)
+endif()
 add_test(NAME task_provider_debugging_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_provider_debugging.py $<TARGET_FILE:nex> ${NEX_TEST_PACKAGE_NOTICES_ARGS})
 set_tests_properties(task_provider_debugging_native PROPERTIES COST 60 TIMEOUT 1200)
 add_test(NAME task_provider_profile_lifetime_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_provider_profile_lifetime.py $<TARGET_FILE:nex> ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_provider_profile_lifetime.cpp)

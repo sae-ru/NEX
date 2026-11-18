@@ -1394,7 +1394,7 @@ def _fresh(process, snapshot):
         raise ValueError("process stop changed during expression capture/evaluation")
 
 
-def _compiler(context, snapshot, expression, kind, timeout=5):
+def _compiler(context, snapshot, expression, kind, timeout):
     encoded = json.dumps(snapshot, ensure_ascii=False).encode("utf-8")
     if len(encoded) > 1024 * 1024:
         raise ValueError("stopped-frame JSON exceeds 1 MiB")
@@ -1410,8 +1410,11 @@ def _compiler(context, snapshot, expression, kind, timeout=5):
 
 
 def _capture(context, process, snapshot, values, expression, for_frame=False):
-    deadline = time.monotonic() + 10
-    plan = _compiler(context, snapshot, expression, "plan")
+    # The compiler reconstructs the complete module debug context for each request.
+    modular = context.get('schema') == 'nex.private-task-debug/2'
+    request_timeout, capture_timeout = (15, 25) if modular else (5, 10)
+    deadline = time.monotonic() + capture_timeout
+    plan = _compiler(context, snapshot, expression, "plan", request_timeout)
     schemas = {v["name"]: v["wire_schema"] for v in plan["variables"]}
     budget = {"nodes": 10000, "bytes": 1024 * 1024, "scan_bytes": 32 * 1024 * 1024, "deadline": deadline}
     bindings = {b["name"]: b for b in snapshot["bindings"]}
@@ -1419,9 +1422,9 @@ def _capture(context, process, snapshot, values, expression, for_frame=False):
         _fresh(process, snapshot)
         remaining = deadline - time.monotonic()
         if remaining <= 0:
-            raise ValueError("expression capture exceeded its ten-second deadline")
+            raise ValueError(f"expression capture exceeded its {capture_timeout}-second deadline")
         try:
-            response = _compiler(context, snapshot, expression, "demand", min(5, remaining))
+            response = _compiler(context, snapshot, expression, "demand", min(request_timeout, remaining))
         except ValueError:
             if for_frame:
                 return None

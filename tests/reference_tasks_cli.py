@@ -79,7 +79,13 @@ console.log(JSON.stringify({ok:true,input_snapshot:true,concurrent_calls:3,inval
 # Actual CLI test adapters and captured task replay use the same source030 cohort.
 example=project(out/'example',(root/'examples/references/tasks.nex').read_text());revision=cli('check',['check'],example)['revision']
 assert cli('web-test',['test','--target','web'],example)['ok'];assert cli('native-test',['test','--profile','release','--build-directory',build_dir],example)['ok']
-cli('task-init',['task','main.nex','--kind','init','-o',example/'task.json'],example)
+task_path=example/'task.json'
+cli('task-init',['task','main.nex','--kind','init','-o',task_path],example)
+# Replay uses a fresh build directory and can compile the runtime under CTest load.
+task=json.loads(task_path.read_text())
+build_check=next(check for check in task['checks'] if check['id']=='build-native')
+build_check['timeout_seconds']=180
+task_path.write_text(json.dumps(task)+'\n')
 checked=cli('task-check',['task','task.json','--kind','check','--revision',revision],example)
 accepted=cli('task-run',['task','task.json','--kind','run','--revision',revision,'--task-hash',checked['task_hash'],'--directory',out/'task-run'],example);assert accepted['ok']
 (example/'main.nex').rename(example/'main.retained')
