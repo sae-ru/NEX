@@ -295,9 +295,12 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::text_
         ambient=self.root/'ambient';ambient.mkdir();self.env.update(temporary_environment(ambient))
         command=[harness.NEX,'project','--kind','profile','--workload',str(workload),'--foreign',str(self.host),'--json']
         runtime=['--','--auth',str(self.root/'auth.json'),'--database',str(self.root/'state.sqlite')]
+        # Start the Windows child inside the profiler deadline. A five-second
+        # HTTP request only starts after the profiler starts the launcher.
+        workload_timeout='5' if os.name=='nt' else '3'
         for mode in ['timeout','interrupt']:
             children.unlink(missing_ok=True);self.marker.unlink(missing_ok=True)
-            process=subprocess.Popen([*command,'--timeout','3' if mode=='timeout' else '30',*runtime],cwd=self.root,
+            process=subprocess.Popen([*command,'--timeout',workload_timeout if mode=='timeout' else '30',*runtime],cwd=self.root,
                 env={**os.environ,**self.env},stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
             try:
                 deadline=time.monotonic()+30
@@ -324,7 +327,7 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::text_
         # temporary root, without the workload launcher or HTTP adapter.
         (self.root/'app/main.nex').write_text('module supervised;server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo",'+json.dumps(self.pin)+');server fn main()->unit!{ffi}{let value:i64=echo(42);}', newline="\n")
         children.unlink();self.marker.unlink()
-        process=subprocess.Popen([harness.NEX,'profile','--timeout','3','--foreign',str(self.host),'--json'],cwd=self.root,
+        process=subprocess.Popen([harness.NEX,'profile','--timeout',workload_timeout,'--foreign',str(self.host),'--json'],cwd=self.root,
             env={**os.environ,**self.env},stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         try:
             out,err=process.communicate(timeout=180);self.assertNotEqual(process.returncode,0,out+err)

@@ -487,11 +487,17 @@ def windows_workload_descendant(root, compiler, environment, finite=False):
     _windows_workload_job()
     root=Path(root);source=root/'workload-descendant.c';image=root/'workload-descendant.exe'
     source.write_text(r'''#include <windows.h>
-int main(void){wchar_t path[32768];if(!GetEnvironmentVariableW(L"NEX_SOURCE_FFI_MARKER",path,32768))return 2;
+#include <string.h>
+int main(int argc,char **argv){if(argc==2&&strcmp(argv[1],"--probe")==0)return 0;
+wchar_t path[32768];if(!GetEnvironmentVariableW(L"NEX_SOURCE_FFI_MARKER",path,32768))return 2;
 for(;;){HANDLE file=CreateFileW(path,FILE_APPEND_DATA,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,0,OPEN_ALWAYS,FILE_ATTRIBUTE_NORMAL,0);if(file==INVALID_HANDLE_VALUE)return 3;DWORD size=0;char event='H';if(!WriteFile(file,&event,1,&size,0)||size!=1)return 4;CloseHandle(file);Sleep(20);}}
 ''',encoding='utf-8',newline='\n')
     result=run_native([compiler,'-x','c','-std=c11',source,'-o',image],capture_output=True,text=True,timeout=120)
     if result.returncode:raise RuntimeError(result.stdout+result.stderr)
+    # Windows can delay the first execution of a freshly linked image. Probe
+    # these exact bytes before the supervisor test starts its workload clock.
+    probe=subprocess.run([image,'--probe'],capture_output=True,text=True,timeout=30)
+    if probe.returncode:raise RuntimeError(probe.stdout+probe.stderr)
     environment['NEX_WORKLOAD_CHILD_EXE']=str(image)
     code=r'''mark('C');
 HANDLE nex_fixture_file=INVALID_HANDLE_VALUE;PROCESS_INFORMATION nex_fixture_process={0};
