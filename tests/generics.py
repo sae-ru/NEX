@@ -225,7 +225,9 @@ fn main() -> unit !{io} {observe(Box(41));}
         self.source('module scalar; fn id<T>(x:T) -> T {return x;} fn main() -> i64 {return id(42);}')
         contract=self.root/'contract.json';self.cli('contract','--symbol','scalar::id<i64>','-o',contract)
         data=json.loads(contract.read_text());data['functions'][0]['ensures']=['result == x'];contract.write_text(json.dumps(data), newline="\n")
-        result=self.cli('verify','--contracts',contract);self.assertTrue(result['ok'])
+        # Give the proof time on busy hosts while keeping the CLI default independent of this test.
+        result = self.cli('verify', '--contracts', contract, '--solver-timeout', '10000')
+        self.assertEqual(result['functions'][0]['status'], 'proven')
         self.cli('contract','--symbol','id','-o',contract)
         result=self.cli('verify','--contracts',contract,ok=False)
         self.assertEqual(result['functions'][0]['status'],'unsupported')

@@ -55,7 +55,8 @@ class PreparationTests(unittest.TestCase):
             path = Path(folder) / 'image.log'
             console = io.StringIO()
             with contextlib.redirect_stderr(console):
-                prepare_image([sys.executable, '-I', '-B', '-c', 'print("prepared")'], path)
+                prepare_image([sys.executable, '-I', '-B', '-c',
+                               'import sys; sys.stdout.buffer.write(b"prepared\\n")'], path)
             self.assertEqual(path.read_bytes(), b'prepared\n')
             self.assertEqual(console.getvalue(), '')
 
@@ -81,7 +82,8 @@ class PreparationTests(unittest.TestCase):
             counter = Path(folder) / 'attempts'
             command = [sys.executable, '-I', '-B', '-c',
                 'import pathlib,sys; p=pathlib.Path(sys.argv[1]); n=int(p.read_text())+1 if p.exists() else 1; '
-                'p.write_text(str(n)); print("Could not resolve \'apt.llvm.org\'" if n==1 else "prepared"); '
+                'p.write_text(str(n)); message="Could not resolve \'apt.llvm.org\'" if n==1 else "prepared"; '
+                'sys.stdout.buffer.write((message+"\\n").encode("ascii")); '
                 'sys.exit(100 if n==1 else 0)', str(counter)]
             with contextlib.redirect_stderr(io.StringIO()), patch('check.time.sleep') as sleep:
                 prepare_image(command, path)
@@ -94,7 +96,7 @@ class PreparationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix='nex-image-dns-') as folder:
             path = Path(folder) / 'image.log'
             command = [sys.executable, '-I', '-B', '-c',
-                'import sys; print("Temporary failure resolving apt.llvm.org"); sys.exit(100)']
+                'import sys; sys.stdout.buffer.write(b"Temporary failure resolving apt.llvm.org\\n"); sys.exit(100)']
             with contextlib.redirect_stderr(io.StringIO()), patch('check.time.sleep') as sleep:
                 with self.assertRaises(subprocess.CalledProcessError) as failure:
                     prepare_image(command, path)

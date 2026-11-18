@@ -550,10 +550,14 @@ fn main()->unit !{task,io,throw}{print(child(41));}
 fn child()->unit !{task}{task_yield();}
 fn main()->unit !{task,io,throw}{child();print("AFTER_PAUSE");}
 ''')
-        session=self.cli('debug','--kind','nex-dap','--task-timeout-ms','5000',timeout=180)
+        # Leave room for the native debugger to reach the first stop on Windows.
+        timeout_ms = 20000 if os.name == 'nt' else 5000
+        session=self.cli('debug','--kind','nex-dap','--task-timeout-ms',str(timeout_ms),timeout=180)
         built={'executable':session['launch']['program'],'debug_manifest':session['manifest']}
-        run,_=self.lldb(built,['nex-task-break function task_deadline::child','run',
-                              'script import time; time.sleep(5.1)','continue'])
+        run,rows=self.lldb(built,['nex-task-break function task_deadline::child','run','nex-task-stack',
+                                 f'script import time; time.sleep({timeout_ms / 1000 + 0.1})','continue'])
+        stack, = [row for row in rows if row.get('schema') == 'nex.task-debug-stack/1']
+        self.assertEqual(stack['frames'][0]['name'], 'task_deadline::child')
         self.assertIn('E_TIMEOUT',run.stdout+run.stderr)
         self.assertNotIn('AFTER_PAUSE\n',run.stdout)
         self.assertNotIn('exited with status = 0',run.stdout)

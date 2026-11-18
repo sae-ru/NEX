@@ -35,7 +35,10 @@ def program(rng,name):
     return '\n'.join(lines)+'\n','\n'.join(expected)+'\n'
 
 
-def sha(text):return hashlib.sha256(text.encode()).hexdigest()
+def write_hashed(path,text):
+    content=text.encode('utf-8')
+    path.write_bytes(content)
+    return hashlib.sha256(content).hexdigest()
 
 
 def main():
@@ -56,13 +59,13 @@ def main():
     for index in range(args.count):
         name=f'gen-{index:03d}'
         source,expected=program(rng,name)
-        (args.directory/'cases'/(name+'.nex')).write_text(source)
+        source_sha256=write_hashed(args.directory/'cases'/(name+'.nex'),source)
         manifest['cases'].append({'name':name,'kind':'valid','source':'cases/'+name+'.nex',
-            'entry':'main','expected_stdout':expected,'program_sha256':sha(source)})
+            'entry':'main','expected_stdout':expected,'program_sha256':source_sha256})
     text=json.dumps(manifest,indent=2)+'\n'
-    (args.directory/'cases.json').write_text(text)
+    manifest_sha256=write_hashed(args.directory/'cases.json',text)
     summary={'schema':'nex.agreement-generator/1','ok':True,'seed':args.seed,'count':args.count,
-        'directory':str(args.directory),'manifest_sha256':sha(text),
+        'directory':str(args.directory),'manifest_sha256':manifest_sha256,
         'reproduce':f'python3 tools/agreement_generate.py --seed {args.seed} --count {args.count} --directory {args.directory}'}
     if args.json:print(json.dumps(summary))
     else:print(json.dumps(summary,indent=2))

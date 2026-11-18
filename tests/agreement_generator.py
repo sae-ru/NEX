@@ -33,6 +33,8 @@ class Generator(unittest.TestCase):
                 self.assertEqual(result.returncode,0,result.stdout+result.stderr)
                 summary=json.loads(result.stdout)
                 self.assertEqual((summary['seed'],summary['count']),(seed,3))
+                self.assertEqual(hashlib.sha256((directory/'cases.json').read_bytes()).hexdigest(),
+                                 summary['manifest_sha256'])
             self.assertEqual(tree(first),tree(second))
             manifest=json.loads((first/'cases.json').read_text())
             self.assertEqual(manifest['schema'],'nex.agreement/1')

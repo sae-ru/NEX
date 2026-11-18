@@ -16,10 +16,21 @@ spec.loader.exec_module(ci)
 parser = argparse.ArgumentParser()
 parser.add_argument('--cmake', default='cmake')
 parser.add_argument('--ctest', default='ctest')
+parser.add_argument('--generator')
+parser.add_argument('--make-program')
 args = parser.parse_args()
 
 
 class Receipts(unittest.TestCase):
+    def configure(self, source, build):
+        command = [args.cmake, '-S', str(source), '-B', str(build)]
+        if args.generator:
+            command.extend(('-G', args.generator))
+        if args.make_program:
+            command.append('-DCMAKE_MAKE_PROGRAM=' + args.make_program)
+        result = subprocess.run(command, capture_output=True, timeout=20)
+        self.assertEqual(result.returncode, 0, (result.stdout + result.stderr).decode(errors='replace'))
+
     def fixture(self, root, body=''):
         source = root / 'source'
         source.mkdir()
@@ -31,8 +42,7 @@ class Receipts(unittest.TestCase):
             + 'set_tests_properties(quick PROPERTIES LABELS core)\n'
             + 'add_test(NAME extended COMMAND ' + q(args.cmake) + ' -E true)\n'
             + 'set_tests_properties(extended PROPERTIES LABELS extended)\n' + body)
-        subprocess.run([args.cmake, '-S', str(source), '-B', str(root / 'build')],
-                       check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
+        self.configure(source, root / 'build')
         policy = {'schema': 'nex.ctest-tiers/1', 'labels': {name: name for name in ci.tiers.LABELS},
                   'tests': {'quick': ['core'], 'extended': ['extended']}}
         path = root / 'policy.json'
@@ -133,8 +143,7 @@ class Receipts(unittest.TestCase):
                 if index == 0:
                     source = root / 'source/CMakeLists.txt'
                     source.write_text(source.read_text().replace('-E true)', '-E false)'))
-                    subprocess.run([args.cmake, '-S', str(source.parent), '-B', str(root / 'build')],
-                                   check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
+                    self.configure(source.parent, root / 'build')
                 result = self.run_ci(root, policy)
                 self.assertFalse(result['ok'], result)
                 self.assertFalse(json.loads((root / 'evidence/report.json').read_bytes())['ok'])

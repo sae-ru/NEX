@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import unittest
 import support as h
 
@@ -11,11 +12,27 @@ PUBLIC=set('analyze api apply build changes check context contract core cost deb
 
 
 class CLI(h.ToolchainCase):
-    def raw(self,*args,ok=True,env=None):
-        result=subprocess.run([h.NEX,*map(str,args)],cwd=self.root,capture_output=True,
+    def raw(self,*args,ok=True,env=None,executable=h.NEX):
+        result=subprocess.run([executable,*map(str,args)],cwd=self.root,capture_output=True,
             text=True,timeout=120,env=None if env is None else {**os.environ,**env})
         self.assertEqual(result.returncode==0,ok,result.stdout+result.stderr)
         return result
+
+    def compiler_for_empty_path(self):
+        if os.name!='nt':
+            return h.NEX
+        # The source-built Windows compiler loads its native DLLs from PATH.
+        # Project only its measured DLL closure beside the isolated executable.
+        readobj=shutil.which('llvm-readobj')
+        self.assertIsNotNone(readobj, 'the native Windows fixture requires LLVM readobj')
+        directory=self.root/'isolated-compiler';directory.mkdir()
+        executable=directory/'nex.exe'
+        shutil.copy2(h.NEX,executable)
+        projected=subprocess.run([sys.executable,'-B',h.REPO/'tools/windows/bundle_native.py',executable,
+            '--readobj',readobj,'--dependencies',Path(readobj).parent,'--report',self.root/'native-dlls.json'],
+            capture_output=True,text=True,timeout=90)
+        self.assertEqual(projected.returncode,0,projected.stdout+projected.stderr)
+        return executable
 
     def candidates(self,*words):
         return json.loads(self.raw('complete','--json','--',*words).stdout)['candidates']
@@ -39,7 +56,8 @@ class CLI(h.ToolchainCase):
         self.assertEqual(self.raw('-h').stdout,self.raw('help').stdout)
         self.assertEqual(self.cli('build','-h'),self.cli('help','build'))
         self.cli('build','does-not-exist.nex','--help')
-        self.raw('help','build',env={'PATH':'','NEX_RESOURCE_DIR':str(self.root/'missing-resources')})
+        self.raw('help','build',executable=self.compiler_for_empty_path(),
+                 env={'PATH':'','NEX_RESOURCE_DIR':str(self.root/'missing-resources')})
         self.assertFalse((self.root/'.nex').exists())
         self.assertEqual((self.root/'nex.json').read_text(),'not a project manifest')
 
@@ -130,7 +148,7 @@ class CLI(h.ToolchainCase):
         scripts={shell:self.cli('completion','--kind',shell)['script']
             for shell in ['bash','zsh','fish','powershell']}
         for shell,script in scripts.items():
-            path=self.root/('completion.'+shell);path.write_text(script)
+            path=self.root/('completion.'+shell);path.write_text(script,encoding='utf-8',newline='\n')
             self.assertIn('nex complete --',script)
             self.assertEqual(self.raw('completion','--kind',shell).stdout,script)
         bindir=self.root/'bin';bindir.mkdir()
@@ -139,17 +157,27 @@ class CLI(h.ToolchainCase):
             bindir=Path(h.NEX).parent
         else:(bindir/'nex').symlink_to(h.NEX)
         env={**os.environ,'PATH':str(bindir)+os.pathsep+os.environ.get('PATH','')}
+        candidates=[('bash',shutil.which('bash')),('zsh',shutil.which('zsh'))]
+        ignored=()
+        if os.name=='nt':
+            # Windows includes WSL launcher aliases. Use an installed shell.
+            ignored=(Path(os.environ['SystemRoot']).resolve(),
+                     (Path(os.environ['LOCALAPPDATA'])/'Microsoft/WindowsApps').resolve())
+            candidates.append(('bash',str(Path(os.environ['ProgramFiles'])/'Git/bin/bash.exe')))
+        else:
+            candidates.append(('bash','/bin/bash'))
         observed=[]
-        for shell in dict.fromkeys([shutil.which('bash'),'/bin/bash' if os.name!='nt' else None,shutil.which('zsh')]):
+        for kind,shell in dict.fromkeys(candidates):
             if not shell or not Path(shell).is_file():continue
-            kind='zsh' if Path(shell).name=='zsh' else 'bash';script=self.root/('completion.'+kind)
-            syntax=subprocess.run([shell,'-n',script],capture_output=True,text=True)
+            if any(Path(shell).resolve().is_relative_to(path) for path in ignored):continue
+            script='completion.'+kind
+            syntax=subprocess.run([shell,'-n',script],cwd=self.root,capture_output=True,text=True,timeout=30)
             self.assertEqual(syntax.returncode,0,syntax.stderr)
             if kind=='bash':
                 body='source "$1"; COMP_WORDS=(nex build --pr); COMP_CWORD=2; _nex_complete; printf "%s\\n" "${COMPREPLY[@]}"'
             else:
                 body='compdef(){ :; }; compadd(){ print -rl -- "${candidates[@]}"; }; _files(){ :; }; source "$1"; words=(nex build --pr); CURRENT=3; PREFIX=--pr; _nex_complete'
-            run=subprocess.run([shell,'-f','-c',body,'nex-test',str(script)],env=env,
+            run=subprocess.run([shell,'-f','-c',body,'nex-test',script],env=env,
                 cwd=self.root,capture_output=True,text=True,timeout=30)
             self.assertEqual(run.returncode,0,run.stdout+run.stderr);self.assertEqual(run.stdout,'--profile\n')
             observed.append(shell)

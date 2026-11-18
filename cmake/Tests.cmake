@@ -1747,7 +1747,8 @@ add_test(NAME test_tiers COMMAND ${Python3_EXECUTABLE} -B
 set_tests_properties(test_tiers PROPERTIES TIMEOUT 30)
 add_test(NAME ci_ctest_receipts COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/ci_ctest.py
-  --ctest ${CMAKE_CTEST_COMMAND} --cmake ${CMAKE_COMMAND})
+  --ctest ${CMAKE_CTEST_COMMAND} --cmake ${CMAKE_COMMAND}
+  "--generator=${CMAKE_GENERATOR}" "--make-program=${CMAKE_MAKE_PROGRAM}")
 set_tests_properties(ci_ctest_receipts PROPERTIES TIMEOUT 60)
 add_test(NAME linux_image_preparation COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/linux_preparation.py)
