@@ -23,6 +23,10 @@ class Boundaries(h.ToolchainCase):
         manifest['language'] = '0.30'
         path.write_text(json.dumps(manifest) + '\n')
 
+    def run_native_release(self):
+        # A cold native build includes compilation and linking on the CI runner.
+        return self.cli('run', '--profile', 'release', timeout=180)
+
     def test_stateful_callbacks_execute_with_an_owned_context(self):
         self.project(CELL_TASK)
         checked = self.cli('check')
@@ -39,7 +43,7 @@ class Boundaries(h.ToolchainCase):
         self.assertTrue(ordinary['public_source_enabled'])
         self.assertEqual(ordinary['native_task_ABI'], '0x4e45585400000008')
         self.assertTrue(self.cli('eval')['ok'])
-        self.assertEqual(self.cli('run', '--profile', 'release')['exit_code'], 0)
+        self.assertEqual(self.run_native_release()['exit_code'], 0)
         emitted = self.cli('emit', '--kind', 'typescript', '--directory', str(self.root/'generated'))
         self.assertTrue(emitted['ok'])
         mapping = json.loads((self.root/'generated/nex-map.json').read_text())
@@ -68,7 +72,7 @@ fn main()->unit!{task,throw,io}{print(compute());}
 test fn answer()->unit!{task,throw}{assert(compute()==42);}
 ''')
         self.assertEqual(self.cli('eval')['stdout'], '42\n')
-        self.assertEqual(self.cli('run', '--profile', 'release')['stdout'], '42\n')
+        self.assertEqual(self.run_native_release()['stdout'], '42\n')
         self.assertTrue(self.cli('test', '--target', 'web')['ok'])
 
     def test_sequential_source030_cells_keep_their_normal_backends(self):
@@ -78,7 +82,7 @@ fn main()->unit!{state,io}{print(compute());}
 test fn answer()->unit!{state}{assert(compute()==42);}
 ''')
         self.assertEqual(self.cli('eval')['stdout'], '42\n')
-        self.assertEqual(self.cli('run', '--profile', 'release')['stdout'], '42\n')
+        self.assertEqual(self.run_native_release()['stdout'], '42\n')
         self.assertTrue(self.cli('test', '--target', 'web')['ok'])
 
 

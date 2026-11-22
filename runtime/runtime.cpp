@@ -282,11 +282,9 @@ void *RequestScope::referenceContext(void *(*create)(void *),void *argument,void
   auto state=impl;
   if(!state->control->active||state->control->cancelled||state->control->exhausted||
       (state->workerStop&&state->workerStop->load())||std::chrono::steady_clock::now()>=state->control->deadline){
-    // A deadline/cancel may become visible between the preceding host poll and
-    // heap acquisition. Owner-thread continuations borrow the attachment in a
-    // temporary scope, which has no PersistentRequestContext pointer itself.
-    // Preserve the shared control outcome in both scopes. No step is spent.
-    if(persistent||state->borrowedReferences)checkExecution(0,false,false);
+    // A request can reach a control limit between the preceding host poll
+    // and heap acquisition. Report that outcome without consuming a step.
+    checkExecution(0,false,false);
     throw DataError("E_CELL_CONTEXT","managed reference request is no longer active");
   }
   if(state->application!=currentApplication)throw DataError("E_CELL_CONTEXT","use the request entry instead of an application wrapper inside a request");

@@ -64,7 +64,7 @@ class JavaCircularFIFO(h.ToolchainCase):
     def test_original_Java_reference_native_and_strict_async_TypeScript(self):
         self.project(self.root,source())
         pin=sha(h.NEX);checked=self.cli('check')
-        reference=self.cli('eval','--steps','80000000',timeout=180)
+        reference=self.cli('eval','--task-steps','80000000','--task-timeout-ms','60000',timeout=180)
         lines=reference['stdout'].splitlines()
         self.assertEqual(lines[-1],'java-circular-fifo-oracle-ok')
         original=json.loads((FIXTURE/'oracle.json').read_text())['outputs']

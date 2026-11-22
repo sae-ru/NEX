@@ -85,13 +85,13 @@ unsigned testManagedReferenceRequests(){
   {
     RequestScope request(2);auto cell=nex_cell_new_i64(1,0,30);
     trap("E_LIMIT",31,[&]{nex_cell_read_i64(cell,0,31);});
-    dataError("E_CELL_CONTEXT",[]{managedReferenceContext(factory,nullptr,destroy);});
+    trap("E_LIMIT",0,[]{managedReferenceContext(factory,nullptr,destroy);});
   }++cases;
   {
     RequestScope request;auto cell=nex_cell_new_i64(1,0,40);
     std::thread cancellation([&]{request.cancel();});cancellation.join();
     trap("E_CANCELLED",41,[&]{nex_cell_read_i64(cell,0,41);});
-    dataError("E_CELL_CONTEXT",[]{managedReferenceContext(factory,nullptr,destroy);});
+    trap("E_CANCELLED",0,[]{managedReferenceContext(factory,nullptr,destroy);});
   }++cases;
   {
     RequestScope request;auto cell=nex_cell_new_i64(1,0,42);unsigned polls=0;
@@ -99,7 +99,13 @@ unsigned testManagedReferenceRequests(){
     trap("E_CANCELLED",43,[&]{nex_cell_write_i64(cell,42,0,43);});
     require(readHandle(cell).object->values[0].scalar==42,"post-write cancellation rolled back the completed write");
   }++cases;
-  {RequestScope request(1000,0);trap("E_TIMEOUT",50,[]{nex_cell_new_i64(1,0,50);});}++cases;
+  {
+    const auto before=created;
+    RequestScope request(1000,0);
+    trap("E_TIMEOUT",0,[]{managedReferenceContext(factory,nullptr,destroy);});
+    require(created==before,"expired request invoked a reference factory");
+    trap("E_TIMEOUT",50,[]{nex_cell_new_i64(1,0,50);});
+  }++cases;
   {
     auto request=std::make_unique<RequestScope>();auto cell=nex_cell_new_i64(1,0,60);
     request->setCancellation([&]{request.reset();return false;});
