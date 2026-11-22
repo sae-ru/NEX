@@ -39,7 +39,7 @@ measured median wall times of 0.296170 s for NEX, 0.290189 s for checked C++ and
 7.610111 s for Python on one Mac. These are one-workload observations.
 The [latest local Qwen3.8 27B task comparison](docs/llm-cost-qwen38-27b-2026-11-17.en.md)
 accepted6/20 NEX,18/20 C++ and20/20 Python attempts. Two NEX calls have unknown
-usage; no NEX token saving is established. A separate [Codex before/after maintenance pilot](docs/codex-maintenance-2026-11-22.ru.md) accepted all three NEX changes in each arm. Reported tokens fell from 529,630 to 353,520. The pilot compares two NEX workflows on the same model.
+usage; no NEX token saving is established. A separate [Codex before/after maintenance pilot](docs/codex-maintenance-2026-11-22.ru.md) accepted all three NEX changes in each arm. Reported tokens fell from 529,630 to 353,520. The pilot compares two NEX workflows on the same model. A [second Codex experiment](docs/codex-multimodule-2026-11-22.ru.md) measures context and assertion diagnostics separately on a failing multi-module billing project.
 
 ## What you can build
 

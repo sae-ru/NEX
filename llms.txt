@@ -32,6 +32,7 @@ the first local Qwen3.8 27B comparison found no NEX token savings.
 - [Compiled command help and completion](docs/cli.md)
 - [Measured local Qwen task results](docs/llm-cost-qwen38-27b-2026-11-17.en.md)
 - [Codex before/after maintenance pilot](docs/codex-maintenance-2026-11-22.ru.md)
+- [Factorial Codex multi-module repair experiment](docs/codex-multimodule-2026-11-22.ru.md)
 
 ## Authority
 

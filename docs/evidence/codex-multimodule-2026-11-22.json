@@ -1,0 +1,1113 @@
+{
+  "schema": "nex.codex-multimodule-comparison/1",
+  "common": {
+    "prompt_sha256": "c40bfd0186bb4f8b5798bd4d4928bc1d181ce2287ec22b77ce06d29902ec677e",
+    "fixture_sha256": "2823011ccd5a8fa447b5bf9887030dc8cd11fae52d910b64296514d895487d65",
+    "starter_sha256": "3698230d9086696079e2a7873340c281b5c8329ab353c7d96209917cf4a02faa",
+    "runner_sha256": "ded1ab927f68611acd68145a9d7f0e788b10067a3ef09ab4fe58debcec65cecf",
+    "settings_sha256": "09bd7849db0717023a73acc3560f5caa03791a6f774303e5b564e2331a500209",
+    "old_sha256": "2adefc8fde3c97b35e6ca10e372d8872c729f33516e8580bb3656ec89425fd91",
+    "new_sha256": "b29e22aeb1fe62a1a9a29cabe619be76b0b0e75f44963b26d43d7e4f0a0ce27c",
+    "cli_sha256": "3ea20787e106af94573d3d6c19480aed93a1334b0dd32b6b04e2f780ce82cf4b",
+    "pilot_runner_sha256": "344eb48a333db25580abaea9d7219fc775565d4b246044a0ac2a4f1e1ce6f74b",
+    "model": "gpt-6.2-sol",
+    "source_commit": "b2e3dacc6954d393ec7593781eb0cb1fe6555f78",
+    "cli_version": "codex-cli 0.169.0-alpha.11.1",
+    "timeout_seconds": 300
+  },
+  "design": "Two blocks on one defect in forward and reversed fixed order; fresh sessions.",
+  "cost_unit": "Per attempt, including failed attempts. Per accepted divides all observed costs by successes.",
+  "effect_unit": "Per-attempt marginal mean cost without minus with feature; positive is saving. Interaction is extra saving from both relative to additive individual savings.",
+  "caveats": [
+    "Input includes cached input; reasoning output is included in output.",
+    "Wall time includes variable service latency and cache warmup.",
+    "Two repetitions of one task provide descriptive, workload-specific results."
+  ],
+  "all_accepted": true,
+  "currency_cost": null,
+  "trials": [
+    {
+      "accepted": true,
+      "metrics": {
+        "input_tokens": 65760,
+        "cached_input_tokens": 54272,
+        "uncached_input_tokens": 11488,
+        "output_tokens": 274,
+        "total_tokens": 66034,
+        "agent_seconds": 25.198,
+        "end_to_end_seconds": 29.182
+      },
+      "block": 1,
+      "position": 1,
+      "arm": "old",
+      "exposure": {
+        "context_bytes": 6109,
+        "diagnostic_bytes": 435
+      },
+      "checks": {
+        "hidden": true,
+        "visible": true
+      },
+      "complete_usage": true,
+      "raw_sha256": "6120e5d842a87d145f35dce439a0b536d13372f23cb70c601c65fdff41a21285",
+      "context_sha256": "80621c6ef6ac79dcaae32ae2069a68c30d2e95a0eb630e5f8ce24c620114d3fd",
+      "diagnostic_sha256": "e93a6bfd593b1556e2f7b349853a8933d86e927540db1f5078e37e463025153e",
+      "full_prompt_sha256": "3a6a7c59391967887b4799042ccfeeeee8099287f440ad92d0a37d823386a677"
+    },
+    {
+      "accepted": true,
+      "metrics": {
+        "input_tokens": 59453,
+        "cached_input_tokens": 54272,
+        "uncached_input_tokens": 5181,
+        "output_tokens": 280,
+        "total_tokens": 59733,
+        "agent_seconds": 23.722,
+        "end_to_end_seconds": 27.819
+      },
+      "block": 1,
+      "position": 2,
+      "arm": "both",
+      "exposure": {
+        "context_bytes": 1631,
+        "diagnostic_bytes": 929
+      },
+      "checks": {
+        "hidden": true,
+        "visible": true
+      },
+      "complete_usage": true,
+      "raw_sha256": "f189eac436882311d92a2071f900dc93a48a6283f72716d4ea9fb3d335b0265f",
+      "context_sha256": "36182dc7d6638d00386b235ada10709c29b57eee24b6ebd5cc48f2faf668f830",
+      "diagnostic_sha256": "d7a628d39f78a9dd710a2a748ae709c0601af7a9d13034d1e727987990ce7b44",
+      "full_prompt_sha256": "b4fcd6fd93daaa5bc7f42add58996b7c9b153956959ea27273d966c10081da11"
+    },
+    {
+      "accepted": true,
+      "metrics": {
+        "input_tokens": 58841,
+        "cached_input_tokens": 49408,
+        "uncached_input_tokens": 9433,
+        "output_tokens": 239,
+        "total_tokens": 59080,
+        "agent_seconds": 19.152,
+        "end_to_end_seconds": 23.314
+      },
+      "block": 1,
+      "position": 3,
+      "arm": "context",
+      "exposure": {
+        "context_bytes": 1631,
+        "diagnostic_bytes": 435
+      },
+      "checks": {
+        "hidden": true,
+        "visible": true
+      },
+      "complete_usage": true,
+      "raw_sha256": "9d9fec9f4524ae00ceea6898574f873fcdc7d9c5bec0d1ee6975fa57a73b2d1a",
+      "context_sha256": "36182dc7d6638d00386b235ada10709c29b57eee24b6ebd5cc48f2faf668f830",
+      "diagnostic_sha256": "e93a6bfd593b1556e2f7b349853a8933d86e927540db1f5078e37e463025153e",
+      "full_prompt_sha256": "cf3f1d83e13c29cadb22bbb3752a00987edd4168d68de9271347a94fcdf85d41"
+    },
+    {
+      "accepted": true,
+      "metrics": {
+        "input_tokens": 79915,
+        "cached_input_tokens": 73600,
+        "uncached_input_tokens": 6315,
+        "output_tokens": 342,
+        "total_tokens": 80257,
+        "agent_seconds": 24.478,
+        "end_to_end_seconds": 28.327
+      },
+      "block": 1,
+      "position": 4,
+      "arm": "diagnostic",
+      "exposure": {
+        "context_bytes": 6109,
+        "diagnostic_bytes": 929
+      },
+      "checks": {
+        "hidden": true,
+        "visible": true
+      },
+      "complete_usage": true,
+      "raw_sha256": "bb88a328b575dd7620f5c19fedea6fc7362c322f8f42a45d48eeaabe15db2619",
+      "context_sha256": "80621c6ef6ac79dcaae32ae2069a68c30d2e95a0eb630e5f8ce24c620114d3fd",
+      "diagnostic_sha256": "d7a628d39f78a9dd710a2a748ae709c0601af7a9d13034d1e727987990ce7b44",
+      "full_prompt_sha256": "0c944470dfc1ce2cc737b275d0cf2cd807193bccc392aef052f6917efe5e0ccc"
+    },
+    {
+      "accepted": true,
+      "metrics": {
+        "input_tokens": 63348,
+        "cached_input_tokens": 47616,
+        "uncached_input_tokens": 15732,
+        "output_tokens": 334,
+        "total_tokens": 63682,
+        "agent_seconds": 24.139,
+        "end_to_end_seconds": 28.16
+      },
+      "block": 2,
+      "position": 1,
+      "arm": "diagnostic",
+      "exposure": {
+        "context_bytes": 6109,
+        "diagnostic_bytes": 929
+      },
+      "checks": {
+        "hidden": true,
+        "visible": true
+      },
+      "complete_usage": true,
+      "raw_sha256": "26b38c261ab2433372645c9a6ed6f0882e30117ae998a99f05b801336d27db44",
+      "context_sha256": "80621c6ef6ac79dcaae32ae2069a68c30d2e95a0eb630e5f8ce24c620114d3fd",
+      "diagnostic_sha256": "d7a628d39f78a9dd710a2a748ae709c0601af7a9d13034d1e727987990ce7b44",
+      "full_prompt_sha256": "0c944470dfc1ce2cc737b275d0cf2cd807193bccc392aef052f6917efe5e0ccc"
+    },
+    {
+      "accepted": true,
+      "metrics": {
+        "input_tokens": 74421,
+        "cached_input_tokens": 32128,
+        "uncached_input_tokens": 42293,
+        "output_tokens": 310,
+        "total_tokens": 74731,
+        "agent_seconds": 22.281,
+        "end_to_end_seconds": 26.059
+      },
+      "block": 2,
+      "position": 2,
+      "arm": "context",
+      "exposure": {
+        "context_bytes": 1631,
+        "diagnostic_bytes": 435
+      },
+      "checks": {
+        "hidden": true,
+        "visible": true
+      },
+      "complete_usage": true,
+      "raw_sha256": "ee6b427534200435a25230a4c28bdddae85b6382d26aeb37859c85480a8158f8",
+      "context_sha256": "36182dc7d6638d00386b235ada10709c29b57eee24b6ebd5cc48f2faf668f830",
+      "diagnostic_sha256": "e93a6bfd593b1556e2f7b349853a8933d86e927540db1f5078e37e463025153e",
+      "full_prompt_sha256": "cf3f1d83e13c29cadb22bbb3752a00987edd4168d68de9271347a94fcdf85d41"
+    },
+    {
+      "accepted": true,
+      "metrics": {
+        "input_tokens": 59734,
+        "cached_input_tokens": 38528,
+        "uncached_input_tokens": 21206,
+        "output_tokens": 274,
+        "total_tokens": 60008,
+        "agent_seconds": 19.203,
+        "end_to_end_seconds": 23.058
+      },
+      "block": 2,
+      "position": 3,
+      "arm": "both",
+      "exposure": {
+        "context_bytes": 1631,
+        "diagnostic_bytes": 929
+      },
+      "checks": {
+        "hidden": true,
+        "visible": true
+      },
+      "complete_usage": true,
+      "raw_sha256": "2ae7756da068452f0de3e3d01d7224f7ae65a92e1deb77683c3ee0f2634f9a43",
+      "context_sha256": "36182dc7d6638d00386b235ada10709c29b57eee24b6ebd5cc48f2faf668f830",
+      "diagnostic_sha256": "d7a628d39f78a9dd710a2a748ae709c0601af7a9d13034d1e727987990ce7b44",
+      "full_prompt_sha256": "b4fcd6fd93daaa5bc7f42add58996b7c9b153956959ea27273d966c10081da11"
+    },
+    {
+      "accepted": true,
+      "metrics": {
+        "input_tokens": 79033,
+        "cached_input_tokens": 67712,
+        "uncached_input_tokens": 11321,
+        "output_tokens": 289,
+        "total_tokens": 79322,
+        "agent_seconds": 22.539,
+        "end_to_end_seconds": 26.464
+      },
+      "block": 2,
+      "position": 4,
+      "arm": "old",
+      "exposure": {
+        "context_bytes": 6109,
+        "diagnostic_bytes": 435
+      },
+      "checks": {
+        "hidden": true,
+        "visible": true
+      },
+      "complete_usage": true,
+      "raw_sha256": "b4363eaeded97ba68d94c663106401f4098ca39fe50360ca9c9c83afaf8b0b07",
+      "context_sha256": "80621c6ef6ac79dcaae32ae2069a68c30d2e95a0eb630e5f8ce24c620114d3fd",
+      "diagnostic_sha256": "e93a6bfd593b1556e2f7b349853a8933d86e927540db1f5078e37e463025153e",
+      "full_prompt_sha256": "3a6a7c59391967887b4799042ccfeeeee8099287f440ad92d0a37d823386a677"
+    }
+  ],
+  "arms": {
+    "old": {
+      "accepted": 2,
+      "attempts": 2,
+      "metrics": {
+        "input_tokens": {
+          "observed": 2,
+          "observed_sum": 144793,
+          "mean": 72396.5,
+          "per_accepted": 72396.5
+        },
+        "cached_input_tokens": {
+          "observed": 2,
+          "observed_sum": 121984,
+          "mean": 60992.0,
+          "per_accepted": 60992.0
+        },
+        "uncached_input_tokens": {
+          "observed": 2,
+          "observed_sum": 22809,
+          "mean": 11404.5,
+          "per_accepted": 11404.5
+        },
+        "output_tokens": {
+          "observed": 2,
+          "observed_sum": 563,
+          "mean": 281.5,
+          "per_accepted": 281.5
+        },
+        "total_tokens": {
+          "observed": 2,
+          "observed_sum": 145356,
+          "mean": 72678.0,
+          "per_accepted": 72678.0
+        },
+        "agent_seconds": {
+          "observed": 2,
+          "observed_sum": 47.737,
+          "mean": 23.8685,
+          "per_accepted": 23.8685
+        },
+        "end_to_end_seconds": {
+          "observed": 2,
+          "observed_sum": 55.646,
+          "mean": 27.823,
+          "per_accepted": 27.823
+        }
+      }
+    },
+    "both": {
+      "accepted": 2,
+      "attempts": 2,
+      "metrics": {
+        "input_tokens": {
+          "observed": 2,
+          "observed_sum": 119187,
+          "mean": 59593.5,
+          "per_accepted": 59593.5
+        },
+        "cached_input_tokens": {
+          "observed": 2,
+          "observed_sum": 92800,
+          "mean": 46400.0,
+          "per_accepted": 46400.0
+        },
+        "uncached_input_tokens": {
+          "observed": 2,
+          "observed_sum": 26387,
+          "mean": 13193.5,
+          "per_accepted": 13193.5
+        },
+        "output_tokens": {
+          "observed": 2,
+          "observed_sum": 554,
+          "mean": 277.0,
+          "per_accepted": 277.0
+        },
+        "total_tokens": {
+          "observed": 2,
+          "observed_sum": 119741,
+          "mean": 59870.5,
+          "per_accepted": 59870.5
+        },
+        "agent_seconds": {
+          "observed": 2,
+          "observed_sum": 42.925,
+          "mean": 21.4625,
+          "per_accepted": 21.4625
+        },
+        "end_to_end_seconds": {
+          "observed": 2,
+          "observed_sum": 50.877,
+          "mean": 25.438499999999998,
+          "per_accepted": 25.4385
+        }
+      }
+    },
+    "context": {
+      "accepted": 2,
+      "attempts": 2,
+      "metrics": {
+        "input_tokens": {
+          "observed": 2,
+          "observed_sum": 133262,
+          "mean": 66631.0,
+          "per_accepted": 66631.0
+        },
+        "cached_input_tokens": {
+          "observed": 2,
+          "observed_sum": 81536,
+          "mean": 40768.0,
+          "per_accepted": 40768.0
+        },
+        "uncached_input_tokens": {
+          "observed": 2,
+          "observed_sum": 51726,
+          "mean": 25863.0,
+          "per_accepted": 25863.0
+        },
+        "output_tokens": {
+          "observed": 2,
+          "observed_sum": 549,
+          "mean": 274.5,
+          "per_accepted": 274.5
+        },
+        "total_tokens": {
+          "observed": 2,
+          "observed_sum": 133811,
+          "mean": 66905.5,
+          "per_accepted": 66905.5
+        },
+        "agent_seconds": {
+          "observed": 2,
+          "observed_sum": 41.433,
+          "mean": 20.7165,
+          "per_accepted": 20.7165
+        },
+        "end_to_end_seconds": {
+          "observed": 2,
+          "observed_sum": 49.373,
+          "mean": 24.686500000000002,
+          "per_accepted": 24.6865
+        }
+      }
+    },
+    "diagnostic": {
+      "accepted": 2,
+      "attempts": 2,
+      "metrics": {
+        "input_tokens": {
+          "observed": 2,
+          "observed_sum": 143263,
+          "mean": 71631.5,
+          "per_accepted": 71631.5
+        },
+        "cached_input_tokens": {
+          "observed": 2,
+          "observed_sum": 121216,
+          "mean": 60608.0,
+          "per_accepted": 60608.0
+        },
+        "uncached_input_tokens": {
+          "observed": 2,
+          "observed_sum": 22047,
+          "mean": 11023.5,
+          "per_accepted": 11023.5
+        },
+        "output_tokens": {
+          "observed": 2,
+          "observed_sum": 676,
+          "mean": 338.0,
+          "per_accepted": 338.0
+        },
+        "total_tokens": {
+          "observed": 2,
+          "observed_sum": 143939,
+          "mean": 71969.5,
+          "per_accepted": 71969.5
+        },
+        "agent_seconds": {
+          "observed": 2,
+          "observed_sum": 48.617,
+          "mean": 24.308500000000002,
+          "per_accepted": 24.3085
+        },
+        "end_to_end_seconds": {
+          "observed": 2,
+          "observed_sum": 56.487,
+          "mean": 28.2435,
+          "per_accepted": 28.2435
+        }
+      }
+    }
+  },
+  "effects": {
+    "context_without_diagnostic": {
+      "input_tokens": {
+        "saved": 5765.5,
+        "percent": 7.9638
+      },
+      "cached_input_tokens": {
+        "saved": 20224.0,
+        "percent": 33.1584
+      },
+      "uncached_input_tokens": {
+        "saved": -14458.5,
+        "percent": -126.7789
+      },
+      "output_tokens": {
+        "saved": 7.0,
+        "percent": 2.4867
+      },
+      "total_tokens": {
+        "saved": 5772.5,
+        "percent": 7.9426
+      },
+      "agent_seconds": {
+        "saved": 3.152,
+        "percent": 13.2057
+      },
+      "end_to_end_seconds": {
+        "saved": 3.1365,
+        "percent": 11.273
+      }
+    },
+    "context_with_diagnostic": {
+      "input_tokens": {
+        "saved": 12038.0,
+        "percent": 16.8055
+      },
+      "cached_input_tokens": {
+        "saved": 14208.0,
+        "percent": 23.4424
+      },
+      "uncached_input_tokens": {
+        "saved": -2170.0,
+        "percent": -19.6852
+      },
+      "output_tokens": {
+        "saved": 61.0,
+        "percent": 18.0473
+      },
+      "total_tokens": {
+        "saved": 12099.0,
+        "percent": 16.8113
+      },
+      "agent_seconds": {
+        "saved": 2.846,
+        "percent": 11.7078
+      },
+      "end_to_end_seconds": {
+        "saved": 2.805,
+        "percent": 9.9315
+      }
+    },
+    "diagnostic_without_context": {
+      "input_tokens": {
+        "saved": 765.0,
+        "percent": 1.0567
+      },
+      "cached_input_tokens": {
+        "saved": 384.0,
+        "percent": 0.6296
+      },
+      "uncached_input_tokens": {
+        "saved": 381.0,
+        "percent": 3.3408
+      },
+      "output_tokens": {
+        "saved": -56.5,
+        "percent": -20.071
+      },
+      "total_tokens": {
+        "saved": 708.5,
+        "percent": 0.9748
+      },
+      "agent_seconds": {
+        "saved": -0.44,
+        "percent": -1.8434
+      },
+      "end_to_end_seconds": {
+        "saved": -0.4205,
+        "percent": -1.5113
+      }
+    },
+    "diagnostic_with_context": {
+      "input_tokens": {
+        "saved": 7037.5,
+        "percent": 10.5619
+      },
+      "cached_input_tokens": {
+        "saved": -5632.0,
+        "percent": -13.8148
+      },
+      "uncached_input_tokens": {
+        "saved": 12669.5,
+        "percent": 48.987
+      },
+      "output_tokens": {
+        "saved": -2.5,
+        "percent": -0.9107
+      },
+      "total_tokens": {
+        "saved": 7035.0,
+        "percent": 10.5148
+      },
+      "agent_seconds": {
+        "saved": -0.746,
+        "percent": -3.601
+      },
+      "end_to_end_seconds": {
+        "saved": -0.752,
+        "percent": -3.0462
+      }
+    },
+    "both_vs_old": {
+      "input_tokens": {
+        "saved": 12803.0,
+        "percent": 17.6846
+      },
+      "cached_input_tokens": {
+        "saved": 14592.0,
+        "percent": 23.9244
+      },
+      "uncached_input_tokens": {
+        "saved": -1789.0,
+        "percent": -15.6868
+      },
+      "output_tokens": {
+        "saved": 4.5,
+        "percent": 1.5986
+      },
+      "total_tokens": {
+        "saved": 12807.5,
+        "percent": 17.6223
+      },
+      "agent_seconds": {
+        "saved": 2.406,
+        "percent": 10.0802
+      },
+      "end_to_end_seconds": {
+        "saved": 2.3845,
+        "percent": 8.5702
+      }
+    },
+    "context_main_effect": {
+      "input_tokens": {
+        "saved": 8901.75,
+        "percent": 12.3611
+      },
+      "cached_input_tokens": {
+        "saved": 17216.0,
+        "percent": 28.3158
+      },
+      "uncached_input_tokens": {
+        "saved": -8314.25,
+        "percent": -74.1417
+      },
+      "output_tokens": {
+        "saved": 34.0,
+        "percent": 10.9766
+      },
+      "total_tokens": {
+        "saved": 8935.75,
+        "percent": 12.3552
+      },
+      "agent_seconds": {
+        "saved": 2.999,
+        "percent": 12.4499
+      },
+      "end_to_end_seconds": {
+        "saved": 2.97075,
+        "percent": 10.5972
+      }
+    },
+    "diagnostic_main_effect": {
+      "input_tokens": {
+        "saved": 3901.25,
+        "percent": 5.6122
+      },
+      "cached_input_tokens": {
+        "saved": -2624.0,
+        "percent": -5.1572
+      },
+      "uncached_input_tokens": {
+        "saved": 6525.25,
+        "percent": 35.0184
+      },
+      "output_tokens": {
+        "saved": -29.5,
+        "percent": -10.6115
+      },
+      "total_tokens": {
+        "saved": 3871.75,
+        "percent": 5.5476
+      },
+      "agent_seconds": {
+        "saved": -0.593,
+        "percent": -2.6601
+      },
+      "end_to_end_seconds": {
+        "saved": -0.58625,
+        "percent": -2.2329
+      }
+    },
+    "interaction_extra_saved": {
+      "input_tokens": 6272.5,
+      "cached_input_tokens": -6016.0,
+      "uncached_input_tokens": 12288.5,
+      "output_tokens": 54.0,
+      "total_tokens": 6326.5,
+      "agent_seconds": -0.306,
+      "end_to_end_seconds": -0.3315
+    }
+  },
+  "effects_by_block": {
+    "1": {
+      "context_without_diagnostic": {
+        "input_tokens": {
+          "saved": 6919.0,
+          "percent": 10.5216
+        },
+        "cached_input_tokens": {
+          "saved": 4864.0,
+          "percent": 8.9623
+        },
+        "uncached_input_tokens": {
+          "saved": 2055.0,
+          "percent": 17.8882
+        },
+        "output_tokens": {
+          "saved": 35.0,
+          "percent": 12.7737
+        },
+        "total_tokens": {
+          "saved": 6954.0,
+          "percent": 10.5309
+        },
+        "agent_seconds": {
+          "saved": 6.046,
+          "percent": 23.994
+        },
+        "end_to_end_seconds": {
+          "saved": 5.868,
+          "percent": 20.1083
+        }
+      },
+      "context_with_diagnostic": {
+        "input_tokens": {
+          "saved": 20462.0,
+          "percent": 25.6047
+        },
+        "cached_input_tokens": {
+          "saved": 19328.0,
+          "percent": 26.2609
+        },
+        "uncached_input_tokens": {
+          "saved": 1134.0,
+          "percent": 17.9572
+        },
+        "output_tokens": {
+          "saved": 62.0,
+          "percent": 18.1287
+        },
+        "total_tokens": {
+          "saved": 20524.0,
+          "percent": 25.5728
+        },
+        "agent_seconds": {
+          "saved": 0.756,
+          "percent": 3.0885
+        },
+        "end_to_end_seconds": {
+          "saved": 0.508,
+          "percent": 1.7933
+        }
+      },
+      "diagnostic_without_context": {
+        "input_tokens": {
+          "saved": -14155.0,
+          "percent": -21.5252
+        },
+        "cached_input_tokens": {
+          "saved": -19328.0,
+          "percent": -35.6132
+        },
+        "uncached_input_tokens": {
+          "saved": 5173.0,
+          "percent": 45.0296
+        },
+        "output_tokens": {
+          "saved": -68.0,
+          "percent": -24.8175
+        },
+        "total_tokens": {
+          "saved": -14223.0,
+          "percent": -21.5389
+        },
+        "agent_seconds": {
+          "saved": 0.72,
+          "percent": 2.8574
+        },
+        "end_to_end_seconds": {
+          "saved": 0.855,
+          "percent": 2.9299
+        }
+      },
+      "diagnostic_with_context": {
+        "input_tokens": {
+          "saved": -612.0,
+          "percent": -1.0401
+        },
+        "cached_input_tokens": {
+          "saved": -4864.0,
+          "percent": -9.8446
+        },
+        "uncached_input_tokens": {
+          "saved": 4252.0,
+          "percent": 45.0758
+        },
+        "output_tokens": {
+          "saved": -41.0,
+          "percent": -17.1548
+        },
+        "total_tokens": {
+          "saved": -653.0,
+          "percent": -1.1053
+        },
+        "agent_seconds": {
+          "saved": -4.57,
+          "percent": -23.8617
+        },
+        "end_to_end_seconds": {
+          "saved": -4.505,
+          "percent": -19.3232
+        }
+      },
+      "both_vs_old": {
+        "input_tokens": {
+          "saved": 6307.0,
+          "percent": 9.5909
+        },
+        "cached_input_tokens": {
+          "saved": 0.0,
+          "percent": 0.0
+        },
+        "uncached_input_tokens": {
+          "saved": 6307.0,
+          "percent": 54.9008
+        },
+        "output_tokens": {
+          "saved": -6.0,
+          "percent": -2.1898
+        },
+        "total_tokens": {
+          "saved": 6301.0,
+          "percent": 9.5421
+        },
+        "agent_seconds": {
+          "saved": 1.476,
+          "percent": 5.8576
+        },
+        "end_to_end_seconds": {
+          "saved": 1.363,
+          "percent": 4.6707
+        }
+      },
+      "context_main_effect": {
+        "input_tokens": {
+          "saved": 13690.5,
+          "percent": 18.7959
+        },
+        "cached_input_tokens": {
+          "saved": 12096.0,
+          "percent": 18.9189
+        },
+        "uncached_input_tokens": {
+          "saved": 1594.5,
+          "percent": 17.9127
+        },
+        "output_tokens": {
+          "saved": 48.5,
+          "percent": 15.7468
+        },
+        "total_tokens": {
+          "saved": 13739.0,
+          "percent": 18.7831
+        },
+        "agent_seconds": {
+          "saved": 3.401,
+          "percent": 13.6927
+        },
+        "end_to_end_seconds": {
+          "saved": 3.188,
+          "percent": 11.087
+        }
+      },
+      "diagnostic_main_effect": {
+        "input_tokens": {
+          "saved": -7383.5,
+          "percent": -11.8514
+        },
+        "cached_input_tokens": {
+          "saved": -12096.0,
+          "percent": -23.3333
+        },
+        "uncached_input_tokens": {
+          "saved": 4712.5,
+          "percent": 45.0504
+        },
+        "output_tokens": {
+          "saved": -54.5,
+          "percent": -21.2476
+        },
+        "total_tokens": {
+          "saved": -7438.0,
+          "percent": -11.89
+        },
+        "agent_seconds": {
+          "saved": -1.925,
+          "percent": -8.6809
+        },
+        "end_to_end_seconds": {
+          "saved": -1.825,
+          "percent": -6.9529
+        }
+      },
+      "interaction_extra_saved": {
+        "input_tokens": 13543,
+        "cached_input_tokens": 14464,
+        "uncached_input_tokens": -921,
+        "output_tokens": 27,
+        "total_tokens": 13570,
+        "agent_seconds": -5.29,
+        "end_to_end_seconds": -5.36
+      }
+    },
+    "2": {
+      "context_without_diagnostic": {
+        "input_tokens": {
+          "saved": 4612.0,
+          "percent": 5.8355
+        },
+        "cached_input_tokens": {
+          "saved": 35584.0,
+          "percent": 52.552
+        },
+        "uncached_input_tokens": {
+          "saved": -30972.0,
+          "percent": -273.5801
+        },
+        "output_tokens": {
+          "saved": -21.0,
+          "percent": -7.2664
+        },
+        "total_tokens": {
+          "saved": 4591.0,
+          "percent": 5.7878
+        },
+        "agent_seconds": {
+          "saved": 0.258,
+          "percent": 1.1447
+        },
+        "end_to_end_seconds": {
+          "saved": 0.405,
+          "percent": 1.5304
+        }
+      },
+      "context_with_diagnostic": {
+        "input_tokens": {
+          "saved": 3614.0,
+          "percent": 5.705
+        },
+        "cached_input_tokens": {
+          "saved": 9088.0,
+          "percent": 19.086
+        },
+        "uncached_input_tokens": {
+          "saved": -5474.0,
+          "percent": -34.7953
+        },
+        "output_tokens": {
+          "saved": 60.0,
+          "percent": 17.9641
+        },
+        "total_tokens": {
+          "saved": 3674.0,
+          "percent": 5.7693
+        },
+        "agent_seconds": {
+          "saved": 4.936,
+          "percent": 20.4482
+        },
+        "end_to_end_seconds": {
+          "saved": 5.102,
+          "percent": 18.1179
+        }
+      },
+      "diagnostic_without_context": {
+        "input_tokens": {
+          "saved": 15685.0,
+          "percent": 19.8461
+        },
+        "cached_input_tokens": {
+          "saved": 20096.0,
+          "percent": 29.6786
+        },
+        "uncached_input_tokens": {
+          "saved": -4411.0,
+          "percent": -38.963
+        },
+        "output_tokens": {
+          "saved": -45.0,
+          "percent": -15.5709
+        },
+        "total_tokens": {
+          "saved": 15640.0,
+          "percent": 19.7171
+        },
+        "agent_seconds": {
+          "saved": -1.6,
+          "percent": -7.0988
+        },
+        "end_to_end_seconds": {
+          "saved": -1.696,
+          "percent": -6.4087
+        }
+      },
+      "diagnostic_with_context": {
+        "input_tokens": {
+          "saved": 14687.0,
+          "percent": 19.735
+        },
+        "cached_input_tokens": {
+          "saved": -6400.0,
+          "percent": -19.9203
+        },
+        "uncached_input_tokens": {
+          "saved": 21087.0,
+          "percent": 49.8593
+        },
+        "output_tokens": {
+          "saved": 36.0,
+          "percent": 11.6129
+        },
+        "total_tokens": {
+          "saved": 14723.0,
+          "percent": 19.7013
+        },
+        "agent_seconds": {
+          "saved": 3.078,
+          "percent": 13.8145
+        },
+        "end_to_end_seconds": {
+          "saved": 3.001,
+          "percent": 11.5162
+        }
+      },
+      "both_vs_old": {
+        "input_tokens": {
+          "saved": 19299.0,
+          "percent": 24.4189
+        },
+        "cached_input_tokens": {
+          "saved": 29184.0,
+          "percent": 43.1002
+        },
+        "uncached_input_tokens": {
+          "saved": -9885.0,
+          "percent": -87.3156
+        },
+        "output_tokens": {
+          "saved": 15.0,
+          "percent": 5.1903
+        },
+        "total_tokens": {
+          "saved": 19314.0,
+          "percent": 24.3489
+        },
+        "agent_seconds": {
+          "saved": 3.336,
+          "percent": 14.801
+        },
+        "end_to_end_seconds": {
+          "saved": 3.406,
+          "percent": 12.8703
+        }
+      },
+      "context_main_effect": {
+        "input_tokens": {
+          "saved": 4113.0,
+          "percent": 5.7775
+        },
+        "cached_input_tokens": {
+          "saved": 22336.0,
+          "percent": 38.7347
+        },
+        "uncached_input_tokens": {
+          "saved": -18223.0,
+          "percent": -134.7207
+        },
+        "output_tokens": {
+          "saved": 19.5,
+          "percent": 6.26
+        },
+        "total_tokens": {
+          "saved": 4132.5,
+          "percent": 5.7796
+        },
+        "agent_seconds": {
+          "saved": 2.597,
+          "percent": 11.1273
+        },
+        "end_to_end_seconds": {
+          "saved": 2.7535,
+          "percent": 10.0816
+        }
+      },
+      "diagnostic_main_effect": {
+        "input_tokens": {
+          "saved": 15186.0,
+          "percent": 19.7923
+        },
+        "cached_input_tokens": {
+          "saved": 6848.0,
+          "percent": 13.7179
+        },
+        "uncached_input_tokens": {
+          "saved": 8338.0,
+          "percent": 31.1038
+        },
+        "output_tokens": {
+          "saved": -4.5,
+          "percent": -1.5025
+        },
+        "total_tokens": {
+          "saved": 15181.5,
+          "percent": 19.7095
+        },
+        "agent_seconds": {
+          "saved": 0.739,
+          "percent": 3.2976
+        },
+        "end_to_end_seconds": {
+          "saved": 0.6525,
+          "percent": 2.4846
+        }
+      },
+      "interaction_extra_saved": {
+        "input_tokens": -998,
+        "cached_input_tokens": -26496,
+        "uncached_input_tokens": 25498,
+        "output_tokens": 81,
+        "total_tokens": -917,
+        "agent_seconds": 4.678,
+        "end_to_end_seconds": 4.697
+      }
+    }
+  }
+}
