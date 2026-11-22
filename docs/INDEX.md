@@ -64,13 +64,14 @@ advertised project source languages and toolchain by the same script.
 |---|---|---|
 | [Отложенные дополнительные проверки NEX](deferred-checks.ru.md) | language 0.28; unpublished instrumentation snapshot 0.168 | repository |
 
-## Historical (4)
+## Historical (5)
 
 | Document | Applies to | Owner |
 |---|---|---|
 | [Architecture decisions for the implemented core](history/architecture-before-2026-11-10.md) | mixed earlier milestones | repository |
 | [Приоритеты улучшения NEX](development-priorities.md) | language 0.28; toolchain 0.246.0 | repository |
 | [Ремонт складского биллинга в Codex. Парный эксперимент с контекстом и диагностикой](codex-multimodule-2026-11-22.ru.md) | language 0.30; toolchain 0.281.0 | repository |
+| [Сколько стоит исправление одного счёта на NEX, C++ и Python](codex-billing-languages-2026-11-23.ru.md) | language 0.30; toolchain 0.281.0 | repository |
 | [Стоимость трёх правок NEX в Codex, 22 ноября 2026 года](codex-maintenance-2026-11-22.ru.md) | language 0.30; toolchain 0.281.0 | repository |
 
 ## Reference and history (168)
@@ -248,4 +249,4 @@ advertised project source languages and toolchain by the same script.
 
 ## Totals
 
-221 documents: 44 current, 1 deferred, 4 historical, 168 reference/unclassified.
+222 documents: 44 current, 1 deferred, 5 historical, 168 reference/unclassified.

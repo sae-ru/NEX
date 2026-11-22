@@ -41,6 +41,8 @@ The [latest local Qwen3.8 27B task comparison](docs/llm-cost-qwen38-27b-2026-11-
 accepted6/20 NEX,18/20 C++ and20/20 Python attempts. Two NEX calls have unknown
 usage; no NEX token saving is established. A separate [Codex before/after maintenance pilot](docs/codex-maintenance-2026-11-22.ru.md) accepted all three NEX changes in each arm. Reported tokens fell from 529,630 to 353,520. The pilot compares two NEX workflows on the same model. A [second Codex experiment](docs/codex-multimodule-2026-11-22.ru.md) measures context and assertion diagnostics separately on a failing multi-module billing project.
 
+A [cross-language Codex benchmark](docs/codex-billing-languages-2026-11-23.ru.md) measures time and tokens per accepted repair of the same invoice in NEX, C++ and Python, including cached input.
+
 ## What you can build
 
 The implemented core includes modules, generics and traits, immutable aggregates,

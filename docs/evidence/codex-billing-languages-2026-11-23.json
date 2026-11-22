@@ -1,0 +1,1259 @@
+{
+  "schema": "nex.codex-billing-languages-public/1",
+  "protocol": {
+    "pins": {
+      "model": "gpt-6.2-sol",
+      "base_prompt_sha256": "0248b034171ffee1487b999b5f679eb7f222b513738719bad66f2555bb301cc8",
+      "cases_sha256": "1563bc61d5aa88cd6cc427f1668a2452387f4dcadcf1b5260363185bd735ef2b",
+      "runner_sha256": "ee36c1baac8232f539c3e7e4c5b84426063292ef370b4219b8f3e73420989b15",
+      "settings_sha256": "09bd7849db0717023a73acc3560f5caa03791a6f774303e5b564e2331a500209"
+    },
+    "tools": {
+      "nex": {
+        "executable_sha256": "b29e22aeb1fe62a1a9a29cabe619be76b0b0e75f44963b26d43d7e4f0a0ce27c",
+        "version": "0.281.0"
+      },
+      "cpp": {
+        "executable_sha256": "fc5e3cbba6ad54059295cad716aacb05ace8235f5f7a6031f1d8c15d24bd6d66",
+        "version": "Apple clang version 21.0.0 (clang-2100.4.1.1)"
+      },
+      "python": {
+        "executable_sha256": "51504e3c551bf50ebff1f4d88aa68ec1a1cb8c742f9b8bd3baccd6c3991141b7",
+        "version": "Python 3.14.9"
+      }
+    },
+    "policy": [
+      "--no-daemon",
+      "-a",
+      "never",
+      "exec",
+      "--ignore-user-config",
+      "--ephemeral",
+      "--skip-git-repo-check",
+      "-s",
+      "workspace-write",
+      "-m",
+      "gpt-6.2-sol",
+      "-c",
+      "forced_login_method=\"chatgpt\"",
+      "-c",
+      "model_reasoning_effort=\"low\"",
+      "-c",
+      "web_search=\"disabled\"",
+      "--disable",
+      "apps",
+      "--disable",
+      "plugins",
+      "--disable",
+      "multi_agent",
+      "--json"
+    ],
+    "timeout_seconds": 300,
+    "order": [
+      [
+        "nex",
+        "cpp",
+        "python"
+      ],
+      [
+        "cpp",
+        "python",
+        "nex"
+      ],
+      [
+        "python",
+        "nex",
+        "cpp"
+      ]
+    ],
+    "prompt": "Repair the regression in this multi-module Depot Ledger checkout. The disputed\nstorage invoice currently returns 1252 cents; its contract requires 2079 cents.\nFind the cause, fix the production code, preserve its interfaces and run ./test.\nRead the local README and sources as needed. Do not change the tests, launcher,\nmanifest or specification. Work only in this project, without consulting other\ndirectories, trials or the internet. Briefly summarize your fix and verification.\n",
+    "source_base": "5f6cb260c09772d008058255d7b950f9a7b07ac5",
+    "cli_version": "codex-cli 0.169.0-alpha.11.1"
+  },
+  "controls": {
+    "nex": {
+      "starter": {
+        "ok": false,
+        "changed_modules": [],
+        "held_out_cases": 13,
+        "checks": {
+          "visible": {
+            "ok": false,
+            "exit": 1,
+            "code": "E_ASSERT"
+          },
+          "hidden": {
+            "ok": false,
+            "exit": 1,
+            "code": "E_ASSERT"
+          }
+        }
+      },
+      "corrected": {
+        "ok": true,
+        "changed_modules": [
+          "availability.nex"
+        ],
+        "held_out_cases": 13,
+        "checks": {
+          "visible": {
+            "ok": true,
+            "exit": 0
+          },
+          "hidden": {
+            "ok": true,
+            "exit": 0
+          }
+        }
+      },
+      "constant_invoice": {
+        "ok": false,
+        "changed_modules": [
+          "invoice.nex"
+        ],
+        "held_out_cases": 13,
+        "checks": {
+          "visible": {
+            "ok": true,
+            "exit": 0
+          },
+          "hidden": {
+            "ok": false,
+            "exit": 1,
+            "code": "E_ASSERT"
+          }
+        }
+      }
+    },
+    "cpp": {
+      "starter": {
+        "ok": false,
+        "changed_modules": [],
+        "held_out_cases": 13,
+        "checks": {
+          "visible": {
+            "ok": false,
+            "exit": 1
+          },
+          "hidden": {
+            "ok": false,
+            "exit": 1
+          }
+        }
+      },
+      "corrected": {
+        "ok": true,
+        "changed_modules": [
+          "availability.hpp"
+        ],
+        "held_out_cases": 13,
+        "checks": {
+          "visible": {
+            "ok": true,
+            "exit": 0
+          },
+          "hidden": {
+            "ok": true,
+            "exit": 0
+          }
+        }
+      },
+      "constant_invoice": {
+        "ok": false,
+        "changed_modules": [
+          "invoice.hpp"
+        ],
+        "held_out_cases": 13,
+        "checks": {
+          "visible": {
+            "ok": true,
+            "exit": 0
+          },
+          "hidden": {
+            "ok": false,
+            "exit": 1
+          }
+        }
+      }
+    },
+    "python": {
+      "starter": {
+        "ok": false,
+        "changed_modules": [],
+        "held_out_cases": 13,
+        "checks": {
+          "visible": {
+            "ok": false,
+            "exit": 1
+          },
+          "hidden": {
+            "ok": false,
+            "exit": 1
+          }
+        }
+      },
+      "corrected": {
+        "ok": true,
+        "changed_modules": [
+          "availability.py"
+        ],
+        "held_out_cases": 13,
+        "checks": {
+          "visible": {
+            "ok": true,
+            "exit": 0
+          },
+          "hidden": {
+            "ok": true,
+            "exit": 0
+          }
+        }
+      },
+      "constant_invoice": {
+        "ok": false,
+        "changed_modules": [
+          "invoice.py"
+        ],
+        "held_out_cases": 13,
+        "checks": {
+          "visible": {
+            "ok": true,
+            "exit": 0
+          },
+          "hidden": {
+            "ok": false,
+            "exit": 1
+          }
+        }
+      }
+    }
+  },
+  "receipts": [
+    {
+      "base_prompt_sha256": "0248b034171ffee1487b999b5f679eb7f222b513738719bad66f2555bb301cc8",
+      "full_prompt_sha256": "0248b034171ffee1487b999b5f679eb7f222b513738719bad66f2555bb301cc8",
+      "cases_sha256": "1563bc61d5aa88cd6cc427f1668a2452387f4dcadcf1b5260363185bd735ef2b",
+      "settings_sha256": "09bd7849db0717023a73acc3560f5caa03791a6f774303e5b564e2331a500209",
+      "runner_sha256": "ee36c1baac8232f539c3e7e4c5b84426063292ef370b4219b8f3e73420989b15",
+      "starter_sha256": "c938a5ea72a4e03b4fce4fbdf6abb5d783d7039d8877a5aeaf1b7a9824731097",
+      "toolchain_sha256": "34477d4804ff117ccf18703fa89e88ed54973cbbead89727ca364dd2bbae39f7",
+      "model": "gpt-6.2-sol",
+      "language": "nex",
+      "block": 1,
+      "position": 1,
+      "accepted": true,
+      "status": "finished",
+      "complete_usage": true,
+      "raw_sha256": "da5a29409f7f3d1c83092e6ceef10fdab7fbbb47f395950449e8dc116ccd5ef5",
+      "patch_sha256": "82ec48aa8ee5bd069f88baff27aefcae721375f7e40c4dc588db5d3f5da41df4",
+      "currency_cost": null,
+      "provider_calls": null,
+      "agent_seconds": 20.375,
+      "end_to_end_seconds": 24.63,
+      "schema": "nex.codex-billing-languages-trial/1",
+      "started_utc": "2026-11-22T22:31:08.173232+00:00",
+      "timed_out": false,
+      "exit_code": 0,
+      "malformed_events": 0,
+      "usage": {
+        "input_tokens": 70989,
+        "output_tokens": 390,
+        "cached_input_tokens": 66176,
+        "cache_write_input_tokens": 0,
+        "reasoning_output_tokens": 13
+      },
+      "events": {
+        "thread.started": 1,
+        "turn.started": 1,
+        "turn.completed": 1,
+        "item.started": 5,
+        "item.completed": 7
+      },
+      "items_completed": {
+        "agent_message": 2,
+        "command_execution": 4,
+        "file_change": 1
+      },
+      "acceptance": {
+        "ok": true,
+        "changed_modules": [
+          "availability.nex"
+        ],
+        "held_out_cases": 13,
+        "checks": {
+          "visible": {
+            "ok": true,
+            "exit": 0
+          },
+          "hidden": {
+            "ok": true,
+            "exit": 0
+          }
+        }
+      }
+    },
+    {
+      "base_prompt_sha256": "0248b034171ffee1487b999b5f679eb7f222b513738719bad66f2555bb301cc8",
+      "full_prompt_sha256": "0248b034171ffee1487b999b5f679eb7f222b513738719bad66f2555bb301cc8",
+      "cases_sha256": "1563bc61d5aa88cd6cc427f1668a2452387f4dcadcf1b5260363185bd735ef2b",
+      "settings_sha256": "09bd7849db0717023a73acc3560f5caa03791a6f774303e5b564e2331a500209",
+      "runner_sha256": "ee36c1baac8232f539c3e7e4c5b84426063292ef370b4219b8f3e73420989b15",
+      "starter_sha256": "87f7a4b87264cd32826fb84bbe2146d56cbcf788206e2ab8ffb1d5bd269a5749",
+      "toolchain_sha256": "789d791474fd890453e21a0e84d09834a07bc20b4b0526bc9e54bb6bfda08cb7",
+      "model": "gpt-6.2-sol",
+      "language": "cpp",
+      "block": 1,
+      "position": 2,
+      "accepted": true,
+      "status": "finished",
+      "complete_usage": true,
+      "raw_sha256": "0378d7e280cfd86691d9b71de6669efaf333c2bb7909361670a8aca0ecc1fe65",
+      "patch_sha256": "19a709b72c12c5b15457f0da9cc876c294f43078bcbe1eb2f667684fbd71f8b1",
+      "currency_cost": null,
+      "provider_calls": null,
+      "agent_seconds": 15.439,
+      "end_to_end_seconds": 18.606,
+      "schema": "nex.codex-billing-languages-trial/1",
+      "started_utc": "2026-11-22T22:31:32.822978+00:00",
+      "timed_out": false,
+      "exit_code": 0,
+      "malformed_events": 0,
+      "usage": {
+        "input_tokens": 55920,
+        "output_tokens": 253,
+        "cached_input_tokens": 47872,
+        "cache_write_input_tokens": 0,
+        "reasoning_output_tokens": 0
+      },
+      "events": {
+        "thread.started": 1,
+        "turn.started": 1,
+        "turn.completed": 1,
+        "item.started": 4,
+        "item.completed": 6
+      },
+      "items_completed": {
+        "agent_message": 2,
+        "command_execution": 3,
+        "file_change": 1
+      },
+      "acceptance": {
+        "ok": true,
+        "changed_modules": [
+          "availability.hpp"
+        ],
+        "held_out_cases": 13,
+        "checks": {
+          "visible": {
+            "ok": true,
+            "exit": 0
+          },
+          "hidden": {
+            "ok": true,
+            "exit": 0
+          }
+        }
+      }
+    },
+    {
+      "base_prompt_sha256": "0248b034171ffee1487b999b5f679eb7f222b513738719bad66f2555bb301cc8",
+      "full_prompt_sha256": "0248b034171ffee1487b999b5f679eb7f222b513738719bad66f2555bb301cc8",
+      "cases_sha256": "1563bc61d5aa88cd6cc427f1668a2452387f4dcadcf1b5260363185bd735ef2b",
+      "settings_sha256": "09bd7849db0717023a73acc3560f5caa03791a6f774303e5b564e2331a500209",
+      "runner_sha256": "ee36c1baac8232f539c3e7e4c5b84426063292ef370b4219b8f3e73420989b15",
+      "starter_sha256": "a2afa8d0b586f1df93829270baddc839ed9bc8d416ddcb1cde4dd329632f0fe6",
+      "toolchain_sha256": "5b662bd38916bca8a338a703637954cd1aa0066fcb7036fe7b163fe3f484e84b",
+      "model": "gpt-6.2-sol",
+      "language": "python",
+      "block": 1,
+      "position": 3,
+      "accepted": true,
+      "status": "finished",
+      "complete_usage": true,
+      "raw_sha256": "fc7741e5308d200caff1d0a6fdd68704299d5afa59258d369fbfa12d352a3cba",
+      "patch_sha256": "8e2ec30038a6b4eab02ff6ae3262e8b09b7f297e59e260a23c9c520b281787a8",
+      "currency_cost": null,
+      "provider_calls": null,
+      "agent_seconds": 21.747,
+      "end_to_end_seconds": 22.937,
+      "schema": "nex.codex-billing-languages-trial/1",
+      "started_utc": "2026-11-22T22:31:51.434719+00:00",
+      "timed_out": false,
+      "exit_code": 0,
+      "malformed_events": 0,
+      "usage": {
+        "input_tokens": 85010,
+        "output_tokens": 381,
+        "cached_input_tokens": 63360,
+        "cache_write_input_tokens": 0,
+        "reasoning_output_tokens": 45
+      },
+      "events": {
+        "thread.started": 1,
+        "turn.started": 1,
+        "turn.completed": 1,
+        "item.started": 5,
+        "item.completed": 7
+      },
+      "items_completed": {
+        "agent_message": 2,
+        "command_execution": 4,
+        "file_change": 1
+      },
+      "acceptance": {
+        "ok": true,
+        "changed_modules": [
+          "availability.py"
+        ],
+        "held_out_cases": 13,
+        "checks": {
+          "visible": {
+            "ok": true,
+            "exit": 0
+          },
+          "hidden": {
+            "ok": true,
+            "exit": 0
+          }
+        }
+      }
+    },
+    {
+      "base_prompt_sha256": "0248b034171ffee1487b999b5f679eb7f222b513738719bad66f2555bb301cc8",
+      "full_prompt_sha256": "0248b034171ffee1487b999b5f679eb7f222b513738719bad66f2555bb301cc8",
+      "cases_sha256": "1563bc61d5aa88cd6cc427f1668a2452387f4dcadcf1b5260363185bd735ef2b",
+      "settings_sha256": "09bd7849db0717023a73acc3560f5caa03791a6f774303e5b564e2331a500209",
+      "runner_sha256": "ee36c1baac8232f539c3e7e4c5b84426063292ef370b4219b8f3e73420989b15",
+      "starter_sha256": "87f7a4b87264cd32826fb84bbe2146d56cbcf788206e2ab8ffb1d5bd269a5749",
+      "toolchain_sha256": "789d791474fd890453e21a0e84d09834a07bc20b4b0526bc9e54bb6bfda08cb7",
+      "model": "gpt-6.2-sol",
+      "language": "cpp",
+      "block": 2,
+      "position": 1,
+      "accepted": true,
+      "status": "finished",
+      "complete_usage": true,
+      "raw_sha256": "a744eabb710bb08b19d825cee4f88bc647a6428c707f5ac4a0ff66ee44b7625c",
+      "patch_sha256": "19a709b72c12c5b15457f0da9cc876c294f43078bcbe1eb2f667684fbd71f8b1",
+      "currency_cost": null,
+      "provider_calls": null,
+      "agent_seconds": 19.888,
+      "end_to_end_seconds": 23.145,
+      "schema": "nex.codex-billing-languages-trial/1",
+      "started_utc": "2026-11-22T22:32:14.378207+00:00",
+      "timed_out": false,
+      "exit_code": 0,
+      "malformed_events": 0,
+      "usage": {
+        "input_tokens": 71777,
+        "output_tokens": 325,
+        "cached_input_tokens": 54400,
+        "cache_write_input_tokens": 0,
+        "reasoning_output_tokens": 0
+      },
+      "events": {
+        "thread.started": 1,
+        "turn.started": 1,
+        "turn.completed": 1,
+        "item.started": 5,
+        "item.completed": 7
+      },
+      "items_completed": {
+        "agent_message": 2,
+        "command_execution": 4,
+        "file_change": 1
+      },
+      "acceptance": {
+        "ok": true,
+        "changed_modules": [
+          "availability.hpp"
+        ],
+        "held_out_cases": 13,
+        "checks": {
+          "visible": {
+            "ok": true,
+            "exit": 0
+          },
+          "hidden": {
+            "ok": true,
+            "exit": 0
+          }
+        }
+      }
+    },
+    {
+      "base_prompt_sha256": "0248b034171ffee1487b999b5f679eb7f222b513738719bad66f2555bb301cc8",
+      "full_prompt_sha256": "0248b034171ffee1487b999b5f679eb7f222b513738719bad66f2555bb301cc8",
+      "cases_sha256": "1563bc61d5aa88cd6cc427f1668a2452387f4dcadcf1b5260363185bd735ef2b",
+      "settings_sha256": "09bd7849db0717023a73acc3560f5caa03791a6f774303e5b564e2331a500209",
+      "runner_sha256": "ee36c1baac8232f539c3e7e4c5b84426063292ef370b4219b8f3e73420989b15",
+      "starter_sha256": "a2afa8d0b586f1df93829270baddc839ed9bc8d416ddcb1cde4dd329632f0fe6",
+      "toolchain_sha256": "5b662bd38916bca8a338a703637954cd1aa0066fcb7036fe7b163fe3f484e84b",
+      "model": "gpt-6.2-sol",
+      "language": "python",
+      "block": 2,
+      "position": 2,
+      "accepted": true,
+      "status": "finished",
+      "complete_usage": true,
+      "raw_sha256": "4443141c2cfe3a2be123a2e9dce26cb90ba066bd285c4d72def3a65591cac8e2",
+      "patch_sha256": "8e2ec30038a6b4eab02ff6ae3262e8b09b7f297e59e260a23c9c520b281787a8",
+      "currency_cost": null,
+      "provider_calls": null,
+      "agent_seconds": 13.964,
+      "end_to_end_seconds": 15.1,
+      "schema": "nex.codex-billing-languages-trial/1",
+      "started_utc": "2026-11-22T22:32:37.527909+00:00",
+      "timed_out": false,
+      "exit_code": 0,
+      "malformed_events": 0,
+      "usage": {
+        "input_tokens": 55211,
+        "output_tokens": 248,
+        "cached_input_tokens": 47872,
+        "cache_write_input_tokens": 0,
+        "reasoning_output_tokens": 0
+      },
+      "events": {
+        "thread.started": 1,
+        "turn.started": 1,
+        "turn.completed": 1,
+        "item.started": 4,
+        "item.completed": 6
+      },
+      "items_completed": {
+        "agent_message": 2,
+        "command_execution": 3,
+        "file_change": 1
+      },
+      "acceptance": {
+        "ok": true,
+        "changed_modules": [
+          "availability.py"
+        ],
+        "held_out_cases": 13,
+        "checks": {
+          "visible": {
+            "ok": true,
+            "exit": 0
+          },
+          "hidden": {
+            "ok": true,
+            "exit": 0
+          }
+        }
+      }
+    },
+    {
+      "base_prompt_sha256": "0248b034171ffee1487b999b5f679eb7f222b513738719bad66f2555bb301cc8",
+      "full_prompt_sha256": "0248b034171ffee1487b999b5f679eb7f222b513738719bad66f2555bb301cc8",
+      "cases_sha256": "1563bc61d5aa88cd6cc427f1668a2452387f4dcadcf1b5260363185bd735ef2b",
+      "settings_sha256": "09bd7849db0717023a73acc3560f5caa03791a6f774303e5b564e2331a500209",
+      "runner_sha256": "ee36c1baac8232f539c3e7e4c5b84426063292ef370b4219b8f3e73420989b15",
+      "starter_sha256": "c938a5ea72a4e03b4fce4fbdf6abb5d783d7039d8877a5aeaf1b7a9824731097",
+      "toolchain_sha256": "34477d4804ff117ccf18703fa89e88ed54973cbbead89727ca364dd2bbae39f7",
+      "model": "gpt-6.2-sol",
+      "language": "nex",
+      "block": 2,
+      "position": 3,
+      "accepted": true,
+      "status": "finished",
+      "complete_usage": true,
+      "raw_sha256": "381b4a7d345573e8aebff26bcd4e8357d9b64e0998ef75e4f712c2c616fa4bf0",
+      "patch_sha256": "82ec48aa8ee5bd069f88baff27aefcae721375f7e40c4dc588db5d3f5da41df4",
+      "currency_cost": null,
+      "provider_calls": null,
+      "agent_seconds": 22.738,
+      "end_to_end_seconds": 27.127,
+      "schema": "nex.codex-billing-languages-trial/1",
+      "started_utc": "2026-11-22T22:32:52.631232+00:00",
+      "timed_out": false,
+      "exit_code": 0,
+      "malformed_events": 0,
+      "usage": {
+        "input_tokens": 71445,
+        "output_tokens": 327,
+        "cached_input_tokens": 38528,
+        "cache_write_input_tokens": 0,
+        "reasoning_output_tokens": 0
+      },
+      "events": {
+        "thread.started": 1,
+        "turn.started": 1,
+        "turn.completed": 1,
+        "item.started": 5,
+        "item.completed": 7
+      },
+      "items_completed": {
+        "agent_message": 2,
+        "command_execution": 4,
+        "file_change": 1
+      },
+      "acceptance": {
+        "ok": true,
+        "changed_modules": [
+          "availability.nex"
+        ],
+        "held_out_cases": 13,
+        "checks": {
+          "visible": {
+            "ok": true,
+            "exit": 0
+          },
+          "hidden": {
+            "ok": true,
+            "exit": 0
+          }
+        }
+      }
+    },
+    {
+      "base_prompt_sha256": "0248b034171ffee1487b999b5f679eb7f222b513738719bad66f2555bb301cc8",
+      "full_prompt_sha256": "0248b034171ffee1487b999b5f679eb7f222b513738719bad66f2555bb301cc8",
+      "cases_sha256": "1563bc61d5aa88cd6cc427f1668a2452387f4dcadcf1b5260363185bd735ef2b",
+      "settings_sha256": "09bd7849db0717023a73acc3560f5caa03791a6f774303e5b564e2331a500209",
+      "runner_sha256": "ee36c1baac8232f539c3e7e4c5b84426063292ef370b4219b8f3e73420989b15",
+      "starter_sha256": "a2afa8d0b586f1df93829270baddc839ed9bc8d416ddcb1cde4dd329632f0fe6",
+      "toolchain_sha256": "5b662bd38916bca8a338a703637954cd1aa0066fcb7036fe7b163fe3f484e84b",
+      "model": "gpt-6.2-sol",
+      "language": "python",
+      "block": 3,
+      "position": 1,
+      "accepted": true,
+      "status": "finished",
+      "complete_usage": true,
+      "raw_sha256": "f27f4fbd01984817c723bc8a7f3ac4357c7769a577f5ae709b508a7fc736ebb1",
+      "patch_sha256": "8e2ec30038a6b4eab02ff6ae3262e8b09b7f297e59e260a23c9c520b281787a8",
+      "currency_cost": null,
+      "provider_calls": null,
+      "agent_seconds": 20.381,
+      "end_to_end_seconds": 21.63,
+      "schema": "nex.codex-billing-languages-trial/1",
+      "started_utc": "2026-11-22T22:33:19.777363+00:00",
+      "timed_out": false,
+      "exit_code": 0,
+      "malformed_events": 0,
+      "usage": {
+        "input_tokens": 84936,
+        "output_tokens": 334,
+        "cached_input_tokens": 80384,
+        "cache_write_input_tokens": 0,
+        "reasoning_output_tokens": 0
+      },
+      "events": {
+        "thread.started": 1,
+        "turn.started": 1,
+        "turn.completed": 1,
+        "item.started": 5,
+        "item.completed": 7
+      },
+      "items_completed": {
+        "agent_message": 2,
+        "command_execution": 4,
+        "file_change": 1
+      },
+      "acceptance": {
+        "ok": true,
+        "changed_modules": [
+          "availability.py"
+        ],
+        "held_out_cases": 13,
+        "checks": {
+          "visible": {
+            "ok": true,
+            "exit": 0
+          },
+          "hidden": {
+            "ok": true,
+            "exit": 0
+          }
+        }
+      }
+    },
+    {
+      "base_prompt_sha256": "0248b034171ffee1487b999b5f679eb7f222b513738719bad66f2555bb301cc8",
+      "full_prompt_sha256": "0248b034171ffee1487b999b5f679eb7f222b513738719bad66f2555bb301cc8",
+      "cases_sha256": "1563bc61d5aa88cd6cc427f1668a2452387f4dcadcf1b5260363185bd735ef2b",
+      "settings_sha256": "09bd7849db0717023a73acc3560f5caa03791a6f774303e5b564e2331a500209",
+      "runner_sha256": "ee36c1baac8232f539c3e7e4c5b84426063292ef370b4219b8f3e73420989b15",
+      "starter_sha256": "c938a5ea72a4e03b4fce4fbdf6abb5d783d7039d8877a5aeaf1b7a9824731097",
+      "toolchain_sha256": "34477d4804ff117ccf18703fa89e88ed54973cbbead89727ca364dd2bbae39f7",
+      "model": "gpt-6.2-sol",
+      "language": "nex",
+      "block": 3,
+      "position": 2,
+      "accepted": true,
+      "status": "finished",
+      "complete_usage": true,
+      "raw_sha256": "349ab795723fa1ad085b9424dd967426499af64ab4ba6369b3fa2affd2f57d90",
+      "patch_sha256": "82ec48aa8ee5bd069f88baff27aefcae721375f7e40c4dc588db5d3f5da41df4",
+      "currency_cost": null,
+      "provider_calls": null,
+      "agent_seconds": 20.941,
+      "end_to_end_seconds": 25.304,
+      "schema": "nex.codex-billing-languages-trial/1",
+      "started_utc": "2026-11-22T22:33:41.411943+00:00",
+      "timed_out": false,
+      "exit_code": 0,
+      "malformed_events": 0,
+      "usage": {
+        "input_tokens": 71886,
+        "output_tokens": 389,
+        "cached_input_tokens": 64640,
+        "cache_write_input_tokens": 0,
+        "reasoning_output_tokens": 15
+      },
+      "events": {
+        "thread.started": 1,
+        "turn.started": 1,
+        "turn.completed": 1,
+        "item.started": 5,
+        "item.completed": 7
+      },
+      "items_completed": {
+        "agent_message": 2,
+        "command_execution": 4,
+        "file_change": 1
+      },
+      "acceptance": {
+        "ok": true,
+        "changed_modules": [
+          "availability.nex"
+        ],
+        "held_out_cases": 13,
+        "checks": {
+          "visible": {
+            "ok": true,
+            "exit": 0
+          },
+          "hidden": {
+            "ok": true,
+            "exit": 0
+          }
+        }
+      }
+    },
+    {
+      "base_prompt_sha256": "0248b034171ffee1487b999b5f679eb7f222b513738719bad66f2555bb301cc8",
+      "full_prompt_sha256": "0248b034171ffee1487b999b5f679eb7f222b513738719bad66f2555bb301cc8",
+      "cases_sha256": "1563bc61d5aa88cd6cc427f1668a2452387f4dcadcf1b5260363185bd735ef2b",
+      "settings_sha256": "09bd7849db0717023a73acc3560f5caa03791a6f774303e5b564e2331a500209",
+      "runner_sha256": "ee36c1baac8232f539c3e7e4c5b84426063292ef370b4219b8f3e73420989b15",
+      "starter_sha256": "87f7a4b87264cd32826fb84bbe2146d56cbcf788206e2ab8ffb1d5bd269a5749",
+      "toolchain_sha256": "789d791474fd890453e21a0e84d09834a07bc20b4b0526bc9e54bb6bfda08cb7",
+      "model": "gpt-6.2-sol",
+      "language": "cpp",
+      "block": 3,
+      "position": 3,
+      "accepted": true,
+      "status": "finished",
+      "complete_usage": true,
+      "raw_sha256": "863e6e6732088d2d720bc4715681f41094aa6af31f3f6a9a85382eb6f5a1b722",
+      "patch_sha256": "19a709b72c12c5b15457f0da9cc876c294f43078bcbe1eb2f667684fbd71f8b1",
+      "currency_cost": null,
+      "provider_calls": null,
+      "agent_seconds": 17.799,
+      "end_to_end_seconds": 20.921,
+      "schema": "nex.codex-billing-languages-trial/1",
+      "started_utc": "2026-11-22T22:34:06.735735+00:00",
+      "timed_out": false,
+      "exit_code": 0,
+      "malformed_events": 0,
+      "usage": {
+        "input_tokens": 55840,
+        "output_tokens": 266,
+        "cached_input_tokens": 34688,
+        "cache_write_input_tokens": 0,
+        "reasoning_output_tokens": 0
+      },
+      "events": {
+        "thread.started": 1,
+        "turn.started": 1,
+        "turn.completed": 1,
+        "item.started": 4,
+        "item.completed": 6
+      },
+      "items_completed": {
+        "agent_message": 2,
+        "command_execution": 3,
+        "file_change": 1
+      },
+      "acceptance": {
+        "ok": true,
+        "changed_modules": [
+          "availability.hpp"
+        ],
+        "held_out_cases": 13,
+        "checks": {
+          "visible": {
+            "ok": true,
+            "exit": 0
+          },
+          "hidden": {
+            "ok": true,
+            "exit": 0
+          }
+        }
+      }
+    }
+  ],
+  "comparison": {
+    "schema": "nex.codex-billing-languages-comparison/1",
+    "common": {
+      "base_prompt_sha256": "0248b034171ffee1487b999b5f679eb7f222b513738719bad66f2555bb301cc8",
+      "full_prompt_sha256": "0248b034171ffee1487b999b5f679eb7f222b513738719bad66f2555bb301cc8",
+      "cases_sha256": "1563bc61d5aa88cd6cc427f1668a2452387f4dcadcf1b5260363185bd735ef2b",
+      "settings_sha256": "09bd7849db0717023a73acc3560f5caa03791a6f774303e5b564e2331a500209",
+      "runner_sha256": "ee36c1baac8232f539c3e7e4c5b84426063292ef370b4219b8f3e73420989b15",
+      "model": "gpt-6.2-sol"
+    },
+    "language_pins": {
+      "nex": {
+        "starter_sha256": "c938a5ea72a4e03b4fce4fbdf6abb5d783d7039d8877a5aeaf1b7a9824731097",
+        "toolchain_sha256": "34477d4804ff117ccf18703fa89e88ed54973cbbead89727ca364dd2bbae39f7"
+      },
+      "cpp": {
+        "starter_sha256": "87f7a4b87264cd32826fb84bbe2146d56cbcf788206e2ab8ffb1d5bd269a5749",
+        "toolchain_sha256": "789d791474fd890453e21a0e84d09834a07bc20b4b0526bc9e54bb6bfda08cb7"
+      },
+      "python": {
+        "starter_sha256": "a2afa8d0b586f1df93829270baddc839ed9bc8d416ddcb1cde4dd329632f0fe6",
+        "toolchain_sha256": "5b662bd38916bca8a338a703637954cd1aa0066fcb7036fe7b163fe3f484e84b"
+      }
+    },
+    "order": [
+      [
+        "nex",
+        "cpp",
+        "python"
+      ],
+      [
+        "cpp",
+        "python",
+        "nex"
+      ],
+      [
+        "python",
+        "nex",
+        "cpp"
+      ]
+    ],
+    "trials": [
+      {
+        "language": "nex",
+        "block": 1,
+        "position": 1,
+        "accepted": true,
+        "verifier_passed": true,
+        "checks": {
+          "hidden": true,
+          "visible": true
+        },
+        "metrics": {
+          "input_tokens": 70989,
+          "cached_input_tokens": 66176,
+          "uncached_input_tokens": 4813,
+          "output_tokens": 390,
+          "total_tokens": 71379,
+          "uncached_input_plus_output": 5203,
+          "agent_seconds": 20.375,
+          "end_to_end_seconds": 24.63
+        },
+        "raw_sha256": "da5a29409f7f3d1c83092e6ceef10fdab7fbbb47f395950449e8dc116ccd5ef5"
+      },
+      {
+        "language": "cpp",
+        "block": 1,
+        "position": 2,
+        "accepted": true,
+        "verifier_passed": true,
+        "checks": {
+          "hidden": true,
+          "visible": true
+        },
+        "metrics": {
+          "input_tokens": 55920,
+          "cached_input_tokens": 47872,
+          "uncached_input_tokens": 8048,
+          "output_tokens": 253,
+          "total_tokens": 56173,
+          "uncached_input_plus_output": 8301,
+          "agent_seconds": 15.439,
+          "end_to_end_seconds": 18.606
+        },
+        "raw_sha256": "0378d7e280cfd86691d9b71de6669efaf333c2bb7909361670a8aca0ecc1fe65"
+      },
+      {
+        "language": "python",
+        "block": 1,
+        "position": 3,
+        "accepted": true,
+        "verifier_passed": true,
+        "checks": {
+          "hidden": true,
+          "visible": true
+        },
+        "metrics": {
+          "input_tokens": 85010,
+          "cached_input_tokens": 63360,
+          "uncached_input_tokens": 21650,
+          "output_tokens": 381,
+          "total_tokens": 85391,
+          "uncached_input_plus_output": 22031,
+          "agent_seconds": 21.747,
+          "end_to_end_seconds": 22.937
+        },
+        "raw_sha256": "fc7741e5308d200caff1d0a6fdd68704299d5afa59258d369fbfa12d352a3cba"
+      },
+      {
+        "language": "cpp",
+        "block": 2,
+        "position": 1,
+        "accepted": true,
+        "verifier_passed": true,
+        "checks": {
+          "hidden": true,
+          "visible": true
+        },
+        "metrics": {
+          "input_tokens": 71777,
+          "cached_input_tokens": 54400,
+          "uncached_input_tokens": 17377,
+          "output_tokens": 325,
+          "total_tokens": 72102,
+          "uncached_input_plus_output": 17702,
+          "agent_seconds": 19.888,
+          "end_to_end_seconds": 23.145
+        },
+        "raw_sha256": "a744eabb710bb08b19d825cee4f88bc647a6428c707f5ac4a0ff66ee44b7625c"
+      },
+      {
+        "language": "python",
+        "block": 2,
+        "position": 2,
+        "accepted": true,
+        "verifier_passed": true,
+        "checks": {
+          "hidden": true,
+          "visible": true
+        },
+        "metrics": {
+          "input_tokens": 55211,
+          "cached_input_tokens": 47872,
+          "uncached_input_tokens": 7339,
+          "output_tokens": 248,
+          "total_tokens": 55459,
+          "uncached_input_plus_output": 7587,
+          "agent_seconds": 13.964,
+          "end_to_end_seconds": 15.1
+        },
+        "raw_sha256": "4443141c2cfe3a2be123a2e9dce26cb90ba066bd285c4d72def3a65591cac8e2"
+      },
+      {
+        "language": "nex",
+        "block": 2,
+        "position": 3,
+        "accepted": true,
+        "verifier_passed": true,
+        "checks": {
+          "hidden": true,
+          "visible": true
+        },
+        "metrics": {
+          "input_tokens": 71445,
+          "cached_input_tokens": 38528,
+          "uncached_input_tokens": 32917,
+          "output_tokens": 327,
+          "total_tokens": 71772,
+          "uncached_input_plus_output": 33244,
+          "agent_seconds": 22.738,
+          "end_to_end_seconds": 27.127
+        },
+        "raw_sha256": "381b4a7d345573e8aebff26bcd4e8357d9b64e0998ef75e4f712c2c616fa4bf0"
+      },
+      {
+        "language": "python",
+        "block": 3,
+        "position": 1,
+        "accepted": true,
+        "verifier_passed": true,
+        "checks": {
+          "hidden": true,
+          "visible": true
+        },
+        "metrics": {
+          "input_tokens": 84936,
+          "cached_input_tokens": 80384,
+          "uncached_input_tokens": 4552,
+          "output_tokens": 334,
+          "total_tokens": 85270,
+          "uncached_input_plus_output": 4886,
+          "agent_seconds": 20.381,
+          "end_to_end_seconds": 21.63
+        },
+        "raw_sha256": "f27f4fbd01984817c723bc8a7f3ac4357c7769a577f5ae709b508a7fc736ebb1"
+      },
+      {
+        "language": "nex",
+        "block": 3,
+        "position": 2,
+        "accepted": true,
+        "verifier_passed": true,
+        "checks": {
+          "hidden": true,
+          "visible": true
+        },
+        "metrics": {
+          "input_tokens": 71886,
+          "cached_input_tokens": 64640,
+          "uncached_input_tokens": 7246,
+          "output_tokens": 389,
+          "total_tokens": 72275,
+          "uncached_input_plus_output": 7635,
+          "agent_seconds": 20.941,
+          "end_to_end_seconds": 25.304
+        },
+        "raw_sha256": "349ab795723fa1ad085b9424dd967426499af64ab4ba6369b3fa2affd2f57d90"
+      },
+      {
+        "language": "cpp",
+        "block": 3,
+        "position": 3,
+        "accepted": true,
+        "verifier_passed": true,
+        "checks": {
+          "hidden": true,
+          "visible": true
+        },
+        "metrics": {
+          "input_tokens": 55840,
+          "cached_input_tokens": 34688,
+          "uncached_input_tokens": 21152,
+          "output_tokens": 266,
+          "total_tokens": 56106,
+          "uncached_input_plus_output": 21418,
+          "agent_seconds": 17.799,
+          "end_to_end_seconds": 20.921
+        },
+        "raw_sha256": "863e6e6732088d2d720bc4715681f41094aa6af31f3f6a9a85382eb6f5a1b722"
+      }
+    ],
+    "languages": {
+      "nex": {
+        "attempts": 3,
+        "accepted": 3,
+        "metrics": {
+          "agent_seconds": {
+            "observed_trials": 3,
+            "observed_sum": 64.054,
+            "total": 64.054,
+            "per_accepted": 21.351333
+          },
+          "end_to_end_seconds": {
+            "observed_trials": 3,
+            "observed_sum": 77.061,
+            "total": 77.061,
+            "per_accepted": 25.687
+          },
+          "input_tokens": {
+            "observed_trials": 3,
+            "observed_sum": 214320,
+            "total": 214320,
+            "per_accepted": 71440.0
+          },
+          "cached_input_tokens": {
+            "observed_trials": 3,
+            "observed_sum": 169344,
+            "total": 169344,
+            "per_accepted": 56448.0
+          },
+          "uncached_input_tokens": {
+            "observed_trials": 3,
+            "observed_sum": 44976,
+            "total": 44976,
+            "per_accepted": 14992.0
+          },
+          "output_tokens": {
+            "observed_trials": 3,
+            "observed_sum": 1106,
+            "total": 1106,
+            "per_accepted": 368.666667
+          },
+          "total_tokens": {
+            "observed_trials": 3,
+            "observed_sum": 215426,
+            "total": 215426,
+            "per_accepted": 71808.666667
+          },
+          "uncached_input_plus_output": {
+            "observed_trials": 3,
+            "observed_sum": 46082,
+            "total": 46082,
+            "per_accepted": 15360.666667
+          }
+        },
+        "input_cache_share": 0.790146
+      },
+      "cpp": {
+        "attempts": 3,
+        "accepted": 3,
+        "metrics": {
+          "agent_seconds": {
+            "observed_trials": 3,
+            "observed_sum": 53.126,
+            "total": 53.126,
+            "per_accepted": 17.708667
+          },
+          "end_to_end_seconds": {
+            "observed_trials": 3,
+            "observed_sum": 62.672,
+            "total": 62.672,
+            "per_accepted": 20.890667
+          },
+          "input_tokens": {
+            "observed_trials": 3,
+            "observed_sum": 183537,
+            "total": 183537,
+            "per_accepted": 61179.0
+          },
+          "cached_input_tokens": {
+            "observed_trials": 3,
+            "observed_sum": 136960,
+            "total": 136960,
+            "per_accepted": 45653.333333
+          },
+          "uncached_input_tokens": {
+            "observed_trials": 3,
+            "observed_sum": 46577,
+            "total": 46577,
+            "per_accepted": 15525.666667
+          },
+          "output_tokens": {
+            "observed_trials": 3,
+            "observed_sum": 844,
+            "total": 844,
+            "per_accepted": 281.333333
+          },
+          "total_tokens": {
+            "observed_trials": 3,
+            "observed_sum": 184381,
+            "total": 184381,
+            "per_accepted": 61460.333333
+          },
+          "uncached_input_plus_output": {
+            "observed_trials": 3,
+            "observed_sum": 47421,
+            "total": 47421,
+            "per_accepted": 15807.0
+          }
+        },
+        "input_cache_share": 0.746226
+      },
+      "python": {
+        "attempts": 3,
+        "accepted": 3,
+        "metrics": {
+          "agent_seconds": {
+            "observed_trials": 3,
+            "observed_sum": 56.092,
+            "total": 56.092,
+            "per_accepted": 18.697333
+          },
+          "end_to_end_seconds": {
+            "observed_trials": 3,
+            "observed_sum": 59.667,
+            "total": 59.667,
+            "per_accepted": 19.889
+          },
+          "input_tokens": {
+            "observed_trials": 3,
+            "observed_sum": 225157,
+            "total": 225157,
+            "per_accepted": 75052.333333
+          },
+          "cached_input_tokens": {
+            "observed_trials": 3,
+            "observed_sum": 191616,
+            "total": 191616,
+            "per_accepted": 63872.0
+          },
+          "uncached_input_tokens": {
+            "observed_trials": 3,
+            "observed_sum": 33541,
+            "total": 33541,
+            "per_accepted": 11180.333333
+          },
+          "output_tokens": {
+            "observed_trials": 3,
+            "observed_sum": 963,
+            "total": 963,
+            "per_accepted": 321.0
+          },
+          "total_tokens": {
+            "observed_trials": 3,
+            "observed_sum": 226120,
+            "total": 226120,
+            "per_accepted": 75373.333333
+          },
+          "uncached_input_plus_output": {
+            "observed_trials": 3,
+            "observed_sum": 34504,
+            "total": 34504,
+            "per_accepted": 11501.333333
+          }
+        },
+        "input_cache_share": 0.851033
+      }
+    },
+    "per_accepted_ratios": {
+      "nex_over_cpp": {
+        "agent_seconds": 1.2057,
+        "end_to_end_seconds": 1.229592,
+        "input_tokens": 1.167721,
+        "cached_input_tokens": 1.236449,
+        "uncached_input_tokens": 0.965627,
+        "output_tokens": 1.310427,
+        "total_tokens": 1.168374,
+        "uncached_input_plus_output": 0.971764
+      },
+      "nex_over_python": {
+        "agent_seconds": 1.141945,
+        "end_to_end_seconds": 1.291518,
+        "input_tokens": 0.951869,
+        "cached_input_tokens": 0.883768,
+        "uncached_input_tokens": 1.340926,
+        "output_tokens": 1.148494,
+        "total_tokens": 0.952707,
+        "uncached_input_plus_output": 1.335555
+      }
+    },
+    "unit": "All attempts, including failures, divided by number of accepted repairs in that language.",
+    "ratio_unit": "NEX cost per accepted repair divided by the other language's cost per accepted repair.",
+    "definition": "Total=input+output. Cache reads are part of input. Uncached input plus output counts each once and excludes cached input; it does not represent a billed amount. End-to-end includes independent acceptance.",
+    "caveats": [
+      "Three fresh sessions per language on one previously created defect.",
+      "Remote cache hits and wall time may vary with service load and run order."
+    ],
+    "currency_cost": null
+  },
+  "first_accepted_patches": {
+    "nex": {
+      "block": 1,
+      "position": 1,
+      "sha256": "82ec48aa8ee5bd069f88baff27aefcae721375f7e40c4dc588db5d3f5da41df4",
+      "patch": "--- a/availability.nex\n+++ b/availability.nex\n@@ -13,8 +13,10 @@\n     if event.start < event.stop {\n       var first: i64 = event.start;\n       if first < frontier { first = frontier; }\n-      if first < event.stop { covered = covered + event.stop - first; }\n-      frontier = event.stop;\n+      if first < event.stop {\n+        covered = covered + event.stop - first;\n+        frontier = event.stop;\n+      }\n     }\n     index = index + 1;\n   }\n"
+    },
+    "cpp": {
+      "block": 1,
+      "position": 2,
+      "sha256": "19a709b72c12c5b15457f0da9cc876c294f43078bcbe1eb2f667684fbd71f8b1",
+      "patch": "--- a/availability.hpp\n+++ b/availability.hpp\n@@ -13,8 +13,10 @@\n         if (event.start < event.stop) {\n             auto first = event.start;\n             if (first < frontier) first = frontier;\n-            if (first < event.stop) covered += event.stop - first;\n-            frontier = event.stop;\n+            if (first < event.stop) {\n+                covered += event.stop - first;\n+                frontier = event.stop;\n+            }\n         }\n     }\n     return covered;\n"
+    },
+    "python": {
+      "block": 1,
+      "position": 3,
+      "sha256": "8e2ec30038a6b4eab02ff6ae3262e8b09b7f297e59e260a23c9c520b281787a8",
+      "patch": "--- a/availability.py\n+++ b/availability.py\n@@ -12,5 +12,5 @@\n             first = max(event.start, frontier)\n             if first < event.stop:\n                 covered += event.stop - first\n-            frontier = event.stop\n+                frontier = event.stop\n     return covered\n"
+    }
+  }
+}
