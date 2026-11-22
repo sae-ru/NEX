@@ -29,11 +29,11 @@ struct Index {
   }
   static std::string shown(const Type &type){return typeName(displayType(type));}
   static std::string boundsText(const std::set<std::string> &bounds){std::string out;for(const auto &bound:bounds){out+=out.empty()?": ":" + ";out+=bound;}return out;}
-  template<class D> std::string generics(const D &value){
+  template<class D> static std::string generics(const D &value){
     std::string out;if(value.typeParameters.empty())return out;out="<";
     for(size_t i=0;i<value.typeParameters.size();++i){if(i)out+=", ";out+=shortName(value.typeParameters[i])+arity(i<value.typeArities.size()?value.typeArities[i]:0);if(i<value.typeBounds.size())out+=boundsText(value.typeBounds[i]);}return out+">";
   }
-  std::string sourceSignature(const Function &f){
+  static std::string sourceSignature(const Function &f){
     std::string out=(f.exported&&!f.traitSignature?"pub ":"")+f.realm+" "+(f.foreign?"extern ":"")+(f.test?"test ":"")+"fn "+f.name+generics(f)+"(";
     for(size_t i=0;i<f.params.size();++i){if(i)out+=", ";out+=f.params[i].name+": "+shown(f.params[i].type);}out+=") -> "+shown(f.result);
     if(!f.effects.empty()){out+=" !{";bool first=true;for(const auto &effect:f.effects){if(!first)out+=", ";out+=effect;first=false;}out+="}";}return out;
@@ -361,6 +361,41 @@ struct Index {
     return result;
   }
 };
+}
+std::string briefFunctionContext(const Program &program,const std::string &symbol,bool physical){
+  const auto &function=program.function(symbol);
+  const auto source=program.definition(function);
+  size_t end=std::min<size_t>(2048,source.size());
+  while(end<source.size()&&end>0&&(static_cast<unsigned char>(source[end])&0xc0)==0x80)--end;
+
+  // Bound each list in encoded bytes as well as entries, including JSON escaping.
+  auto append=[](Array &rows,const std::string &value,size_t &remaining){
+    if(rows.size()>=12)return;
+    size_t bytes=json(value,false).size()+1;
+    if(bytes<=remaining){rows.push_back(value);remaining-=bytes;}
+  };
+  Array callees,tests;
+  size_t signatureBudget=3072,testBudget=1024,testCount=0;
+  for(const auto &name:function.dependencies){
+    if(callees.size()<12&&signatureBudget)append(callees,Index::sourceSignature(program.function(name)),signatureBudget);
+  }
+  for(const auto &candidate:program.functions){
+    if(candidate.test&&(candidate.name==function.name||candidate.dependencies.contains(function.name))){
+      ++testCount;
+      append(tests,candidate.name,testBudget);
+    }
+  }
+  Object result{{"schema","nex.function-brief/1"},{"input",physical?"physical":"archived"},
+    {"language",programLanguage(program)},{"revision",revision(program)},
+    {"source_hash",hash(json(sourceBundle(program),false))},{"entry",program.entryUnit},
+    {"symbol",function.name},{"file",function.unit},{"line",int64_t(function.span.line)},
+    {"editable",function.templateName.empty()&&!function.closure&&!function.traitSignature&&function.sourceContractOrigin.empty()},
+    {"source",source.substr(0,end)},{"source_bytes",int64_t(source.size())},{"source_truncated",end!=source.size()},
+    {"callees_truncated",callees.size()!=function.dependencies.size()},{"callees",std::move(callees)},
+    {"direct_tests_truncated",tests.size()!=testCount},{"direct_tests",std::move(tests)}};
+  auto wire=json(JSON(std::move(result)),false);
+  if(wire.size()+1>16384)throw Error("E_QUERY_LIMIT","brief context exceeds 16 KiB; request full function context");
+  return wire;
 }
 llvm::json::Value editorAnalysis(const std::string &entry,const std::string &root,const llvm::json::Value &overlay,bool references,bool details){
   std::map<std::string,std::string> sources;

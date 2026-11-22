@@ -10,15 +10,13 @@ repository; publication does not guarantee that a model already knows NEX.
 
 ## A small working context
 
-1. Read applicable `AGENTS.md`, [BOOTSTRAP](BOOTSTRAP.md) and [SYSTEM_PROMPT](SYSTEM_PROMPT.md).
-   The common contract fits one bounded read; retrieve relevant
-   [detailed rules](DETAILED_CODING_RULES.md) for feature-specific contracts.
-2. Query `nex describe --kind index --json`. Keep toolchain/language,
-   compiler_build and descriptor_hash consistent across feature queries.
-3. Retrieve only relevant `--field PATH` sections and `nex guide --kind KIND`.
-   Source-error providers are nested at `source_exceptions.source_providers`.
-4. Read the affected project's manifest, tests and bounded
-   `nex context --symbol NAME --json`. Preserve its existing language version.
+1. Read the project's instructions and the SDK's [coding contract](SYSTEM_PROMPT.md).
+2. Inspect the manifest, affected source and relevant tests. For a larger change, inspect the checked source directly with
+   `nex context ENTRY --kind brief --symbol QUALIFIED_NAME --json`.
+3. Resolve concrete uncertainties with `nex describe --field PATH --json` or a feature
+   guide. Use `nex describe --kind index --json` to find unknown field names.
+4. Use the [detailed rules](DETAILED_CODING_RULES.md) for feature-specific contracts.
+   Pin the compiler build, descriptor and project language when caching answers.
 5. Make the requested change with exact source/revision guards. Run `nex check`,
    relevant tests and the reviewed acceptance task. Preserve failed diagnostics.
 6. Record observed results and remaining work. A successful emit or cross-build

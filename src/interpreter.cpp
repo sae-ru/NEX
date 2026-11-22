@@ -1,4 +1,5 @@
 #include "nex/task_machine.h"
+#include "nex/frontend_diagnostics.h"
 #include "nex/task_frontend.h"
 #include "nex/task_reference.h"
 #include "nex/language.h"
@@ -53,8 +54,12 @@ class Interpreter {
     }
     throw Error("E_INTERNAL","checked local is missing");
   }
-  V expression(E e) {
-    try{if(!atomRoot||e==atomRoot||e->kind!=Expr::Name||!e->text.starts_with("$task_slot_"))step(e->span);auto value=expr(e);if(watch)watch->bounded(value);return value;}
+  struct Comparison {
+    Type::Kind type=Type::Unknown;
+    int64_t left=0,right=0;
+  };
+  V expression(E e, Comparison *comparison=nullptr) {
+    try{if(!atomRoot||e==atomRoot||e->kind!=Expr::Name||!e->text.starts_with("$task_slot_"))step(e->span);auto value=expr(e,comparison);if(watch)watch->bounded(value);return value;}
     catch(const nexrt::DataError &err){Error error(err.code,err.message,e->span);if(sites.contains(e.get())){error.operationSite=sites.at(e.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw error;}
     catch(Error &error){if(error.operationSite.empty()&&sites.contains(e.get())){error.operationSite=sites.at(e.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw;}
   }
@@ -82,7 +87,7 @@ class Interpreter {
       }
     }throw Error("E_MATCH","no checked match arm accepted the value",e->span);
   }
-  V expr(E e) {
+  V expr(E e, Comparison *comparison) {
     if(e->kind==Expr::FunctionRef||e->kind==Expr::Lambda){auto data=nexrt::Data::make(nexrt::Data::Closure);data->text=e->text;const auto &fn=p.function(e->text);if(fn.captures.size()!=e->args.size())throw Error("E_FUNCTION","closure captures differ from the checked target",e->span);for(size_t i=0;i<e->args.size();++i){data->values.push_back(expression(e->args[i]));data->names.push_back(fn.captures[i].name);}return V(std::move(data));}
     if(e->kind==Expr::Invoke){auto target=expression(e->args[0]);std::vector<V> args;for(size_t i=1;i<e->args.size();++i)args.push_back(expression(e->args[i]));if(watch)target=watch->callable(target);return call(p.function(target.object->text),args,&target);}
     if(e->kind==Expr::Propagate){auto value=expression(e->args[0]);
@@ -98,6 +103,19 @@ class Interpreter {
     if(e->kind==Expr::Field){auto base=expression(e->args[0]);return watch?watch->field(base,e->number):nexrt::get(base.object,e->number);}
     if(e->kind==Expr::Index){auto base=expression(e->args[0]);auto index=expression(e->args[1]);return watch?watch->index(base,index.scalar):nexrt::get(base.object,index.scalar);}
     if(e->kind==Expr::Call) {
+      if(e->text=="assert"){
+        const auto &condition=e->args.front();
+        Comparison operands;
+        if(expression(condition,&operands).scalar)return {};
+        AssertionFailure error(e->span,condition->sourceRange);
+        if(operands.type==Type::I64)
+          error.comparison=llvm::json::Object{{"operator",condition->text},{"type","i64"},
+              {"left",std::to_string(operands.left)},{"right",std::to_string(operands.right)}};
+        else if(operands.type==Type::Bool)
+          error.comparison=llvm::json::Object{{"operator",condition->text},{"type","bool"},
+              {"left",bool(operands.left)},{"right",bool(operands.right)}};
+        throw error;
+      }
       std::vector<V> args;for(auto a:e->args)args.push_back(expression(a));
       if(auto *cells=cellHeap?cellHeap.get():borrowedCells){
         if(e->text=="cell_new")return cells->create(std::move(args[0]));
@@ -199,7 +217,6 @@ class Interpreter {
       if(e->text=="store_remove")return nexrt::storageRemove(args[0].object->text);
       if(e->text=="store_keys")return nexrt::storageKeys(args[0].object->text);
       if(e->text=="print"){result.output+=nexrt::printable(full(args[0]))+"\n";return {};}
-      if(e->text=="assert"){if(!args[0].scalar)throw Error("E_ASSERT","assertion failed",e->span);return {};}
       if(e->text=="len")return V(watch?watch->length(args[0]):nexrt::length(args[0].object));
       if(e->text=="str")return V(nexrt::string(nexrt::printable(full(args[0]))));
       if(e->text=="slice")return watch?watch->slice(args[0],args[1].scalar,args[2].scalar):V(nexrt::slice(args[0].object,args[1].scalar,args[2].scalar));
@@ -223,6 +240,13 @@ class Interpreter {
     if(e->text=="&&")return V(a&&expression(e->args[1]).scalar,true);
     if(e->text=="||")return V(a||expression(e->args[1]).scalar,true);
     V right=expression(e->args[1]);int64_t b=right.scalar;const auto &op=e->text;
+    // Only the asserted expression receives the destination. Nested calls get
+    // their own frame, and short-circuit operators have already returned.
+    if(comparison && (e->args[0]->type==Type::I64||e->args[0]->type==Type::Bool)){
+      comparison->type=e->args[0]->type.kind;
+      comparison->left=a;
+      comparison->right=b;
+    }
     if(op=="=="||op=="!="){auto same=watch?watch->equal(left,right):nexrt::equal(left,right);return V(op=="=="?same:!same,true);}
     if(e->args[0]->type==Type::F64){
       double a=full(left).floating(),b=full(right).floating();

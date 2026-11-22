@@ -553,6 +553,19 @@ int run(const Options &o) {
     if(kind=="rename"&&o.values.contains("--manifest"))throw Error("E_OPTION","--manifest is for identities --kind reconcile");
   }
   if(o.command=="context"&&o.values.contains("--entity")&&(o.values.contains("--operation")||o.values.contains("--site")))throw Error("E_OPTION","--entity requires declaration context with --symbol");
+  const bool briefContext=o.command=="context"&&o.get("--kind")=="brief";
+  if(o.command=="context"&&o.values.contains("--kind")&&!briefContext)
+    throw Error("E_OPTION","context supports --kind brief for function symbols; omit --kind for full context");
+  if(briefContext){
+    for(const auto &[key,value]:o.values)
+      if(key!="--kind"&&key!="--symbol"&&key!="--entity"&&key!="--revision")
+        throw Error("E_OPTION","unsupported brief context option: "+key);
+    for(const auto &flag:o.flags)if(flag!="--json")throw Error("E_OPTION","unsupported brief context flag: "+flag);
+    if(o.get("--symbol").empty()||o.get("--entity","function")!="function"||!o.extra.empty())
+      throw Error("E_OPTION","brief context requires a function --symbol NAME");
+    if(o.values.contains("--revision")&&(o.get("--revision").empty()||!o.positional.empty()))
+      throw Error("E_OPTION","select a physical file or an archived revision for brief context");
+  }
   if((o.values.contains("--notices")||o.has("--dpkg-notices"))&&o.command!="package")throw Error("E_OPTION","--notices and --dpkg-notices are for native package");
   const bool metalSource=o.command=="emit"&&o.get("--kind")=="metal";
   const bool cudaSource=o.command=="emit"&&o.get("--kind")=="cuda";
@@ -735,7 +748,23 @@ int run(const Options &o) {
     if(o.has("--library"))throw Error("E_OPTION","debug launches a native application or HTTP server; select a library frame within its application");
   }
   const std::set<std::string> sourceCommands={"check","eval","build","package","run","test","emit","debug","lock","web","api","profile","contract","verify","ffi","diagnose","declarations","identities"};
-  auto root=projectRoot(sourceCommands.contains(o.command)&&!o.positional.empty()?fs::absolute(o.positional[0]).parent_path():fs::current_path());
+  auto root=projectRoot((sourceCommands.contains(o.command)||briefContext)&&!o.positional.empty()?fs::absolute(o.positional[0]).parent_path():fs::current_path());
+  if(briefContext){
+    const bool physical=!o.positional.empty();
+    auto selected=[&]()->Program{
+      if(physical){
+        validateProjectMetadata(root.string(),projectSourceLanguage(root.string()));
+        return loadProgram(fs::absolute(o.positional[0]).string(),root.string(),true);
+      }
+      const auto missing="no retained graph; run nex check or supply a physical entry file to nex context --kind brief";
+      if(!fs::is_regular_file(root/".nex/graph.db"))throw Error("E_REVISION",missing);
+      Store archive(root/".nex",StoreOpenMode::ReadOnly);
+      if(o.get("--revision","HEAD")=="HEAD"&&archive.headRevision().empty())throw Error("E_REVISION",missing);
+      return load(o,root,archive,true);
+    };
+    std::cout<<briefFunctionContext(selected(),o.get("--symbol"),physical)<<'\n';
+    return 0;
+  }
   bool physical=sourceCommands.contains(o.command)&&o.get("--revision").empty()&&
     ((o.command!="declarations"&&o.command!="identities")||!o.positional.empty());
   if(physical)validateProjectMetadata(root.string(),projectSourceLanguage(root.string()));
@@ -1121,7 +1150,26 @@ int run(const Options &o) {
       if(web&&f.realm=="server"){tests.push_back(llvm::json::Object{{"name",f.name},{"skipped",true},{"reason","server test excluded from web target"}});continue;}
       bool taskTest=usesTaskEffects(p,f.name);
       if(taskLimitsSpecified&&!taskTest)throw Error("E_OPTION","select a task test with --symbol when specifying task limits",f.span);
-      auto expected=evaluate(p,f.name,taskLimits.steps,taskTest?&taskLimits:nullptr);bool native=!o.has("--interpreter-only");
+      Evaluation expected;
+      try{expected=evaluate(p,f.name,taskLimits.steps,taskTest?&taskLimits:nullptr);}
+      catch(const Error &error){
+        if(error.code!="E_ASSERT"||!o.has("--json"))throw;
+        std::vector<std::string> rerun{"nex","test"};
+        for(const auto &path:o.positional)rerun.push_back(path);
+        for(const auto &key:cliCommand("test")->options){
+          if(key=="--symbol")continue;
+          if(auto value=o.values.find(key);value!=o.values.end()){
+            rerun.push_back(key);
+            rerun.push_back(key=="--revision"&&value->second=="HEAD"?revision(p):value->second);
+          }else if(o.has(key))rerun.push_back(key);
+        }
+        rerun.push_back("--symbol");rerun.push_back(f.name);
+        auto diagnostic=diagnosticJSON(error,NEX_VERSION,NEX_BUILD_ID);
+        (*diagnostic.getAsObject())["test_failure"]=testFailureJSON(error,p,f.name,rerun);
+        print(std::move(diagnostic));
+        return 1;
+      }
+      bool native=!o.has("--interpreter-only");
       if(native){
         ProcessResult actual;
         if(web){

@@ -2,6 +2,16 @@
 #include "nex/language.h"
 
 namespace nex {
+// The reference interpreter preserves the conditional expression and only scalar
+// operands. Ordinary diagnosticJSON callers still receive the standard trap.
+struct AssertionFailure : Error {
+  SourceRange condition;
+  llvm::json::Value comparison=nullptr;
+  AssertionFailure(Span span,SourceRange range)
+      :Error("E_ASSERT","assertion failed",std::move(span)),condition(range){}
+};
+llvm::json::Value testFailureJSON(const Error &error,const Program &program,
+    const std::string &symbol,const std::vector<std::string> &rerun);
 // Capture only the inputs actually held by this frontend invocation. No reads,
 // store writes, semantic revisions or persistent operation IDs are synthesized.
 void attachFrontendDiagnostic(Error &error,

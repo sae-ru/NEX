@@ -1,7 +1,7 @@
 # NEX — Neural Execution Language
 
 NEX is a checked programming language and toolchain for humans and LLMs.
-Current source development is toolchain 0.274.0 / compiler fallback language 0.28 / task ABIs 7/8.
+Current source development is toolchain 0.281.0 / compiler fallback language 0.28 / task ABIs 7/8.
 It includes ordinary source contracts and experimental checked scalar Metal
 emission with installed owned-provider preparation tools. Complete matching
 portable SDK qualification remains pending. The current README links exact
@@ -30,7 +30,8 @@ the first local Qwen3.8 27B comparison found no NEX token savings.
 - [Sequential list construction](docs/list-construction.md)
 - [Source formatting](docs/formatting.md)
 - [Compiled command help and completion](docs/cli.md)
-- [Measured local Qwen task results](docs/llm-cost-qwen38-27b-2026-11-11.en.md)
+- [Measured local Qwen task results](docs/llm-cost-qwen38-27b-2026-11-17.en.md)
+- [Codex before/after maintenance pilot](docs/codex-maintenance-2026-11-22.ru.md)
 
 ## Authority
 
@@ -43,8 +44,8 @@ the first local Qwen3.8 27B comparison found no NEX token savings.
 - [Current Windows source/CUDA evidence](docs/evidence/windows-latest-build-CUDA-0.165.0-2026-11-10.json)
 - [Installed Metal tool evidence](docs/evidence/macos-installed-public-Metal-tools-0.165.0-2026-11-10.json)
 
-Use `nex describe --kind index --json`, then `--field PATH --json`.
-Use `nex context --symbol NAME --json` for bounded project context.
+Start with the affected source, test and coding contract. Query `nex describe --field PATH --json` for a needed feature, or the index for unknown fields.
+Read a live function with `nex context ENTRY --kind brief --symbol NAME --json`.
 For native hosts, query the bounded
 [`native_entry_abi`](docs/native-entry-abi.md) in library build JSON. Retrieve the
 actual physical signature and hidden error output; a symbol name alone is not

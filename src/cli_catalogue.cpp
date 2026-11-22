@@ -278,7 +278,7 @@ const std::vector<CliCommand> &cliCommands(){
     add("history","","Read stored revision history.","history","");
     add("search","--query TEXT","Search retained graph declarations.","query","--query --entity --field --revision --offset --limit --output");
     add("subgraph","--symbol NAME","Read bounded graph dependencies/dependents.","query","--symbol --entity --direction --depth --revision --offset --limit --edge-offset --edge-limit --output");
-    add("context","--symbol NAME | --operation ID | --site KEY","Read bounded archived context.","graph","--symbol --operation --site --entity --revision --offset --limit");
+    add("context","--symbol NAME | --operation ID | --site KEY | [FILE] --kind brief --symbol NAME","Read symbol context. Brief mode returns function source, callee signatures and direct tests.","query","--kind --symbol --operation --site --entity --revision --offset --limit");
     add("operations","--symbol NAME","Read operation identities/source ranges for one function.","operation","--symbol --revision --offset --limit");
     add("declarations","[FILE]","Read module/type/trait/implementation declarations.","graph","--entity --symbol --revision --offset --limit");
     add("identities","[FILE]","Read/reconcile/resolve/rename retained graph local identities.","graph","--kind --entity --symbol --output --manifest --expected-revision --revision --origin --from-revision --node --to");
@@ -323,6 +323,7 @@ const std::vector<CliCommand> &cliCommands(){
       if(c.name=="search")c.choices["--field"]={"symbol","source","any"};
       if(c.name=="declarations")c.choices["--entity"]={"module","type","trait","impl"};
       if(c.name=="context")c.choices["--entity"]={"module","type","trait","impl","function","endpoint"};
+      if(c.name=="context")c.choices["--kind"]={"brief"};
       if(c.name=="search")c.choices["--entity"]={"all","module","type","trait","impl","function","endpoint"};
       if(c.name=="subgraph")c.choices["--entity"]={"module","type","trait","impl","function","endpoint"};
       if(c.name=="profile"){

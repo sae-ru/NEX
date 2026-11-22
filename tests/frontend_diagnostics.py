@@ -200,8 +200,50 @@ class FrontendDiagnostics(harness.ToolchainCase):
         self.ready();manifest=self.root/'nex.json';value=json.loads(manifest.read_text());value['language']='0.14';manifest.write_text(json.dumps(value), newline="\n")
         error=self.cli('check',ok=False);self.assertEqual(error['code'],'E_LANGUAGE_VERSION');self.assertNotIn('frontend',error)
         value['language']=harness.CURRENT_LANGUAGE;manifest.write_text(json.dumps(value), newline="\n");self.source('module runtime;fn main()->unit{assert(false);}')
-        error=self.cli('eval',ok=False);self.assertEqual(error['code'],'E_ASSERT');self.assertNotIn('frontend',error)
+        error=self.cli('eval',ok=False);self.assertEqual(error['code'],'E_ASSERT');self.assertNotIn('frontend',error);self.assertNotIn('test_failure',error)
         self.assertEqual(len(error['operation_site']),64);self.assertIn('operation_id',error)
+
+    def test_assert_failure_replays_imported_helper_without_repeating_effects(self):
+        self.source('module app;import "./audit.nex" as a;fn main()->unit{}'
+                    'test fn alpha()->unit{}test fn counts()->unit!{io}{a::check_count();}')
+        helper = ('module audit;\nfn value(x:i64)->i64!{io}{print(x);return x;}\n'
+                  'pub fn check_count()->unit!{io}{assert(value(13) == value(17));}\n')
+        (self.root/'audit.nex').write_text(helper)
+        error = self.cli('test', 'main.nex', '--interpreter-only', ok=False)
+        self.assertEqual((error['code'], error['message'], error['stdout']),
+                         ('E_ASSERT', 'assertion failed', '13\n17\n'))
+        self.assertEqual((error['file'],error['line']),('audit.nex',3))
+        info = error['test_failure']
+        self.assertEqual(info['symbol'], 'app::counts')
+        self.assertEqual(info['comparison'], {'operator':'==','type':'i64','left':'13','right':'17'})
+        condition=info['condition']
+        self.assertEqual(helper.encode()[condition['byte_begin']:condition['byte_end']].decode(), condition['preview'])
+        self.assertEqual(condition['preview'], 'value(13) == value(17)')
+        self.assertFalse(condition['truncated'])
+        args=info['rerun_argv']
+        self.assertEqual(args[0:3], ['nex','test','main.nex'])
+        again=self.cli(*args[1:],machine=False,ok=False)
+        self.assertEqual(json.loads(again.stdout),error)
+
+    def test_assert_failure_limits_preview_and_preserves_short_circuit(self):
+        self.source('module logic;fn main()->unit{}'
+                    'fn wrong()->bool!{io}{print(7);return true;}'
+                    'test fn check()->unit!{io}{assert(false && wrong());}')
+        error=self.cli('test','--interpreter-only',ok=False)
+        self.assertEqual(error['stdout'],'')
+        self.assertNotIn('comparison',error['test_failure'])
+        self.source('module logic;fn main()->unit{}test fn check()->unit{assert(false != false);}')
+        self.assertEqual(self.cli('test','--interpreter-only',ok=False)['test_failure']['comparison'],
+                         {'operator':'!=','type':'bool','left':False,'right':False})
+        self.source('module logic;fn main()->unit{}test fn check()->unit{assert("'+
+                    '🙂'*100+'" // KEEP_OUT\n == "secret");}')
+        info=self.cli('test','--interpreter-only',ok=False)['test_failure']
+        self.assertNotIn('comparison',info)
+        self.assertTrue(info['condition']['truncated'])
+        self.assertLessEqual(len(info['condition']['preview'].encode()),256)
+        self.assertNotIn('🙂',info['condition']['preview'])
+        self.assertNotIn('secret',str(info))
+        self.assertNotIn('KEEP_OUT',str(info))
 
     def test_watch_static_errors_bind_expression_and_frame_without_mutation(self):
         case=expression_harness.Expressions();case.setUp()

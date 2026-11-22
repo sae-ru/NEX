@@ -64,14 +64,15 @@ advertised project source languages and toolchain by the same script.
 |---|---|---|
 | [Отложенные дополнительные проверки NEX](deferred-checks.ru.md) | language 0.28; unpublished instrumentation snapshot 0.168 | repository |
 
-## Historical (2)
+## Historical (3)
 
 | Document | Applies to | Owner |
 |---|---|---|
 | [Architecture decisions for the implemented core](history/architecture-before-2026-11-10.md) | mixed earlier milestones | repository |
 | [Приоритеты улучшения NEX](development-priorities.md) | language 0.28; toolchain 0.246.0 | repository |
+| [Стоимость трёх правок NEX в Codex, 22 ноября 2026 года](codex-maintenance-2026-11-22.ru.md) | language 0.30; toolchain 0.281.0 | repository |
 
-## Reference and history (167)
+## Reference and history (168)
 
 | Document | Applies to | Owner |
 |---|---|---|
@@ -163,6 +164,7 @@ advertised project source languages and toolchain by the same script.
 | [NEX language server: development toolchain 0.208](lsp.md) | — | — |
 | [NEX language specification 0.28](language.md) | — | — |
 | [NEX source errors (language0.27)](exceptions.md) | — | — |
+| [NEX для разработки с LLM. Оценка и план работ](product-review-0.281.0.ru.md) | — | — |
 | [NPU status](npu.md) | — | — |
 | [One command for a committed SDK build](sdk-build.md) | — | — |
 | [Operation graph, source edits and attribution](operations.md) | — | — |
@@ -245,4 +247,4 @@ advertised project source languages and toolchain by the same script.
 
 ## Totals
 
-218 documents: 44 current, 1 deferred, 2 historical, 167 reference/unclassified.
+220 documents: 44 current, 1 deferred, 3 historical, 168 reference/unclassified.

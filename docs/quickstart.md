@@ -38,7 +38,7 @@ NEX — Neural Execution Language, «язык нейронного исполн�
 и не готовый универсальный установщик. Более новые private host-этапы ресурсов
 имеют отдельную приёмку и не включают source task/FFI transport автоматически.
 Здесь не предполагаются команды `brew install nex`/`npm install nex`.
-Возможности установленной версии показывает `nex describe --json`.
+Для нужной возможности запросите `nex describe --field PATH --json`. Имена полей перечисляет `nex describe --kind index --json`.
 
 Порядок: [установить](#1-установить-nex) → [создать проект](#2-создать-и-запустить-проект)
 → [сохранить в Git](#3-что-хранить-в-git) → [подключить LLM](#4-hermes-codex-и-другие-llm).
@@ -56,7 +56,7 @@ SDK — каталог с `bin/nex` и `share/nex/`. Оставьте их вм�
 export NEX_SDK="/absolute/path/to/nex-sdk"
 export PATH="$NEX_SDK/bin:$PATH"
 nex doctor
-nex describe --json
+nex describe --kind index --json
 ```
 
 Замените путь своим. `doctor` должен показать ожидаемые `version`, `language`,
@@ -223,7 +223,7 @@ nex build --profile release -o out/my-app --json
 
 | Команда | Назначение |
 |---|---|
-| `nex describe --json` | Реальные возможности установленного компилятора |
+| `nex describe --field PATH --json` | Одна возможность установленного компилятора |
 | `nex guide --kind language` | Спецификация языка; `prompt`, `grammar`, `web` — другие руководства |
 | `nex check` | Проверка исходников, типов, эффектов и realm |
 | `nex test --profile release --json` | Проверка тестов в release и сравнение с интерпретатором |
@@ -420,7 +420,7 @@ nex doctor | python3 -c 'import json,sys; d=json.load(sys.stdin); print(json.dum
 # Работа над этим приложением NEX
 
 Прочитай README.md и docs/nex/SYSTEM_PROMPT.md.
-Выполни nex doctor и nex describe --json в своём терминале.
+Начни с манифеста, изменяемого кода и теста. При вопросах о возможностях используй nex describe --field PATH --json. Для большой программы запроси nex context ENTRY --kind brief --symbol NAME --json. В старом SDK сначала выполни nex check ENTRY, затем nex context --symbol NAME --json.
 Используй поддерживаемые установленным компилятором возможности.
 Документация языка: docs/nex/language.md и docs/nex/grammar.ebnf;
 актуальные руководства доступны через nex guide --kind KIND.

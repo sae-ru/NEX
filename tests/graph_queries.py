@@ -47,6 +47,50 @@ class GraphQueries(harness.ToolchainCase):
     def symbols(self, response):
         return {n['symbol'] for n in response['nodes']}
 
+    def test_brief_context_physical_archived_selection_and_direct_tests(self):
+        self.source('''module demo;
+fn one()->i64 {return 1;}
+fn total()->i64 {return one();}
+test fn total_test()->unit {assert(total()==1);}
+fn main()->i64 {return total();}
+''')
+        args=('context','--kind','brief','--symbol','total')
+        missing=self.cli(*args,ok=False)
+        self.assertEqual(missing['code'],'E_REVISION')
+        self.assertIn('nex check',missing['message'])
+        physical=self.cli(*args,self.file)
+        self.assertEqual(physical['input'],'physical')
+        self.assertEqual(physical['direct_tests'],['demo::total_test'])
+        self.assertEqual(len(physical['callees']),1)
+        self.assertIn('demo::one() -> i64',physical['callees'][0])
+        self.assertNotIn('return 1',str(physical))
+        self.assertFalse((self.root/'.nex').exists())
+        rev=self.cli('check')['revision']
+        self.file.write_text(self.file.read_text(encoding='utf-8').replace('return one();','return one()+0;'),encoding='utf-8')
+        current=self.cli(*args,self.file)
+        archived=self.cli(*args,'--revision',rev)
+        self.assertEqual(archived['input'],'archived')
+        self.assertEqual(archived['source_hash'],physical['source_hash'])
+        self.assertNotEqual(current['source_hash'],archived['source_hash'])
+        self.assertEqual(self.cli(*args)['revision'],rev)
+        for extra in ((self.file,'--revision',rev),('--entity','type'),('--site','X')):
+            self.assertEqual(self.cli(*args,*extra,ok=False)['code'],'E_OPTION')
+
+    def test_brief_context_bounds_source_signatures_and_tests(self):
+        body='// '+'界🙂'*1000
+        declarations='\n'.join(f'fn read{i}()->i64 {{return {i};}}' for i in range(20))
+        expression=' + '.join(f'read{i}()' for i in range(20))
+        tests='\n'.join(f'test fn confirm{i}()->unit {{assert(sum()==190);}}' for i in range(20))
+        self.source(f'module bounded;{declarations}\nfn sum()->i64 {{\n{body}\nreturn {expression};\n}}\n{tests}\nfn main()->i64 {{return sum();}}')
+        response=self.cli('context',self.file,'--kind','brief','--symbol','sum')
+        self.assertTrue(all(response[k] for k in ('source_truncated','callees_truncated','direct_tests_truncated')))
+        self.assertEqual(len(response['callees']),12)
+        self.assertEqual(len(response['direct_tests']),12)
+        view=response['source']
+        self.assertLessEqual(len(view.encode()),2048)
+        self.assertGreater(response['source_bytes'],len(view.encode()))
+        self.assertIn(view,self.file.read_text(encoding='utf-8'))
+
     def test_literal_discovery_names_sources_and_fields(self):
         self.project()
         one = self.search('leaf','--field','symbol')

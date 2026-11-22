@@ -433,6 +433,39 @@
         "stdout": {
           "type": "string"
         },
+        "test_failure": {
+          "type": "object",
+          "required": ["symbol"],
+          "additionalProperties": false,
+          "properties": {
+            "symbol": {"type": "string"},
+            "rerun_argv": {"type": "array", "items": {"type": "string"}},
+            "condition": {
+              "type": "object",
+              "required": ["preview", "byte_begin", "byte_end", "truncated"],
+              "additionalProperties": false,
+              "properties": {
+                "preview": {"type": "string", "maxLength": 256},
+                "byte_begin": {"type": "integer", "minimum": 0},
+                "byte_end": {"type": "integer", "minimum": 0},
+                "truncated": {"type": "boolean"}
+              }
+            },
+            "comparison": {
+              "type": "object",
+              "required": ["type", "operator", "left", "right"],
+              "additionalProperties": false,
+              "properties": {
+                "type": {"enum": ["bool", "i64"]},
+                "operator": {"enum": ["==", "!=", "<", "<=", ">", ">="]},
+                "left": {}, "right": {}
+              },
+              "if": {"properties": {"type": {"const": "bool"}}},
+              "then": {"properties": {"left": {"type": "boolean"}, "right": {"type": "boolean"}}},
+              "else": {"properties": {"left": {"type": "string", "pattern": "^-?[0-9]+$"}, "right": {"type": "string", "pattern": "^-?[0-9]+$"}}}
+            }
+          }
+        },
         "operation_site": {
           "type": "string",
           "pattern": "^[a-f0-9]{64}(?![\\s\\S])"

@@ -15,20 +15,14 @@ project instructions. The skill version is independent of the language version.
 Use the project's chosen NEX executable consistently. If it is missing, read
 [SDK setup](references/sdk-setup.md); the skill contains no compiler.
 
-1. Run `nex describe --kind index --json`. For an SDK that rejects scoped
-   discovery, use `nex describe --json` once. Retain its compiler build and
-   descriptor identity; refresh discovery if the executable changes.
-2. Retrieve `nex guide --kind prompt --json` once for this SDK's coding contract.
-   When `llm_entry` is advertised, also read `nex guide --kind quick --json`
-   before writing source. If guides are unavailable, use matching installed
-   documentation or the corresponding release's language pack, rather than
-   assuming current GitHub documentation matches an old executable.
-   Preserve a resource error such as `E_RESOURCE` and report the fallback;
-   do not modify the SDK or claim that the failing guide command passed.
-3. Request only fields relevant to the task with
-   `nex describe --field PATH --json`, then the indicated feature guide. The
-   legacy `features` list is partial. A roadmap, a familiar language's syntax
-   or an older platform receipt does not establish current support.
+1. Read the installed coding contract once with `nex guide --kind prompt`, or
+   use its matching local copy. Follow the project's existing source and tests.
+2. Query `nex describe --field PATH --json` when the task needs an unfamiliar
+   capability. To find field names, use `nex describe --kind index --json`.
+   Reuse results for the same compiler build, descriptor and project language.
+3. Consult `nex guide --kind quick` or a feature guide for a concrete syntax or
+   semantics question. If a guide is missing, record the error and use the
+   matching installed documentation or release language pack.
 
 When `cli_interface` is advertised, get `nex help COMMAND --json` for unfamiliar
 flags. Keep `--json` before an application's `--` argument separator.
@@ -39,7 +33,8 @@ Inspect the project manifest, relevant sources and acceptance tests. Preserve
 its selected language and dependency pins. Use `nex init PATH` for a new project;
 do not hardcode the newest language version into an existing one.
 
-For an existing symbol, request `nex context --symbol NAME --json` and expand
+For a larger change, request `nex context ENTRY --kind brief --symbol NAME --json`.
+On older SDKs run `nex check ENTRY`, then `nex context --symbol NAME --json`. Expand
 to related types, imports or callers when there is a concrete uncertainty.
 Bounded context complements the physical source and tests. Graph-local IDs,
 content hashes and revisions have different meanings; use the advertised

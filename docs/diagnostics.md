@@ -73,3 +73,22 @@ remains negative and unchanged. New model observations need their own versioned
 protocol; no earlier failed candidate is repaired or relabelled by this command.
 
 [Recorded0.166 scope and checks](evidence/bounded-language-entry-0.166.0-2026-11-11.json) bind compiler/source identities and retain the initial failures.
+
+## Repair an assertion from a test run
+
+When the reference execution in `nex test --json` reports `E_ASSERT`,
+`test_failure.symbol` names the selected test, including when a helper inside
+that test failed. The outer file, line and column identify the failing assertion.
+Run the arguments in `test_failure.rerun_argv` from the same project directory,
+using the same SDK. The array preserves the entry, target and supported test
+options, selects that test, and resolves an explicit archived HEAD to its revision.
+It is omitted if any argument cannot be represented in UTF-8.
+
+When a source predicate range survives interpretation, `condition` gives its
+byte interval in the reported file and a preview of at most 256 UTF-8 bytes.
+String literal contents and line comments are hidden. A direct comparison of
+two i64 or bool values also reports its operator and the left/right operands
+already evaluated at the failure. Integers use decimal strings so a JavaScript
+reader retains all 64 bits. Booleans use JSON booleans. Compound conditions,
+other value types and task boundaries that preserve only the trap may omit
+details. The program's existing stdout remains available separately.

@@ -1,60 +1,9 @@
 # NEX coding contract
 
-Write checked NEX programs using the selected compiler's public capabilities.
-Plans, private kernels and old receipts do not establish source support.
-Toolchain, project language, runtime ABI and platform acceptance are distinct.
+Read nex.json, the affected source and its test. Use the project's NEX executable and keep its language version. For an ordinary change, follow a nearby example, edit the source, then run `nex test ENTRY --json` once. The default test compares reference and native execution. Use the project's web target for browser behavior. Preserve the acceptance criteria.
 
-1. Inspect the project, its tests and acceptance requirements. Preserve the
-   language selected by `nex.json`. Create projects with `nex init PATH`.
-2. Query `nex describe --kind index --json` once; request relevant fields with
-   `nex describe --field PATH --json`. Keep compiler/descriptor identities
-   consistent. If scoped discovery is unavailable, use `nex describe --json`.
-3. Read `nex guide --kind quick --json` once when `llm_entry` is advertised.
-   Fetch feature guides for concrete uncertainties. Use `nex help COMMAND --json`
-   for flags and `nex explain CODE --json` for covered diagnostics. Do not invent
-   source constructs, options or support; the old `features` list is partial.
-4. Get bounded context with `nex context --symbol NAME`, then its needed types,
-   imports and callers. Query `standard_library` before writing replacement
-   helpers. Use actual callable signatures, generic bounds, effects and realms.
-5. Make coherent source edits. Keep every acceptance rule, interface and budget.
-   Graph patches need exact source/revision guards. Edit source templates, not
-   generated specializations; preserve diagnostics and failed attempts.
-6. Run compiler checks and affected tests. Check changed observable behavior
-   through reference/native and applicable TypeScript execution, including
-   rejected programs. Generation alone does not prove execution or delivery.
+When repairing a failure, read the reported file, location and test. Use `--symbol QUALIFIED_TEST` to replay one test before the affected suite. On a large project read the current function and its immediate dependencies with `nex context ENTRY --kind brief --symbol QUALIFIED_NAME --json`. On older SDKs run `nex check ENTRY` before `nex context --symbol QUALIFIED_NAME --json`. Pin the revision when reading history. If the source fails to check, work from the physical file and its diagnostic.
 
-Arithmetic is checked; preserve left-to-right evaluation and short-circuiting.
-Strings use strict UTF-8 and Unicode scalar indexing; bytes preserve octets.
-Aggregates and ordinary captures are immutable snapshots. Genuine cells and
-resources retain identity only within their advertised ownership boundaries.
-Results are ordinary values; `?` propagates from the current function and
-`unwrap` may trap. Source errors, fatal traps and cancellation are distinct.
-User `finally` does not run for fatal traps/cancellation; runtime cleanup must
-still retire owned values on every exit. Read the selected exception guide.
+Look up what you need. Use `nex guide --kind quick` for unfamiliar syntax, `nex explain CODE` for an unfamiliar diagnostic, `nex help COMMAND` for flags and `nex describe --field PATH --json` for a capability. Find unknown paths with `nex describe --kind index --json`. Reuse answers for the same compiler build, descriptor and language. Consult the standard library before adding a helper.
 
-Effects declare required operations; they grant no OS or provider authority.
-Keep client/server/shared realms and original resource grants. Browser output
-contains only reachable client/shared code. Opaque authority cannot enter wire
-data. Declare the caller/callback's complete effects. Use the relevant guide
-before composing tasks, cells, IO, native images, devices or persistent UI.
-Do not infer shared-memory parallel cells, worker reference transport or Java/
-Python compatibility from a reference/task capability.
-
-Read the relevant sections of `llm/DETAILED_CODING_RULES.md` for these contracts:
-errors/contracts; graph/history; project/linking; web/server; task/resource/IO;
-compute/devices; debugging/profiling. Discover each feature first and follow its
-indexed guide, limits, ownership, ABI and pending integrations. Private source
-experiments never enable ordinary syntax. Keep native code images and physical
-work alive through value/resource retirement; cancellation is not completion.
-
-Ordinary checks must not change a graph's selected language. Migrate explicitly
-with a reviewed, revision-guarded plan; preserve namespace, IDs and old rows.
-Changing a manifest version is not migration. Old captures require their matching
-compiler/resources. Static linkage does not imply a fully static executable.
-
-Commit source, tests, manifests, locks, contracts and required assets; retain
-graph exports/snapshots when history matters. Keep credentials, keys, caches and
-generated SDKs out of Git. Update dependency pins explicitly. Report actual
-checks, source/build identities and remaining gaps. Measure complete accepted
-work, including context, tools and retries: smaller text alone proves no token
-or quality gain. Discover unsupported targets and keep them visibly pending.
+Keep checked arithmetic, left-to-right evaluation, short-circuiting, Unicode scalar string operations, immutable values and declared effects. Distinguish results, typed errors and fatal traps. Preserve client/server boundaries, resource grants and cleanup on every runtime exit. For tasks, FFI, devices, ownership and migrations, read the corresponding feature guide and matching sections of `llm/DETAILED_CODING_RULES.md`. Use revision and source guards for graph patches. Commit source, tests, manifests and locks; keep secrets and generated caches local.

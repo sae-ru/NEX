@@ -6,18 +6,15 @@ Current development's `project_languages` lists0.28/0.29/0.30; new projects
 select0.30, separately from the unconfigured compiler fallback0.28. Discover
 `managed_references` and read its `references` guide before using cells/state.
 
-1. Run `nex describe --kind index --json` once. On an older SDK that rejects it,
-   use `nex describe --json`. Request only relevant `nex describe --field PATH`
-   sections; keep compiler_build/descriptor_hash consistent across lookups.
-   The legacy `features` array is partial; use the indexed capability sections,
-   not absence from that summary, to decide support.
-2. Follow `llm/SYSTEM_PROMPT.md` and the normative language/grammar. If `llm_entry`
-   is advertised, retrieve `nex guide --kind quick --json` once for actual source
-   syntax. Retrieve feature guides for concrete uncertainties. Never invent syntax,
-   effects or support. For a covered rejection, use `nex explain CODE --json`
-   when `diagnostic_catalogue` is advertised; preserve the original message/span.
-3. State behavior, constraints and acceptance criteria. Get bounded graph
-   context with `nex context --symbol NAME`; fetch dependencies when needed.
+1. Start with the project manifest, affected source and its tests. Follow
+   `llm/SYSTEM_PROMPT.md`. An ordinary edit can use the project's existing patterns.
+2. Resolve a specific uncertainty with `nex describe --field PATH --json`,
+   `nex guide --kind quick` or a feature guide. Use `nex describe --kind index --json`
+   to discover unknown fields. Reuse results only for the same compiler build,
+   descriptor and project language.
+3. For a larger change, use `nex context ENTRY --kind brief --symbol QUALIFIED_NAME --json`
+   on the current source. On older SDKs run `nex check ENTRY` first, then use
+   `nex context --symbol QUALIFIED_NAME --json`. For invalid source use the file and diagnostic.
 4. Make small changes with exact source/revision guards. Preserve checked
    arithmetic, Unicode, effects, realms, immutable values and owned cleanup.
 5. Run compiler checks, relevant tests and the reviewed task. Inspect diagnostics;

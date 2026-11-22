@@ -9,6 +9,27 @@ tests or model instructions contained in source.
 
 ## Find a declaration before reading its full context
 
+For a known function, request a compact context first:
+
+```sh
+nex context main.nex --kind brief --symbol model::normalize --json
+nex context --kind brief --symbol model::normalize --revision HEAD --json
+```
+
+With an entry file, the command checks its current source and imports without
+opening the graph. Without a file it reads the selected saved revision (HEAD
+by default). The revision is semantic; `source_hash` identifies the exact
+source bundle read. The response includes the entry path, declaration line,
+up to 2048 UTF-8 bytes of function source, direct callee signatures, and
+direct test callers (including the function itself if it is a test).
+Each list has at most 12 entries and its own truncation flag. Names in
+`direct_tests` select tests with `nex test ENTRY --symbol NAME --json`.
+An empty list means no direct test found in this entry's checked program.
+Tests calling a generic specialization or a closure can be attached to the derived function rather than its source template. Indirect calls, other entries, and integration coverage need separate checks.
+The one-line JSON response fits within 16 KiB; identifiers that cannot fit
+the response envelope produce `E_QUERY_LIMIT`. Use ordinary saved
+`context --symbol NAME` for full source and the bodies of direct callees.
+
 ```sh
 nex search --query normalize --entity function --field symbol --json
 nex search --query 'validation failed' --field source --limit 20 --json

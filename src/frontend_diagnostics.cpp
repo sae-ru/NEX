@@ -74,6 +74,45 @@ void attachFrontendDiagnostic(Error &error,const std::map<std::string,std::strin
     {"reported_key",label(error.span.file)},{"source",std::move(source)},
     {"location",std::move(location)},{"preview",std::move(preview)}};
 }
+// Format a bounded prefix of a checked source expression. Literal contents and
+// comments never enter the result, even when the input prefix ends inside them.
+static std::string assertionPreview(llvm::StringRef source){
+  size_t end=std::min<size_t>(source.size(),256);
+  while(end<source.size()&&end&&continuation(static_cast<unsigned char>(source[end])))--end;
+  std::string out;
+  for(size_t i=0;i<end;){
+    if(source[i]=='"'){
+      out+="\"\"";
+      for(++i;i<end;){
+        char ch=source[i++];
+        if(ch=='"')break;
+        if(ch=='\\'&&i<end)++i;
+      }
+    }else if(source[i]=='/'&&i+1<source.size()&&source[i+1]=='/'){
+      while(i<end&&source[i]!='\n')++i;
+    }else out+=source[i++];
+  }
+  if(out.size()>256)out.resize(256); // A clipped opening quote can add one ASCII byte.
+  return out;
+}
+JSON testFailureJSON(const Error &error,const Program &program,const std::string &symbol,const std::vector<std::string> &rerun){
+  Object info{{"symbol",symbol}};
+  if(std::all_of(rerun.begin(),rerun.end(),utf8)){
+    Array args;for(const auto &arg:rerun)args.push_back(arg);
+    info["rerun_argv"]=std::move(args);
+  }
+  auto assertion=dynamic_cast<const AssertionFailure*>(&error);
+  if(!assertion)return info; // Some task-control boundaries preserve only the trap.
+  if(assertion->comparison.getAsObject())info["comparison"]=assertion->comparison;
+  const auto unit=program.units.find(error.span.file);
+  const auto &range=assertion->condition;
+  if(unit!=program.units.end()&&range.valid&&range.begin<range.end&&range.end<=unit->second.source.size()){
+    auto text=llvm::StringRef(unit->second.source).slice(range.begin,range.end);
+    info["condition"]=Object{{"preview",assertionPreview(text)},{"byte_begin",int64_t(range.begin)},
+        {"byte_end",int64_t(range.end)},{"truncated",text.size()>256}};
+  }
+  return info;
+}
 JSON diagnosticJSON(const Error &error,const std::string &toolchain,const std::string &build){
   Array escaped;
   auto safe=[&](const char *name,const std::string &value){if(!utf8(value))escaped.push_back(name);return display(value);};

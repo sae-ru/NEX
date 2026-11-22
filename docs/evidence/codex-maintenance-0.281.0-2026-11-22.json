@@ -1,0 +1,443 @@
+{
+  "arms": {
+    "after": {
+      "accepted": 3,
+      "attempts": 3,
+      "metrics": {
+        "agent_ms": {
+          "known_sum": 97403,
+          "observed_trials": 3,
+          "per_accepted": 32467.667,
+          "total": 97403
+        },
+        "cached_input_tokens": {
+          "known_sum": 287872,
+          "observed_trials": 3,
+          "per_accepted": 95957.333,
+          "total": 287872
+        },
+        "end_to_end_ms": {
+          "known_sum": 105159,
+          "observed_trials": 3,
+          "per_accepted": 35053.0,
+          "total": 105159
+        },
+        "input_tokens": {
+          "known_sum": 352005,
+          "observed_trials": 3,
+          "per_accepted": 117335.0,
+          "total": 352005
+        },
+        "output_tokens": {
+          "known_sum": 1515,
+          "observed_trials": 3,
+          "per_accepted": 505.0,
+          "total": 1515
+        },
+        "total_tokens": {
+          "known_sum": 353520,
+          "observed_trials": 3,
+          "per_accepted": 117840.0,
+          "total": 353520
+        },
+        "uncached_input_tokens": {
+          "known_sum": 64133,
+          "observed_trials": 3,
+          "per_accepted": 21377.667,
+          "total": 64133
+        }
+      },
+      "verifier_passes": 3
+    },
+    "before": {
+      "accepted": 3,
+      "attempts": 3,
+      "metrics": {
+        "agent_ms": {
+          "known_sum": 107896,
+          "observed_trials": 3,
+          "per_accepted": 35965.333,
+          "total": 107896
+        },
+        "cached_input_tokens": {
+          "known_sum": 450816,
+          "observed_trials": 3,
+          "per_accepted": 150272.0,
+          "total": 450816
+        },
+        "end_to_end_ms": {
+          "known_sum": 115718,
+          "observed_trials": 3,
+          "per_accepted": 38572.667,
+          "total": 115718
+        },
+        "input_tokens": {
+          "known_sum": 527485,
+          "observed_trials": 3,
+          "per_accepted": 175828.333,
+          "total": 527485
+        },
+        "output_tokens": {
+          "known_sum": 2145,
+          "observed_trials": 3,
+          "per_accepted": 715.0,
+          "total": 2145
+        },
+        "total_tokens": {
+          "known_sum": 529630,
+          "observed_trials": 3,
+          "per_accepted": 176543.333,
+          "total": 529630
+        },
+        "uncached_input_tokens": {
+          "known_sum": 76669,
+          "observed_trials": 3,
+          "per_accepted": 25556.333,
+          "total": 76669
+        }
+      },
+      "verifier_passes": 3
+    }
+  },
+  "builds": {
+    "after": {
+      "guide_sha256": "90076d3e510dc2ea40af88dc889ad0822135fc418fa3c60b8532a12e1715aa6f",
+      "nex_sha256": "b29e22aeb1fe62a1a9a29cabe619be76b0b0e75f44963b26d43d7e4f0a0ce27c",
+      "source_commit": "26e78f53eb5390fa6ccb5f1a9bfa0f58477a428a"
+    },
+    "before": {
+      "guide_sha256": "7d7a9a49a6a7bf0fdac884593e6046c903af7bf829432d3d5a92b3554ff0ce1b",
+      "nex_sha256": "2adefc8fde3c97b35e6ca10e372d8872c729f33516e8580bb3656ec89425fd91",
+      "source_commit": "26e78f53eb5390fa6ccb5f1a9bfa0f58477a428a"
+    }
+  },
+  "common": {
+    "cli": "codex-cli 0.169.0-alpha.11.1",
+    "cli_options_sha256": "4a9ca7da906103514263b3f85b8aa992aabc02490540a9fff59b3110556ab1e8",
+    "cli_sha256": "3ea20787e106af94573d3d6c19480aed93a1334b0dd32b6b04e2f780ce82cf4b",
+    "fixtures_sha256": "62fe5e3edf98222c5f1231c45b44707b47033ec49e6738467fc76671c822b21b",
+    "model": "gpt-6.2-sol",
+    "runner_sha256": "344eb48a333db25580abaea9d7219fc775565d4b246044a0ac2a4f1e1ce6f74b",
+    "timeout_seconds": 300
+  },
+  "currency_cost": null,
+  "savings": {
+    "agent_ms": {
+      "per_accepted": {
+        "percent": 9.725,
+        "saved": 3497.666
+      },
+      "total": {
+        "percent": 9.725,
+        "saved": 10493
+      }
+    },
+    "cached_input_tokens": {
+      "per_accepted": {
+        "percent": 36.144,
+        "saved": 54314.667
+      },
+      "total": {
+        "percent": 36.144,
+        "saved": 162944
+      }
+    },
+    "end_to_end_ms": {
+      "per_accepted": {
+        "percent": 9.125,
+        "saved": 3519.667
+      },
+      "total": {
+        "percent": 9.125,
+        "saved": 10559
+      }
+    },
+    "input_tokens": {
+      "per_accepted": {
+        "percent": 33.267,
+        "saved": 58493.333
+      },
+      "total": {
+        "percent": 33.267,
+        "saved": 175480
+      }
+    },
+    "output_tokens": {
+      "per_accepted": {
+        "percent": 29.371,
+        "saved": 210.0
+      },
+      "total": {
+        "percent": 29.371,
+        "saved": 630
+      }
+    },
+    "total_tokens": {
+      "per_accepted": {
+        "percent": 33.252,
+        "saved": 58703.333
+      },
+      "total": {
+        "percent": 33.252,
+        "saved": 176110
+      }
+    },
+    "uncached_input_tokens": {
+      "per_accepted": {
+        "percent": 16.351,
+        "saved": 4178.666
+      },
+      "total": {
+        "percent": 16.351,
+        "saved": 12536
+      }
+    }
+  },
+  "savings_definition": "before minus after; positive means lower after; cached input is part of input",
+  "schema": "nex.codex-maintenance-comparison/1",
+  "tasks": {
+    "queue-interface": {
+      "after": {
+        "accepted": true,
+        "checks_passed": {
+          "consumer": true,
+          "held_out": true,
+          "visible": true
+        },
+        "complete_usage": true,
+        "exit_code": 0,
+        "metrics": {
+          "agent_ms": 49939,
+          "cached_input_tokens": 148480,
+          "end_to_end_ms": 52960,
+          "input_tokens": 195041,
+          "output_tokens": 811,
+          "total_tokens": 195852,
+          "uncached_input_tokens": 46561
+        },
+        "raw_sha256": "9cf44a9aebde509cc954072b869bdbd23197bff9a40519105244fc03e5afa8ed",
+        "timed_out": false,
+        "verifier_ok": true
+      },
+      "before": {
+        "accepted": true,
+        "checks_passed": {
+          "consumer": true,
+          "held_out": true,
+          "visible": true
+        },
+        "complete_usage": true,
+        "exit_code": 0,
+        "metrics": {
+          "agent_ms": 48175,
+          "cached_input_tokens": 262528,
+          "end_to_end_ms": 51224,
+          "input_tokens": 278569,
+          "output_tokens": 1094,
+          "total_tokens": 279663,
+          "uncached_input_tokens": 16041
+        },
+        "raw_sha256": "ef28705fca7a5969270c4d7938691e274939efb5a04ceb37579118781844ed54",
+        "timed_out": false,
+        "verifier_ok": true
+      },
+      "prompt_sha256": "b7f923ed284d6c59094eaf5497ee6d7d498db2d81cae6fcb2528d7c0dd448b55",
+      "savings": {
+        "agent_ms": {
+          "percent": -3.662,
+          "saved": -1764
+        },
+        "cached_input_tokens": {
+          "percent": 43.442,
+          "saved": 114048
+        },
+        "end_to_end_ms": {
+          "percent": -3.389,
+          "saved": -1736
+        },
+        "input_tokens": {
+          "percent": 29.985,
+          "saved": 83528
+        },
+        "output_tokens": {
+          "percent": 25.868,
+          "saved": 283
+        },
+        "total_tokens": {
+          "percent": 29.969,
+          "saved": 83811
+        },
+        "uncached_input_tokens": {
+          "percent": -190.262,
+          "saved": -30520
+        }
+      },
+      "starter_sha256": {
+        "dashboard.nex": "fa7ef764434728735af5af281e24caa4da8a772d9865e722912fd3b492d5ea9e",
+        "nex.json": "67d14426211fe39e6375f420b1f407eaea6b73e25e767d273f359570e33d1ba4",
+        "queue.nex": "fb857ae62b53a0a79bf1c8ca34ff70a1badb9d4957cbb6bff53f03bbeb5f44ad",
+        "visible.nex": "b9c64387499388d10a0e0e46ac0df31a8a14b6c054e1ea13c476cb3e0bff5ad2"
+      }
+    },
+    "retry-delay": {
+      "after": {
+        "accepted": true,
+        "checks_passed": {
+          "held_out": true,
+          "visible": true
+        },
+        "complete_usage": true,
+        "exit_code": 0,
+        "metrics": {
+          "agent_ms": 26239,
+          "cached_input_tokens": 77312,
+          "end_to_end_ms": 28604,
+          "input_tokens": 87990,
+          "output_tokens": 443,
+          "total_tokens": 88433,
+          "uncached_input_tokens": 10678
+        },
+        "raw_sha256": "d16e4b5eb75d9d8a98017b2feda82638581dfa0976b1a40f426a1603e843b516",
+        "timed_out": false,
+        "verifier_ok": true
+      },
+      "before": {
+        "accepted": true,
+        "checks_passed": {
+          "held_out": true,
+          "visible": true
+        },
+        "complete_usage": true,
+        "exit_code": 0,
+        "metrics": {
+          "agent_ms": 34207,
+          "cached_input_tokens": 123648,
+          "end_to_end_ms": 36677,
+          "input_tokens": 143395,
+          "output_tokens": 610,
+          "total_tokens": 144005,
+          "uncached_input_tokens": 19747
+        },
+        "raw_sha256": "ece9aeb47047912fea39e75332967c8b72f94ae532d241a62a035999ac4aaf2c",
+        "timed_out": false,
+        "verifier_ok": true
+      },
+      "prompt_sha256": "ff6d1109605fd01c89b7325d4d61e0aafc1a5b3df4101110eaa7ae5fe34bd800",
+      "savings": {
+        "agent_ms": {
+          "percent": 23.293,
+          "saved": 7968
+        },
+        "cached_input_tokens": {
+          "percent": 37.474,
+          "saved": 46336
+        },
+        "end_to_end_ms": {
+          "percent": 22.011,
+          "saved": 8073
+        },
+        "input_tokens": {
+          "percent": 38.638,
+          "saved": 55405
+        },
+        "output_tokens": {
+          "percent": 27.377,
+          "saved": 167
+        },
+        "total_tokens": {
+          "percent": 38.59,
+          "saved": 55572
+        },
+        "uncached_input_tokens": {
+          "percent": 45.926,
+          "saved": 9069
+        }
+      },
+      "starter_sha256": {
+        "nex.json": "67d14426211fe39e6375f420b1f407eaea6b73e25e767d273f359570e33d1ba4",
+        "policy.nex": "78b2fb343e0ba7560869418842ffe19a59d904d3518960265f4941d1e53fe442",
+        "visible.nex": "bfcdf465dd49abed2d80198043774ed7d63dd3cdf56c25f89aaf2d133bda5df5"
+      }
+    },
+    "summary-repair": {
+      "after": {
+        "accepted": true,
+        "checks_passed": {
+          "held_out": true,
+          "visible": true
+        },
+        "complete_usage": true,
+        "exit_code": 0,
+        "metrics": {
+          "agent_ms": 21225,
+          "cached_input_tokens": 62080,
+          "end_to_end_ms": 23595,
+          "input_tokens": 68974,
+          "output_tokens": 261,
+          "total_tokens": 69235,
+          "uncached_input_tokens": 6894
+        },
+        "raw_sha256": "cd38a8b1f9df74c990d9c948f31fc2190e39104d70375dad4bee356f69da1161",
+        "timed_out": false,
+        "verifier_ok": true
+      },
+      "before": {
+        "accepted": true,
+        "checks_passed": {
+          "held_out": true,
+          "visible": true
+        },
+        "complete_usage": true,
+        "exit_code": 0,
+        "metrics": {
+          "agent_ms": 25514,
+          "cached_input_tokens": 64640,
+          "end_to_end_ms": 27817,
+          "input_tokens": 105521,
+          "output_tokens": 441,
+          "total_tokens": 105962,
+          "uncached_input_tokens": 40881
+        },
+        "raw_sha256": "dae1ef277fdc19d31ea768d6d01ea5e62efa793f17c63933efc1a3a7711ec8b0",
+        "timed_out": false,
+        "verifier_ok": true
+      },
+      "prompt_sha256": "28e5cf8acc8b7ad1a94e4f1903feb7b79ddd36232c18869bea42f9a8ab1898d2",
+      "savings": {
+        "agent_ms": {
+          "percent": 16.81,
+          "saved": 4289
+        },
+        "cached_input_tokens": {
+          "percent": 3.96,
+          "saved": 2560
+        },
+        "end_to_end_ms": {
+          "percent": 15.178,
+          "saved": 4222
+        },
+        "input_tokens": {
+          "percent": 34.635,
+          "saved": 36547
+        },
+        "output_tokens": {
+          "percent": 40.816,
+          "saved": 180
+        },
+        "total_tokens": {
+          "percent": 34.661,
+          "saved": 36727
+        },
+        "uncached_input_tokens": {
+          "percent": 83.136,
+          "saved": 33987
+        }
+      },
+      "starter_sha256": {
+        "model.nex": "239b178c3018fb6f093aa522452f49ac6bd3cbf60e402bf16264d91721e3ecb1",
+        "nex.json": "67d14426211fe39e6375f420b1f407eaea6b73e25e767d273f359570e33d1ba4",
+        "visible.nex": "f85e90f1e3718be4855f081e70b0d1499da99dfe77e096705cf90445d793933b"
+      }
+    }
+  }
+}
