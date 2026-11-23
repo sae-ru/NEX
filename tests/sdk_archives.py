@@ -301,6 +301,24 @@ class SourceCompatibilityHost(unittest.TestCase):
             import sdk_compatibility
         self.compat = sdk_compatibility
 
+    def test_1x_stdlib_preserves_the_insertion_ordered_map_even_with_an_older_baseline(self):
+        from sdk_compat_stdlib import API_1_0, BASELINE, check_1x, compatible
+        stable = json.loads(API_1_0.read_bytes())
+        earlier = json.loads(BASELINE.read_bytes())
+        compatible(earlier, stable)
+        self.assertEqual(check_1x(stable, stable, '1.0.0'), 'exact-1.0.0')
+        self.assertIsNone(check_1x(stable, earlier, '0.280.1'))
+        changed = json.loads(API_1_0.read_bytes())
+        functions = changed['modules']['std/insertion_ordered_map.nex']['functions']
+        functions['extra'] = functions['size']
+        self.assertEqual(check_1x(stable, changed, '1.1.0'), 'preserves-1.0.0')
+        with self.assertRaisesRegex(ValueError, 'differ'):
+            check_1x(stable, changed, '1.0.0')
+        del functions['put']
+        compatible(earlier, changed)
+        with self.assertRaisesRegex(ValueError, 'put'):
+            check_1x(stable, changed, '1.0.1')
+
     def test_darwin_build_release_can_differ_but_architecture_and_abi_must_match(self):
         host_abi = self.compat.host_abi
         self.assertEqual(host_abi('arm64-apple-darwin26.5.0'), host_abi('arm64-apple-darwin27.2.0'))

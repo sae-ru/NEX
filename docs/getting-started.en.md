@@ -1,6 +1,6 @@
 # Start with NEX
 
-Current source uses **toolchain 0.281.0**. New projects select language **0.30**.
+This checkout builds the **1.0.0 SDK release candidate**. New projects select language **0.30**.
 The compiler fallback is 0.28 and the task ABIs are 7/8.
 Readable source, runtime contracts and explicit history-preserving migrations
 are available through the ordinary CLI.

@@ -1,5 +1,7 @@
 # Versions, compatibility and explicit migration
 
+[Предлагаемые условия совместимости 1.x на русском](compatibility.ru.md)
+
 The ordinary CLI supports projects declaring source language 0.28, 0.29 or
 0.30. New projects created with `nex init` declare 0.30. Without a declared
 language the compiler uses its 0.28 fallback. Discover the installed toolchain's

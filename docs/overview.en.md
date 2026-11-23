@@ -8,8 +8,8 @@ with less repeated context, while keeping execution efficient and behavior preci
 The goal is maximum exact meaning per necessary token, high performance and safe
 execution.
 
-New projects created by the **0.281.0 beta candidate** select source language
-**0.30**. Existing projects can select 0.28, 0.29 or 0.30. The compiler fallback
+New projects created by SDK 0.281.0 and the **1.0.0 release candidate** select
+source language **0.30**. Existing projects can select 0.28, 0.29 or 0.30. The compiler fallback
 is 0.28. Each released SDK identifies its compiler, host and acceptance results.
 [Published macOS SDK 0.280.1](releases/0.280.1.json) · [Platform status](../README.md#development-status) · [Proposed 1.0 compatibility terms](compatibility.md#compatibility-target-for-10)
 
