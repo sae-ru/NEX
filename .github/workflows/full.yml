@@ -15,6 +15,15 @@ on:
         description: 'Keep the accepted ordinary installation as an artifact for portable packaging (full runs only)'
         default: false
         type: boolean
+      native_portable:
+        description: 'Qualify the accepted b7cf6bc8 x86-64 archive on the native SDK service branch'
+        default: false
+        type: boolean
+
+      source_run:
+        description: 'Successful full source and installed SDK workflow run for commit b7cf6bc8'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -28,7 +37,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  portable:
+    if: github.ref == 'refs/heads/codex/native-sdk-b7cf6bc8' && inputs.native_portable
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/native-portable.yml
+    with:
+      source_run: ${{ inputs.source_run }}
+
   linux-full:
+    if: github.ref != 'refs/heads/codex/native-sdk-b7cf6bc8' || !inputs.native_portable
     name: ${{ inputs.test_group && 'linux-selected' || 'linux-full' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 360

@@ -1,0 +1,175 @@
+name: Native portable SDK qualification for b7cf6bc8
+on:
+  workflow_call:
+    inputs:
+      source_run:
+        required: true
+        type: string
+permissions:
+  actions: read
+  contents: read
+env:
+  NEX_SOURCE_RUN: ${{ inputs.source_run }}
+  SOURCE_SHA: b7cf6bc899c724b686a33d21b616d475da09342e
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  assemble:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out the workflow's service commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Check out the immutable SDK helpers
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          path: pinned-sdk
+          persist-credentials: false
+      - name: Cache pinned debugger packages for the builder
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: build/linux-debugger-packages
+          key: nex-lldb-debs-v1-amd64-${{ hashFiles('pinned-sdk/tools/linux/debugger-packages.json') }}
+      - name: Verify the accepted native source run and assemble its installed SDK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -B tools/ci/native_portable.py assemble
+      - name: Keep the normalized portable archive
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: native-portable-sdk-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/native-portable/delivery/nex-sdk-*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+      - name: Keep the assembled tree independently of the release archive
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: native-portable-tree-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/native-portable/delivery/assembled-tree.tar.gz
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 2
+      - name: Keep the clean runtime and its identity for both native workers
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: native-portable-runtime-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/native-portable/delivery/clean-runtime.docker.tar.gz
+            ${{ runner.temp }}/native-portable/delivery/assembly.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 2
+      - name: Keep assembly evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: native-portable-assembly-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/native-portable/evidence/
+          retention-days: 7
+
+  acceptance:
+    needs: assemble
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        copy: [moved, restored]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          path: pinned-sdk
+          persist-credentials: false
+      - name: Fetch this run's clean runtime and the selected physical copy
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEX_COPY: ${{ matrix.copy }}
+        run: |
+          dest="$RUNNER_TEMP/native-portable/delivery"
+          mkdir -p "$dest"
+          python3 -B tools/ci/native_portable.py download --artifact runtime --into "$dest"
+          if [[ "$NEX_COPY" == moved ]]; then source=tree; else source=sdk; fi
+          python3 -B tools/ci/native_portable.py download --artifact "$source" --into "$dest"
+      - name: Prepare scratch space dedicated to this acceptance job
+        run: |
+          set -euo pipefail
+          base="$RUNNER_TEMP"
+          avail() { df --output=avail -B1 "$1" | tail -1 | tr -d ' '; }
+          if [[ -d /mnt && $(avail /mnt) -gt $(avail "$base") ]]; then
+            base="/mnt/nex-portable-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+            sudo install -d -m 755 -o "$(id -u)" -g "$(id -g)" "$base"
+          fi
+          scratch="$(mktemp -d "$base/nex-accept.XXXXXXXX")"
+          free="$(avail "$base")"
+          df -h "$base"
+          if (( free < 24*1024*1024*1024 )); then
+            # Preserve two GiB of free space for the runner. Compression applies
+            # only to test scratch inside this bounded, newly created image.
+            if ! command -v mkfs.btrfs >/dev/null; then
+              sudo apt-get update
+              sudo apt-get install -y --no-install-recommends btrfs-progs
+            fi
+            truncate -s "$((free-2*1024*1024*1024))" "$scratch.img"
+            mkfs.btrfs -q -K "$scratch.img"
+            sudo mount -o loop,compress-force=zstd:3 "$scratch.img" "$scratch"
+          fi
+          echo "NEX_SCRATCH=$scratch" >> "$GITHUB_ENV"
+      - name: Run the complete SDK workflow in a source-free, offline container
+        env:
+          NEX_COPY: ${{ matrix.copy }}
+        run: |
+          sudo --preserve-env=NEX_SOURCE_RUN,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_SHA,GITHUB_REPOSITORY,RUNNER_TEMP \
+            python3 -B tools/ci/native_portable.py "$NEX_COPY" --scratch "$NEX_SCRATCH"
+      - name: Retain complete receipts and any failed command
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: native-portable-${{ matrix.copy }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/native-portable/evidence/
+          retention-days: 7
+      - name: Unmount this job's private scratch
+        if: always()
+        run: |
+          if [[ -n "${NEX_SCRATCH:-}" ]] && mountpoint -q "$NEX_SCRATCH"; then
+            sudo umount "$NEX_SCRATCH"
+          fi
+
+  verify:
+    needs: acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          path: pinned-sdk
+          persist-credentials: false
+      - name: Verify the source, compiler, archive and both SDK receipts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for kind in assembly moved restored; do
+            python3 -B tools/ci/native_portable.py download --artifact "$kind" \
+              --into "$RUNNER_TEMP/native-portable/$kind"
+          done
+          python3 -B tools/ci/native_portable.py finalize
+      - name: Keep the complete portable qualification
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: native-portable-proof-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/native-portable/evidence/
+          if-no-files-found: error
+          retention-days: 7
