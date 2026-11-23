@@ -11,7 +11,7 @@ import tempfile
 
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'tools'))
-from compiler_cohort import COHORT_HELPER_SHA256, compiler_cohort, typed_task_abi
+from compiler_cohort import COHORT_HELPER_SHA256, compiler_cohort, compiler_field, typed_task_abi
 def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
 def write(path,value):path.write_bytes((json.dumps(value,ensure_ascii=False,indent=2)+'\n').encode('utf-8'))
 
@@ -25,6 +25,7 @@ def main():
     parser.add_argument('--cuda',type=Path,default=Path(os.environ.get('CUDA_PATH','C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.1')))
     parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--index',type=int,default=0)
+    parser.add_argument('--language-version', help='Use this advertised project language for the CUDA application')
     parser.add_argument('--source-only',action='store_true',help='Check source and generate FFI signatures on this host without CUDA headers, Windows binaries or hardware execution')
     args=parser.parse_args()
     if os.name!='nt' and not args.source_only:parser.error('use native Windows Python, or --source-only for checked source preparation')
@@ -48,13 +49,26 @@ def main():
     providers=json.loads(run('source-providers',[compiler,'describe','--field','source_exceptions.source_providers','--json']))
     task_abi=typed_task_abi(cohort,providers)
     language=cohort['language']
+    if args.language_version is not None:
+        projection = json.loads(run('project-languages', [compiler,'describe','--field','project_languages','--json']))
+        versions = compiler_field(cohort, projection, 'project_languages')
+        if not isinstance(versions, list) or args.language_version not in versions:
+            parser.error('compiler does not advertise project language ' + args.language_version)
+        language = args.language_version
     (out/'stdlib').mkdir()
     for name in ('compute.nex','device.nex'):shutil.copy2(ROOT/'lib'/name,out/'stdlib'/name)
     write(out/'nex.json',{'schema':'nex.project/1','language':language,'entry':'main.nex','libraries':{'std':'./stdlib'}})
     source=Path(__file__).resolve().parent
     template=(source/'main.nex.in').read_bytes().decode('utf-8').replace('@INDEX@',str(args.index))
     (out/'main.nex').write_bytes(template.replace('@PIN@','0'*64).encode('utf-8'))
-    run('check-template',[compiler,'check','--json'])
+    def check_project(label):
+        checked = json.loads(run(label, [compiler, 'check', '--json']))
+        history = json.loads(run(label+'-history', [compiler, 'history', '--json']))
+        if not checked['ok'] or history['head'] != checked['revision'] or not any(
+                row['revision'] == checked['revision'] and row['language'] == language for row in history['revisions']):
+            raise RuntimeError('checked CUDA project did not select its requested source language')
+        return checked['revision']
+    revision = check_project('check-template')
     signatures={}
     for name,local in [('open','open_raw'),('upload','upload_raw'),('dispatch','dispatch_raw'),('download','download_raw'),('name','name_raw'),('kernel_ns','kernel_ns_raw'),('busy','busy_raw')]:
         signatures[name]=json.loads(run('signature-'+name,[compiler,'ffi','--symbol',local,'--json']))
@@ -66,7 +80,7 @@ def main():
     if args.source_only:
         report={'schema':'nex.owned-cuda-source-preparation/1','ok':True,'environment':doctor['host'],
                 'source_only':True,'compiler_sha256':sha(compiler),'cohort':cohort,'source_task_ABI':task_abi,'cohort_helper_sha256':COHORT_HELPER_SHA256,
-                'source_language':language,'index':index,'source_providers':providers,
+                'source_language':language,'project_revision':revision,'index':index,'source_providers':providers,
                 'signatures':signatures,'signature_sha256':{name:digest(value) for name,value in signatures.items()},
                 'source_sha256':sha(out/'main.nex'),'library_sha256':{p.name:sha(p) for p in (out/'stdlib').iterdir()},
                 'hardware_executed':False,'driver_initialized':False,'CUDA_from_NEX_accepted':False,'commands':commands}
@@ -99,9 +113,10 @@ def main():
     (out/'main.nex').write_bytes(template.replace('@PIN@',pin).encode('utf-8'))
     write(out/'foreign.json',{'schema':'nex.foreign-host/1','module_limit':1,'resource_limit':64,'resource_bytes':16777216,
                             'libraries':{'gpu':{'directory':'./bundle','manifest_sha256':pin,'exports':list(signatures)}}})
-    run('check-pinned',[compiler,'check','--json']);run('catalogue',[compiler,'foreign',out/'foreign.json','--json'])
+    revision = check_project('check-pinned')
+    run('catalogue',[compiler,'foreign',out/'foreign.json','--json'])
     report={'schema':'nex.owned-cuda-preparation/1','ok':True,'environment':'native Windows','requires_WSL':False,
-            'compiler_sha256':sha(compiler),'source_language':language,'index':index,'cohort':cohort,'source_task_ABI':task_abi,'cohort_helper_sha256':COHORT_HELPER_SHA256,'cxx':str(cxx),'cxx_sha256':sha(cxx),'native_target':doctor['host'],'native_sysroot':str(sysroot),
+            'compiler_sha256':sha(compiler),'source_language':language,'project_revision':revision,'index':index,'cohort':cohort,'source_task_ABI':task_abi,'cohort_helper_sha256':COHORT_HELPER_SHA256,'cxx':str(cxx),'cxx_sha256':sha(cxx),'native_target':doctor['host'],'native_sysroot':str(sysroot),
             'cuda_header':str(cuda/'include/cuda.h'),'cuda_header_sha256':sha(cuda/'include/cuda.h'),
             'manifest_sha256':pin,'module_sha256':sha(bundle/'module.dll'),'context_probe_sha256':sha(evidence/'context-probe.exe'),'source_sha256':{p.name:sha(p) for p in inputs.iterdir()},
             'library_sha256':{p.name:sha(p) for p in (out/'stdlib').iterdir()},

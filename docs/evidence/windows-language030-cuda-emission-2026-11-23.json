@@ -1,0 +1,28 @@
+{
+  "ok": true,
+  "compiler": "9e9890694333d373e76125598584a3973421336659242dd70d6a6f8ba3e041fe",
+  "version": "0.281.0",
+  "host_os": "x86_64-w64-windows-gnu",
+  "language": "0.30",
+  "source_sha256": "68da6646e8e7feb5512c2200de01449713e82a9229eaa84fae862c494a810b78",
+  "compiler_build": "c9dca25b6e8812d6ddbe2eee1837c47ecca07de954a57df01d84bef392966558",
+  "descriptor_hash": "da2bf31291d68a3abb40fb50a0f596319c0cb77500572ad3634ef400f3060244",
+  "context_schema": "nex.function-brief/1",
+  "context_symbol": "gpu_cuda::transform",
+  "tests": [
+    {
+      "name": "gpu_cuda::example",
+      "native": true,
+      "ok": true,
+      "web": false
+    }
+  ],
+  "kernel": "nex_generated_cuda_map",
+  "kernel_sha256": "e0bc21c42eafcb72140742076add125ab0df050132d52a7b5ca4ae6d8f2c19a5",
+  "generated_bytes": 9251,
+  "driver_initialized": false,
+  "device_executed": false,
+  "schema": "nex.windows-sdk-cuda-emission-example/1",
+  "sdk_source": "584715e45d05be53e5a8eb967edcd4d5ab7fc1b5",
+  "sample": "share/nex/examples/gpu-cuda.nex"
+}

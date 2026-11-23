@@ -1,6 +1,6 @@
 # NEX — Neural Execution Language
 
-[Русский](README.ru.md) · [Language overview](docs/overview.en.md) · [Get started](docs/getting-started.en.md) · [For LLMs](llm/LEARNING.md) · [Codex skill/plugin](plugins/nex/README.md) · [Current status](docs/STATUS.current.md)
+[Русский](README.ru.md) · [Language overview](docs/overview.en.md) · [Get started](docs/getting-started.en.md) · [For LLMs](llm/LEARNING.md) · [Codex skill/plugin](https://github.com/sae-ru/NEX/blob/main/plugins/nex/README.md) · [Current status](docs/STATUS.current.md)
 
 **Precise programs, bounded context, native execution.**
 
@@ -58,7 +58,8 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.281.0 / language 0.28 / task ABIs 7/8**, the beta candidate.
+Current source builds the **toolchain 1.0.0 / language 0.28 / task ABIs 7/8** release candidate.
+The proposed 1.x compatibility terms take effect when the qualified 1.0 release is published.
 The compiler fallback remains0.28. Projects explicitly select0.28,0.29 or0.30;
 new `nex init` projects select0.30. Existing graphs need an explicit migration.
 

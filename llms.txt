@@ -1,19 +1,24 @@
 # NEX — Neural Execution Language
 
 NEX is a checked programming language and toolchain for humans and LLMs.
-Current source development is toolchain 0.281.0 / compiler fallback language 0.28 / task ABIs 7/8.
+This checkout builds the toolchain 1.0.0 release candidate with compiler fallback language 0.28 and task ABIs 7/8.
 It includes ordinary source contracts and experimental checked scalar Metal
 emission with installed owned-provider preparation tools. Complete matching
 portable SDK qualification remains pending. The current README links exact
 source/device records; older SDK archives keep their own versioned evidence.
-Ordinary projects select0.28/0.29/0.30; new init projects select0.30. Typed cells
+Ordinary projects select 0.28, 0.29 or 0.30. `nex init` selects 0.30. Typed cells
 and state have reference/native/TypeScript execution, guarded graph migration,
 static components, request-owned HTTP contexts and versioned task capture/replay.
-Persistent sequence/FIFO/LIFO/heap and hash map/set are checked source libraries;
-discover ordering, callbacks and costs before choosing a representation.
-Persistent030 browser state uses serialized source tasks and copied wire views.
-Parallel reference transfer, native task-provider lifetimes, complete Java/Python semantics and
-matching full source/platform/portable-SDK acceptance remain pending.
+The source libraries include persistent sequences, queues, stacks, heaps, hash
+maps and sets. Use `std/insertion_ordered_map.nex` when iteration must follow
+key insertion order. [Map operations and costs](docs/insertion-ordered-map.md)
+Persistent 0.30 browser state uses serialized source tasks and copied wire views.
+Checked native tasks can share an application-owned heap across static libraries
+and fixed shared libraries using ABI8. Keep each library loaded until its tasks
+and returned values retire. Query `managed_references.source030_development.native_providers`
+for the installed compiler's capabilities. Parallel reference transfer, runtime
+library unloading and full Java/Python semantics remain pending.
+[Native provider lifetime](docs/reference-task-providers.md)
 Executables run without an LLM. Precise semantics and small retrieved contexts are design goals;
 the first local Qwen3.8 27B comparison found no NEX token savings.
 
@@ -40,10 +45,10 @@ the first local Qwen3.8 27B comparison found no NEX token savings.
 - [Grammar](docs/grammar.ebnf)
 - [Capability and guide manifest](llm/language-pack.json)
 - [Labelled example corpus](llm/corpus.json)
-- [Versioned SDK evidence](docs/releases/0.162.0.json)
+- [Published macOS ARM64 SDK 0.280.1 and release checksums](docs/releases/0.280.1.json)
 - [Current platform summary](README.md#development-status)
-- [Current Windows source/CUDA evidence](docs/evidence/windows-latest-build-CUDA-0.165.0-2026-11-10.json)
-- [Installed Metal tool evidence](docs/evidence/macos-installed-public-Metal-tools-0.165.0-2026-11-10.json)
+- [Windows CUDA and Linux device results for 0.280.1](docs/evidence/stands-current-0.280.1-2026-11-17.json)
+- [Installed macOS SDK and Metal results for 0.280.1](docs/evidence/sdk-current-0.280.1-2026-11-17.json)
 
 Start with the affected source, test and coding contract. Query `nex describe --field PATH --json` for a needed feature, or the index for unknown fields.
 Read a live function with `nex context ENTRY --kind brief --symbol NAME --json`.

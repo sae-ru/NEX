@@ -2798,7 +2798,8 @@ console.log(JSON.stringify({exact_bigint:true,checked_overflow:true,input_reject
         require(report['resource_hashes'].get('tests/task_http_server.py')==digest,
                 'installed public task HTTP helper is absent from its indexed resources')
         destination=root/'public-task-http'
-        run([sys.executable,'-B',helper,compiler,'--output',destination],timeout=1200)
+        openssl = sdk_host.selected_tool(sdk, report['doctor'], 'openssl')
+        run([sys.executable,'-B',helper,compiler,'--output',destination,'--openssl',openssl],timeout=1200)
         delivery=json.loads((destination/'report.json').read_text())
         report['evidence']['structured_task_http']={'installed_helper':True,'helper_sha256':digest,
             'delivery':delivery,'delivery_report_sha256':hashlib.sha256((destination/'report.json').read_bytes()).hexdigest()}

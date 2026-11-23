@@ -3,7 +3,7 @@
 [Краткий актуальный статус](docs/STATUS.current.md) · [Приоритеты улучшений](docs/development-priorities.md)
 **Язык нейронного исполнения.**
 
-[English](README.md) · [Описание языка](docs/overview.ru.md) · [Начать работу](docs/getting-started.ru.md) · [Материалы для LLM](llm/LEARNING.md) · [Навык и плагин Codex](plugins/nex/README.ru.md)
+[English](README.md) · [Описание языка](docs/overview.ru.md) · [Начать работу](docs/getting-started.ru.md) · [Материалы для LLM](llm/LEARNING.md) · [Навык и плагин Codex](https://github.com/sae-ru/NEX/blob/main/plugins/nex/README.ru.md)
 
 Главная идея NEX — передавать максимум точного смысла минимальным необходимым
 числом токенов, сохраняя высокую производительность и безопасность исполнения.
@@ -57,7 +57,8 @@ TypeScript / React / Vite клиентом. Устройства подключ�
 
 ## Состояние разработки
 
-Текущие исходники — **toolchain 0.281.0 / язык 0.28 / task ABI 7/8**, кандидат в бету.
+Из текущих исходников собирается кандидат в выпуск **toolchain 1.0.0 / язык 0.28 / task ABI 7/8**.
+Предлагаемые условия совместимости 1.x вступят в силу с публикацией проверенного выпуска 1.0.
 Компилятор по умолчанию выбирает0.28. Проекты явно задают0.28,0.29 или0.30;
 новые `nex init` выбирают0.30. Старой истории графа нужна явная миграция.
 
@@ -84,7 +85,7 @@ macOS/Linux. [Полный Linux-прогон](docs/evidence/linux-full-profile-
 [профилирование](docs/reference-task-profiling.md) охватывают библиотеки с
 исходниками. Задачи самостоятельного HTTP-сервера 0.30 можно отлаживать в
 [LLDB/DAP](docs/server-debugging.md#owner-thread-http-tasks-in-030) и профилировать
-под заданной нагрузкой. [План совместимости 1.0](docs/compatibility.md) описывает
+под заданной нагрузкой. [План совместимости 1.0](docs/compatibility.ru.md) описывает
 контракты языка и проектов. Обязательный пример SDK [Workboard](examples/workboard/README.md)
 объединяет браузер, HTTP/задачи, SQLite, экспорт/восстановление файлов и Worker.
 Библиотеки включают [хеш-карту/множество](docs/hash-containers.md),

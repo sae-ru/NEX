@@ -1,16 +1,15 @@
 # Start with NEX
 
-Current source uses **toolchain 0.281.0**. New projects select language **0.30**.
+This checkout builds the **1.0.0 SDK release candidate**. New projects select language **0.30**.
 The compiler fallback is 0.28 and the task ABIs are 7/8.
 Readable source, runtime contracts and explicit history-preserving migrations
 are available through the ordinary CLI.
 
 [Русский](getting-started.ru.md) · [Overview](overview.en.md)
 
-Choose the archive for your host OS and processor. The macOS recipe below uses
-published SDK 0.280.1. For native Linux or Windows, use the following commands
-once a release lists both your archive and its matching checksum. The release
-notes specify host requirements. [GitHub Releases](https://github.com/sae-ru/NEX/releases)
+Choose a published tag that lists both the SDK archive for your OS and processor
+and its matching `.sha256` file under Assets. The release notes specify the host
+requirements. [GitHub Releases](https://github.com/sae-ru/NEX/releases)
 
 ## Install a Linux or Windows SDK from a release
 
@@ -21,6 +20,13 @@ extracted directory together. These commands set PATH for this terminal session.
 **Linux (Bash).** Choose `nex-sdk-<version>-linux-amd64-development.tar.gz` for
 `uname -m` = `x86_64`, or `nex-sdk-<version>-linux-arm64-development.tar.gz`
 for `aarch64`. Select the accompanying `<archive>.sha256` from the same release.
+
+Native builds require the GCC C/C++ development headers and startup objects for
+your architecture. Run `getconf GNU_LIBC_VERSION` to see the host's glibc. The
+release notes list the highest required glibc and libstdc++ symbol versions for
+each archive. The complete lists are in `share/nex/sdk-bundle.json` inside the
+SDK. A host with older libraries can use a source build or a matching Linux
+container.
 
 ```bash
 read -r -p 'Release tag: ' tag
@@ -38,6 +44,10 @@ curl -fL "$url/$archive" -o "$archive" &&
 
 **Windows x64 (PowerShell).** Select `nex-sdk-<version>-windows-x86_64-development.tar.gz`
 and its `.tar.gz.sha256` file from the same release. Windows `tar.exe` extracts this archive.
+
+Run these commands in native PowerShell. Install native Python 3.10+ for SDK
+scripts. Browser projects also need Node.js 22.18+ and npm. Install native LLDB
+and lldb-dap for live debugging.
 
 ```powershell
 $tag = Read-Host 'Release tag'
@@ -69,18 +79,26 @@ tools with a macOS SDK and Python 3.10+. Web builds also require Node.js 22.18+
 and npm. This portable development archive includes its selected compiler and
 library dependencies. Keep its entire directory together.
 
-Download, verify and extract it:
+In an empty directory, enter the release tag (for example, `v0.280.1`).
+The archive stays in this directory. The extracted SDK goes under `~/.local/nex`.
+Each version gets its own directory.
 
 ```sh
-curl -fL -o nex-sdk-0.280.1-macos-arm64-development.tar.gz \
-  https://github.com/sae-ru/NEX/releases/download/v0.280.1/nex-sdk-0.280.1-macos-arm64-development.tar.gz
-echo '6d52a14f076c8382c06a6ac1f78d1b5e05f49553471116759a0c6f79eab3fa57  nex-sdk-0.280.1-macos-arm64-development.tar.gz' | shasum -a 256 -c -
-mkdir -p "$HOME/.local/nex"
-tar -xzf nex-sdk-0.280.1-macos-arm64-development.tar.gz -C "$HOME/.local/nex"
-export PATH="$HOME/.local/nex/nex-sdk-0.280.1-macos-arm64-development/bin:$PATH"
-export SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
-nex doctor --json
-nex describe --kind index --json
+printf 'Release tag (e.g. v0.280.1): '
+IFS= read -r tag
+archive="nex-sdk-${tag#v}-macos-arm64-development.tar.gz"
+url="https://github.com/sae-ru/NEX/releases/download/$tag"
+sdk_dir="$HOME/.local/nex"
+curl -fL "$url/$archive" -o "$archive" &&
+  curl -fL "$url/$archive.sha256" -o "$archive.sha256" &&
+  shasum -a 256 -c "$archive.sha256" &&
+  mkdir -p "$sdk_dir" &&
+  tar -xzf "$archive" -C "$sdk_dir" &&
+  sdkroot_path="$(xcrun --sdk macosx --show-sdk-path)" &&
+  export SDKROOT="$sdkroot_path" &&
+  export PATH="$sdk_dir/${archive%.tar.gz}/bin:$PATH" &&
+  nex doctor --json &&
+  nex describe --kind index --json
 ```
 
 The [release receipts](evidence/sdk-current-0.280.1-2026-11-17.json) identify the
@@ -216,4 +234,4 @@ validate behavior. [LEARNING](../llm/LEARNING.md) provides the compact entry poi
 The compiler and tests decide acceptance; a plausible generated answer does not.
 
 Open your application as the agent's working directory. Check that its terminal
-resolves the same SDK with `nex doctor --json`. [Codex plugin](../plugins/nex/README.md) · [Hermes and project instructions (Russian)](quickstart.md#4-hermes-codex-и-другие-llm)
+resolves the same SDK with `nex doctor --json`. [Codex plugin](https://github.com/sae-ru/NEX/blob/main/plugins/nex/README.md) · [Hermes and project instructions (Russian)](quickstart.md#4-hermes-codex-и-другие-llm)

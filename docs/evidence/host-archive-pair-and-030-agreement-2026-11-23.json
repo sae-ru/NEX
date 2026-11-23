@@ -1,0 +1,153 @@
+{
+  "schema": "nex.compatibility-rehearsal/1",
+  "platform": "macos-arm64",
+  "archive_pair": {
+    "baseline_release": "v0.280.1",
+    "candidate_scope": "Unpublished development archive from the earlier d492bf7f cohort.",
+    "baseline": {
+      "toolchain": "0.280.1",
+      "host": "arm64-apple-darwin27.2.0",
+      "compiler_sha256": "a37aab72fb84cf2bf938859017282977b9b9f2445f16fcae9457086e8df9f0b4",
+      "runtime_sha256": "d904286a5f251b41636bb6609e4cc7a70963ba9b1c5651bc29ad9b83fdbd6b9d",
+      "source_commit": "bfb3492814acf33e9fd62c5d10a70895eac6d1b0",
+      "archive_sha256": "6d52a14f076c8382c06a6ac1f78d1b5e05f49553471116759a0c6f79eab3fa57",
+      "record_sha256": "496311f6a6e04debaa237b6044f4c6320c920021e16527a5e12c1a6060495170"
+    },
+    "candidate": {
+      "toolchain": "0.281.0",
+      "host": "arm64-apple-darwin27.2.0",
+      "compiler_sha256": "5473d126908b60b424c4a33af557f88f8fc54c3aae022dd84258e13333ada07b",
+      "runtime_sha256": "d904286a5f251b41636bb6609e4cc7a70963ba9b1c5651bc29ad9b83fdbd6b9d",
+      "record_sha256": "075022a8155f3b4f08b3c58e3cda790bab90ff5c1a45099b0208f5452cfc83aa",
+      "archive_name": "nex-sdk-0.281.0-macos-arm64-development.tar.gz",
+      "archive_sha256": "9d6c08ad658f801865b818a26fad5b6d5a4576c5924ca5376e408ffc81747bcb",
+      "target": "macos-arm64",
+      "source_commit": "d492bf7f3c3feca69c2b7363aa5aa564866d2752"
+    },
+    "report_sha256": "e08d72849569d4cafcce7a7b5dcdd0fa77ff809ee33ac572edc3b59c909db2dc",
+    "passed_checks": [
+      "consumer_cli",
+      "public_stdlib",
+      "graph_snapshot",
+      "published_examples",
+      "published_migration_suite",
+      "candidate_migration_suite",
+      "backend_agreement"
+    ],
+    "consumer_commands": [
+      "describe",
+      "init",
+      "check",
+      "test",
+      "eval",
+      "run"
+    ],
+    "baseline_stdlib": {
+      "modules": 20,
+      "functions": 207,
+      "types": 35
+    },
+    "example_projects": [
+      "hash-containers",
+      "java-long",
+      "native-host-session",
+      "persistent-ui",
+      "reference-provider-debugging",
+      "reference-task-profiling",
+      "reference-task-providers",
+      "references",
+      "sequence-containers",
+      "workboard"
+    ],
+    "snapshot_revisions": [
+      "bf77354044d9f306ef6c96bb22ef95590be94788f63b375189003d6339196be7",
+      "ef61240fc0e54a831499006c62bfdaef545ab6729583e68afc2b8d34bea7eef4"
+    ],
+    "migration_commands": {
+      "published_migration_suite": 50,
+      "candidate_migration_suite": 78
+    },
+    "backend_agreement": {
+      "corpora": {
+        "baseline": {
+          "shipped": false
+        },
+        "candidate": {
+          "shipped": false
+        },
+        "maintained": {
+          "run": "maintained"
+        }
+      },
+      "compiler_sha256": "5473d126908b60b424c4a33af557f88f8fc54c3aae022dd84258e13333ada07b",
+      "runner_sha256": "2bb6c9ae0657193942bb781e0d92c5ae49ce8310df643d8f25165322c6e8718e",
+      "report_sha256": "6ea35ae9bbfd213c67e8b4925705e54483400eec70b02bea45c8c0601373afdc",
+      "manifest_sha256": "67d2cdd202b582b7a49c1fdf362654e7f4f3b890cd009119562bee2791f20749",
+      "coverage": {
+        "check": 13,
+        "reference": 11,
+        "native-debug": 11,
+        "native-release": 11,
+        "typescript": 11,
+        "typescript_executed": 11,
+        "typescript_strict": 11,
+        "executable_cases": 11
+      }
+    }
+  },
+  "source_agreement": {
+    "source_commit": "584715e45d05be53e5a8eb967edcd4d5ab7fc1b5",
+    "compiler_sha256": "00936b0088a620d009f756c8c39da9ecb0eae325526dd5ec1a0e44f9e63a8c1a",
+    "manifest_sha256": "67d2cdd202b582b7a49c1fdf362654e7f4f3b890cd009119562bee2791f20749",
+    "language": "0.30",
+    "report_sha256": "c6a7fc35e6161a99911a713547062781a23cdd71104979495f2698560f0e9231",
+    "complete": true,
+    "cases": [
+      "arith",
+      "unicode",
+      "lists",
+      "text",
+      "bytes",
+      "match",
+      "result",
+      "generics",
+      "rejected_type",
+      "rejected_effect",
+      "overflow",
+      "bounds",
+      "cell_alias_snapshot"
+    ],
+    "coverage": {
+      "check": 13,
+      "reference": 11,
+      "native-debug": 11,
+      "native-release": 11,
+      "typescript": 11,
+      "typescript_executed": 11,
+      "typescript_strict": 11,
+      "executable_cases": 11
+    }
+  },
+  "corpus_reuse_control": {
+    "scope": "Two small example corpora in separate temporary resource trees on the 584715e4 compiler.",
+    "report_sha256": "b33f75044ff7bd7bec60e7897e13ec667b6e36a4d8ccb5962d865b2eed3eeb4a",
+    "identical_manifest_and_sources_runs": 1,
+    "same_manifest_changed_source_runs": 2
+  },
+  "installed_prefix_regression": {
+    "baseline_archive_sha256": "9d6c08ad658f801865b818a26fad5b6d5a4576c5924ca5376e408ffc81747bcb",
+    "candidate_compiler_sha256": "015bf751c727cd1374e0deab1f7ad62cf25e75e4cf803c7c3a27f845970efc24",
+    "scope": "Previously supported --candidate-sdk path on macOS ARM64.",
+    "report_sha256": "798a0d39cbd44aeadee09b8d3dcd6a428a40a8830d2d465ccbe57044563ac13c",
+    "passed_checks": [
+      "consumer_cli",
+      "public_stdlib",
+      "graph_snapshot",
+      "published_examples",
+      "published_migration_suite",
+      "candidate_migration_suite"
+    ],
+    "projects": 11,
+    "generated_example_build_removed": true
+  }
+}

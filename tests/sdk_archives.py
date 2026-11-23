@@ -296,12 +296,143 @@ class LinuxLinkLibraries(unittest.TestCase):
 
 
 class SourceCompatibilityHost(unittest.TestCase):
-    def test_darwin_build_release_can_differ_but_architecture_and_abi_must_match(self):
+    def setUp(self):
         with mock.patch.object(sys, 'path', [str(Path(__file__).resolve().parents[1]/'tools'), *sys.path]):
-            from sdk_compatibility import host_abi
+            import sdk_compatibility
+        self.compat = sdk_compatibility
+
+    def test_1x_stdlib_preserves_the_insertion_ordered_map_even_with_an_older_baseline(self):
+        from sdk_compat_stdlib import API_1_0, BASELINE, check_1x, compatible
+        stable = json.loads(API_1_0.read_bytes())
+        earlier = json.loads(BASELINE.read_bytes())
+        compatible(earlier, stable)
+        self.assertEqual(check_1x(stable, stable, '1.0.0'), 'exact-1.0.0')
+        self.assertIsNone(check_1x(stable, earlier, '0.280.1'))
+        changed = json.loads(API_1_0.read_bytes())
+        functions = changed['modules']['std/insertion_ordered_map.nex']['functions']
+        functions['extra'] = functions['size']
+        self.assertEqual(check_1x(stable, changed, '1.1.0'), 'preserves-1.0.0')
+        with self.assertRaisesRegex(ValueError, 'differ'):
+            check_1x(stable, changed, '1.0.0')
+        del functions['put']
+        compatible(earlier, changed)
+        with self.assertRaisesRegex(ValueError, 'put'):
+            check_1x(stable, changed, '1.0.1')
+
+    def test_1x_sdk_ships_the_catalogue_used_to_check_its_declarations(self):
+        from sdk_compat_stdlib import API_1_0, installed_contract
+        contract = API_1_0.read_bytes()
+        with tempfile.TemporaryDirectory() as directory:
+            prefix = Path(directory)
+            compiler = prefix / 'bin' / 'nex'
+            catalogue = prefix / 'share' / 'nex' / 'llm' / API_1_0.name
+            with self.assertRaisesRegex(ValueError, 'missing'):
+                installed_contract(compiler, contract, 'exact-1.0.0')
+            catalogue.parent.mkdir(parents=True)
+            catalogue.write_bytes(b'{}')
+            with self.assertRaisesRegex(ValueError, 'different'):
+                installed_contract(compiler, contract, 'exact-1.0.0')
+            catalogue.write_bytes(contract)
+            self.assertEqual(installed_contract(compiler, contract, 'exact-1.0.0'),
+                             {'policy': 'exact-1.0.0', 'sha256': hashlib.sha256(contract).hexdigest()})
+
+    def test_darwin_build_release_can_differ_but_architecture_and_abi_must_match(self):
+        host_abi = self.compat.host_abi
         self.assertEqual(host_abi('arm64-apple-darwin26.5.0'), host_abi('arm64-apple-darwin27.2.0'))
         self.assertNotEqual(host_abi('arm64-apple-darwin27.2.0'), host_abi('x86_64-apple-darwin27.2.0'))
         self.assertNotEqual(host_abi('x86_64-unknown-linux-gnu'), host_abi('x86_64-unknown-linux-musl'))
+
+    def test_select_archive_by_content_including_renamed_legacy_download(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'renamed-download'
+            path.write_bytes(b'mac')
+            def row(target, contents):
+                return {'target': target, 'source_commit': 'b'*40, 'compiler_host': 'arm64-apple-darwin27',
+                        'compiler_sha256': 'c'*64, 'archive': {'name': target+'.tar.gz', 'bytes': len(contents),
+                                                               'sha256': hashlib.sha256(contents).hexdigest()}}
+            mac, linux = row('macos-arm64', b'mac'), row('linux-arm64', b'lnx')
+            targets = {'linux-arm64': linux, 'macos-arm64': mac}
+            record = {'schema': 'nex.multi-platform-release/1', 'ok': True, 'tag': 'v0.281.0',
+                      'source_commit': 'b'*40, 'version': '0.281.0', 'targets': targets}
+            self.assertEqual(self.compat.select_archive(record, path), ('0.281.0', 'macos-arm64', mac))
+            legacy = {'schema': 'nex.delivery-record/1', 'toolchain': '0.280.1', 'archive': mac['archive']}
+            self.assertEqual(self.compat.select_archive(legacy, path), ('0.280.1', None, legacy))
+            for changes in ({'ok': False}, {'tag': 'v1.0.0'}, {'source_commit': 'f'*40},
+                            {'targets': {'linux-arm64': mac}},
+                            {'targets': {**targets, 'duplicate': mac}}, {'schema': 'unrecognized'}):
+                with self.subTest(changes=changes), self.assertRaises(ValueError):
+                    self.compat.select_archive({**record, **changes}, path)
+            for content in (b'bad', b'truncated'):
+                path.write_bytes(content)
+                with self.assertRaises(ValueError):
+                    self.compat.select_archive(record, path)
+
+    def test_archive_pair_rejects_missing_record_and_duplicate_bytes_before_replay(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            payload = b'stored SDK'
+            baseline, candidate = root/'baseline', root/'renamed-copy'
+            for path in (baseline, candidate):
+                path.write_bytes(payload)
+            record = root/'delivery.json'
+            record.write_text(json.dumps({'schema': 'nex.delivery-record/1', 'toolchain': '0.281.0',
+                'archive': {'bytes': len(payload), 'name': 'sdk.tar.gz', 'sha256': hashlib.sha256(payload).hexdigest()}}))
+            output = root/'out'
+            driver = [sys.executable, '-B', self.compat.__file__, '--release-record', record,
+                      '--baseline-archive', baseline, '--output', output]
+            for args, message in [
+                    (['--candidate-archive', candidate], 'must be supplied together'),
+                    (['--candidate-sdk', root, '--candidate-release-record', record], 'must be supplied together'),
+                    (['--candidate-archive', candidate, '--candidate-release-record', record], 'identical bytes')]:
+                with self.subTest(args=args):
+                    result = subprocess.run([*driver, *args], capture_output=True, text=True)
+                    self.assertEqual(result.returncode, 2, result.stderr)
+                    self.assertIn(message, result.stderr)
+                    self.assertFalse(output.exists())
+
+    def test_agreement_input_identity_includes_the_source_for_every_selected_case(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root/'next.nex'
+            source.write_bytes(b'first source')
+            (root/'pinned.nex').write_bytes(b'pinned source')
+            (root/'cases.json').write_text(json.dumps({'cases': [{'name': 'pinned', 'source': 'pinned.nex'}],
+                'additional_cases': {'0.30': [{'name': 'added030', 'source': source.name}]}}))
+            before = self.compat.agreement_inputs(root)
+            self.assertEqual(set(before['sources']), {'pinned', 'added030'})
+            source.write_bytes(b'changed source')
+            after = self.compat.agreement_inputs(root)
+            self.assertEqual(after['manifest_sha256'], before['manifest_sha256'])
+            self.assertEqual(after['sources']['pinned'], before['sources']['pinned'])
+            self.assertNotEqual(after['sources']['added030'], before['sources']['added030'])
+
+    def test_candidate_cannot_drop_the_published_agreement_corpus(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            published = root/'beta/tests/agreement'
+            published.mkdir(parents=True)
+            (published/'cases.json').write_text('{}')
+            with self.assertRaisesRegex(ValueError, 'missing the agreement corpus'):
+                self.compat.check_release_agreement(Path(sys.executable),root/'beta',root/'candidate',root,{})
+
+    def test_platform_qualification_matches_restored_compiler_and_inventory(self):
+        for target, host in [('macos-arm64', 'arm64-apple-darwin27.2.0'),
+                             ('linux-arm64', 'aarch64-unknown-linux-gnu'),
+                             ('linux-amd64', 'x86_64-unknown-linux-gnu'),
+                             ('windows-x86_64', 'x86_64-w64-windows-gnu')]:
+            platform = target.split('-', 1)[0]
+            compiler = 'bin/nex.exe' if platform == 'windows' else 'bin/nex'
+            manifest = {'toolchain': '0.281.0', 'host': host, 'platform': platform,
+                        'files': {compiler: {'sha256': 'c'*64}}}
+            row = {'compiler_host': host, 'compiler_sha256': 'c'*64, 'archive': {'files': 1}}
+            self.compat.check_recorded_bundle('0.281.0', target, row, manifest, host)
+            for version, name, changes, candidate in [
+                    ('0.281.0', 'other', {}, host), ('1.0.0', target, {}, host),
+                    ('0.281.0', target, {}, 'other-abi'), ('0.281.0', target, {'compiler_host': 'other'}, host),
+                    ('0.281.0', target, {'archive': {'files': 2}}, host),
+                    ('0.281.0', target, {'compiler_sha256': 'd'*64}, host)]:
+                with self.subTest(target=target, changes=changes, host=candidate), self.assertRaises(ValueError):
+                    self.compat.check_recorded_bundle(version, name, {**row, **changes}, manifest, candidate)
 
 
 class WindowsAssemblyEnvironment(unittest.TestCase):

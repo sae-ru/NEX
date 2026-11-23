@@ -11,6 +11,7 @@ from sdk_compat_snapshot import cli
 
 PROFILE = 'nex.stdlib-public-api/1'
 BASELINE = Path(__file__).resolve().parents[1] / 'llm/stdlib-public-api-0.280.1.json'
+API_1_0 = BASELINE.with_name('stdlib-public-api-1.0.0.json')
 IDENT = r'[A-Za-z_][A-Za-z_0-9]*'
 VARIABLE = re.compile(r'\$(?:' + IDENT + r'::)*' + IDENT + r'|\?' + IDENT)
 PROBE = '''module compat::standard_library;
@@ -156,18 +157,40 @@ def compatible(baseline, candidate):
                 require(current[group].get(name) == contract, 'changed ' + previous['module'] + '::' + name)
 
 
+def version_number(version):
+    match = re.fullmatch(r'([0-9]+)\.([0-9]+)\.([0-9]+)(?:[-+][A-Za-z0-9.+-]+)?', version)
+    require(match, 'unrecognized toolchain version ' + str(version))
+    return tuple(map(int, match.groups()))
+
+
 def check_baseline(held, actual, version):
     # Publication is established by the caller's delivery record and archive.
-    # The numeric toolchain here selects the source compatibility rule only.
-    match = re.fullmatch(r'([0-9]+)\.([0-9]+)\.([0-9]+)(?:[-+][A-Za-z0-9.+-]+)?', version)
-    require(match, 'unrecognized baseline toolchain version ' + str(version))
-    number = tuple(map(int, match.groups()))
+    number = version_number(version)
     require(number >= (0, 280, 1), 'baseline predates the 0.280.1 source contract')
     if number == (0, 280, 1):
         require(actual == held, 'baseline differs from the published 0.280.1 API')
         return 'exact-0.280.1'
     compatible(held, actual)
     return 'preserves-0.280.1-and-pins-full-baseline'
+
+
+def check_1x(held, actual, version):
+    number = version_number(version)
+    if number[0] != 1:
+        return None
+    if number == (1, 0, 0):
+        require(actual == held, '1.0.0 declarations differ from the 1.0.0 contract')
+        return 'exact-1.0.0'
+    compatible(held, actual)
+    return 'preserves-1.0.0'
+
+
+def installed_contract(nex, contract, policy):
+    path = nex.parent.parent / 'share' / 'nex' / 'llm' / API_1_0.name
+    require(path.is_file(), 'installed SDK is missing ' + API_1_0.name)
+    shipped = path.read_bytes()
+    require(shipped == contract, 'installed SDK ships a different ' + API_1_0.name)
+    return {'policy': policy, 'sha256': digest(shipped)}
 
 
 def baseline_controls(held):
@@ -295,6 +318,8 @@ def check_stdlib(baseline_nex: Path, candidate_nex: Path, root: Path) -> dict:
     work = Path(root).resolve() / 'stdlib-api-compatibility'
     work.mkdir(parents=True, exist_ok=False)
     held = json.loads(BASELINE.read_bytes())
+    contract = API_1_0.read_bytes()
+    stable_api = json.loads(contract)
     result = {'schema': 'nex.stdlib-api-compatibility/1', 'contract': PROFILE,
               'published_api_sha256': digest(BASELINE.read_bytes()), 'probe_sha256': digest(PROBE.encode())}
     original = None
@@ -309,7 +334,11 @@ def check_stdlib(baseline_nex: Path, candidate_nex: Path, root: Path) -> dict:
             result['added_modules'] = sorted(api['modules'].keys() - original['modules'].keys())
         result[role] = {'toolchain': version, 'compiler_sha256': digest(nex.read_bytes()),
                         'api_sha256': digest(json.dumps(api, sort_keys=True, separators=(',', ':')).encode()),
-                        **counts(api), 'behavior': semantics(nex, work / (role + '-behavior'))}
+                        **counts(api)}
+        policy = check_1x(stable_api, api, version)
+        if policy:
+            result[role]['source_contract_1x'] = installed_contract(nex, contract, policy)
+        result[role]['behavior'] = semantics(nex, work / (role + '-behavior'))
     result['controls'] = mutations(original)
     result['controls']['baseline_policy'] = baseline_controls(held)
     result['controls']['compiled_compatible_change'] = implementation_control(Path(candidate_nex).resolve(), work)

@@ -1,5 +1,7 @@
 # Versions, compatibility and explicit migration
 
+[Предлагаемые условия совместимости 1.x на русском](compatibility.ru.md)
+
 The ordinary CLI supports projects declaring source language 0.28, 0.29 or
 0.30. New projects created with `nex init` declare 0.30. Without a declared
 language the compiler uses its 0.28 fallback. Discover the installed toolchain's
@@ -132,22 +134,57 @@ intended compatibility exception in the release notes before making the promise.
 
 ### Checking a proposed host SDK against a published beta
 
-Use the checked-in release record, the original archive for the host, and a
-separate installed candidate. The runner checks the published archive SHA256,
+Use the release record and the original archive for the host. For the
+single-platform 0.280.1 release, use the checked-in
+delivery record shown below. For a multi-platform release, download
+`qualification.json` and the host archive from the same GitHub release and
+pass that JSON file to `--release-record`. The runner selects the target by
+archive length and SHA256, so a renamed local download also works. The target
+must cite the release's source commit. The restored SDK must match the target's
+compiler host, compiler checksum and file count. The report records the target
+and source commit. Use the record from GitHub Releases when qualifying a public
+baseline. For release qualification, pass the candidate archive and its own
+record as well. The runner verifies both archives, restores their inventories
+in separate directories, checks that the host ABIs match and uses the two
+restored compilers, examples and migration tools. The resulting report records
+both archive checksums, both release-record checksums and both compiler identities.
+
+The archive comparison runs the 0.30 agreement corpus with the restored
+candidate compiler. Set `NEX_TSC` to the pinned TypeScript compiler and
+`NEX_NODE` to Node. It uses the corpora shipped by the two SDKs and runs
+identical manifests and source files once. Once a baseline ships a corpus,
+the candidate must also include one. When both SDKs predate the packaged
+corpus the runner uses the compatibility tool's own corpus. The report
+identifies which SDKs shipped a corpus, the inputs executed and the coverage
+of each run.
+
+The runner checks the archive SHA256,
 restores its complete inventory, then verifies that both compilers select
 their own installed runtime. It exercises the public CLI and standard-library
 contracts against both installations, runs the published examples from fresh copies,
 recovers two historical revisions and checks both the published and current
-migration suites. Use a fresh output directory.
+migration suites. For each published project with a dependency lock, both SDKs
+must preserve the original bytes. Each also opens a separate copy with stale
+dependency hashes and must report `E_LOCK` while preserving that copy's pins.
+Use a fresh output directory. Successful runs discard the
+copied projects' native build cache. Failed runs keep it for diagnosis.
 On macOS the runner uses the selected Apple SDK. Set `SDKROOT` to override
 the SDK reported by `xcrun --sdk macosx --show-sdk-path`.
 
 ```sh
 python3 -B tools/sdk_compatibility.py \
   --release-record docs/releases/0.280.1.json --baseline-archive "$beta_archive" \
-  --candidate-sdk "$candidate_prefix" --output build/beta-compatibility
+  --candidate-release-record "$candidate_record" --candidate-archive "$candidate_archive" \
+  --output build/beta-compatibility
+```
+
+During development, pass an installed prefix using `--candidate-sdk` in place
+of the two candidate archive options. Use that prefix to exercise the current
+backend agreement corpus separately.
+
+```sh
 python3 -B tools/agreement.py --compiler "$candidate_prefix/bin/nex" \
-  --language-version 0.30 --output build/candidate-agreement
+  --language-version 0.30 --require-complete --output build/candidate-agreement
 ```
 
 For the agreement run set `NEX_TSC` to the pinned TypeScript compiler and
@@ -164,6 +201,31 @@ declaration in 0.280.1. It preserved 207 functions and 35 structures across
 20 modules. All ten published projects and both retained revisions ran on
 macOS ARM64. Eleven executable agreement cases passed in the interpreter,
 native Debug and Release and executed strict TypeScript.
+
+On macOS ARM64, a local rehearsal used a two-platform index assembled from
+development archives. All six compatibility checks passed with the selected
+macOS archive, including its eleven 0.30 projects. A separate check executed
+all twelve 0.30 example projects from `584715e4` with two compiler builds. The
+new map example printed `east` then `west` after removing and reinserting a key.
+The future 1.0 release gate still requires the publicly distributed beta and
+the actual candidate for each supported host.
+[Compiler identities and rehearsal results](evidence/multi-platform-baseline-rehearsal-2026-11-23.json)
+
+The published 0.280.1 macOS ARM64 archive and the earlier 0.281.0 development
+archive from `d492bf7f` passed all seven checks with both SDKs restored from
+their recorded bytes. Each of the ten published 0.30 example projects passed,
+and the candidate recovered two earlier snapshot revisions. Both archives
+predate the packaged agreement corpus. The maintained corpus ran 13 checker
+cases and 11 executable cases on the candidate and separately on the
+`584715e4` macOS source build.
+[Host, archive and backend measurements](evidence/host-archive-pair-and-030-agreement-2026-11-23.json)
+
+On macOS, the published 0.280.1 SDK and the 0.281.0 installation from
+`584715e4` both accepted the original dependency locks for hash containers,
+sequence containers and Java long integers. The candidate also checked all
+five locked 0.30 projects in its own installation. Each of the eleven runs
+preserved the original lock and returned `E_LOCK` for a stale copy.
+[Projects, revisions and lock checksums](evidence/sdk-lock-replay-2026-11-23.json)
 
 ## Historical source migrations
 
@@ -197,3 +259,17 @@ declarations before task use. All historical rows/IDs/schema remain unchanged;
 program/14 includes actual language and therefore gives distinct revisions.
 Migration preflight precedes mutable destination access. See [migration](task-migration.md)
 and [the exact source/target boundary](task-file-reads.md).
+
+## Moving a project history between Windows and macOS
+
+In the project directory on the original machine, run `nex snapshot --directory ../stock-snapshot`. Copy the entire snapshot directory, including `graph.db` and `snapshot.json`, to the other machine. Run the following commands from the parent of the copied directory.
+
+```sh
+nex recover stock-snapshot --directory recovered
+cd recovered
+nex history --json
+```
+
+Choose a revision ID from the history. Run it with `nex run --revision ID --profile release`, or write its editable sources to a new directory with `nex export --revision ID --directory ../stock-src`. The receiving SDK builds native code for its own platform.
+
+Before publication, a Windows x64 SDK 0.281.0 recorded two revisions of a language 0.30 inventory project. The macOS ARM64 SDK 1.0.0 candidate restored both revisions. Both the interpreter and the native build reported 7 units for the first revision and 6 for the second. Each revision passed its web test. Both exported source files matched the Windows originals byte for byte, including their CRLF line endings. [Compiler, snapshot and exported file hashes](evidence/windows-macos-snapshot030-2026-11-23.json)
