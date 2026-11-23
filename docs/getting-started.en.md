@@ -1,16 +1,66 @@
 # Start with NEX
 
-Current source uses **toolchain 0.280.1 / language 0.28 / task ABIs 7/8**, in development.
+Current source uses **toolchain 0.281.0**. New projects select language **0.30**.
+The compiler fallback is 0.28 and the task ABIs are 7/8.
 Readable source, runtime contracts and explicit history-preserving migrations
 are available through the ordinary CLI.
 
 [Русский](getting-started.ru.md) · [Overview](overview.en.md)
 
-After unpacking an SDK, add its `bin` directory to PATH and run `nex doctor --json`.
-Its report identifies the installed version. Continue at [Create an application](#create-an-application).
-The download recipe below selects the qualified published0.280.1 archive.
-New source-built `nex init` projects select language0.30; existing projects keep
-the language explicitly selected in their `nex.json`.
+Choose the archive for your host OS and processor. The macOS recipe below uses
+published SDK 0.280.1. For native Linux or Windows, use the following commands
+once a release lists both your archive and its matching checksum. The release
+notes specify host requirements. [GitHub Releases](https://github.com/sae-ru/NEX/releases)
+
+## Install a Linux or Windows SDK from a release
+
+Open an empty directory where you want to keep the SDK. Copy the release tag
+and the **exact archive filename** from its Assets list when prompted. Keep the
+extracted directory together. These commands set PATH for this terminal session.
+
+**Linux (Bash).** Choose `nex-sdk-<version>-linux-amd64-development.tar.gz` for
+`uname -m` = `x86_64`, or `nex-sdk-<version>-linux-arm64-development.tar.gz`
+for `aarch64`. Select the accompanying `<archive>.sha256` from the same release.
+
+```bash
+read -r -p 'Release tag: ' tag
+read -r -p 'Archive filename: ' archive
+url="https://github.com/sae-ru/NEX/releases/download/$tag"
+curl -fL "$url/$archive" -o "$archive" &&
+  curl -fL "$url/$archive.sha256" -o "$archive.sha256" &&
+  sha256sum --check --strict "$archive.sha256" &&
+  tar -xzf "$archive" &&
+  sdk_bin="$(pwd -P)/${archive%.tar.gz}/bin" &&
+  test -x "$sdk_bin/nex" &&
+  export PATH="$sdk_bin:$PATH" &&
+  nex doctor --json
+```
+
+**Windows x64 (PowerShell).** Select `nex-sdk-<version>-windows-x86_64-development.tar.gz`
+and its `.tar.gz.sha256` file from the same release. Windows `tar.exe` extracts this archive.
+
+```powershell
+$tag = Read-Host 'Release tag'
+$archive = Read-Host 'Archive filename'
+$url = "https://github.com/sae-ru/NEX/releases/download/$tag"
+Invoke-WebRequest -UseBasicParsing -ErrorAction Stop -Uri "$url/$archive" -OutFile $archive
+Invoke-WebRequest -UseBasicParsing -ErrorAction Stop -Uri "$url/$archive.sha256" -OutFile "$archive.sha256"
+$sum = (Get-Content -LiteralPath "$archive.sha256" -Raw -ErrorAction Stop).Trim() -split '\s+', 2
+if ($sum.Count -ne 2 -or $sum[1] -cne $archive -or $sum[0] -notmatch '^[0-9a-fA-F]{64}$' -or
+    (Get-FileHash -Algorithm SHA256 -LiteralPath $archive -ErrorAction Stop).Hash -ine $sum[0]) {
+    throw 'Archive checksum or filename mismatch'
+}
+tar.exe -xzf $archive
+if ($LASTEXITCODE -ne 0) { throw 'Archive extraction failed' }
+$bin = (Resolve-Path -LiteralPath (Join-Path ($archive -replace '\.tar\.gz$', '') 'bin') -ErrorAction Stop).Path
+if (!(Test-Path -LiteralPath (Join-Path $bin 'nex.exe') -PathType Leaf)) { throw 'Missing bin/nex.exe' }
+$env:Path = "$bin;$env:Path"
+nex.exe doctor --json
+```
+
+Then switch to your usual projects directory in the same terminal and
+[create an application](#create-an-application). If the release has no SDK for
+your host, use the [source build](#build-the-current-version).
 
 ## Install the macOS ARM64 SDK
 
@@ -36,8 +86,7 @@ nex describe --kind index --json
 The [release receipts](evidence/sdk-current-0.280.1-2026-11-17.json) identify the
 exact source, archive and moved/restored acceptance. Signatures are ad-hoc;
 Live LLDB/DAP is qualified for this archive; Developer ID signing/notarization
-remain separate work. For Windows/Linux, use the source instructions below and the
-matching platform guide.
+remain separate work.
 
 ## Build the current version
 
@@ -64,7 +113,6 @@ ctest --test-dir build --output-on-failure
 cmake --install build --prefix /absolute/path/to/nex-sdk
 export PATH="/absolute/path/to/nex-sdk/bin:$PATH"
 nex doctor --json
-nex doctor --toolchain windows-toolchain.json --json
 nex describe --kind index --json
 ```
 
@@ -122,11 +170,11 @@ For a GUI coding agent, run those commands in its terminal too.
 ## Create an application
 
 ```sh
-nex init /path/to/my-app
-cd /path/to/my-app
+nex init my-app --language-version 0.30
+cd my-app
 nex check --json
-nex run --json
 nex test --json
+nex run --json
 nex build --profile release --json
 ```
 
@@ -143,7 +191,7 @@ an explicit migration. Editing a version number is not a migration.
 
 Track source, manifests, lock files, tests, reviewed task/contracts, required
 assets and intentional build configuration. Exclude credentials, local grants,
-keys, caches, binaries and `node_modules`.
+keys, caches, binaries and `node_modules`. [Example application `.gitignore` and Git commands (Russian)](quickstart.md#3-что-хранить-в-git)
 
 Source Git history does not by itself retain the semantic store's complete
 revision/ID history. Preserve graph history with the maintained snapshot/export
@@ -166,3 +214,6 @@ Give it [BOOTSTRAP](../llm/BOOTSTRAP.md) and the [coding contract](../llm/SYSTEM
 Ask it to discover actual capabilities, retrieve bounded symbol context and
 validate behavior. [LEARNING](../llm/LEARNING.md) provides the compact entry point.
 The compiler and tests decide acceptance; a plausible generated answer does not.
+
+Open your application as the agent's working directory. Check that its terminal
+resolves the same SDK with `nex doctor --json`. [Codex plugin](../plugins/nex/README.md) · [Hermes and project instructions (Russian)](quickstart.md#4-hermes-codex-и-другие-llm)
