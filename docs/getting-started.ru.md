@@ -21,6 +21,14 @@
 `nex-sdk-<версия>-linux-amd64-development.tar.gz`, для `aarch64` —
 `nex-sdk-<версия>-linux-arm64-development.tar.gz`. В том же релизе должен быть файл `<архив>.sha256`.
 
+Для нативной сборки нужны заголовочные файлы C/C++ и стартовые объектные файлы
+GCC для вашей архитектуры. Команда `getconf GNU_LIBC_VERSION` покажет версию
+glibc в системе. В описании релиза указаны старшие требуемые версии символов
+glibc и libstdc++ для каждого архива. Полные списки находятся в
+`share/nex/sdk-bundle.json` внутри SDK. Если в системных библиотеках нет нужных
+версий символов, используйте сборку из исходников или Linux-контейнер с
+подходящими библиотеками.
+
 ```bash
 read -r -p 'Release tag: ' tag
 read -r -p 'Archive filename: ' archive
@@ -37,6 +45,10 @@ curl -fL "$url/$archive" -o "$archive" &&
 
 **Windows x64 (PowerShell).** Выберите `nex-sdk-<версия>-windows-x86_64-development.tar.gz`
 и файл `.tar.gz.sha256` из того же релиза. Для распаковки используется системная команда `tar.exe`.
+
+Выполните команды в обычном PowerShell. Для скриптов SDK установите Python
+3.10+ для Windows. Для веб-проектов также нужны Node.js 22.18+ и npm. Для живой
+отладки установите LLDB и lldb-dap для Windows.
 
 ```powershell
 $tag = Read-Host 'Release tag'

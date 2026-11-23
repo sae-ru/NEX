@@ -21,6 +21,13 @@ extracted directory together. These commands set PATH for this terminal session.
 `uname -m` = `x86_64`, or `nex-sdk-<version>-linux-arm64-development.tar.gz`
 for `aarch64`. Select the accompanying `<archive>.sha256` from the same release.
 
+Native builds require the GCC C/C++ development headers and startup objects for
+your architecture. Run `getconf GNU_LIBC_VERSION` to see the host's glibc. The
+release notes list the highest required glibc and libstdc++ symbol versions for
+each archive. The complete lists are in `share/nex/sdk-bundle.json` inside the
+SDK. A host with older libraries can use a source build or a matching Linux
+container.
+
 ```bash
 read -r -p 'Release tag: ' tag
 read -r -p 'Archive filename: ' archive
@@ -37,6 +44,10 @@ curl -fL "$url/$archive" -o "$archive" &&
 
 **Windows x64 (PowerShell).** Select `nex-sdk-<version>-windows-x86_64-development.tar.gz`
 and its `.tar.gz.sha256` file from the same release. Windows `tar.exe` extracts this archive.
+
+Run these commands in native PowerShell. Install native Python 3.10+ for SDK
+scripts. Browser projects also need Node.js 22.18+ and npm. Install native LLDB
+and lldb-dap for live debugging.
 
 ```powershell
 $tag = Read-Host 'Release tag'
