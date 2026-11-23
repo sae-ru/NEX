@@ -225,4 +225,4 @@ nex snapshot --directory ../my-app-snapshot --json
 краткую точку входа. Приёмку определяют компилятор и тесты, а не уверенность ответа.
 
 Откройте каталог приложения как рабочую папку агента и выполните в его терминале
-`nex doctor --json`, чтобы сверить выбранный SDK. [Плагин Codex](../plugins/nex/README.ru.md) · [Настройка Hermes и общих инструкций проекта](quickstart.md#4-hermes-codex-и-другие-llm)
+`nex doctor --json`, чтобы сверить выбранный SDK. [Плагин Codex](https://github.com/sae-ru/NEX/blob/main/plugins/nex/README.ru.md) · [Настройка Hermes и общих инструкций проекта](quickstart.md#4-hermes-codex-и-другие-llm)

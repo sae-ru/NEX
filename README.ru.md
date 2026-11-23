@@ -3,7 +3,7 @@
 [Краткий актуальный статус](docs/STATUS.current.md) · [Приоритеты улучшений](docs/development-priorities.md)
 **Язык нейронного исполнения.**
 
-[English](README.md) · [Описание языка](docs/overview.ru.md) · [Начать работу](docs/getting-started.ru.md) · [Материалы для LLM](llm/LEARNING.md) · [Навык и плагин Codex](plugins/nex/README.ru.md)
+[English](README.md) · [Описание языка](docs/overview.ru.md) · [Начать работу](docs/getting-started.ru.md) · [Материалы для LLM](llm/LEARNING.md) · [Навык и плагин Codex](https://github.com/sae-ru/NEX/blob/main/plugins/nex/README.ru.md)
 
 Главная идея NEX — передавать максимум точного смысла минимальным необходимым
 числом токенов, сохраняя высокую производительность и безопасность исполнения.

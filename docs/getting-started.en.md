@@ -223,4 +223,4 @@ validate behavior. [LEARNING](../llm/LEARNING.md) provides the compact entry poi
 The compiler and tests decide acceptance; a plausible generated answer does not.
 
 Open your application as the agent's working directory. Check that its terminal
-resolves the same SDK with `nex doctor --json`. [Codex plugin](../plugins/nex/README.md) · [Hermes and project instructions (Russian)](quickstart.md#4-hermes-codex-и-другие-llm)
+resolves the same SDK with `nex doctor --json`. [Codex plugin](https://github.com/sae-ru/NEX/blob/main/plugins/nex/README.md) · [Hermes and project instructions (Russian)](quickstart.md#4-hermes-codex-и-другие-llm)
