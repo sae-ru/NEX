@@ -6,6 +6,15 @@ new owned directory, builds/tests/installs it, then delegates relocation,
 source-free acceptance, normalized archive creation and restored acceptance to
 the existing platform helper. It never overwrites an SDK or previous attempt.
 
+For SDK 1.0.0, select the host before starting the build. The Linux
+instructions below cover x86-64 and ARM64. macOS uses a native ARM64 build.
+On Windows x64, apply the two files supplied with the release before running
+the native build and distribution commands. Each host has its own compiler,
+archive checksum and acceptance results. The release record identifies the
+source and packaging inputs used for each archive. [SDK 1.0.0 qualification](https://github.com/sae-ru/NEX/releases/download/v1.0.0/qualification.json)
+
+## Earlier build results
+
 The [published0.280.1 macOS delivery](evidence/sdk-current-0.280.1-2026-11-17.json)
 uses a fresh committed source export and all-target Release build. Its attached
 orchestrator runs source and distribution gates concurrently after installation,
@@ -24,25 +33,23 @@ The [published archive](releases/0.246.1.json) retains its exact identity.
 
 Earlier [control evidence](evidence/sdk-build-driver-0.165.0-2026-11-11.json)
 retains snapshot/configuration/failure methods, platform plans and read-denial
-controls. Complete Linux orchestration and Windows-native distribution remain
-separate work. The command does not publish a release or call an LLM;
-`release_qualification` stays false because one host archive does not qualify
-every requested platform/device.
+controls. In 0.165, the build driver recorded results for one host. The
+release qualification assembles results from all supported hosts and devices.
 
-## Current030 qualification
+## Language 0.30 installed checks
 
-Toolchain0.280 adds the mandatory [installed Workboard phase](sdk-workboard.md)
-after the0.279 [installed030 phase](sdk-reference030.md). The current workflow
-has43 phases;0.279 keeps42 and older archive receipts keep their original
-contracts. The earlier [focused preparation](evidence/sdk-reference030-preparation-0.279.0-2026-11-17.json)
-passes from a moved normal installation with actual live DAP, three provider
-modes, persistent native hosts and the browser controller/build. Full source
-regression, moved/restored distribution and publication are separate gates.
-The first0.279 full source attempt completed386 groups:381 passed and five
-failed. [The original result](evidence/full-source-0.279.0-first-attempt-2026-11-17.json)
-retains the failures; current targeted repairs do not replace a full new run.
-The0.280 registry has388 groups. SDK-only workflow changes retain toolchain0.280
-and source versions028/029/030.
+The current SDK runs 43 installed phases. The final two exercise language
+0.30 reference programs and the multi-module Workboard application.
+[Reference workflow](sdk-reference030.md) · [Workboard workflow](sdk-workboard.md)
+
+Version 0.279 ran 42 phases. Its relocated installation exercised live DAP,
+three provider modes, persistent native hosts and the browser build.
+[Installed workflow results](evidence/sdk-reference030-preparation-0.279.0-2026-11-17.json)
+
+Of 386 groups in the first 0.279 source run, 381 passed and five failed.
+The 0.280 registry contained 388 groups. The release qualification gives the
+source group count and installed results for each 1.0.0 host.
+[0.279 source test results](evidence/full-source-0.279.0-first-attempt-2026-11-17.json)
 
 ## Linux
 
@@ -81,7 +88,9 @@ Dockerfile `FROM`; derived images execute by inspected ID. The temporary base
 tag is recorded; no original image is deleted. This does not add image layers.
 `skip_image_build: true` plus optional `image` selects an already prepared source
 toolchain. Packaging/runtime image preparation still occurs when necessary.
-Whole Docker/hosted execution of this new joining command remains unqualified.
+The release record identifies which steps ran on a hosted runner and which
+ran in the packaging environment. Use its archive SHA-256 when comparing
+those results with a local build.
 
 ## macOS
 
@@ -116,6 +125,36 @@ preserved in the linked receipts. `live` was false for that archive.
 
 ## Windows x86-64
 
+### Building the Windows SDK from the 0.281.0 or 1.0.0 release tag
+
+Start in a clean checkout of the release tag. Download `qualification.json`,
+`nex-windows-sdk-distribution.py`, `nex-windows-native-task-sessions.py` and
+`nex-windows-sdk-task-streams.py` from the same release into
+`downloads/windows-release/`. The packaging script selects Node for npm,
+the session test links against the packaged UCRT, and the stream test uses
+portable source paths in its report. [Beta assets](https://github.com/sae-ru/NEX/releases/tag/v0.281.0) · [1.0 assets](https://github.com/sae-ru/NEX/releases/tag/v1.0.0)
+
+Run the commands from the checkout root before building and installing with
+CMake. They check each download against the release record, then copy the
+three files to their recorded checkout paths.
+
+```powershell
+$ErrorActionPreference = 'Stop'
+$assets = Get-Item -LiteralPath '.\downloads\windows-release'
+$release = Get-Content -Raw -LiteralPath (Join-Path $assets.FullName 'qualification.json') | ConvertFrom-Json
+if ((git rev-parse HEAD) -ne $release.qualification_main_commit) { throw 'Release tag and checkout differ' }
+$inputs = @($release.windows_packaging_tool, $release.windows_host_session_fixture, $release.windows_stream_report_writer)
+foreach ($item in $inputs) {
+    $path = Join-Path $assets.FullName $item.file
+    if ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ne $item.sha256) { throw "SHA256 mismatch for $path" }
+}
+foreach ($item in $inputs) {
+    Copy-Item -LiteralPath (Join-Path $assets.FullName $item.file) -Destination $item.checkout_path
+}
+```
+
+### Building and packaging the installation
+
 Build and install the selected commit with the native Windows compiler and its
 pinned UCRT dependencies. From that checkout, run the native Windows
 [distribution driver](../tools/windows/sdk_distribution.py) with the ordinary
@@ -125,7 +164,10 @@ configuration used with that installation. Select the Wasm linker from the
 all-target Clang dependency set. During assembly the unbundled host compiler
 loads its LLVM, SQLite and solver DLLs from the directory beside that linker.
 If the host DLLs live elsewhere, pass `--host-runtime-bin DIRECTORY`. Moved
-and restored acceptance use the Windows system PATH and the assembled SDK.
+and restored acceptance use the assembled SDK and a Windows system PATH
+augmented with a private directory containing the selected standalone
+`node.exe`. This lets npm's TypeScript and Vite scripts find that executable
+by name while keeping compiler and OpenSSL installations off the consumer PATH.
 
 On Windows x86-64 the 0.281.0 beta input from `d492bf7f` reproduced a
 `0xC0000135` loader exit during assembly. With the host DLL path supplied,

@@ -84,6 +84,7 @@ jobs:
           key: nex-lldb-debs-v1-amd64-${{ hashFiles('tools/linux/debugger-packages.json') }}
       - name: Build pinned toolchain and execute core offline
         run: |
+          python3 -B tools/package_codex_plugin.py --check
           python3 -B tests/linux_preparation.py
           python3 -B tools/linux/check.py --arch amd64 --tier core --jobs 2 --output build/ci-linux
       - name: Retain results including failures

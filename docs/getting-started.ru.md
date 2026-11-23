@@ -1,6 +1,6 @@
 # Начать работу с NEX
 
-Из этих исходников собирается **кандидат SDK 1.0.0**. Новые проекты используют язык **0.30**.
+**SDK 1.0.0** доступен для macOS ARM64, Windows x64, Linux x86-64 и Linux ARM64. Новые проекты используют язык **0.30**.
 Если версия языка не указана, компилятор использует 0.28. Версии ABI задач — 7/8.
 Обычный CLI поддерживает читаемый исходный код, runtime-контракты и явную
 миграцию старых графов с сохранением истории.
@@ -9,7 +9,7 @@
 
 Выберите опубликованный тег, у которого в разделе Assets есть архив для вашей ОС
 и процессора и соответствующий файл `.sha256`. Системные требования указаны
-в описании релиза. [Релизы GitHub](https://github.com/sae-ru/NEX/releases)
+в описании релиза. [Релизы GitHub](https://github.com/sae-ru/NEX/releases/tag/v1.0.0)
 
 ## Установить SDK для Linux или Windows из релиза
 
@@ -75,16 +75,16 @@ nex.exe doctor --json
 
 ## Установить SDK для macOS ARM64
 
-[SDK 0.280.1](releases/0.280.1.json) требует macOS 27.0+ на ARM64, Apple command-line
+[SDK 1.0.0](https://github.com/sae-ru/NEX/releases/tag/v1.0.0) требует macOS 27.0+ на ARM64, Apple command-line
 tools с macOS SDK и Python 3.10+. Для веб-сборок нужны также Node.js 22.18+ и npm.
 Переносимый архив для разработки включает выбранный компилятор и зависимости
 библиотек. Храните весь распакованный каталог вместе.
 
-В пустом каталоге введите тег релиза (например, `v0.280.1`). Архив останется
+В пустом каталоге введите тег релиза (например, `v1.0.0`). Архив останется
 в этом каталоге. Каждая версия SDK распакуется в свой каталог под `~/.local/nex`.
 
 ```sh
-printf 'Release tag (e.g. v0.280.1): '
+printf 'Release tag (e.g. v1.0.0): '
 IFS= read -r tag
 archive="nex-sdk-${tag#v}-macos-arm64-development.tar.gz"
 url="https://github.com/sae-ru/NEX/releases/download/$tag"
@@ -101,7 +101,7 @@ curl -fL "$url/$archive" -o "$archive" &&
   nex describe --kind index --json
 ```
 
-[Результаты приёмки](evidence/sdk-current-0.280.1-2026-11-17.json) закрепляют
+[Результаты приёмки](https://github.com/sae-ru/NEX/releases/download/v1.0.0/qualification.json) закрепляют
 исходный коммит, архив и проверки перенесённой/восстановленной установок.
 Живые LLDB/DAP прошли приёмку этого архива. Подписи ad-hoc; Developer ID
 и notarization остаются отдельными этапами.
@@ -132,6 +132,19 @@ cmake --install build --prefix /absolute/path/to/nex-sdk
 export PATH="/absolute/path/to/nex-sdk/bin:$PATH"
 nex doctor --json
 nex describe --kind index --json
+```
+
+В Windows обычной установке через CMake с LLVM-MinGW могут понадобиться DLL из
+`clang64/bin` того комплекта, которым собирали NEX. Запустите установленный
+`nex.exe` в оболочке сборки или добавьте этот каталог в PATH текущего сеанса
+PowerShell. У переносимого архива выпуска необходимые DLL лежат рядом с
+`nex.exe`. [Установка переносимого SDK Windows](#установить-sdk-для-linux-или-windows-из-релиза)
+
+```powershell
+$llvmBin = (Resolve-Path -LiteralPath (Read-Host 'Каталог bin LLVM-MinGW из сборки NEX') -ErrorAction Stop).Path
+$env:Path = "$llvmBin;$env:Path"
+$prefix = (Resolve-Path -LiteralPath (Read-Host 'Каталог установки CMake') -ErrorAction Stop).Path
+& (Join-Path $prefix 'bin/nex.exe') doctor --json
 ```
 
 Полный набор тестов исходников включает TypeScript, даже если вашему приложению
@@ -212,6 +225,21 @@ NEX и LLM, когда доступны её фактические зависи
 ресурсы и конфигурацию сборки. Исключайте пароли, локальные разрешения (grants), ключи,
 кэши, бинарники и `node_modules`. [Пример `.gitignore` и команды Git для проекта](quickstart.md#3-что-хранить-в-git)
 
+До первого `git add` добавьте в корневой `.gitattributes` следующую строку и
+сохраните файл в Git.
+
+```gitattributes
+*.nex -text
+```
+
+В `nex.lock.json` записаны хеши точных байтов исходников импортированных
+библиотек. С этим правилом Git сохраняет окончания строк LF и CRLF даже при
+`core.autocrlf=true` в Windows. Если после клонирования появился `E_LOCK`,
+выполните `git ls-files --eol -- '*.nex'` и сравните библиотеку с исходной
+рабочей копией перед обновлением хеша. Добавьте исходники библиотек из
+`vendor/` в Git вместе с манифестом и lock-файлом. В клоне запустите
+`nex test --json`.
+
 Git исходников сам по себе не хранит полную историю ревизий/ID семантического
 хранилища. Для неё используйте snapshot/export отдельно от генерируемых кэшей:
 
@@ -236,5 +264,42 @@ nex snapshot --directory ../my-app-snapshot --json
 контекст символов и проверять поведение. [LEARNING](../llm/LEARNING.md) содержит
 краткую точку входа. Приёмку определяют компилятор и тесты, а не уверенность ответа.
 
-Откройте каталог приложения как рабочую папку агента и выполните в его терминале
-`nex doctor --json`, чтобы сверить выбранный SDK. [Плагин Codex](https://github.com/sae-ru/NEX/blob/main/plugins/nex/README.ru.md) · [Настройка Hermes и общих инструкций проекта](quickstart.md#4-hermes-codex-и-другие-llm)
+Чтобы работать с Hermes или Codex, добавьте инструкции в `AGENTS.md` рядом с
+`nex.json` и сохраните файл в Git вместе с приложением.
+
+```markdown
+Сохрани версию языка из nex.json. Прочитай `nex guide --kind prompt` один раз для этой сборки SDK.
+При упавшем тесте один раз для этой сборки проверь `nex help test`. Если там есть `--repair-context`, запусти `nex test ENTRY --repair-context --json`, подставив entry из nex.json. Иначе используй `python3 nex-repair-context.py` (в Windows — `py -3 nex-repair-context.py`). Начни с проверки assert и фрагмента функции.
+После правки запусти `nex test --symbol NAME --json` на текущем коде. Для всего проекта запусти `nex test --json`.
+```
+
+Для готовых архивов SDK 1.0 скачайте скрипт рядом с `nex.json`.
+В этом каталоге запустите `python3 nex-repair-context.py`, а в Windows —
+`py -3 nex-repair-context.py`. Скрипт возьмёт точку входа из проекта и найдёт
+`nex` в PATH. Передайте агенту полученный JSON. Если для исправления нужен
+код вызываемой функции, выберите её команду из `repair_context.inspect`.
+[Скачать скрипт](https://github.com/sae-ru/NEX/releases/download/v1.0.0/nex-repair-context.py) · [Контрольные суммы](https://github.com/sae-ru/NEX/releases/download/v1.0.0/SHA256SUMS)
+
+Запустите `hermes` из каталога приложения. Команда `/context` в Hermes показывает,
+какие инструкции проекта он загрузил. Если в проекте есть собственный `.hermes.md`,
+добавьте инструкции NEX в него. Попросите агента выполнить в своём терминале
+`nex doctor --json`, затем `nex test --json`. Для терминала Docker или SSH команда
+`nex` должна быть доступна внутри соответствующего окружения.
+
+В Codex откройте тот же каталог и дайте то же первое задание. По желанию можно
+подключить навык программирования на NEX. [Плагин Codex](https://github.com/sae-ru/NEX/blob/main/plugins/nex/README.ru.md)
+
+### DeepSeek Harness
+
+Скачайте [nex-programming.zip](https://github.com/sae-ru/NEX/releases/download/v1.0.0/nex-programming.zip) и распакуйте в `.agents/skills/` в корне приложения. Harness найдёт файл `.agents/skills/nex-programming/SKILL.md` и загрузит инструкции по запросу.
+
+Чтобы получить навык из текущей ветки `main`, выполните команды Git в Bash или PowerShell.
+
+```sh
+git clone --depth 1 --filter=blob:none --sparse https://github.com/sae-ru/NEX.git nex-skill-src
+git -C nex-skill-src sparse-checkout set plugins/nex/skills/nex-programming
+```
+
+Скопируйте весь каталог `nex-skill-src/plugins/nex/skills/nex-programming` в `.agents/skills/` в корне приложения NEX. Сохраните его в Git, чтобы навык получили и другие разработчики. Для всех ваших проектов скопируйте каталог в `~/.dsh/skills/` или в `skills/` внутри настроенного каталога DSH.
+
+Откройте проект в Harness и введите `/nex-programming Исправь упавший тест и запусти его снова.` Добавьте `nex` в PATH терминала агента или передайте ему полный путь к программе. Harness Desktop 0.2.2-rc.5 загрузил навык из обоих каталогов. В примере из комплекта после исправления результата с 23 на 42 прошёл нативный тест. [Навык на GitHub](https://github.com/sae-ru/NEX/tree/main/plugins/nex/skills/nex-programming) · [Как Harness находит навыки](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/subsystems/skills.md)

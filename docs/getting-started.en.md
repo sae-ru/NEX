@@ -1,6 +1,6 @@
 # Start with NEX
 
-This checkout builds the **1.0.0 SDK release candidate**. New projects select language **0.30**.
+Download **SDK 1.0.0** for macOS ARM64, Windows x64, Linux x86-64 or Linux ARM64. New projects select language **0.30**.
 The compiler fallback is 0.28 and the task ABIs are 7/8.
 Readable source, runtime contracts and explicit history-preserving migrations
 are available through the ordinary CLI.
@@ -9,7 +9,7 @@ are available through the ordinary CLI.
 
 Choose a published tag that lists both the SDK archive for your OS and processor
 and its matching `.sha256` file under Assets. The release notes specify the host
-requirements. [GitHub Releases](https://github.com/sae-ru/NEX/releases)
+requirements. [GitHub Releases](https://github.com/sae-ru/NEX/releases/tag/v1.0.0)
 
 ## Install a Linux or Windows SDK from a release
 
@@ -74,17 +74,17 @@ your host, use the [source build](#build-the-current-version).
 
 ## Install the macOS ARM64 SDK
 
-[SDK 0.280.1](releases/0.280.1.json) requires macOS 27.0+ on ARM64, Apple command-line
+[SDK 1.0.0](https://github.com/sae-ru/NEX/releases/tag/v1.0.0) requires macOS 27.0+ on ARM64, Apple command-line
 tools with a macOS SDK and Python 3.10+. Web builds also require Node.js 22.18+
 and npm. This portable development archive includes its selected compiler and
 library dependencies. Keep its entire directory together.
 
-In an empty directory, enter the release tag (for example, `v0.280.1`).
+In an empty directory, enter the release tag (for example, `v1.0.0`).
 The archive stays in this directory. The extracted SDK goes under `~/.local/nex`.
 Each version gets its own directory.
 
 ```sh
-printf 'Release tag (e.g. v0.280.1): '
+printf 'Release tag (e.g. v1.0.0): '
 IFS= read -r tag
 archive="nex-sdk-${tag#v}-macos-arm64-development.tar.gz"
 url="https://github.com/sae-ru/NEX/releases/download/$tag"
@@ -101,7 +101,7 @@ curl -fL "$url/$archive" -o "$archive" &&
   nex describe --kind index --json
 ```
 
-The [release receipts](evidence/sdk-current-0.280.1-2026-11-17.json) identify the
+The [release receipts](https://github.com/sae-ru/NEX/releases/download/v1.0.0/qualification.json) identify the
 exact source, archive and moved/restored acceptance. Signatures are ad-hoc;
 Live LLDB/DAP is qualified for this archive; Developer ID signing/notarization
 remain separate work.
@@ -132,6 +132,19 @@ cmake --install build --prefix /absolute/path/to/nex-sdk
 export PATH="/absolute/path/to/nex-sdk/bin:$PATH"
 nex doctor --json
 nex describe --kind index --json
+```
+
+On Windows, a plain CMake installation built with LLVM-MinGW can depend on DLLs
+in that toolchain's `clang64/bin`. Run the installed `nex.exe` in the build shell,
+or add the exact toolchain bin directory used by CMake to your new PowerShell
+session. The portable release archive includes its runtime DLLs alongside
+`nex.exe`. [Portable Windows installation](#install-a-linux-or-windows-sdk-from-a-release)
+
+```powershell
+$llvmBin = (Resolve-Path -LiteralPath (Read-Host 'LLVM-MinGW bin directory used by the build') -ErrorAction Stop).Path
+$env:Path = "$llvmBin;$env:Path"
+$prefix = (Resolve-Path -LiteralPath (Read-Host 'CMake install prefix') -ErrorAction Stop).Path
+& (Join-Path $prefix 'bin/nex.exe') doctor --json
 ```
 
 The full source test suite includes TypeScript checks, even when your own
@@ -211,6 +224,20 @@ Track source, manifests, lock files, tests, reviewed task/contracts, required
 assets and intentional build configuration. Exclude credentials, local grants,
 keys, caches, binaries and `node_modules`. [Example application `.gitignore` and Git commands (Russian)](quickstart.md#3-что-хранить-в-git)
 
+Before the first `git add`, put this line in the project's root `.gitattributes`
+and commit that file.
+
+```gitattributes
+*.nex -text
+```
+
+NEX pins the exact bytes of each imported library source in `nex.lock.json`.
+This Git rule preserves LF and CRLF source bytes across checkouts, including
+Git for Windows with `core.autocrlf=true`. If a fresh clone reports `E_LOCK`,
+run `git ls-files --eol -- '*.nex'` and compare the affected library with
+the original working copy before updating its pin. Commit any vendored library
+sources alongside the manifest and lock. Run `nex test --json` in the clone.
+
 Source Git history does not by itself retain the semantic store's complete
 revision/ID history. Preserve graph history with the maintained snapshot/export
 workflow, separately from generated caches:
@@ -233,5 +260,42 @@ Ask it to discover actual capabilities, retrieve bounded symbol context and
 validate behavior. [LEARNING](../llm/LEARNING.md) provides the compact entry point.
 The compiler and tests decide acceptance; a plausible generated answer does not.
 
-Open your application as the agent's working directory. Check that its terminal
-resolves the same SDK with `nex doctor --json`. [Codex plugin](https://github.com/sae-ru/NEX/blob/main/plugins/nex/README.md) · [Hermes and project instructions (Russian)](quickstart.md#4-hermes-codex-и-другие-llm)
+To use Hermes or Codex, add the following instructions to `AGENTS.md` beside
+`nex.json` and commit the file with your application.
+
+```markdown
+Keep the language in nex.json. Read `nex guide --kind prompt` once per SDK build.
+For a failing test, check `nex help test` once per SDK. If it lists `--repair-context`, run `nex test ENTRY --repair-context --json` with the entry from nex.json. Otherwise use `python3 nex-repair-context.py` (Windows uses `py -3 nex-repair-context.py`). Start with the assertion and function excerpt.
+After editing, run `nex test --symbol NAME --json` on the current source. Run `nex test --json` for the project.
+```
+
+With the prebuilt SDK 1.0 archives, download the Python driver next to
+`nex.json`. From that directory run `python3 nex-repair-context.py`
+(on Windows, `py -3 nex-repair-context.py`). The driver uses the project entry
+and the `nex` executable on PATH. Give the agent the resulting JSON. If the
+excerpt leaves a question open, use a command in `repair_context.inspect`
+to read the relevant callee. [Download the driver](https://github.com/sae-ru/NEX/releases/download/v1.0.0/nex-repair-context.py) · [SHA256SUMS](https://github.com/sae-ru/NEX/releases/download/v1.0.0/SHA256SUMS)
+
+Start `hermes` in the application directory. In Hermes, `/context` shows which
+project instructions it loaded. If you use a project-specific `.hermes.md`,
+add the NEX instructions there. Ask Hermes to run `nex doctor --json` in its
+terminal and then `nex test --json`. For a Docker or SSH terminal, make the SDK
+available on the command path inside that environment.
+
+In Codex, open the same directory and use the same first task. The optional
+plugin adds a NEX programming skill. [Codex plugin](https://github.com/sae-ru/NEX/blob/main/plugins/nex/README.md)
+
+### DeepSeek Harness
+
+Download [nex-programming.zip](https://github.com/sae-ru/NEX/releases/download/v1.0.0/nex-programming.zip) and extract it into `.agents/skills/` at the root of the application. Harness discovers `.agents/skills/nex-programming/SKILL.md` and loads its instructions on demand.
+
+To get the skill from the current `main`, use Git in Bash or PowerShell.
+
+```sh
+git clone --depth 1 --filter=blob:none --sparse https://github.com/sae-ru/NEX.git nex-skill-src
+git -C nex-skill-src sparse-checkout set plugins/nex/skills/nex-programming
+```
+
+Copy the entire `nex-skill-src/plugins/nex/skills/nex-programming` directory into `.agents/skills/` at the root of your NEX application. Commit it with the application to share it with collaborators. For all your projects, copy it into `~/.dsh/skills/` or the `skills/` directory under your configured DSH home.
+
+Open the application in Harness and enter `/nex-programming Fix the failing test and run it again.` Make `nex` available on the agent terminal’s PATH or give it the full executable path. Harness Desktop 0.2.2-rc.5 loaded the skill from both locations. The native test in the bundled example passed after correcting the result from 23 to 42. [Skill source](https://github.com/sae-ru/NEX/tree/main/plugins/nex/skills/nex-programming) · [Harness skill discovery](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/subsystems/skills.md)

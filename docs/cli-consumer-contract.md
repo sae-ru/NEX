@@ -1,14 +1,13 @@
 ---
 status: current
-applies_to: "toolchain 0.281.0; language 0.30"
+applies_to: "toolchain 1.0.0; language 0.30"
 owner: repository
 ---
 
-# Proposed 1.0 CLI contract for a native project
+# SDK 1.x CLI contract for a native project
 
-`nex.cli-consumer/1` is a proposed contract for tools that create, check, test
-and run an ordinary 0.30 project. The 1.0 release and compatibility promise are
-pending. The profile names the fields an integration can read from each
+`nex.cli-consumer/1` is the SDK 1.x contract for tools that create, check, test
+and run an ordinary 0.30 project. The profile names the fields an integration can read from each
 successful invocation with `--json`. Its identifier belongs to this profile.
 Each command retains its own response format.
 

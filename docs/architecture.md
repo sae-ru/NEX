@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.165.0"
+applies_to: "language 0.28, language 0.29, language 0.30; toolchain 1.0.0"
 owner: repository
 ---
 
@@ -13,10 +13,11 @@ of an LLM. The selected compiler's `describe` output defines its capabilities;
 execution and matching SDK acceptance. [The specification](language.md) and
 [grammar](grammar.ebnf) define the language; [PLAN](../PLAN.md) includes unfinished work.
 
-Toolchain0.165.0, source language0.28, checked program format16, task ABI7 and
-C FFI ABI major1 are different versioned contracts. A toolchain update does not
-necessarily change the language. Graph upgrades use explicit history-preserving
-migration; editing a version field alone is not migration.
+SDK 1.0 creates projects in language 0.30. Its checked graph uses
+`nex.program/18`. The compiler also accepts 0.28 and 0.29 projects using their
+own graph formats. Task descriptors distinguish ABI7 and ABI8. C FFI has its own
+ABI major 1. To change an existing graph's source language, use the versioned
+migration command. [Version selection and migration](compatibility.md)
 
 ```mermaid
 flowchart TD
@@ -86,9 +87,10 @@ browser profiling remain limited; see [debugging](debugging.md) and
 [profiling](profiling.md). Successful code generation is not execution evidence.
 
 The [LLM contract](../llm/SYSTEM_PROMPT.md) starts with indexed discovery and bounded
-context. It records no measured token-saving claim. The existing
-[cost ledger](../experiments/quality/llm_cost.md) checks accounting; actual comparable
-multi-model experiments remain required by [the quality criteria](quality.md).
+context. When a source test fails, the compact diagnostic provides its comparison,
+a function excerpt and commands for inspecting callees. The measured repair
+tasks report cached and uncached input along with output tokens per accepted fix.
+[Measurements and scope](overview.en.md) · [Cost accounting](../experiments/quality/llm_cost.md)
 
 Source builds require C++20, CMake3.25+, LLVM/MLIR22.1.x, SQLite, OpenSSL3, Z3 and
 Python3.10+. Browser workflows additionally need the locked Node/npm cohort.

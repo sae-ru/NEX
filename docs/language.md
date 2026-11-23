@@ -1,6 +1,12 @@
-# NEX language specification 0.28
+# NEX language specification
 
-The development compiler supports logical debugging and pinned-workload
+SDK 1.0 creates projects declaring source language 0.30. The common grammar below
+describes the 0.28 baseline. Read the additions for 0.29 and 0.30 under the version
+declared in `nex.json`. An unversioned project uses 0.28. Existing graph revisions
+keep their language when opened with a newer SDK.
+[Grammar](grammar.ebnf) · [Source version selection](compatibility.md#physical-projects-and-libraries) · [0.30 references and migration](references030.md) · [1.x compatibility](compatibility.md)
+
+The compiler supports logical debugging and pinned-workload
 profiling of owner-thread tasks in standalone 0.30 HTTP servers. Each request
 retains its own heap and existing limits. These tools add no source syntax,
 graph format or runtime ABI. See [server debugging](server-debugging.md#owner-thread-http-tasks-in-030)

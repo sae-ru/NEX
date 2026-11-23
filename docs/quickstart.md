@@ -294,6 +294,19 @@ Lock не заменяет их исходники или способ полу�
 проверенного изменения зависимостей. Для нескольких entry-point выполняйте
 `nex lock FILE` для каждой нужной программы; старые pins сохраняются.
 
+До первого коммита добавьте в корневой `.gitattributes` правило для исходников NEX.
+
+```gitattributes
+*.nex -text
+```
+
+При клонировании Git сохранит точные байты файлов `.nex`, в том числе на
+Windows с `core.autocrlf=true`. Если Git заменит LF на CRLF в библиотеке,
+её хеш изменится и `nex check` вернёт `E_LOCK`. Команда
+`git ls-files --eol -- '*.nex'` показывает окончания строк в индексе и
+рабочей копии. Существующий lock-файл обновляйте после проверки изменения
+самой библиотеки.
+
 В новом `my-app` создайте `.gitignore`, например:
 
 ```gitignore
@@ -318,11 +331,13 @@ Lock не заменяет их исходники или способ полу�
 ```sh
 nex lock
 git init
-git add .gitignore nex.json nex.lock.json src
+git add .gitattributes .gitignore nex.json nex.lock.json src
 git diff --cached
 git commit -m "Create NEX application"
 ```
 
+В проекте с библиотекой под `vendor/` добавьте её исходники и лицензию командой
+`git add vendor` вместе с изменением `nex.lock.json`.
 Добавьте README, AGENTS.md, toolchain-version.json и документы языка, когда
 создадите их в следующем разделе. Настройте remote своего приложения обычным
 Git/GitHub способом. Коммит остаётся локальным, пока вы не отправили его в remote.

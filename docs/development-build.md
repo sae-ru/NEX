@@ -11,7 +11,8 @@ cmake --workflow --preset dev-core
 The file uses the [CMake3.25 preset/workflow format](https://cmake.org/cmake/help/v3.25/manual/cmake-presets.7.html).
 
 This configures `build/presets/dev-debug`, builds the existing compiler/core
-probes with four jobs and runs the eleven core groups sequentially. It performs
+probes with four jobs and runs the groups labelled `core` sequentially. SDK 1.0
+registers 17 core groups. Use `ctest --preset core -N` to list the local selection. It performs
 no npm installation or model invocation. Configure, build and test can also be
 selected independently:
 
@@ -77,7 +78,7 @@ The [SDK build driver](sdk-build.md) exports a committed source snapshot and
 joins source/full/installed checks with the existing macOS/Linux distributors.
 Its local controls are distinct from executing a new complete SDK pipeline.
 
-The [current qualification](evidence/development-presets-0.165.0-2026-11-11.json) covers actual CMake preset parsing, a fresh selected-
+The [0.165.0 preset qualification](evidence/development-presets-0.165.0-2026-11-11.json) covers actual CMake preset parsing, a fresh selected-
 dependency Debug configure and exact11-group core preset selection on macOS.
 The fresh profile has not been fully rebuilt or executed: the independent
 Qwen comparison keeps its original compiler immutable while it runs. The

@@ -2,7 +2,7 @@
 
 Use a compiler advertising `standard_library.modules.sequence`, `fifo`, `lifo`
 and `heap`. This project selects source0.30 for its task example; pure modules
-also work with source0.28/0.29. Published SDK0.246.1 predates these APIs.
+also work with source0.28/0.29. SDK 1.0 includes these libraries.
 
 From this directory:
 

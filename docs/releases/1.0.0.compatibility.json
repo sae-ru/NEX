@@ -1,0 +1,411 @@
+{
+  "schema": "nex.sdk-compatibility/1",
+  "ok": true,
+  "language": "0.30",
+  "beta_source_commit": "584715e45d05be53e5a8eb967edcd4d5ab7fc1b5",
+  "stable_source_commit": "b7cf6bc899c724b686a33d21b616d475da09342e",
+  "stable_qualification_sha256": "2db51d9b4072cd04dad29006a1e42eef5554eb2d89479f92962b6605d9d42754",
+  "targets": {
+    "linux-amd64": {
+      "beta_archive_sha256": "672e2c80cc4feedc89ca1743f256cf0867ea239e0fdd27b1fa2323a9a1f9d11b",
+      "stable_archive_sha256": "afc114287194e27a4796526e9d9fd84de2a270285a9ff994658033237e579951",
+      "beta_capture_sha256": "0fbbeafd598a4964562c8311f297af5381c447955010498e9f7c4a3cc98c6b70",
+      "stable_replay_sha256": "cf61fe2f1994c3e9210ad495f4a0a119988bb79a788d88b92770cb7322d8578a",
+      "projects": [
+        "hash-containers",
+        "modules",
+        "reference-tasks",
+        "references",
+        "sequence-containers",
+        "typed-errors"
+      ],
+      "dependency_locks": {
+        "hash-containers": "da95f5179198880028e31f7b7243c6d50bd309e588784560be8729f0d21fec99",
+        "sequence-containers": "12b9a5261975c9a6a4d0ed69cdae547e5b2a68b25ddc3973b251ca4755b7d3a4"
+      },
+      "retained_revisions": [
+        "e2d0c4940cf37debd4c205642cddae0a4d12997ad48488031a3dee6bf5e4d77f",
+        "7113bc051bcadcfd2ca40c9276ac3024d0fc731ccfed13e0bd80ca05a9fab6a2"
+      ],
+      "graph_database_sha256": "f849797ef95d7f3a87697c32924149b486c3748882ea1246a8132b8f6042ca84",
+      "execution": {
+        "runtime": {
+          "runtime_image": "sha256:2f7fffeb298dc31262e566d9176d307421e8fa1f67bc9b153650e610cb28b229",
+          "engine_arch": "amd64",
+          "emulated": false,
+          "host_distribution": "Fedora Linux 45 (Server Edition)"
+        },
+        "stage_reports": {
+          "capture": "0fbbeafd598a4964562c8311f297af5381c447955010498e9f7c4a3cc98c6b70",
+          "replay": "cf61fe2f1994c3e9210ad495f4a0a119988bb79a788d88b92770cb7322d8578a",
+          "compare": "d0bad47f7b09e823217c028e3fe614a4f9951c904aecf3bdaa55cc87c0f23837"
+        }
+      },
+      "archive_pair": {
+        "pair_sha256": "d0bad47f7b09e823217c028e3fe614a4f9951c904aecf3bdaa55cc87c0f23837",
+        "beta_archive_sha256": "672e2c80cc4feedc89ca1743f256cf0867ea239e0fdd27b1fa2323a9a1f9d11b",
+        "stable_archive_sha256": "afc114287194e27a4796526e9d9fd84de2a270285a9ff994658033237e579951",
+        "checks": [
+          "backend_agreement",
+          "candidate_migration_suite",
+          "consumer_cli",
+          "graph_snapshot",
+          "public_stdlib",
+          "published_examples",
+          "published_migration_suite"
+        ],
+        "backend_agreement": {
+          "baseline": {
+            "report_sha256": "a9dee66909f76d53f399b2482899f07dccb72ee64349900150dd48909e958856",
+            "coverage": {
+              "check": 13,
+              "reference": 11,
+              "native-debug": 11,
+              "native-release": 11,
+              "typescript": 11,
+              "typescript_executed": 11,
+              "typescript_strict": 11,
+              "executable_cases": 11
+            }
+          },
+          "candidate": {
+            "report_sha256": "f1649dd73f98385d81e448776855c6d929220444edbc3e6f6bc809f5ef3f0428",
+            "coverage": {
+              "check": 13,
+              "reference": 11,
+              "native-debug": 11,
+              "native-release": 11,
+              "typescript": 11,
+              "typescript_executed": 11,
+              "typescript_strict": 11,
+              "executable_cases": 11
+            }
+          }
+        },
+        "migration_reports": {
+          "published_migration_suite": "e8a2a5f69effe225751bd4cc3bd2e55ef5081a2b4b2315852ace6882e99869b7",
+          "candidate_migration_suite": "d49af178f50b864c77a634a3860500b0e20c712030c0243e00d9fedbe7aba156"
+        },
+        "published_lock_files": {
+          "hash-containers": "da95f5179198880028e31f7b7243c6d50bd309e588784560be8729f0d21fec99",
+          "insertion-ordered-map": "417a9a8059b2c2adbba34ad15684be7e58dcedc05dc69d6eb510df084eff2986",
+          "java-circular-fifo": "dacb88e43c2d132394f346917e6c02bbe60fad35ab3d8a08f69644d236e4016e",
+          "java-long": "b0061ea9aacd1621cba3c0352f264ac77428cff6831b4b5ea279e36c492c30bd",
+          "sequence-containers": "12b9a5261975c9a6a4d0ed69cdae547e5b2a68b25ddc3973b251ca4755b7d3a4"
+        },
+        "public_stdlib": {
+          "source_contract_1x": {
+            "policy": "exact-1.0.0",
+            "sha256": "1fa8d920c508427c21e63f224736789eba0e74f594a5becbeda37d5a471e39c0"
+          },
+          "api_sha256": "8c77f9a8e99ce851fa84b9714726bc02ebf95c96eb484cf7d1889b7e839c7824",
+          "modules": 21,
+          "functions": 217,
+          "types": 38
+        }
+      }
+    },
+    "linux-arm64": {
+      "beta_archive_sha256": "f715eaf13172566759f6787ab5d245f65186e7a8e9e467fafb48abf5e8c9c9c1",
+      "stable_archive_sha256": "43da389b24878a2d8e5391164fbc755e9f01a1300fe3f383fb2db095f9d4a264",
+      "beta_capture_sha256": "cc7cfbcdf20177016727f7b33bd2a00a0be31696d3fc9fcc656ee7379476d5b8",
+      "stable_replay_sha256": "500daf2bc937ee83a2ee1cd289f2e0bfe7536ca9061d3cff6f9d8bb8f9a8522c",
+      "projects": [
+        "hash-containers",
+        "modules",
+        "reference-tasks",
+        "references",
+        "sequence-containers",
+        "typed-errors"
+      ],
+      "dependency_locks": {
+        "hash-containers": "da95f5179198880028e31f7b7243c6d50bd309e588784560be8729f0d21fec99",
+        "sequence-containers": "12b9a5261975c9a6a4d0ed69cdae547e5b2a68b25ddc3973b251ca4755b7d3a4"
+      },
+      "retained_revisions": [
+        "e2d0c4940cf37debd4c205642cddae0a4d12997ad48488031a3dee6bf5e4d77f",
+        "7113bc051bcadcfd2ca40c9276ac3024d0fc731ccfed13e0bd80ca05a9fab6a2"
+      ],
+      "graph_database_sha256": "8b4e2b36e04f4d2503757a6f4b255128c529a36af2e59422daf593329d164d0b",
+      "execution": {
+        "runtime": {
+          "runtime_image": "sha256:4b05d000b1b75e26f06c402ac6648c608aee46a71829c6fb54f5bd182d5381c7",
+          "engine_arch": "arm64",
+          "emulated": false
+        },
+        "stage_reports": {
+          "capture": "cc7cfbcdf20177016727f7b33bd2a00a0be31696d3fc9fcc656ee7379476d5b8",
+          "replay": "500daf2bc937ee83a2ee1cd289f2e0bfe7536ca9061d3cff6f9d8bb8f9a8522c",
+          "compare": "77aae1154938b84c286be048a3a9b7bf3698187010b418d7b7cbcf363ae4f710"
+        }
+      },
+      "archive_pair": {
+        "pair_sha256": "77aae1154938b84c286be048a3a9b7bf3698187010b418d7b7cbcf363ae4f710",
+        "beta_archive_sha256": "f715eaf13172566759f6787ab5d245f65186e7a8e9e467fafb48abf5e8c9c9c1",
+        "stable_archive_sha256": "43da389b24878a2d8e5391164fbc755e9f01a1300fe3f383fb2db095f9d4a264",
+        "checks": [
+          "backend_agreement",
+          "candidate_migration_suite",
+          "consumer_cli",
+          "graph_snapshot",
+          "public_stdlib",
+          "published_examples",
+          "published_migration_suite"
+        ],
+        "backend_agreement": {
+          "baseline": {
+            "report_sha256": "d4a2003aace92a4e24f639a3b9b09146765792b61e5e4f09efe1d3314ec0d7c1",
+            "coverage": {
+              "check": 13,
+              "reference": 11,
+              "native-debug": 11,
+              "native-release": 11,
+              "typescript": 11,
+              "typescript_executed": 11,
+              "typescript_strict": 11,
+              "executable_cases": 11
+            }
+          },
+          "candidate": {
+            "report_sha256": "8697bde1054e512c457a176f4ccda67655b4c483a58aaec6b1932ecbc1c154e9",
+            "coverage": {
+              "check": 13,
+              "reference": 11,
+              "native-debug": 11,
+              "native-release": 11,
+              "typescript": 11,
+              "typescript_executed": 11,
+              "typescript_strict": 11,
+              "executable_cases": 11
+            }
+          }
+        },
+        "migration_reports": {
+          "published_migration_suite": "197f70171cc656b26a6200e88ecc6c71725a511653849fef7dbd162b5e3f255e",
+          "candidate_migration_suite": "8604f9582fae4e2b5fcf9b96dc6118a02d385a9a1da83b8a7c34fa315cc317ab"
+        },
+        "published_lock_files": {
+          "hash-containers": "da95f5179198880028e31f7b7243c6d50bd309e588784560be8729f0d21fec99",
+          "insertion-ordered-map": "417a9a8059b2c2adbba34ad15684be7e58dcedc05dc69d6eb510df084eff2986",
+          "java-circular-fifo": "dacb88e43c2d132394f346917e6c02bbe60fad35ab3d8a08f69644d236e4016e",
+          "java-long": "b0061ea9aacd1621cba3c0352f264ac77428cff6831b4b5ea279e36c492c30bd",
+          "sequence-containers": "12b9a5261975c9a6a4d0ed69cdae547e5b2a68b25ddc3973b251ca4755b7d3a4"
+        },
+        "public_stdlib": {
+          "source_contract_1x": {
+            "policy": "exact-1.0.0",
+            "sha256": "1fa8d920c508427c21e63f224736789eba0e74f594a5becbeda37d5a471e39c0"
+          },
+          "api_sha256": "8c77f9a8e99ce851fa84b9714726bc02ebf95c96eb484cf7d1889b7e839c7824",
+          "modules": 21,
+          "functions": 217,
+          "types": 38
+        }
+      }
+    },
+    "macos-arm64": {
+      "beta_archive_sha256": "2d42e7ba1f31f76aa02ccf41964d5d5ecdda67ce90ee015230a72700127628cc",
+      "stable_archive_sha256": "4268f0f5d6e9ececf907440c9e5a6bf2e8892dcab5d062234f7129f8da29defc",
+      "beta_capture_sha256": "6836d7a84be283551e47837a23abc554ff3faf3357e943151596ae4f2771c523",
+      "stable_replay_sha256": "59a8b95f9b1ab9b211c42d6bdd2614a5bd4af8e50915e6cec69037beec0860ff",
+      "projects": [
+        "hash-containers",
+        "modules",
+        "reference-tasks",
+        "references",
+        "sequence-containers",
+        "typed-errors"
+      ],
+      "dependency_locks": {
+        "hash-containers": "da95f5179198880028e31f7b7243c6d50bd309e588784560be8729f0d21fec99",
+        "sequence-containers": "12b9a5261975c9a6a4d0ed69cdae547e5b2a68b25ddc3973b251ca4755b7d3a4"
+      },
+      "retained_revisions": [
+        "e2d0c4940cf37debd4c205642cddae0a4d12997ad48488031a3dee6bf5e4d77f",
+        "7113bc051bcadcfd2ca40c9276ac3024d0fc731ccfed13e0bd80ca05a9fab6a2"
+      ],
+      "graph_database_sha256": "148ae1d3164bb1b59eaf0965b35c8fb2f6ece59d0883980a2e9deccd1829363d",
+      "execution": {
+        "runtime": {
+          "system": "Darwin",
+          "machine": "arm64",
+          "sdkroot": "MacOSX.sdk",
+          "node_sha256": "5d9d3872911e2340a43b707962e68143de8a4e8d54628845c0c4f2de1fb7cd5c"
+        },
+        "stage_reports": {
+          "capture": "6836d7a84be283551e47837a23abc554ff3faf3357e943151596ae4f2771c523",
+          "replay": "59a8b95f9b1ab9b211c42d6bdd2614a5bd4af8e50915e6cec69037beec0860ff",
+          "compare": "231d53569810c3ba3f8a58f3b159ef38b5d085e1d3824b03cf1f21dcef1633a5"
+        }
+      },
+      "archive_pair": {
+        "pair_sha256": "231d53569810c3ba3f8a58f3b159ef38b5d085e1d3824b03cf1f21dcef1633a5",
+        "beta_archive_sha256": "2d42e7ba1f31f76aa02ccf41964d5d5ecdda67ce90ee015230a72700127628cc",
+        "stable_archive_sha256": "4268f0f5d6e9ececf907440c9e5a6bf2e8892dcab5d062234f7129f8da29defc",
+        "checks": [
+          "backend_agreement",
+          "candidate_migration_suite",
+          "consumer_cli",
+          "graph_snapshot",
+          "public_stdlib",
+          "published_examples",
+          "published_migration_suite"
+        ],
+        "backend_agreement": {
+          "baseline": {
+            "report_sha256": "4fc92f5acacce3151e490fdec1377dbb6bcae16a606af0d2ec1d016093193e80",
+            "coverage": {
+              "check": 13,
+              "reference": 11,
+              "native-debug": 11,
+              "native-release": 11,
+              "typescript": 11,
+              "typescript_executed": 11,
+              "typescript_strict": 11,
+              "executable_cases": 11
+            }
+          },
+          "candidate": {
+            "report_sha256": "5cd5cf6cce83106df5119137e1fe76d11a4af85f555458f0de099e85fdbd640a",
+            "coverage": {
+              "check": 13,
+              "reference": 11,
+              "native-debug": 11,
+              "native-release": 11,
+              "typescript": 11,
+              "typescript_executed": 11,
+              "typescript_strict": 11,
+              "executable_cases": 11
+            }
+          }
+        },
+        "migration_reports": {
+          "published_migration_suite": "0cd31e3db5abbeb4defbeb48c3b8c16e73bd95e69ce600e386da85a04639f8b9",
+          "candidate_migration_suite": "9767d966b9719109cf881eca85fae159ae40f27f883dc635ba0a645c2efb8be7"
+        },
+        "published_lock_files": {
+          "hash-containers": "da95f5179198880028e31f7b7243c6d50bd309e588784560be8729f0d21fec99",
+          "insertion-ordered-map": "417a9a8059b2c2adbba34ad15684be7e58dcedc05dc69d6eb510df084eff2986",
+          "java-circular-fifo": "dacb88e43c2d132394f346917e6c02bbe60fad35ab3d8a08f69644d236e4016e",
+          "java-long": "b0061ea9aacd1621cba3c0352f264ac77428cff6831b4b5ea279e36c492c30bd",
+          "sequence-containers": "12b9a5261975c9a6a4d0ed69cdae547e5b2a68b25ddc3973b251ca4755b7d3a4"
+        },
+        "public_stdlib": {
+          "source_contract_1x": {
+            "policy": "exact-1.0.0",
+            "sha256": "1fa8d920c508427c21e63f224736789eba0e74f594a5becbeda37d5a471e39c0"
+          },
+          "api_sha256": "8c77f9a8e99ce851fa84b9714726bc02ebf95c96eb484cf7d1889b7e839c7824",
+          "modules": 21,
+          "functions": 217,
+          "types": 38
+        }
+      }
+    },
+    "windows-x86_64": {
+      "beta_archive_sha256": "55bb2577c9405983c0b460b11b4f92d10a94b25e407f3ef528d84ac35187d907",
+      "stable_archive_sha256": "9f76f283f40c9ce0be074b563e5d8ed7e0ac6114a7858094b2a0a1522bdb27b7",
+      "beta_capture_sha256": "07dea26ca2cf8fdd860f4bfb77f8f4127770cf943d016be90b26121e6dc31b49",
+      "stable_replay_sha256": "29b478b11b7e0562711b9a1ee5f5e8add0c880fd8957bebb31ac291c4823166a",
+      "projects": [
+        "hash-containers",
+        "modules",
+        "reference-tasks",
+        "references",
+        "sequence-containers",
+        "typed-errors"
+      ],
+      "dependency_locks": {
+        "hash-containers": "da95f5179198880028e31f7b7243c6d50bd309e588784560be8729f0d21fec99",
+        "sequence-containers": "12b9a5261975c9a6a4d0ed69cdae547e5b2a68b25ddc3973b251ca4755b7d3a4"
+      },
+      "retained_revisions": [
+        "e2d0c4940cf37debd4c205642cddae0a4d12997ad48488031a3dee6bf5e4d77f",
+        "7113bc051bcadcfd2ca40c9276ac3024d0fc731ccfed13e0bd80ca05a9fab6a2"
+      ],
+      "graph_database_sha256": "2cdde12b2da4cc8312c8bc7ae90c8209ac6deb4fd9377c78c14288e1295e39ef",
+      "execution": {
+        "runtime": {
+          "system": "Windows",
+          "machine": "amd64",
+          "python": {
+            "bytes": 106328,
+            "sha256": "cce21c0e8710e304273e98ac4b2b0f5aceb639acbcd2343cbaa5c4e81619c45b"
+          },
+          "node": {
+            "bytes": 91380224,
+            "sha256": "63c259c81e5d472b5f11c8d506070130cb04a1ecf84b80377a34ed6ec9048088"
+          }
+        },
+        "stage_reports": {
+          "capture": "07dea26ca2cf8fdd860f4bfb77f8f4127770cf943d016be90b26121e6dc31b49",
+          "replay": "29b478b11b7e0562711b9a1ee5f5e8add0c880fd8957bebb31ac291c4823166a",
+          "compare": "eee890a61fd45aeb5f32b28faed20b078ee15b8dfd2bee835b9e80a87284b81a"
+        }
+      },
+      "archive_pair": {
+        "pair_sha256": "eee890a61fd45aeb5f32b28faed20b078ee15b8dfd2bee835b9e80a87284b81a",
+        "beta_archive_sha256": "55bb2577c9405983c0b460b11b4f92d10a94b25e407f3ef528d84ac35187d907",
+        "stable_archive_sha256": "9f76f283f40c9ce0be074b563e5d8ed7e0ac6114a7858094b2a0a1522bdb27b7",
+        "checks": [
+          "backend_agreement",
+          "candidate_migration_suite",
+          "consumer_cli",
+          "graph_snapshot",
+          "public_stdlib",
+          "published_examples",
+          "published_migration_suite"
+        ],
+        "backend_agreement": {
+          "baseline": {
+            "report_sha256": "4c5322a38250ce853ba04baab732fe838a6d07f971169958a95adcec6dc12b09",
+            "coverage": {
+              "check": 13,
+              "reference": 11,
+              "native-debug": 11,
+              "native-release": 11,
+              "typescript": 11,
+              "typescript_executed": 11,
+              "typescript_strict": 11,
+              "executable_cases": 11
+            }
+          },
+          "candidate": {
+            "report_sha256": "0f1d1ff36f452ebdbcc52573c76ba99f4dd173b407fa62cc1b1432798c20f098",
+            "coverage": {
+              "check": 13,
+              "reference": 11,
+              "native-debug": 11,
+              "native-release": 11,
+              "typescript": 11,
+              "typescript_executed": 11,
+              "typescript_strict": 11,
+              "executable_cases": 11
+            }
+          }
+        },
+        "migration_reports": {
+          "published_migration_suite": "339284c3e49e5d694e32b8aa3ad25db013296a09c200816c9420c129127218a9",
+          "candidate_migration_suite": "9c68d73293fd35a497c944af89c52e4c008a9fc75c890cdb1184f5cb88270605"
+        },
+        "published_lock_files": {
+          "hash-containers": "da95f5179198880028e31f7b7243c6d50bd309e588784560be8729f0d21fec99",
+          "insertion-ordered-map": "417a9a8059b2c2adbba34ad15684be7e58dcedc05dc69d6eb510df084eff2986",
+          "java-circular-fifo": "dacb88e43c2d132394f346917e6c02bbe60fad35ab3d8a08f69644d236e4016e",
+          "java-long": "b0061ea9aacd1621cba3c0352f264ac77428cff6831b4b5ea279e36c492c30bd",
+          "sequence-containers": "12b9a5261975c9a6a4d0ed69cdae547e5b2a68b25ddc3973b251ca4755b7d3a4"
+        },
+        "public_stdlib": {
+          "source_contract_1x": {
+            "policy": "exact-1.0.0",
+            "sha256": "1fa8d920c508427c21e63f224736789eba0e74f594a5becbeda37d5a471e39c0"
+          },
+          "api_sha256": "8c77f9a8e99ce851fa84b9714726bc02ebf95c96eb484cf7d1889b7e839c7824",
+          "modules": 21,
+          "functions": 217,
+          "types": 38
+        }
+      }
+    }
+  }
+}

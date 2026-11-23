@@ -58,34 +58,27 @@ platform acceptance.
 
 ## Development status
 
-Current source builds the **toolchain 1.0.0 / language 0.28 / task ABIs 7/8** release candidate.
-The proposed 1.x compatibility terms take effect when the qualified 1.0 release is published.
-The compiler fallback remains0.28. Projects explicitly select0.28,0.29 or0.30;
-new `nex init` projects select0.30. Existing graphs need an explicit migration.
+**SDK 1.0.0** creates projects in language **0.30**. Download the archive for
+macOS ARM64, Windows x64, Linux x86-64 or Linux ARM64. The compiler reports
+**toolchain 1.0.0 / language 0.28 / task ABIs 7/8**. Here 0.28 is the fallback
+for projects without a language selection. Projects can select 0.28, 0.29 or
+0.30 in `nex.json`. Changing the language of a stored graph requires an explicit
+migration. [Download the SDK](https://github.com/sae-ru/NEX/releases/tag/v1.0.0) · [Installation guide](docs/getting-started.en.md)
 
-The [macOS ARM64 SDK0.280.1](docs/releases/0.280.1.json) is published from
-`bfb34928`, qualified at main `b02514eb`. [Source coverage](docs/evidence/sdk-current-0.280.1-2026-11-17.json)
-combines387 groups from the full run with all16 tests in the corrected snapshot
-group, on the same compiler/resources. Its only correction follows the compact
-prompt to the detailed rules; the original failed receipt is attached.
-This covers388 groups and is explicitly not one passing full invocation.
-Moved and archive-restored installations each passed **43 phases**, including
-locked production browser builds, full networking and live LLDB/DAP debugging.
-[Download](https://github.com/sae-ru/NEX/releases/tag/v0.280.1) ·
-[Install](docs/getting-started.en.md#install-the-macos-arm64-sdk).
-[Core CI](docs/evidence/core-ci-0.280.1-2026-11-17.json) passed17 groups each on
-macOS/Linux at the qualification main. The [full Linux attempt](docs/evidence/linux-full-profile-timeout-0.280.1-2026-11-17.json)
-passed380/381 groups; profiling hit its aggregate timeout, before installed
-checks. [SDK0.246.1](docs/releases/0.246.1.json) retains its original bytes.
+The 1.x compatibility contract covers documented 0.30 source behavior, public
+standard-library declarations, specified CLI fields and project history. On each
+supported host, SDK 1.0.0 was tested with projects from the published 0.281.0
+beta. The comparison records the archive hashes and results for each host.
+[Compatibility contract](docs/compatibility.md#compatibility-target-for-10) · [Results by host](https://github.com/sae-ru/NEX/releases/download/v1.0.0/compatibility.json)
 
-Source030 supports typed cells, [structured reference tasks](docs/reference-tasks.md),
+Language 0.30 supports typed cells, [structured reference tasks](docs/reference-tasks.md),
 [persistent UI](docs/persistent-ui.md), native libraries and
 [persistent C++ host sessions](docs/native-task-sessions.md).
 [Native debugging](docs/reference-provider-debugging.md) and
 [profiling](docs/reference-task-profiling.md) cover source-backed provider images.
 Standalone HTTP owner-thread tasks support [LLDB/DAP](docs/server-debugging.md#owner-thread-http-tasks-in-030)
 and pinned-workload profiling. The [compatibility guide](docs/compatibility.md)
-defines the source and project contracts planned for 1.0.
+defines the source and project contracts for SDK 1.x.
 [Workboard](examples/workboard/README.md) joins a browser UI, HTTP/tasks, SQLite,
 file export/restore and a summary Worker; it is a required SDK consumption phase.
 Ordinary libraries include [hash containers](docs/hash-containers.md),
@@ -93,22 +86,21 @@ Ordinary libraries include [hash containers](docs/hash-containers.md),
 [Java int](docs/java-integers.md)/[long](docs/java-long.md) have explicit domains;
 the [IEEE kernel](docs/ieee-numeric.md) still has no source types.
 
-The [bounded LLM entry](docs/llm-entry-v2.md) has a4058-byte common contract and
-preserves the full detailed rules. Its [observed Qwen study](docs/llm-cost-qwen38-27b-2026-11-17.en.md)
-retains all60 outcomes, unknown usage and explicit execution amendments.
+Run `nex guide --kind prompt` to read the coding instructions shipped with
+SDK 1.0.0 (1,833 UTF-8 bytes). The Qwen study used an earlier version of the
+instructions. Its report includes all 60 outcomes and identifies missing usage
+data. [Coding instructions](llm/SYSTEM_PROMPT.md) · [Qwen study](docs/llm-cost-qwen38-27b-2026-11-17.en.md)
 [Reference-context preparation](docs/llm-entry-v3.md) supplies public
 source-task/byte guides and normative reviewer context. A subsequent
 [three-slot pilot](docs/evidence/llm-response-envelope-v4-0.280.1-2026-11-17.json)
 checked response framing and completed all three attempts.
 
-| Platform | Recorded evidence | Remaining qualification |
+| Platform | Recorded checks | Scope |
 |---|---|---|
-| macOS ARM64 | [SDK0.280.1,43 phases per installation](docs/releases/0.280.1.json); [same-compiler Metal15 pairs/32 kernels](docs/evidence/sdk-current-0.280.1-2026-11-17.json) | signing/notarization, extended interactive web/mobile matrices |
-| Astra Linux1.7 x86-64 | [0.280.1 build, core17/17, native app](docs/evidence/stands-current-0.280.1-2026-11-17.json) | extended/browser groups, portable SDK |
-| Fedora45 x86-64 | [0.280.1 Clang23 build, core17/17, native app](docs/evidence/stands-current-0.280.1-2026-11-17.json) | extended/browser groups, portable SDK |
-| Windows11 x86-64 | [0.280.1 core17 unique groups, native app, CUDA35/35](docs/evidence/stands-current-0.280.1-2026-11-17.json) | extended/browser groups, portable SDK; IPv6 intentionally restricted |
-| CIX ARM64 | [0.280.1 core17/17,12 Mali GPU/8 Zhouyi NPU](docs/evidence/stands-current-0.280.1-2026-11-17.json) | extended regression, portable SDK |
-| RK3588 ARM64 | [0.280.1 Ubuntu24 ARM64-container core17/17,49 GPU/30 NPU](docs/evidence/stands-current-0.280.1-2026-11-17.json) | native Jammy qualification, portable SDK |
+| macOS ARM64 | Relocated and archive-restored SDK, Metal kernels | Apple Silicon |
+| Windows x64 | Relocated and archive-restored SDK, CUDA kernels | Device and driver requirements apply to CUDA |
+| Linux x86-64 | Relocated and archive-restored SDK, native build of an application on Fedora | Native builds require compatible host libraries |
+| Linux ARM64 | Relocated and archive-restored SDK, GPU and NPU on CIX P1 and RK3588 | Devices, operations and userspace versions are listed in the [release record](https://github.com/sae-ru/NEX/releases/download/v1.0.0/qualification.json) |
 | iOS Simulator | [Debug/Release, launch and actual UI input](docs/evidence/mobile-ios-release-0.244.0-2026-11-13.json) | device signing/store delivery |
 | Android emulator | [signed release APK, launch and add interaction](docs/evidence/mobile-android-release-signed-0.244.0-2026-11-13.json) | Play Store delivery |
 | macOS desktop app | [standalone embedded app, live input](docs/evidence/desktop-macos-interaction-0.244.0-2026-11-13.json) | Developer ID/notarization |
@@ -121,8 +113,7 @@ retain these requirements. CUDA/OpenCL emission covers its advertised subsets.
 
 [STATUS.md](STATUS.md), [CI scope](docs/ci.md) and [versioned evidence](docs/evidence/)
 retain exact source/compiler/archive identities, original failures and each
-result's scope. The SDK uses ad-hoc signatures and requires macOS27 ARM64,
-Apple SDK, Python and Node/npm for web builds.
+result's scope. The macOS ARM64 SDK uses ad-hoc signatures and requires macOS 27, an Apple SDK and Python. Web builds also require Node.js and npm.
 
 ## Build and use
 
@@ -147,9 +138,9 @@ scale groups.
 Shared [development presets](docs/development-build.md) also provide
 `cmake --workflow --preset dev-core` with separate Debug/Release build directories.
 See [CI receipts and workflow scope](docs/ci.md) for the automated checks.
-The [source-to-archive SDK driver](docs/sdk-build.md) joins the maintained
-macOS/Linux workflows; [0.246.1 completed the full macOS sequence](docs/evidence/sdk-current-0.246.1-2026-11-15.json).
-Portable Linux/Windows SDK qualification remains separate.
+To reproduce a package build, follow the [SDK build guide](docs/sdk-build.md).
+The published release includes the acceptance results for each portable archive.
+[SDK 1.0.0 qualification results](https://github.com/sae-ru/NEX/releases/download/v1.0.0/qualification.json)
 
 Use the complete workflow below at the agreed milestone:
 

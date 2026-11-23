@@ -35,8 +35,8 @@ advertised project source languages and toolchain by the same script.
 | [Map and set containers](containers.md) | toolchain 0.247.0; language 0.28 and 0.29 | repository |
 | [Native reference libraries: one enclosing context](reference-library-abi.md) | toolchain 0.265.0; language 0.30 | repository |
 | [Native reference task debugging](reference-task-debugging.md) | toolchain 0.279.0; language 0.30; task ABI8 | repository |
-| [NEX 0.30 на Windows x64 в Codex](windows-handoff-current.md) | language 0.30 | repository |
-| [NEX architecture](architecture.md) | language 0.28; toolchain 0.165.0 | repository |
+| [NEX 0.30 на Windows x64 в Codex](windows-handoff-current.md) | toolchain 1.0.0; language 0.30 | repository |
+| [NEX architecture](architecture.md) | language 0.28, language 0.29, language 0.30; toolchain 1.0.0 | repository |
 | [Ordinary030 tasks in HTTP requests — development0.271.0](reference-http.md) | toolchain 0.271.0; language 0.30 | repository |
 | [Owned resources in private reference graphs](managed-reference-owned-payloads.md) | toolchain 0.260.0; private 0.30-refs-prototype candidate | repository |
 | [Persistent hash map and set](hash-containers.md) | toolchain 0.273.0; language 0.28; language 0.29; language 0.30 | repository |
@@ -51,18 +51,18 @@ advertised project source languages and toolchain by the same script.
 | [Private TypeScript managed heap](managed-reference-typescript-heap.md) | toolchain 0.253.0; no public source-language extension | repository |
 | [Private TypeScript reference execution](managed-reference-typescript-prototype.md) | toolchain 0.260.0; private 0.30-refs-prototype candidate | repository |
 | [Profiling reference tasks and native libraries](reference-task-profiling.md) | toolchain 0.279.0; language 0.30; task ABI8 | repository |
-| [Proposed 1.0 CLI contract for a native project](cli-consumer-contract.md) | toolchain 0.281.0; language 0.30 | repository |
-| [Proposed 1.0 standard-library source contract](stdlib-source-compatibility.md) | toolchain 1.0.0; language 0.30 | repository |
 | [Public reference context for LLM authors and reviewers](llm-entry-v3.md) | language 0.30; toolchain 0.280.1 | repository |
+| [Reference graphs in language 0.30](references030.md) | toolchain 0.272.0; language 0.30 | repository |
 | [Reference tasks across debug library images](reference-provider-debugging.md) | toolchain 0.279.0; language 0.30; task ABI8 | repository |
 | [Repeated native runtime benchmark](bench.md) | toolchain 0.175; language 0.28 | repository |
+| [SDK 1.x CLI contract for a native project](cli-consumer-contract.md) | toolchain 1.0.0; language 0.30 | repository |
+| [SDK 1.x standard-library source contract](stdlib-source-compatibility.md) | toolchain 1.0.0; language 0.30 | repository |
 | [Sequential immutable byte construction](bytes-construction.md) | toolchain 0.172; language 0.28 | repository |
 | [Sequential immutable list construction](list-construction.md) | toolchain 0.170; language 0.28 | repository |
 | [Sequential immutable text construction](text-construction.md) | toolchain 0.171; language 0.28 | repository |
 | [Three-backend agreement corpus](agreement.md) | toolchain 0.281.0; language 0.28, 0.29, 0.30 | repository |
-| [Versioned reference graphs: source0.30 development](references030.md) | toolchain 0.272.0; language 0.30 | repository |
-| [Предлагаемые условия совместимости NEX 1.x](compatibility.ru.md) | toolchain 1.0.0; language 0.30 | repository |
-| [Промпт для продолжения NEX в Codex на Windows](WINDOWS-CODEX-PROMPT.md) | language 0.30 | repository |
+| [Промпт для продолжения NEX в Codex на Windows](WINDOWS-CODEX-PROMPT.md) | toolchain 1.0.0; language 0.30 | repository |
+| [Условия совместимости NEX 1.x](compatibility.ru.md) | toolchain 1.0.0; language 0.30 | repository |
 
 ## Deferred (1)
 
@@ -158,7 +158,7 @@ advertised project source languages and toolchain by the same script.
 | [Native compilation and toolchains](incremental.md) | — | — |
 | [Native core reports and capsules](core-debugging.md) | — | — |
 | [Native Debian ARM64 compiler dependencies](linux-native-compiler.md) | — | — |
-| [Native debugging — NEX language 0.28](debugging.md) | — | — |
+| [Native debugging](debugging.md) | — | — |
 | [Native desktop host](desktop.md) | — | — |
 | [Native failure diagnostics](native-diagnostics.md) | — | — |
 | [Native iOS Simulator execution, SDK 0.159](evidence/0.159.0-ios-native/README.md) | — | — |
@@ -171,7 +171,8 @@ advertised project source languages and toolchain by the same script.
 | [NEX expressions in stopped frames — language 0.16](expressions.md) | — | — |
 | [NEX language development history](language-history.md) | — | — |
 | [NEX language server: development toolchain 0.208](lsp.md) | — | — |
-| [NEX language specification 0.28](language.md) | — | — |
+| [NEX language specification](language.md) | — | — |
+| [NEX SDK distribution](sdk.md) | — | — |
 | [NEX source errors (language0.27)](exceptions.md) | — | — |
 | [NEX для разработки с LLM. Оценка и план работ](product-review-0.281.0.ru.md) | — | — |
 | [NPU status](npu.md) | — | — |
@@ -210,7 +211,6 @@ advertised project source languages and toolchain by the same script.
 | [Public025 provider integration candidate](project-build.md) | — | — |
 | [Public025 provider integration candidate](task-provider-debugging.md) | — | — |
 | [Public025 provider integration candidate](task-provider-profiling.md) | — | — |
-| [Qualified SDK: 0.280.1 / language 0.28 / task ABIs 7/8](sdk.md) | — | — |
 | [Repeatable development configuration](development-build.md) | — | — |
 | [Scalar WebAssembly design history](wasm-design.md) | — | — |
 | [Scoped compiler discovery](discovery.md) | — | — |

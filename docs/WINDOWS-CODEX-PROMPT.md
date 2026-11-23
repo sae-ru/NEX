@@ -1,17 +1,17 @@
 ---
 status: current
-applies_to: "language 0.30"
+applies_to: "toolchain 1.0.0; language 0.30"
 owner: repository
 ---
 
 # Промпт для продолжения NEX в Codex на Windows
 
-Откройте каталог проекта на Windows и скопируйте текст из блока в новый чат Codex. Понадобится путь к распакованному SDK. [Установка](getting-started.ru.md) · [Команды PowerShell для проверки SDK и CUDA](windows-handoff-current.md)
+Откройте каталог проекта на Windows и скопируйте текст из блока в новый чат Codex. Для работы с выпуском v1.0.0 укажите путь к распакованному Windows SDK. [Установка](getting-started.ru.md) · [Команды PowerShell для проверки SDK и CUDA](windows-handoff-current.md)
 
 ```text
-Продолжи работу над NEX (Neural Execution Language) на этой Windows x64. Цель языка — сократить время и число токенов на принятое изменение, сохранив корректность и скорость готовой программы. Работай с языком 0.30.
+Продолжи работу над NEX (Neural Execution Language) на этой Windows x64. Цель языка — сократить время и число токенов на принятое изменение, сохранив корректность и скорость готовой программы. Работай с SDK 1.0.0 и языком 0.30.
 
-1. Прочитай AGENTS.md и llm/SYSTEM_PROMPT.md. Посмотри git status -sb и git log -1. Найди bin/nex.exe выбранного SDK. Проверь его абсолютный путь, SHA256, doctor --json и describe --field project_languages --json. Если на машине несколько SDK, для всех команд используй один и тот же полный путь. Текущий статус релиза и проверенные платформы смотри в Assets выбранного тега на GitHub.
+1. Прочитай AGENTS.md и llm/SYSTEM_PROMPT.md. Посмотри git status -sb и git log -1. Найди bin/nex.exe выбранного SDK. Проверь его абсолютный путь, SHA256, doctor --json и describe --field project_languages --json. Если на машине несколько SDK, для всех команд используй один и тот же полный путь. В Assets тега v1.0.0 сверь SHA256 архива Windows с qualification.json. Результаты проверки проектов из беты 0.281.0 находятся в compatibility.json.
 
 2. Найди задачу в проекте и её тест. Проверь language и entry в nex.json. Для конкретной возможности используй nex describe --field PATH --json. Для функции используй nex context ENTRY --kind brief --symbol MODULE::NAME --json. При исправлении начни с упавшего теста и его диагностики. После правки выполни nex test ENTRY --symbol MODULE::TEST --json, затем затронутую группу. Для изменений языка сначала сверь docs/language.md и docs/grammar.ebnf.
 

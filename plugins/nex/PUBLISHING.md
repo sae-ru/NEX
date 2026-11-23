@@ -1,6 +1,6 @@
 # Publish NEX Developer Tools
 
-Package version: **0.1.0**. Package type: **skills only, local executor required**.
+Package version: **0.1.2**. Package type: **skills only, local executor required**.
 GitHub distribution and public-directory approval are separate. No directory
 submission or approval is implied by the files in this repository.
 
@@ -9,6 +9,8 @@ submission or approval is implied by the files in this repository.
 1. Run `python3 tools/package_codex_plugin.py --output /absolute/path/to/artifacts`
    from the repository root. Keep the ZIP, `.sha256` and `.inventory.json`
    together. Rebuilding unchanged inputs produces the same ZIP bytes.
+   Run `python3 -B tools/package_codex_plugin.py --check` from the checkout root
+   to verify that its versioned ZIP, inventory and checksum match the plugin source.
 2. Install the skill or plugin in a disposable application environment with a
    separately installed NEX SDK. Check capability/guide discovery, the bundled
    `hello.nex` example and a rejected candidate. Record the actual SDK and host.

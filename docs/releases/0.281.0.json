@@ -1,0 +1,995 @@
+{
+  "schema": "nex.multi-platform-release/1",
+  "ok": true,
+  "tag": "v0.281.0",
+  "version": "0.281.0",
+  "source_commit": "584715e45d05be53e5a8eb967edcd4d5ab7fc1b5",
+  "qualification_main_commit": "eaf235de004072eccd268990be2492408b0d049c",
+  "new_project_language": "0.30",
+  "explicit_project_languages": [
+    "0.28",
+    "0.29",
+    "0.30"
+  ],
+  "targets": {
+    "macos-arm64": {
+      "target": "macos-arm64",
+      "compiler_host": "arm64-apple-darwin27.2.0",
+      "source_commit": "584715e45d05be53e5a8eb967edcd4d5ab7fc1b5",
+      "archive": {
+        "name": "nex-sdk-0.281.0-macos-arm64-development.tar.gz",
+        "sha256": "2d42e7ba1f31f76aa02ccf41964d5d5ecdda67ce90ee015230a72700127628cc",
+        "bytes": 126988725,
+        "files": 4460
+      },
+      "compiler_sha256": "c23435c26d10575fc9341fd3e7a939c7ae84dfa3926bd86f589b6df5d9dfeb37",
+      "host_requirements": {
+        "external_prerequisites": [
+          "Apple command line tools/SDK and system C++ runtime/linker",
+          "Python 3.10+",
+          "Node.js/npm for browser builds",
+          "host LLDB/lldb-dap for live debugging"
+        ],
+        "system_libraries": [
+          "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+          "/System/Library/Frameworks/CoreServices.framework/Versions/A/CoreServices",
+          "/usr/lib/libSystem.B.dylib",
+          "/usr/lib/libc++.1.dylib",
+          "/usr/lib/libc++abi.dylib",
+          "/usr/lib/libedit.3.dylib",
+          "/usr/lib/libffi.dylib",
+          "/usr/lib/libobjc.A.dylib",
+          "/usr/lib/libxml2.2.dylib",
+          "/usr/lib/libz.1.dylib"
+        ],
+        "minimum_macos": "27.0"
+      },
+      "source_group_count": 390,
+      "verified_feature_groups": {
+        "language_and_backends": [
+          "backend_agreement",
+          "references030_versioned",
+          "references030_cli",
+          "source_exceptions_public"
+        ],
+        "tasks_and_resources": [
+          "reference_tasks_cli",
+          "reference_tasks_boundaries",
+          "reference_http_context",
+          "task_provider_profile_native",
+          "task_provider_debugging_native",
+          "public_task_resource_source"
+        ],
+        "history_and_migration": [
+          "project_versions",
+          "graph_snapshots",
+          "typed_error_history_migration"
+        ],
+        "standard_library": [
+          "hash_containers",
+          "sequence_containers",
+          "insertion_ordered_map"
+        ],
+        "applications_and_delivery": [
+          "workboard_application",
+          "java_circular_fifo",
+          "project_foreign_packaging"
+        ],
+        "llm_tools": [
+          "llm_cost_cli",
+          "llm_campaign"
+        ]
+      },
+      "source_ctest_sha256": "a7eda2706d8464eefb8f6cdfc0019d62b3af318c2b6843e75ca8ef7b0af1eb90",
+      "moved_acceptance_sha256": "d5c94c877c97def260c82e899ff0bd508eef9002024cefac0d2d05dfa15c0a05",
+      "restored_acceptance_sha256": "c7b21a54202dfd1e8eb230ca8ad941f3f7354c966e148aaab2c91420c8ba55e6",
+      "maintained_passed_phases_per_sdk": 43,
+      "distribution_sha256": "c9224e13dc2a1fd47861c483682b10bfd82cccee171f67d1bd760c118c5dd558",
+      "network_profile": "full",
+      "scope": "native platform",
+      "distribution_retry": {
+        "schema": "nex.macos-distribution-retry/1",
+        "ok": true,
+        "source_commit": "584715e45d05be53e5a8eb967edcd4d5ab7fc1b5",
+        "original_build_report_sha256": "653e1d798c94af23174a6b9ce399a66e9bf1ef032582351daee6d291008b1d65",
+        "original_distribution_report_sha256": "5ddf6f8147f31f12f67629b81f7833830dce2037fa8de7385868ea016bc6e68a",
+        "source_ctest_receipt_sha256": "a7eda2706d8464eefb8f6cdfc0019d62b3af318c2b6843e75ca8ef7b0af1eb90",
+        "input_compiler_sha256": "00936b0088a620d009f756c8c39da9ecb0eae325526dd5ec1a0e44f9e63a8c1a",
+        "archive_sha256": "2d42e7ba1f31f76aa02ccf41964d5d5ecdda67ce90ee015230a72700127628cc",
+        "distribution_report_sha256": "c9224e13dc2a1fd47861c483682b10bfd82cccee171f67d1bd760c118c5dd558"
+      }
+    },
+    "linux-arm64": {
+      "target": "linux-arm64",
+      "compiler_host": "aarch64-unknown-linux-gnu",
+      "source_commit": "584715e45d05be53e5a8eb967edcd4d5ab7fc1b5",
+      "archive": {
+        "name": "nex-sdk-0.281.0-linux-arm64-development.tar.gz",
+        "sha256": "f715eaf13172566759f6787ab5d245f65186e7a8e9e467fafb48abf5e8c9c9c1",
+        "bytes": 175665540,
+        "files": 2873
+      },
+      "compiler_sha256": "2bf8a51cf9877fa3daf6bb28e9d7be11d79fe52e6b77bcb64080667af994baca",
+      "host_requirements": {
+        "external_prerequisites": [
+          "matching glibc loader/runtime and GCC C/C++ development SDK (headers/CRT); system C++/GCC runtimes listed in system_libraries",
+          "Python 3.10+",
+          "openssl CLI for HTTPS acceptance",
+          "Node.js/npm for browser builds",
+          "host LLDB/lldb-dap for live debugging"
+        ],
+        "system_libraries": [
+          "ld-linux-aarch64.so.1",
+          "libc.so.6",
+          "libgcc_s.so.1",
+          "libm.so.6",
+          "libstdc++.so.6"
+        ],
+        "tested_build_distribution": "PRETTY_NAME=\"Ubuntu 24.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.5 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n",
+        "host_glibc": "glibc 2.39",
+        "host_cxx_sdk": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+        "required_glibc_symbols": [
+          "GLIBC_2.0",
+          "GLIBC_2.17",
+          "GLIBC_2.25",
+          "GLIBC_2.27",
+          "GLIBC_2.28",
+          "GLIBC_2.29",
+          "GLIBC_2.32",
+          "GLIBC_2.33",
+          "GLIBC_2.34",
+          "GLIBC_2.36",
+          "GLIBC_2.38"
+        ],
+        "required_glibcxx_symbols": [
+          "GLIBCXX_3.4",
+          "GLIBCXX_3.4.11",
+          "GLIBCXX_3.4.14",
+          "GLIBCXX_3.4.15",
+          "GLIBCXX_3.4.17",
+          "GLIBCXX_3.4.18",
+          "GLIBCXX_3.4.19",
+          "GLIBCXX_3.4.20",
+          "GLIBCXX_3.4.21",
+          "GLIBCXX_3.4.22",
+          "GLIBCXX_3.4.26",
+          "GLIBCXX_3.4.29",
+          "GLIBCXX_3.4.30",
+          "GLIBCXX_3.4.31",
+          "GLIBCXX_3.4.32",
+          "GLIBCXX_3.4.9"
+        ]
+      },
+      "source_group_count": 383,
+      "verified_feature_groups": {
+        "language_and_backends": [
+          "backend_agreement",
+          "references030_versioned",
+          "references030_cli",
+          "source_exceptions_public"
+        ],
+        "tasks_and_resources": [
+          "reference_tasks_cli",
+          "reference_tasks_boundaries",
+          "reference_http_context",
+          "task_provider_profile_native",
+          "task_provider_debugging_native",
+          "public_task_resource_source"
+        ],
+        "history_and_migration": [
+          "project_versions",
+          "graph_snapshots",
+          "typed_error_history_migration"
+        ],
+        "standard_library": [
+          "hash_containers",
+          "sequence_containers",
+          "insertion_ordered_map"
+        ],
+        "applications_and_delivery": [
+          "workboard_application",
+          "java_circular_fifo",
+          "project_foreign_packaging"
+        ],
+        "llm_tools": [
+          "llm_cost_cli",
+          "llm_campaign"
+        ]
+      },
+      "source_ctest_sha256": "edc45de55d471416823f8f6797152a54ce81d017e300124f9271b9cecd52b161",
+      "moved_acceptance_sha256": "c9ecb02f728860edd4523368f1ed9c3fe9f0d244147a7131258209eafa1ccd48",
+      "restored_acceptance_sha256": "1f0b5a1b79ded3b4347dc87b95df85b9763a5aad234597d389d756e0a6a58176",
+      "maintained_passed_phases_per_sdk": 43,
+      "distribution_sha256": "2d2d2bc80ca5d90e5f42e014306f9a7997028f514025d1ef905493067f8ebdc2",
+      "network_profile": "full",
+      "scope": "Ubuntu 24.04 ARM64 containers, native architecture",
+      "container_execution": {
+        "engine": "docker",
+        "host_arch": "arm64",
+        "emulated": false,
+        "toolchain_image": "sha256:c81c930fe92c5185ace2f2a9dd4fefdbcf570f1dda38f10dfdade4122d05fd04"
+      },
+      "source_free_acceptance_sha256": "198a4ce91ed68c050cbcebc15b16812aaf2a94d67103643f0b497e2b300dfbac"
+    },
+    "linux-amd64": {
+      "target": "linux-amd64",
+      "compiler_host": "x86_64-pc-linux-gnu",
+      "source_commit": "584715e45d05be53e5a8eb967edcd4d5ab7fc1b5",
+      "archive": {
+        "name": "nex-sdk-0.281.0-linux-amd64-development.tar.gz",
+        "bytes": 184990679,
+        "sha256": "672e2c80cc4feedc89ca1743f256cf0867ea239e0fdd27b1fa2323a9a1f9d11b",
+        "files": 2916
+      },
+      "compiler_sha256": "24ef9386f5346b42165ae0456987ccf3f63d7606b798c17c2c304ee32e9ae7bb",
+      "host_requirements": {
+        "external_prerequisites": [
+          "matching glibc loader/runtime and GCC C/C++ development SDK (headers/CRT); system C++/GCC runtimes listed in system_libraries",
+          "Python 3.10+",
+          "openssl CLI for HTTPS acceptance",
+          "Node.js/npm for browser builds",
+          "host LLDB/lldb-dap for live debugging"
+        ],
+        "system_libraries": [
+          "ld-linux-x86-64.so.2",
+          "libc.so.6",
+          "libgcc_s.so.1",
+          "libm.so.6",
+          "libstdc++.so.6"
+        ],
+        "tested_build_distribution": "PRETTY_NAME=\"Ubuntu 24.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.5 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n",
+        "host_glibc": "glibc 2.39",
+        "host_cxx_sdk": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+        "required_glibc_symbols": [
+          "GLIBC_2.11",
+          "GLIBC_2.14",
+          "GLIBC_2.15",
+          "GLIBC_2.16",
+          "GLIBC_2.17",
+          "GLIBC_2.2.5",
+          "GLIBC_2.25",
+          "GLIBC_2.27",
+          "GLIBC_2.28",
+          "GLIBC_2.29",
+          "GLIBC_2.3",
+          "GLIBC_2.3.2",
+          "GLIBC_2.3.4",
+          "GLIBC_2.32",
+          "GLIBC_2.33",
+          "GLIBC_2.34",
+          "GLIBC_2.36",
+          "GLIBC_2.38",
+          "GLIBC_2.4",
+          "GLIBC_2.6",
+          "GLIBC_2.7",
+          "GLIBC_2.8",
+          "GLIBC_2.9"
+        ],
+        "required_glibcxx_symbols": [
+          "GLIBCXX_3.4",
+          "GLIBCXX_3.4.11",
+          "GLIBCXX_3.4.14",
+          "GLIBCXX_3.4.15",
+          "GLIBCXX_3.4.17",
+          "GLIBCXX_3.4.18",
+          "GLIBCXX_3.4.19",
+          "GLIBCXX_3.4.20",
+          "GLIBCXX_3.4.21",
+          "GLIBCXX_3.4.22",
+          "GLIBCXX_3.4.26",
+          "GLIBCXX_3.4.29",
+          "GLIBCXX_3.4.30",
+          "GLIBCXX_3.4.31",
+          "GLIBCXX_3.4.32",
+          "GLIBCXX_3.4.9"
+        ]
+      },
+      "source_group_count": 383,
+      "verified_feature_groups": {
+        "language_and_backends": [
+          "backend_agreement",
+          "references030_versioned",
+          "references030_cli",
+          "source_exceptions_public"
+        ],
+        "tasks_and_resources": [
+          "reference_tasks_cli",
+          "reference_tasks_boundaries",
+          "reference_http_context",
+          "task_provider_profile_native",
+          "task_provider_debugging_native",
+          "public_task_resource_source"
+        ],
+        "history_and_migration": [
+          "project_versions",
+          "graph_snapshots",
+          "typed_error_history_migration"
+        ],
+        "standard_library": [
+          "hash_containers",
+          "sequence_containers",
+          "insertion_ordered_map"
+        ],
+        "applications_and_delivery": [
+          "workboard_application",
+          "java_circular_fifo",
+          "project_foreign_packaging"
+        ],
+        "llm_tools": [
+          "llm_cost_cli",
+          "llm_campaign"
+        ]
+      },
+      "source_ctest_sha256": "0275b62d18345120bf4504c38950ef1cab036b6de3d4c276e316a6d1223b3f7d",
+      "network_profile": "full",
+      "source_free_acceptance_sha256": "4ace9fb09ba77ecbefc561e3b467995d612f962c01b229f4ae7646da7be1a400",
+      "moved_acceptance_sha256": "39bd1275e10421f67735a7b32760905c9f28ebef7b317bbcc930ca2013c2d022",
+      "restored_acceptance_sha256": "3279e7d8be2d69a7b86512157d3ed574474953d69e6dcbc8a381ca6762c0b867",
+      "maintained_passed_phases_per_sdk": 43,
+      "distribution_sha256": "55e41df85b2bf4359f493991d63114e1134947eb799b838730f214f4b9edb64e",
+      "native_source_run": "https://github.com/sae-ru/NEX/actions/runs/45134900040",
+      "source_handoff_sha256": "401783ecfc64896a1d7549b5e938ca458cc1177084ea1ef5c4528b557eec8055",
+      "github_artifacts": {
+        "linux-full-45134900040-1": "f3da3384a6dae36dd1f72b93c657b3f036d3847713e7201c087ef7e8b2ab88fd",
+        "linux-amd64-installed-584715e45d05be53e5a8eb967edcd4d5ab7fc1b5-1": "136368296b495e791e3ef57397b1b49b424ea1284b0843b7d719d1a5dddcf44e"
+      },
+      "execution": {
+        "source_native": true,
+        "source_run_id": 45134900040,
+        "source_compiler_sha256": "1a2333cdcf2de005d55d083b9d2fbca1dd403af75be0198d22508bc1b3141991",
+        "source_groups": 383,
+        "ordinary_runtime_phases": 43,
+        "source_image": "sha256:89942a3f05e07680ecc0ada7c3912e628a9f57804303d5b35bd9e696028c3111",
+        "portable_native": true,
+        "emulated": false,
+        "architecture": "amd64",
+        "runner": "ubuntu-24.04",
+        "packager_image": "sha256:74d0ab4da235677518320da8f8d57c049b52d63441b59b02b2c538ebbcafb909",
+        "runtime_image": "sha256:2f7fffeb298dc31262e566d9176d307421e8fa1f67bc9b153650e610cb28b229",
+        "portable_run_id": 45178833022,
+        "workflow_sha": "7185c2363ffe1fcd029a123cebc19f9c2d6dc5b4",
+        "sdk_source_sha": "584715e45d05be53e5a8eb967edcd4d5ab7fc1b5"
+      },
+      "scope": "Full Linux x86-64 source and ordinary installed suites on native GitHub Actions; portable moved and restored suites on native Ubuntu x86-64 workers; final archive also executed on Fedora."
+    },
+    "windows-x86_64": {
+      "target": "windows-x86_64",
+      "compiler_host": "x86_64-w64-windows-gnu",
+      "source_commit": "584715e45d05be53e5a8eb967edcd4d5ab7fc1b5",
+      "archive": {
+        "name": "nex-sdk-0.281.0-windows-x86_64-development.tar.gz",
+        "sha256": "55bb2577c9405983c0b460b11b4f92d10a94b25e407f3ef528d84ac35187d907",
+        "bytes": 268714689,
+        "files": 9771
+      },
+      "compiler_sha256": "9e9890694333d373e76125598584a3973421336659242dd70d6a6f8ba3e041fe",
+      "host_requirements": {
+        "external_prerequisites": [
+          "Windows system DLLs listed in system_libraries",
+          "native Python 3.10+",
+          "Node.js/npm",
+          "native LLDB for debugger acceptance"
+        ],
+        "system_libraries": [
+          "advapi32.dll",
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-filesystem-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-multibyte-l1-1-0.dll",
+          "api-ms-win-crt-private-l1-1-0.dll",
+          "api-ms-win-crt-process-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "api-ms-win-crt-time-l1-1-0.dll",
+          "api-ms-win-crt-utility-l1-1-0.dll",
+          "bcrypt.dll",
+          "crypt32.dll",
+          "kernel32.dll",
+          "ntdll.dll",
+          "ole32.dll",
+          "shell32.dll",
+          "user32.dll",
+          "version.dll",
+          "ws2_32.dll"
+        ],
+        "requires_WSL": false,
+        "requires_MSYS_runtime": false,
+        "signing": "unsigned; publisher signing not performed"
+      },
+      "source_group_count": 382,
+      "verified_feature_groups": {
+        "language_and_backends": [
+          "backend_agreement",
+          "references030_versioned",
+          "references030_cli",
+          "source_exceptions_public"
+        ],
+        "tasks_and_resources": [
+          "reference_tasks_cli",
+          "reference_tasks_boundaries",
+          "reference_http_context",
+          "task_provider_profile_native",
+          "task_provider_debugging_native",
+          "public_task_resource_source"
+        ],
+        "history_and_migration": [
+          "project_versions",
+          "graph_snapshots",
+          "typed_error_history_migration"
+        ],
+        "standard_library": [
+          "hash_containers",
+          "sequence_containers",
+          "insertion_ordered_map"
+        ],
+        "applications_and_delivery": [
+          "workboard_application",
+          "java_circular_fifo",
+          "project_foreign_packaging"
+        ],
+        "llm_tools": [
+          "llm_cost_cli",
+          "llm_campaign"
+        ]
+      },
+      "source_ctest_sha256": "6e4966effd89871fd7ea6028c5c1c63bb387e7838755f703c0baa872993b285c",
+      "moved_acceptance_sha256": "f699d59ad778f3fabfec13897ff2c6c321a90d18fe7664635dd12e3724ffe09e",
+      "restored_acceptance_sha256": "32f9e3ae2435b5787845d19344754dce877bef65bb3f8db632aae0839d6fb935",
+      "maintained_passed_phases_per_sdk": 43,
+      "distribution_sha256": "b1bb9da85bb378d9c71d0d2a8494f9e099e16fcdaa4ca73f879a122988ef15de",
+      "network_profile": "full",
+      "scope": "native platform",
+      "sdk_manifest_sha256": "2605776c765aef8d030ab17e94f0bfcef99860120fd1c3586ed4219dabdae758",
+      "source_test_amendment": {
+        "source_commit": "584715e45d05be53e5a8eb967edcd4d5ab7fc1b5",
+        "qualification_main_commit": "eaf235de004072eccd268990be2492408b0d049c",
+        "source_test": "tests/frontend_diagnostics.py",
+        "changed_method": "test_assert_failure_replays_imported_helper_without_repeating_effects",
+        "original_test_sha256": "4ff7807a39b7f365bb2b064301178ddcb3df223441f505dc4f119b2028edf8bd",
+        "corrected_test_sha256": "bcbb4ae3aa8277434798bb8b1345874f6b19033083a32e8a39d3031df9b4a1c0",
+        "compiler_sha256": "9e9890694333d373e76125598584a3973421336659242dd70d6a6f8ba3e041fe",
+        "probe_sha256": "a1ce957a398d97f41afd8b5b1ccdf19fb7cf5f25ec16f78c041bccc92d3f2ce6",
+        "group_log_sha256": "44a1bc83b60b68f9aacfddf2e7ec8acb6a548d705a8a1e6288fbfaec6892fc0d",
+        "line_endings": {
+          "LF": [
+            99,
+            121
+          ],
+          "original-CRLF": [
+            101,
+            123
+          ]
+        },
+        "schema": "nex.windows-source-test-amendment/1",
+        "ok": true,
+        "single_full_invocation": false,
+        "original_full_run_ok": false,
+        "original_passed_groups": 380,
+        "original_failed": [
+          "frontend_diagnostics",
+          "source_exception_module_http_debug"
+        ],
+        "http_debug_repeat": {
+          "failed_case": "host-mixed-O2-debug-deadline",
+          "original_timeout_seconds": 300,
+          "original_completed_debug_sessions": 34,
+          "original_fixture_sha256": "88437686dd03b61635229439c6c5f2446a5e293ea91a00099add5fef84cbcd36",
+          "original_group_junit_sha256": "d1afa96f09bc53b9ae752640b2cb0ed163a02ef99d8169b1570898650c51253f",
+          "observed_group": "source_exception_module_http_debug",
+          "group_source_sha256": "1f265cc5bf4c81b02da94e83dba722f93a6ae5561ec6e015eae523b3ad99d4e0",
+          "compiler_sha256": "9e9890694333d373e76125598584a3973421336659242dd70d6a6f8ba3e041fe",
+          "selected_ctest_receipt_sha256": "5a627e42c04aed151801f99bbb9cb26e35e3939f51b36edc2984767a2c1e4d79",
+          "selected_junit_sha256": "b52ad4323bd7238f815470ade230c26c470b19215980ae74e18c959764b7ea1d",
+          "selected_log_sha256": "bd205279b12164772d27c131d99e7fca1303e8d9bffc7b020a30fd08b6c9697c",
+          "semantic_report_sha256": "b73d9c258107fa8fc90a83520b0795d212b09d37c829e5aeb25ab070768256fc",
+          "rerun_report_sha256": "60622812095be00699c3869d573edae539309e271d3db1b4972ac809753ac1b5",
+          "lldb_sessions": 38,
+          "dap_sessions": 6,
+          "result": "passed_on_isolated_repeat"
+        },
+        "corrected_group": "frontend_diagnostics",
+        "corrected_group_tests": 24,
+        "skipped_groups": [],
+        "groups_with_passing_results": 382,
+        "original_ctest_receipt_sha256": "6e4966effd89871fd7ea6028c5c1c63bb387e7838755f703c0baa872993b285c",
+        "original_junit_sha256": "d1afa96f09bc53b9ae752640b2cb0ed163a02ef99d8169b1570898650c51253f",
+        "selected_ctest_receipt_sha256": "1443bd412130eb3a84643cac0aa807ff59a98fda6c1853f085c190228f15cbd3",
+        "selected_junit_sha256": "ed0fceedb012f8e7f7462340df49ef5f599f39bc9f90d95497d9634b62d4ab3c",
+        "selected_log_sha256": "4f83d129019c5d9ff344a158efcaddbf040b40b5c311e2cc1f32a4d548c1cf3d",
+        "corrected_source_tree_sha256": "456614349936b0597d3614a4b3c7facd3c5356f66a09d945644107e7966d3da9",
+        "source_files": 3068,
+        "correction_report_sha256": "2dfde8469438f5aafc232851b056063fc3ebce0ad490d5798bb8709d7968a639",
+        "packaging_retry": {
+          "superseded_package_report_sha256": "aaebd356826ab4b643c1c83f569c075848b24354b160d6e4a6702811f2c50e66",
+          "failed_distribution_sha256": "0119f7bb2b2af9c8bfba9d38bb7845062af5a15236c56831ff436682a20e86b9",
+          "failed_moved_report_sha256": "0293f8b92d8e42fce63fb4bf8e864f3eafb4cc4533ba3d0b0f72c6ee44e8f239",
+          "failed_stderr_sha256": "57857926e0b977f589572d3c652b3d2ba412218083812d22e781004dfde4009a",
+          "source_driver_sha256": "2b2fe70718297d9004c7c122d649be082756d69b649ac62af71088db1df2bba0",
+          "qualified_driver_sha256": "78f93bee53fc7eecd5cb6e950f7c3753b805e48a47397091592d622b9e999b72",
+          "focused": {
+            "compiler_sha256": "9e9890694333d373e76125598584a3973421336659242dd70d6a6f8ba3e041fe",
+            "helper_sha256": "16e85a189691b358e0d0d0edfd00968105d8b07537058712dfd3352cce3b4b2d",
+            "openssl_sha256": "dd06a34957d430f89f5161f1dd55397d1d5e9fb882106337d8b287ccac52ed31",
+            "delivery_sha256": "69fe55395f564760cda09ea4ea23c8766a3bda80d845c96349d04f7e61d22782",
+            "checks": 148
+          },
+          "initial_passed_phases": 27,
+          "initial_failed_phase": "structured-task-http",
+          "targeted_http_requests": 50
+        },
+        "network_profile_retry": {
+          "superseded_package_report_sha256": "b0d221a6f53df4ba3aa8c797dbdfa1b4ce919064eeecb1be5b98e72c2faade54",
+          "first_package_report_sha256": "aaebd356826ab4b643c1c83f569c075848b24354b160d6e4a6702811f2c50e66",
+          "failed_distribution_sha256": "a7840b0cf0195ab37e28a09bd6114dd1d310bcd63b2bd546b7663fa46e3da137",
+          "failed_moved_report_sha256": "b5082a87f88d35da7570706d070fab563affc9d41e5ce74281047650c4d0efa1",
+          "failed_stderr_sha256": "49f4a446e543489db9b26273d6158b0aa00400d9028bbee8806963652c07b561",
+          "network_profile": "full",
+          "network_probe_sha256": "2bac0fd5e235a4e2b6beaff2c26e5f90e90804e07f34dd2c0eaa681201bb4e65",
+          "network_positive_case_sha256": "21f468d77a420afff119e81b5a8a2a02b7bcac0bfbd27b43c85827b2e95ac587"
+        },
+        "browser_retry": {
+          "superseded_package_report_sha256": "9ca6b6132ac6dfc9cf252541bde083ed9ae450a030858d05a849748061600f39",
+          "first_package_report_sha256": "aaebd356826ab4b643c1c83f569c075848b24354b160d6e4a6702811f2c50e66",
+          "failed_distribution_sha256": "1d708b96f6cc7373d0a0e90c240b45a4bb5c6d5c69d486e7661e15537c3e101e",
+          "failed_moved_report_sha256": "7becdd04dc6feae773469138dff1a79dd6505ebb501c64b5551dc492b17a79b9",
+          "failed_stdout_sha256": "29d546694df7305f0bc48e166ef5b322e35d3f2dff83f421074a5a6c99d9fed6",
+          "failed_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "previous_qualified_driver_sha256": "78f93bee53fc7eecd5cb6e950f7c3753b805e48a47397091592d622b9e999b72",
+          "qualified_driver_sha256": "9286b10ea518a41dbcbcead5fbc7a7b42e8f5c4c646f84b6f819698705571799",
+          "node_probe_sha256": "9c4bf7109942bd710edbc0afcbde4acbf2e097370060c8f8e456dcdf9744f3e3",
+          "node_sha256": "63c259c81e5d472b5f11c8d506070130cb04a1ecf84b80377a34ed6ec9048088",
+          "node_driver_source_sha256": "4281ec97cb6897d4a619ccdda3720fa05d5706d44d27847188589c3a24aa19a2",
+          "network_profile": "full",
+          "network_probe_sha256": "2bac0fd5e235a4e2b6beaff2c26e5f90e90804e07f34dd2c0eaa681201bb4e65",
+          "network_positive_case_sha256": "21f468d77a420afff119e81b5a8a2a02b7bcac0bfbd27b43c85827b2e95ac587"
+        },
+        "host_session_fixture": {
+          "ordinary_delta_sha256": "cf469b2a3a6050ab2442d442b0325ad71a6f04c84d0e681ad25b690a333475b7",
+          "portable_delta_sha256": "d39a94fc3f6dfde471f9a535516b28cad3f899a12db724b58bb45dc109abffe6",
+          "path": "share/nex/tests/native_task_sessions.py",
+          "source_commit": "0b2d79cbecead54fdfadff19543d0ab1f4fe372a",
+          "sha256": "4313bec0082db8e88bb4071a1c9c7a32143c7ff4bc6a78f6616118595edc740d",
+          "previous_sha256": "9f0816f6581f8fc9a32a492abb4b613eff00198d3baa66c8dc66878676e7bbea",
+          "focused_receipt_sha256": "15279ed07bd8734ce11057f3d295907f4e9fe546335028222333f5c8435bf784",
+          "audit_driver_sha256": "38c47f57fdb1f45859af1dae1b9bb03126b9f63c7f8985067869ade7e8e0ba55"
+        },
+        "stream_report_writer": {
+          "superseded_package_report_sha256": "542c99530657309fdb9a47d1ee5a25869385365dc6ff92b8c4f9e1c7d1d84b79",
+          "stream_path_failure_sha256": "4070b2ad400a9f68a3b043d96b59071838a4697cbb58fc2a935b06d976aec9d8",
+          "stream_path_replay_sha256": "0f3e7887faf6e4a9fb283460ac8e306baa473d8acb5b0fa67b42d89459427dd5",
+          "stream_producer_probe_sha256": "e45d67205421a6836200ec6ed7cc7c64b0f5851dc86fd7d02ef12d80e5dca1a2",
+          "stream_host_report_sha256": "b8a7051393468d6e5c100f56bc7806e6feb192f16e5712e3fb4712149dcc0a7b",
+          "stream_producer_git_commit": "a204dc3a3cf49883807f585992e490f8111ab40e",
+          "stream_producer_path": "share/nex/tools/sdk_task_streams.py",
+          "stream_producer_before_sha256": "644ed0f874f042f1653c5a175cccef3cfd206608c2544d95c0ae1e32f3ec36bb",
+          "stream_producer_after_sha256": "95a8dbac83f258609e059096a406a6e96c15af37909826e30d4ee023c4141be2"
+        },
+        "independent_sdk_report_sha256": "ceb004c29879bf813275f204c597fa5b1ecd5884f27476b54e63ae0f73478bbb"
+      }
+    }
+  },
+  "native_linux_x86_64": {
+    "schema": "nex.linux-native-sdk-smoke/1",
+    "ok": true,
+    "hardware": "x86_64",
+    "source_commit": "584715e45d05be53e5a8eb967edcd4d5ab7fc1b5",
+    "checks": [
+      {
+        "name": "doctor",
+        "command": [
+          "/var/tmp/nex-584715e4-native-uLw8DwPE/restored SDK, % 🧠/nex-sdk-0.281.0-linux-amd64-development/bin/nex",
+          "doctor",
+          "--json"
+        ],
+        "exit_code": 0,
+        "seconds": 0.029,
+        "stdout_sha256": "409ca1147ec0db496124f73891d4affbdb4f4629ed222a4821c188758cdb271c",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "init",
+        "command": [
+          "/var/tmp/nex-584715e4-native-uLw8DwPE/restored SDK, % 🧠/nex-sdk-0.281.0-linux-amd64-development/bin/nex",
+          "init",
+          "/var/tmp/nex-584715e4-native-uLw8DwPE/fedorademo",
+          "--json"
+        ],
+        "exit_code": 0,
+        "seconds": 0.022,
+        "stdout_sha256": "cb81845f65766bf2816d2bf60297b95d893de9bf334819bc18ce5fabdfc89fd1",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "check",
+        "command": [
+          "/var/tmp/nex-584715e4-native-uLw8DwPE/restored SDK, % 🧠/nex-sdk-0.281.0-linux-amd64-development/bin/nex",
+          "check",
+          "--json"
+        ],
+        "exit_code": 0,
+        "seconds": 0.045,
+        "stdout_sha256": "7745440c17e65d2d4387598073549e7f3e75532ff117df8383bbfb26c612a920",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "eval",
+        "command": [
+          "/var/tmp/nex-584715e4-native-uLw8DwPE/restored SDK, % 🧠/nex-sdk-0.281.0-linux-amd64-development/bin/nex",
+          "eval",
+          "--json"
+        ],
+        "exit_code": 0,
+        "seconds": 0.029,
+        "stdout_sha256": "f9f71eb50ad055eb34ae2462deb3fd3fcb499a49066d66fe0281c0b9bb2e8dd2",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "test",
+        "command": [
+          "/var/tmp/nex-584715e4-native-uLw8DwPE/restored SDK, % 🧠/nex-sdk-0.281.0-linux-amd64-development/bin/nex",
+          "test",
+          "--json"
+        ],
+        "exit_code": 0,
+        "seconds": 3.721,
+        "stdout_sha256": "3e281a51bd325a2235472f0c8e85ba2cb7999b18d3e8e8d73c6130269a16b433",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "native-release",
+        "command": [
+          "/var/tmp/nex-584715e4-native-uLw8DwPE/restored SDK, % 🧠/nex-sdk-0.281.0-linux-amd64-development/bin/nex",
+          "run",
+          "--profile",
+          "release",
+          "--json"
+        ],
+        "exit_code": 0,
+        "seconds": 8.086,
+        "stdout_sha256": "983f1613313090d82cc0d053a72d2e9f8f71587d1bc28dd23d21af040e59adb0",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "export",
+        "command": [
+          "/var/tmp/nex-584715e4-native-uLw8DwPE/restored SDK, % 🧠/nex-sdk-0.281.0-linux-amd64-development/bin/nex",
+          "build",
+          "--profile",
+          "release",
+          "-o",
+          "/var/tmp/nex-584715e4-native-uLw8DwPE/standalone-app",
+          "--json"
+        ],
+        "exit_code": 0,
+        "seconds": 0.101,
+        "stdout_sha256": "5e11b1df8c9c6f5bfd401c083ed91596cbad28d1da18e019711ca54188af2f6c",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "standalone",
+        "command": [
+          "/var/tmp/nex-584715e4-native-uLw8DwPE/standalone-app"
+        ],
+        "exit_code": 0,
+        "seconds": 0.004,
+        "stdout_sha256": "4c82a221b575ce7fe118b2e8cdf0764bf4ef570a3017e80b6d3438af9095f376",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "archive_sha256": "672e2c80cc4feedc89ca1743f256cf0867ea239e0fdd27b1fa2323a9a1f9d11b",
+    "host_os": "Fedora Linux 45 (Server Edition)",
+    "kernel": "7.2.15-300.fc45.x86_64",
+    "glibc": "glibc 2.44",
+    "dmi": "VMware Virtual Platform",
+    "cpu": "12th Gen Intel(R) Core(TM) i5-12400F",
+    "logical_cpus": 4,
+    "execution": "native x86-64 instructions",
+    "compiler_sha256": "24ef9386f5346b42165ae0456987ccf3f63d7606b798c17c2c304ee32e9ae7bb",
+    "restored_files": 2916,
+    "toolchain": "0.281.0",
+    "new_project_language": "0.30",
+    "standalone_sha256": "16034792bb7e2e7e21a2ed27af9baf26a87d0d24a0b9fe7618d0144ebc912c4d",
+    "sdk_path_absent_during_standalone": true,
+    "interpreter_stdout": "55\n",
+    "native_stdout": "55\n",
+    "standalone_stdout": "55\n",
+    "remote_directory": "/var/tmp/nex-584715e4-native-uLw8DwPE",
+    "native_assembly_run_id": 45178833022
+  },
+  "codex_plugin": {
+    "name": "nex-developer-tools-0.1.0.zip",
+    "version": "0.1.0",
+    "package_source_commit": "80b0c87d009937ef09124763442dc7390ba69686",
+    "sha256": "24fbacfcd3884db20a546653ea5b2e1e7c20b7678fe7cfcb9edf1ee1f1ff1879",
+    "bytes": 31069,
+    "files": 13,
+    "inventory": "nex-developer-tools-0.1.0.inventory.json",
+    "checksum": "nex-developer-tools-0.1.0.sha256"
+  },
+  "hardware_observations": {
+    "cix-p1": {
+      "file": "cix-p1-arm64-hardware.json",
+      "sha256": "55a97a7f38869c0c90ff0e34cb0b09c19b454a7accbebea09c97cab0a43c9fd9"
+    },
+    "rk3588": {
+      "file": "rk3588-arm64-hardware.json",
+      "sha256": "47014693b9c32221bb5f49dfa88a4058be2f7e743f14971afc54ce9d400d9638"
+    },
+    "rk3588-portable": {
+      "file": "rk3588-portable-arm64-hardware.json",
+      "sha256": "b471209a2f039f8e32174a6a9fdb2aff855cf76375cac10b78dc21150ccae39e"
+    },
+    "cix-p1-portable": {
+      "file": "cix-p1-portable-arm64-hardware.json",
+      "sha256": "c8669e94d0a79acfc5530273477aec630f0ff9cfe0aab6aa4844ac99cba1c298"
+    },
+    "apple-metal": {
+      "file": "macos-arm64-metal-hardware.json",
+      "sha256": "a85a3d4f6aa08d3e925258ea955e0a7faeb4a8e44a307fccf3d41b7bea689321"
+    },
+    "nvidia-cuda": {
+      "file": "windows-x86_64-cuda-hardware.json",
+      "sha256": "2d29c1596775f8adce44ef119c8c3bee70d5d3ba9e0f101315b6db80eb59e672"
+    }
+  },
+  "agent_skill": {
+    "file": "nex-programming.zip",
+    "sha256": "c4a388e81e0b7afaa0a721a8e87cd6b0ae2554371b747176706cc2136d3f625e",
+    "source_commit": "7e69d88e4295fe714997751283be70ba510ee582",
+    "source_path": "plugins/nex/skills/nex-programming/",
+    "files": {
+      "LICENSE": "3e609ea0cdf472612ddda1023fb1ecdee13ebc2eb18e011af6eb11a4d6538200",
+      "SKILL.md": "a62665373a19f5bdc7977990f10799700bec96b41c983a075cdb820bef13b5a6",
+      "agents/openai.yaml": "623a86862db45d16c54b11ccc221b481dddc2a63dfc9a1fafd3401576b6f7d0e",
+      "assets/hello.nex": "646ea396716bbc9906f7f31671e15eedd4f2bba5e04d0305cfac73bfcbd8db86",
+      "references/sdk-setup.md": "bf364d08c6b1e5696a0c8cbfa595dd1e312255a9acf0b3b6f401d1b524b9ae6a",
+      "references/workflows.md": "9d3aca5e491da68aa39646ecd52aff83a5afac46dbbd1c54030315ff9fb076d5"
+    },
+    "deepseek_harness": {
+      "client": "0.2.2-rc.5",
+      "source_commit": "7e69d88e4295fe714997751283be70ba510ee582",
+      "model_calls": 0,
+      "catalog": {
+        "user-dsh": {
+          "model_tool": true,
+          "user_slash": true,
+          "skill_sha256": "a62665373a19f5bdc7977990f10799700bec96b41c983a075cdb820bef13b5a6",
+          "resource_files": 6
+        },
+        "project-agents": {
+          "model_tool": true,
+          "user_slash": true,
+          "skill_sha256": "a62665373a19f5bdc7977990f10799700bec96b41c983a075cdb820bef13b5a6",
+          "resource_files": 6
+        }
+      },
+      "project_archive_sha256": "c4a388e81e0b7afaa0a721a8e87cd6b0ae2554371b747176706cc2136d3f625e",
+      "sdk": {
+        "version": "0.281.0",
+        "language": "0.30",
+        "executable_sha256": "fa8e3a150f17066604e5e6c31adade4ed4c4945326000c475e74819150f3e4ef"
+      },
+      "repair": {
+        "diagnostic": "E_ASSERT",
+        "comparison": {
+          "left": "23",
+          "operator": "==",
+          "right": "42",
+          "type": "i64"
+        },
+        "symbol": "hello::twice",
+        "test": "hello::twice_is_42",
+        "native": true,
+        "stdout": "42\nПривет, NEX 🌍\n"
+      }
+    },
+    "macos_release_sdk": {
+      "version": "1.0.0",
+      "sdk_archive_sha256": "4268f0f5d6e9ececf907440c9e5a6bf2e8892dcab5d062234f7129f8da29defc",
+      "compiler_sha256": "4bf3cbcca9151eb011d816cfc30d654b2c5de34d2b955551dd419d5e3ee3ff38",
+      "skill_archive_sha256": "c4a388e81e0b7afaa0a721a8e87cd6b0ae2554371b747176706cc2136d3f625e",
+      "driver_sha256": "f1dece61b78e2aba169355de2255b4fcf1648c4359c763ef8b023ac335890f9e",
+      "test": "hello::twice_is_42",
+      "diagnostic": "E_ASSERT",
+      "compared": {
+        "left": "23",
+        "operator": "==",
+        "right": "42",
+        "type": "i64"
+      },
+      "inspected_revision": "2c302a9abb9f0b6ba8e97367bab7e01dfcf753563f0833c5ea29197ffca977fa",
+      "native_pass": true
+    }
+  },
+  "repair_context_driver": {
+    "file": "nex-repair-context.py",
+    "sha256": "f1dece61b78e2aba169355de2255b4fcf1648c4359c763ef8b023ac335890f9e",
+    "source_commit": "7e69d88e4295fe714997751283be70ba510ee582",
+    "checkout_path": "tools/llm/repair_context.py",
+    "measured_context_sha256": {
+      "deep": "14757b5a110da119c9d27a5e8304e558898aa507a869f41ff287ff3c28a49a26",
+      "empty": "eef2aa44adf667217f384c995699e47b42ecb210b1523e9d3062b6e013f7ef18",
+      "contract": "6e5c04b2830bb3e030bc85c9979407be4d3024bd0848f7a79470bb9361e5c159"
+    },
+    "tested_configurations": [
+      {
+        "host": "arm64-apple-darwin27.2.0",
+        "version": "1.0.0",
+        "compiler_sha256": "4bf3cbcca9151eb011d816cfc30d654b2c5de34d2b955551dd419d5e3ee3ff38",
+        "cases": {
+          "deep": {
+            "context_sha256": "14757b5a110da119c9d27a5e8304e558898aa507a869f41ff287ff3c28a49a26",
+            "native_pass_after_fix": true
+          },
+          "empty": {
+            "context_sha256": "eef2aa44adf667217f384c995699e47b42ecb210b1523e9d3062b6e013f7ef18",
+            "native_pass_after_fix": true
+          },
+          "contract": {
+            "context_sha256": "6e5c04b2830bb3e030bc85c9979407be4d3024bd0848f7a79470bb9361e5c159",
+            "native_pass_after_fix": true
+          }
+        },
+        "archive_sha256": "4268f0f5d6e9ececf907440c9e5a6bf2e8892dcab5d062234f7129f8da29defc"
+      },
+      {
+        "host": "aarch64-unknown-linux-gnu",
+        "version": "1.0.0",
+        "compiler_sha256": "b0e1f3857d079ea6388898d4db59459d6cdfe10f76db212d8fffe612d3a46247",
+        "cases": {
+          "deep": {
+            "context_sha256": "14757b5a110da119c9d27a5e8304e558898aa507a869f41ff287ff3c28a49a26",
+            "native_pass_after_fix": true
+          },
+          "empty": {
+            "context_sha256": "eef2aa44adf667217f384c995699e47b42ecb210b1523e9d3062b6e013f7ef18",
+            "native_pass_after_fix": true
+          },
+          "contract": {
+            "context_sha256": "6e5c04b2830bb3e030bc85c9979407be4d3024bd0848f7a79470bb9361e5c159",
+            "native_pass_after_fix": true
+          }
+        },
+        "archive_sha256": "43da389b24878a2d8e5391164fbc755e9f01a1300fe3f383fb2db095f9d4a264"
+      },
+      {
+        "host": "x86_64-pc-linux-gnu",
+        "version": "0.281.0",
+        "compiler_sha256": "24ef9386f5346b42165ae0456987ccf3f63d7606b798c17c2c304ee32e9ae7bb",
+        "cases": {
+          "deep": {
+            "context_sha256": "14757b5a110da119c9d27a5e8304e558898aa507a869f41ff287ff3c28a49a26",
+            "native_pass_after_fix": true
+          },
+          "empty": {
+            "context_sha256": "eef2aa44adf667217f384c995699e47b42ecb210b1523e9d3062b6e013f7ef18",
+            "native_pass_after_fix": true
+          },
+          "contract": {
+            "context_sha256": "6e5c04b2830bb3e030bc85c9979407be4d3024bd0848f7a79470bb9361e5c159",
+            "native_pass_after_fix": true
+          }
+        }
+      },
+      {
+        "host": "x86_64-pc-linux-gnu",
+        "version": "1.0.0",
+        "compiler_sha256": "2af95a154596cacd5a6cec4ff1680d7c1a75b5d43e173c8a6430c2409293fa71",
+        "cases": {
+          "deep": {
+            "context_sha256": "14757b5a110da119c9d27a5e8304e558898aa507a869f41ff287ff3c28a49a26",
+            "native_pass_after_fix": true
+          },
+          "empty": {
+            "context_sha256": "eef2aa44adf667217f384c995699e47b42ecb210b1523e9d3062b6e013f7ef18",
+            "native_pass_after_fix": true
+          },
+          "contract": {
+            "context_sha256": "6e5c04b2830bb3e030bc85c9979407be4d3024bd0848f7a79470bb9361e5c159",
+            "native_pass_after_fix": true
+          }
+        },
+        "archive_sha256": "afc114287194e27a4796526e9d9fd84de2a270285a9ff994658033237e579951"
+      },
+      {
+        "host": "x86_64-w64-windows-gnu",
+        "version": "0.281.0",
+        "compiler_sha256": "9e9890694333d373e76125598584a3973421336659242dd70d6a6f8ba3e041fe",
+        "cases": {
+          "deep": {
+            "context_sha256": "14757b5a110da119c9d27a5e8304e558898aa507a869f41ff287ff3c28a49a26",
+            "native_pass_after_fix": true
+          },
+          "empty": {
+            "context_sha256": "eef2aa44adf667217f384c995699e47b42ecb210b1523e9d3062b6e013f7ef18",
+            "native_pass_after_fix": true
+          },
+          "contract": {
+            "context_sha256": "6e5c04b2830bb3e030bc85c9979407be4d3024bd0848f7a79470bb9361e5c159",
+            "native_pass_after_fix": true
+          }
+        }
+      },
+      {
+        "host": "x86_64-w64-windows-gnu",
+        "version": "1.0.0",
+        "compiler_sha256": "d508f513aef172fad6b73a5b204ac24624377568fe5b5a52b4ecd7b9960212a4",
+        "cases": {
+          "deep": {
+            "context_sha256": "14757b5a110da119c9d27a5e8304e558898aa507a869f41ff287ff3c28a49a26",
+            "native_pass_after_fix": true
+          },
+          "empty": {
+            "context_sha256": "eef2aa44adf667217f384c995699e47b42ecb210b1523e9d3062b6e013f7ef18",
+            "native_pass_after_fix": true
+          },
+          "contract": {
+            "context_sha256": "6e5c04b2830bb3e030bc85c9979407be4d3024bd0848f7a79470bb9361e5c159",
+            "native_pass_after_fix": true
+          }
+        }
+      }
+    ],
+    "windows_project_quickstart": [
+      {
+        "ok": true,
+        "version": "0.281.0",
+        "launcher": [
+          "py",
+          "-3",
+          "nex-repair-context.py"
+        ],
+        "project_entry": "entry.nex",
+        "compiler_sha256": "9e9890694333d373e76125598584a3973421336659242dd70d6a6f8ba3e041fe",
+        "driver_sha256": "f1dece61b78e2aba169355de2255b4fcf1648c4359c763ef8b023ac335890f9e",
+        "failed_code": "E_ASSERT",
+        "excerpt": "press::preview::grey_level",
+        "callee": "press::composite::on_paper",
+        "inspected_revision": "0ee8f67a35ce6dfc8b651b9b856ddadc254ba52277f414af5398d3c96a463f03",
+        "native_pass_after_fix": true,
+        "manifest_sha256": "2605776c765aef8d030ab17e94f0bfcef99860120fd1c3586ed4219dabdae758"
+      },
+      {
+        "ok": true,
+        "version": "1.0.0",
+        "launcher": [
+          "py",
+          "-3",
+          "nex-repair-context.py"
+        ],
+        "project_entry": "entry.nex",
+        "compiler_sha256": "d508f513aef172fad6b73a5b204ac24624377568fe5b5a52b4ecd7b9960212a4",
+        "driver_sha256": "f1dece61b78e2aba169355de2255b4fcf1648c4359c763ef8b023ac335890f9e",
+        "failed_code": "E_ASSERT",
+        "excerpt": "press::preview::grey_level",
+        "callee": "press::composite::on_paper",
+        "inspected_revision": "0ee8f67a35ce6dfc8b651b9b856ddadc254ba52277f414af5398d3c96a463f03",
+        "native_pass_after_fix": true,
+        "manifest_sha256": "c2df14871522a6e3fb544cb46cbb466abee2406724c4558e8a83e7e709686418"
+      }
+    ]
+  },
+  "windows_packaging_tool": {
+    "file": "nex-windows-sdk-distribution.py",
+    "sha256": "3ee07f00cf1d14a31a662fb2e35fbf8198feb54f96ada824a1e019980bf0c7b3",
+    "checkout_path": "tools/windows/sdk_distribution.py"
+  },
+  "windows_host_session_fixture": {
+    "file": "nex-windows-native-task-sessions.py",
+    "sha256": "4313bec0082db8e88bb4071a1c9c7a32143c7ff4bc6a78f6616118595edc740d",
+    "checkout_path": "tests/native_task_sessions.py",
+    "source_commit": "0b2d79cbecead54fdfadff19543d0ab1f4fe372a",
+    "scope": "Windows SDK"
+  },
+  "windows_stream_report_writer": {
+    "file": "nex-windows-sdk-task-streams.py",
+    "sha256": "95a8dbac83f258609e059096a406a6e96c15af37909826e30d4ee023c4141be2",
+    "checkout_path": "tools/sdk_task_streams.py",
+    "source_commit": "a204dc3a3cf49883807f585992e490f8111ab40e",
+    "scope": "Windows SDK"
+  }
+}

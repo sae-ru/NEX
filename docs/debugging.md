@@ -4,11 +4,13 @@ adds one settings command itself; clients must not duplicate DAP args through
 target.run-args. This fixes foreign catalogue and other native runtime flags,
 including quoted/Unicode paths, without changing source language021.
 
-# Native debugging — NEX language 0.28
+# Native debugging
 
-Current source language is0.28. Logical task debugging has a separate narrow
-native path; discover `task_debugging` and read [its current contract](task-debugging.md).
-Complete current SDK, regression and platform acceptance have separate receipts.
+For a language 0.30 project, select the debugger for the code being executed.
+[Standalone reference tasks](reference-task-debugging.md), [native provider images](reference-provider-debugging.md)
+and [HTTP tasks](server-debugging.md#owner-thread-http-tasks-in-030) describe the
+supported stop locations and values. Query `nex describe --field task_debugging --json`
+for the installed compiler. [Task debugger contract](task-debugging.md)
 
 Synchronous debug information describes real native parameters,
 stack locations, scalar types and lexical binding scopes. Heap types are named

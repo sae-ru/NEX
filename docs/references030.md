@@ -4,7 +4,7 @@ applies_to: "toolchain 0.272.0; language 0.30"
 owner: repository
 ---
 
-# Versioned reference graphs: source0.30 development
+# Reference graphs in language 0.30
 
 Source0.30 now has a distinct checked semantic identity, canonical program
 format `nex.program/18`, ordinary `nex.sources/1` archives and an explicit

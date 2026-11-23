@@ -1,0 +1,53 @@
+{
+  "client": "DeepSeek Harness Desktop",
+  "client_version": "0.2.2-rc.5",
+  "host": "macOS ARM64",
+  "skill": "nex-programming",
+  "source_commit": "3f18035e371650796fb5ade558d99ce848526b39",
+  "standalone_zip_sha256": "78ff2d662ae0249959e990ff4c0cccacd95e800cc3a2156e887a24675f3f7884",
+  "catalog_zip_sha256": "a1a88caf0605bd3944b70408c428e56e0c749826d1c8385d2506801c2aa62b9e",
+  "plugin_version": "0.1.2",
+  "discovery": {
+    "user-dsh": {
+      "model_tool": true,
+      "user_slash": true,
+      "skill_sha256": "175e40faeed489d15ba514f28d7b00c145dddcb0c24396a30291eb1273b9e389",
+      "resource_files": 6
+    },
+    "project-agents": {
+      "model_tool": true,
+      "user_slash": true,
+      "skill_sha256": "175e40faeed489d15ba514f28d7b00c145dddcb0c24396a30291eb1273b9e389",
+      "resource_files": 6
+    }
+  },
+  "executor": "dsh-bash-local",
+  "sdk": "1.0.0",
+  "project_language": "0.30",
+  "release_sdk_archive_sha256": "4268f0f5d6e9ececf907440c9e5a6bf2e8892dcab5d062234f7129f8da29defc",
+  "release_helper_sha256": "f1dece61b78e2aba169355de2255b4fcf1648c4359c763ef8b023ac335890f9e",
+  "routes": {
+    "native": {
+      "compiler_sha256": "1791c80972cca668a19ddbaff6c0d8db3a27bea6f86ea143ca60616d7cb70c34",
+      "test": "hello::twice_is_42",
+      "native_pass": true,
+      "tool_commands": 7
+    },
+    "archive-helper": {
+      "compiler_sha256": "4bf3cbcca9151eb011d816cfc30d654b2c5de34d2b955551dd419d5e3ee3ff38",
+      "test": "hello::twice_is_42",
+      "native_pass": true,
+      "tool_commands": 7
+    }
+  },
+  "failing_diagnostic": "E_ASSERT",
+  "comparison": {
+    "left": "23",
+    "operator": "==",
+    "right": "42",
+    "type": "i64"
+  },
+  "inspected_symbol": "hello::twice",
+  "accepted_stdout": "42\nПривет, NEX 🌍\n",
+  "model_calls": 0
+}

@@ -1,6 +1,6 @@
 # Versions, compatibility and explicit migration
 
-[Предлагаемые условия совместимости 1.x на русском](compatibility.ru.md)
+[Условия совместимости 1.x на русском](compatibility.ru.md)
 
 The ordinary CLI supports projects declaring source language 0.28, 0.29 or
 0.30. New projects created with `nex init` declare 0.30. Without a declared
@@ -117,7 +117,7 @@ source versions. A later language mode that changes meaning must be opt-in and
 offer an explicit, guarded migration.
 
 The 1.0 release notes identify the stable APIs, CLI and JSON schemas covered by
-that promise. The proposed [CLI contract](cli-consumer-contract.md) specifies
+that promise. The [CLI contract](cli-consumer-contract.md) specifies
 the fields read by a tool that creates, checks, tests and runs a native project.
 The [standard-library contract](stdlib-source-compatibility.md) identifies
 the public signatures and constructor fields used by existing source programs.
@@ -126,28 +126,29 @@ keep their own versioned compatibility contracts. Use their matching SDK and
 runtime when the release notes require them. GPU and NPU support is listed by
 qualified provider and device.
 
-Before promoting the beta, run the 0.30 agreement and migration corpus on the
-proposed 1.0 SDKs. Check and execute the published beta examples with the new
-compiler. Recover beta snapshots and rerun their selected revisions. Record
-which preserved source, archive, CLI and platform contracts passed. Include any
-intended compatibility exception in the release notes before making the promise.
+For SDK 1.0.0, each host was tested against its published 0.281.0 beta.
+The report records the archive pair, graph recovery, standard-library and CLI
+checks for each host. [Beta archives](https://github.com/sae-ru/NEX/releases/tag/v0.281.0) · [Compatibility report](https://github.com/sae-ru/NEX/releases/download/v1.0.0/compatibility.json)
+
+To build the Windows x64 SDK from either release tag, apply the release's packaging script and session DLL test before the CMake build. [Windows source-build instructions](sdk-build.md#building-the-windows-sdk-from-the-02810-or-100-release-tag)
 
 ### Checking a proposed host SDK against a published beta
 
-Use the release record and the original archive for the host. For the
-single-platform 0.280.1 release, use the checked-in
-delivery record shown below. For a multi-platform release, download
-`qualification.json` and the host archive from the same GitHub release and
-pass that JSON file to `--release-record`. The runner selects the target by
-archive length and SHA256, so a renamed local download also works. The target
-must cite the release's source commit. The restored SDK must match the target's
-compiler host, compiler checksum and file count. The report records the target
-and source commit. Use the record from GitHub Releases when qualifying a public
-baseline. For release qualification, pass the candidate archive and its own
-record as well. The runner verifies both archives, restores their inventories
-in separate directories, checks that the host ABIs match and uses the two
-restored compilers, examples and migration tools. The resulting report records
-both archive checksums, both release-record checksums and both compiler identities.
+Run the comparison on the OS and CPU for which you downloaded the archives.
+Use the `v1.0.0` source checkout so the runner and web dependency lock come
+from the release. From the checkout root, create `downloads/beta/` and
+`downloads/stable/`. Save these two files from each release.
+
+| Release | Save in | Download from Assets |
+|---|---|---|
+| [0.281.0 beta](https://github.com/sae-ru/NEX/releases/tag/v0.281.0) | `downloads/beta/` | `qualification.json` and your host's SDK archive |
+| [1.0.0](https://github.com/sae-ru/NEX/releases/tag/v1.0.0) | `downloads/stable/` | `qualification.json` and the SDK archive for the same host |
+
+Rename each local SDK archive to `sdk.tar.gz`. The runner selects the platform
+by file length and SHA256, restores each archive in its own directory and
+checks the compiler host, checksum and file inventory. The report records both
+archive hashes, both qualification hashes and both compiler identities.
+The earlier, macOS-only 0.280.1 release has its own [delivery record](releases/0.280.1.json).
 
 The archive comparison runs the 0.30 agreement corpus with the restored
 candidate compiler. Set `NEX_TSC` to the pinned TypeScript compiler and
@@ -171,12 +172,30 @@ copied projects' native build cache. Failed runs keep it for diagnosis.
 On macOS the runner uses the selected Apple SDK. Set `SDKROOT` to override
 the SDK reported by `xcrun --sdk macosx --show-sdk-path`.
 
+Install the locked TypeScript compiler once with `npm --prefix web ci`. In Bash
+or Zsh on Linux or macOS, run the following from the source checkout.
+
 ```sh
-python3 -B tools/sdk_compatibility.py \
-  --release-record docs/releases/0.280.1.json --baseline-archive "$beta_archive" \
-  --candidate-release-record "$candidate_record" --candidate-archive "$candidate_archive" \
-  --output build/beta-compatibility
+export NEX_NODE="$(command -v node)"
+export NEX_TSC="$PWD/web/node_modules/typescript/bin/tsc"
+unset NEX_SKIP_TYPESCRIPT
+python3 -B tools/sdk_compatibility.py --release-record downloads/beta/qualification.json --baseline-archive downloads/beta/sdk.tar.gz --candidate-release-record downloads/stable/qualification.json --candidate-archive downloads/stable/sdk.tar.gz --output build/compat-0.281-to-1.0
 ```
+
+On Windows x64, use native PowerShell in the same checkout layout.
+
+```powershell
+$env:NEX_NODE = (Get-Command node.exe -CommandType Application -ErrorAction Stop).Source
+$env:NEX_TSC = (Resolve-Path -LiteralPath 'web/node_modules/typescript/bin/tsc' -ErrorAction Stop).Path
+Remove-Item Env:NEX_SKIP_TYPESCRIPT -ErrorAction SilentlyContinue
+python -B tools/sdk_compatibility.py --release-record downloads/beta/qualification.json --baseline-archive downloads/beta/sdk.tar.gz --candidate-release-record downloads/stable/qualification.json --candidate-archive downloads/stable/sdk.tar.gz --output build/compat-0.281-to-1.0
+```
+
+A successful run exits with zero and writes `"ok": true` in
+`build/compat-0.281-to-1.0/report.json`. Check `baseline_target`,
+`baseline_archive_sha256` and `candidate_archive.archive_sha256` against the
+two records. For published results across all four targets, see the
+[release compatibility report](https://github.com/sae-ru/NEX/releases/download/v1.0.0/compatibility.json).
 
 During development, pass an installed prefix using `--candidate-sdk` in place
 of the two candidate archive options. Use that prefix to exercise the current
@@ -261,6 +280,14 @@ Migration preflight precedes mutable destination access. See [migration](task-mi
 and [the exact source/target boundary](task-file-reads.md).
 
 ## Moving a project history between Windows and macOS
+
+For a source checkout, commit `*.nex -text` in the root `.gitattributes`.
+We cloned the same language 0.30 project with two pinned library files, one
+with LF and one with CRLF, on Windows x64, Fedora x86-64 and macOS ARM64.
+With that rule, both `core.autocrlf=true` and `false` produced the same NEX
+revision, passed the same test and printed `42` from the native program on all
+three hosts. With automatic conversion enabled and the rule absent, each host
+reported `E_LOCK` for the converted library. [Project Git setup](getting-started.en.md#keep-a-project-in-git)
 
 In the project directory on the original machine, run `nex snapshot --directory ../stock-snapshot`. Copy the entire snapshot directory, including `graph.db` and `snapshot.json`, to the other machine. Run the following commands from the parent of the copied directory.
 

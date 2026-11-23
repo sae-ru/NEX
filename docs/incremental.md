@@ -1,6 +1,6 @@
 # Native compilation and toolchains
 
-Current source language is 0.18. The native compiler produces a separate object
+This cache design dates to language 0.18. The native compiler produces a separate object
 for each reachable concrete function, including lifted closures and generic
 specializations. It can
 reuse those objects across semantic revisions, entry points and source-based or

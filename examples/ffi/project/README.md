@@ -1,8 +1,8 @@
 # Foreign module through an actual NEX shared provider
 
-This candidate0.84 example uses the nominal bytes/Reply contract from the parent
-[FFI example](../README.md). Follow its instructions to build/review the module,
-its `manifest.json`, operator `host.json` and complete notice provenance first.
+This example uses the bytes/Reply contract in the [parent source template](../source.nex.in).
+Build the [C module](../module.c) and prepare its `manifest.json`, operator
+`host.json` and notices as described in the [native module guide](../../../docs/ffi-design.md#authorized-native-modules-development-039).
 Native modules are trusted code. The project package does not initialize them.
 
 Create `core/` and materialize the parent `source.nex.in` as `core/main.nex` in this directory,

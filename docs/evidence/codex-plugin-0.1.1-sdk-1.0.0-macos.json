@@ -1,0 +1,121 @@
+{
+  "schema": "nex.codex-release-consumption/1",
+  "ok": true,
+  "toolchain": "1.0.0",
+  "project_language": "0.30",
+  "source_commit": "b7cf6bc899c724b686a33d21b616d475da09342e",
+  "archive_sha256": "4268f0f5d6e9ececf907440c9e5a6bf2e8892dcab5d062234f7129f8da29defc",
+  "compiler_sha256": "4bf3cbcca9151eb011d816cfc30d654b2c5de34d2b955551dd419d5e3ee3ff38",
+  "plugin": {
+    "identifier": "nex-developer-tools@nex-plugins",
+    "codex": "codex-cli 0.169.0-alpha.11.1",
+    "manifest_version": "0.1.1",
+    "archive_sha256": "41eb1ab4d1d85ad2449b49ab178dc090caf4637571bd068d4c57c74131ea4d42",
+    "skill": "nex-developer-tools:nex-programming",
+    "skill_source_sha256": "a62665373a19f5bdc7977990f10799700bec96b41c983a075cdb820bef13b5a6",
+    "zip_members": 13,
+    "hello_source_sha256": "646ea396716bbc9906f7f31671e15eedd4f2bba5e04d0305cfac73bfcbd8db86"
+  },
+  "commands": {
+    "init": {
+      "arguments": [
+        "init"
+      ],
+      "exit": 0,
+      "stdout_sha256": "bf1ab76a0ba8a35a09360b688a7f98a737bfa7d3a603042005047a147d397e86"
+    },
+    "prompt": {
+      "arguments": [
+        "guide",
+        "--kind",
+        "prompt"
+      ],
+      "exit": 0,
+      "stdout_sha256": "70c2c4148cfc8db181377782d74c966cbbbf1aaab2967cefe77fc1b56f9c6849"
+    },
+    "quick": {
+      "arguments": [
+        "guide",
+        "--kind",
+        "quick"
+      ],
+      "exit": 0,
+      "stdout_sha256": "c9e497c4ec42dd0382afd5fbe446877a302bf013925dd6bc7b874bed61a4af23"
+    },
+    "describe": {
+      "arguments": [
+        "describe",
+        "--field",
+        "project_languages"
+      ],
+      "exit": 0,
+      "stdout_sha256": "017d3964daf6ee709e8bc9bde7edcc9ad80047676d8cac59989b1104c15981e1"
+    },
+    "context": {
+      "arguments": [
+        "context",
+        "src/main.nex",
+        "--kind",
+        "brief",
+        "--symbol",
+        "hello::twice"
+      ],
+      "exit": 0,
+      "stdout_sha256": "23d4baf73b6743eb9c592bafb43709b9ae14a597a37dec510fa3db818576ebbb"
+    },
+    "native": {
+      "arguments": [
+        "test",
+        "src/main.nex",
+        "--symbol",
+        "hello::twice_is_42"
+      ],
+      "exit": 0,
+      "stdout_sha256": "d56fa881cf466c87f9fdd391e935727ff22a56068f459a13ebfc8b112240b65d"
+    },
+    "web": {
+      "arguments": [
+        "test",
+        "src/main.nex",
+        "--symbol",
+        "hello::twice_is_42",
+        "--target",
+        "web"
+      ],
+      "exit": 0,
+      "stdout_sha256": "c1134b34d66c76caf9a47e34ae368909867cdb6b860a2173861c41b5d1fdf924"
+    },
+    "eval": {
+      "arguments": [
+        "eval",
+        "src/main.nex"
+      ],
+      "exit": 0,
+      "stdout_sha256": "392515b8d1e79caa6ac6cb6e7e5a7411380b3c52cc08b268770cb42aa86f34f7"
+    },
+    "release": {
+      "arguments": [
+        "run",
+        "src/main.nex",
+        "--profile",
+        "release"
+      ],
+      "exit": 0,
+      "stdout_sha256": "5203c71417c25309ea422924270130d7210acc8552c66f965d2783edcad1e5b3"
+    }
+  },
+  "guides": {
+    "prompt": {
+      "bytes": 1833,
+      "content_sha256": "90076d3e510dc2ea40af88dc889ad0822135fc418fa3c60b8532a12e1715aa6f"
+    },
+    "quick": {
+      "bytes": 6092,
+      "content_sha256": "ec79e4339f18dd70faa852c4506bcca94099ae73fdf16a3bbd937bd882653be2"
+    }
+  },
+  "direct_tests": [
+    "hello::twice_is_42"
+  ],
+  "stdout": "42\nПривет, NEX 🌍\n"
+}

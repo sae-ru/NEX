@@ -7,12 +7,12 @@ Execution Language**. It discovers the installed compiler's capabilities,
 retrieves focused language guides and symbol context, then checks a coherent
 change with the compiler and relevant tests.
 
-**Plugin version: 0.1.0.** This is independent of the NEX SDK/source-language
+**Plugin version: 0.1.2.** This is independent of the NEX SDK/source-language
 version. This GitHub package is available for installation; an OpenAI directory
 listing has not been submitted or approved.
 
-[Download the catalog ZIP](https://github.com/sae-ru/NEX/raw/refs/heads/main/plugins/releases/nex-developer-tools-0.1.0.zip)
-and check its [SHA256](../releases/nex-developer-tools-0.1.0.sha256).
+[Download the catalog ZIP](https://github.com/sae-ru/NEX/raw/refs/heads/main/plugins/releases/nex-developer-tools-0.1.2.zip)
+and check its [SHA256](../releases/nex-developer-tools-0.1.2.sha256).
 
 ## Install the skill from GitHub
 
@@ -35,6 +35,14 @@ the entire `skills/nex-programming` directory into `.agents/skills/` in an
 application repository, or `~/.agents/skills/` for a user-wide installation.
 Preserve the references, example and license with `SKILL.md`. Do not install
 both a standalone copy and the plugin unless you intend to maintain both.
+
+## DeepSeek Harness
+
+Copy the whole `skills/nex-programming` directory to `.agents/skills/` in the
+application repository. Commit it so the team receives the same instructions.
+For a user installation, copy it to `~/.dsh/skills/`. Open the application
+in Harness and enter `/nex-programming Fix the failing test.` Its shell needs
+the selected SDK on PATH. [SDK setup](https://github.com/sae-ru/NEX/blob/main/docs/getting-started.en.md#deepseek-harness)
 
 ## Install the GitHub plugin
 
@@ -85,7 +93,7 @@ From the NEX repository root, with Python 3.9 or newer:
 python3 tools/package_codex_plugin.py --output /absolute/path/to/artifacts
 ```
 
-This creates `nex-developer-tools-0.1.0.zip`, an inventory and a SHA256 file.
+This creates `nex-developer-tools-0.1.2.zip`, an inventory and a SHA256 file.
 The ZIP has `plugin.json` at its root and includes only the explicitly listed
 plugin files. See [PUBLISHING.md](PUBLISHING.md) for verification, submission
 steps and the remaining publisher-owned actions.

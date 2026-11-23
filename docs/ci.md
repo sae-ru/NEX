@@ -1,5 +1,11 @@
 # Development CI
 
+For SDK 1.0.0, consult the release qualification for the compiler, source
+tests and archive checks on each supported host. The release assets also
+record which physical GPUs and NPUs executed their test workloads. The
+GitHub workflows below cover development checks and the Linux source build.
+[SDK 1.0.0 qualification](https://github.com/sae-ru/NEX/releases/download/v1.0.0/qualification.json)
+
 The [0.280.1 full Linux run](evidence/linux-full-profile-timeout-0.280.1-2026-11-17.json)
 observed all381 groups:380 passed and `task_provider_profile_native` hit its
 1200-second aggregate timeout. Installed checks were not reached. Separate
@@ -61,11 +67,13 @@ Toolchain0.266 source now uses `Data::make`. The actual fixed installed example
 and C11 module agree with reference/native Debug/Release NEX output; the example
 also compiles in the core build. This [focused repair](evidence/sdk-scoped-example-0.266.0-2026-11-16.json)
 does not rerun or qualify the complete source-free Linux/portable SDK workflow.
-Linux installed acceptance does not qualify a portable Linux archive. Windows CI, hosted macOS full
-CI and new physical GPU/NPU acceptance remain separate work. A green core job
-is development feedback; the matching [SDK release record](sdk.md) records
-source regression and portable archive acceptance separately. The Qwen experiment
-keeps its frozen compiler and inputs.
+The Linux installed workflow exercises the ordinary installation. Portable
+archive qualification also runs the installed checks after moving the SDK
+and after restoring the archive. The core CI job covers the core test tier.
+The release record identifies the native Windows and macOS runs and the
+device checks performed on the stands. [SDK release workflow](sdk.md)
+
+The Qwen experiment uses its own frozen compiler and inputs.
 
 The [recorded0.265 development run](evidence/core-ci-0.265.0-2026-11-16.json)
 passed Linux. GitHub cancelled macOS after15 minutes without acquiring a hosted

@@ -4,9 +4,9 @@ applies_to: "toolchain 1.0.0; language 0.30"
 owner: repository
 ---
 
-# Proposed 1.0 standard-library source contract
+# SDK 1.x standard-library source contract
 
-`nex.stdlib-public-api/1` names a proposed compatibility profile for NEX 0.30
+`nex.stdlib-public-api/1` identifies the SDK 1.x compatibility profile for NEX 0.30
 programs that import the checked source modules listed by `nex describe --field
 standard_library --json`. The 1.0 compatibility promise starts with the 1.0
 release. The published 0.280.1 beta provides the baseline of **20 imports, 207
@@ -62,7 +62,7 @@ inventory exactly. For a later baseline, the check first verifies that it
 retains the 0.280.1 API, then requires the candidate to preserve every public
 declaration in the selected baseline, including additions made since 0.280.1.
 For either SDK reporting version 1.0.0, its declarations must exactly match
-the proposed 1.0 source contract. The checker also reads the frozen catalogue from
+the published 1.0 source contract. The checker also reads the frozen catalogue from
 each 1.x installation under `share/nex/llm` and verifies its bytes. Later 1.x SDKs must retain that contract
 and can add declarations. The frozen 0.281.0 beta source and the 1.0.0
 candidate produced identical catalogues covering 21 modules, 217 functions

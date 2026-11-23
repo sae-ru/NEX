@@ -3,9 +3,11 @@
 NEX uses one versioned specification, grammar and compiler interface for Codex,
 Hermes and other LLMs. Start with [BOOTSTRAP.md](BOOTSTRAP.md), then use the
 compact [coding contract](SYSTEM_PROMPT.md).
-[Learning entry](LEARNING.md) links the public bilingual guides and labelled examples. Detailed guides are retrieved for
-the feature being changed. Current development language is0.28; installed
-compiler capabilities and matching acceptance evidence govern actual support.
+[Learning entry](LEARNING.md) links the public bilingual guides and labelled examples. Retrieve the detailed guide for the feature you are changing.
+SDK 1.0.0 creates projects in language 0.30. The compiler uses 0.28 when a
+project omits its language version. Read the project's `nex.json` and use
+`nex describe --field project_languages --json` to see the modes supported
+by the installed compiler. [1.x compatibility terms](../docs/compatibility.md#compatibility-target-for-10)
 
 ## First use
 

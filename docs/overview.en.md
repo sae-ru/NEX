@@ -8,10 +8,10 @@ with less repeated context, while keeping execution efficient and behavior preci
 The goal is maximum exact meaning per necessary token, high performance and safe
 execution.
 
-New projects created by SDK 0.281.0 and the **1.0.0 release candidate** select
+New projects created by **SDK 1.0.0** select
 source language **0.30**. Existing projects can select 0.28, 0.29 or 0.30. The compiler fallback
 is 0.28. Each released SDK identifies its compiler, host and acceptance results.
-[Published macOS SDK 0.280.1](releases/0.280.1.json) · [Platform status](../README.md#development-status) · [Proposed 1.0 compatibility terms](compatibility.md#compatibility-target-for-10)
+[SDK 1.0.0 for four hosts](https://github.com/sae-ru/NEX/releases/tag/v1.0.0) · [Platform status](../README.md#development-status) · [1.x compatibility terms](compatibility.md#compatibility-target-for-10)
 
 ## The principle
 
@@ -124,6 +124,13 @@ acceptance was 25.69 s for NEX, 20.89 s for C++20 and 19.89 s for Python.
 NEX averaged 71,809 tokens per accepted fix, including 56,448 cached input
 tokens. These measurements cover one defect on one Mac.
 [Per-language times, cached input and total tokens](codex-billing-languages-2026-11-23.ru.md)
+
+In a separate trial on three NEX defects, Codex repaired each defect twice per
+mode. All 12 fixes passed. Adding a short function excerpt to the failure
+report reduced total input plus output from 396,127 to 344,777 tokens across
+six fixes per mode (13.0%). Those totals count cache reads once. Mean time
+per accepted fix was 24.12 s with the usual diagnostic and 24.16 s with the
+excerpt. [Trial results and cache counts](https://github.com/sae-ru/NEX/blob/7e69d88e4295fe714997751283be70ba510ee582/docs/evidence/test-repair-context-cost-2026-11-23.json)
 
 The [0.162 SDK measurement](releases/0.162.0.json) repeats the checked recurrence
 for 100 million steps and five samples per language. Median wall times on this

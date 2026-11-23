@@ -1,6 +1,16 @@
-# Qualified SDK: 0.280.1 / language 0.28 / task ABIs 7/8
+# NEX SDK distribution
 
-The current macOS ARM64 development release is [0.280.1](releases/0.280.1.json).
+SDK 1.0 creates language 0.30 projects and accepts existing 0.28 and 0.29 projects.
+Select the archive for macOS ARM64, Windows x64, Linux x86-64 or Linux ARM64.
+The installation guide lists host prerequisites, checksum verification and a first native build.
+[Installation](getting-started.en.md) · [Установка](getting-started.ru.md) · [1.x compatibility](compatibility.md) · [Release assets](https://github.com/sae-ru/NEX/releases/tag/v1.0.0)
+
+For builds from source, use the [SDK build guide](sdk-build.md). The records below
+identify the exact archives and checks from earlier releases.
+
+## Historical macOS ARM64 SDK 0.280.1
+
+The [0.280.1 release record](releases/0.280.1.json) identifies the macOS ARM64 development archive.
 Compiler/resource snapshot: `bfb3492814acf33e9fd62c5d10a70895eac6d1b0`;
 qualification main/tag: `b02514eb31c7255b97dea7b3a1e06c832c6e23bc`. The additional commit changes only an
 unpackaged documentation test. Archives are never silently repacked.
@@ -28,8 +38,7 @@ Requires macOS **27.0+ on ARM64**, Apple command-line tools/macOS SDK, Python3.1
 and Node.js22.18+/npm for web builds. Live debugging uses host LLDB/lldb-dap.
 Keep `bin/nex` and `share/nex` together and set `SDKROOT` for native builds;
 follow the [installation commands](getting-started.en.md#install-the-macos-arm64-sdk).
-Signatures are ad-hoc; Developer ID/notarization and current portable
-Windows/Linux SDK delivery remain pending.
+The 0.280.1 macOS archive uses ad-hoc signatures. Its qualification covered macOS ARM64.
 
 The prior [0.246.1 release](releases/0.246.1.json) keeps its original archive and
 receipts. The language, remaining integrations and original PLAN are still in

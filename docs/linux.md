@@ -1,5 +1,12 @@
 # Linux compiler and development chain
 
+To develop an application on Linux, select the x86-64 or ARM64 SDK for the host.
+The installation guide lists runtime prerequisites and a first native build.
+For a compiler build from source, use the pinned recipe for the target distribution.
+[Installation](getting-started.en.md) · [Source build](sdk-build.md) · [Platform results](STATUS.current.md)
+
+## Earlier distribution and toolchain checks
+
 For a native Debian12 ARM64 baseline, see the [Bookworm compiler guide](linux-native-compiler.md)
 and its exact LLVM/MLIR22.1.8 package pin. All730 source targets built and the
 compiler launched with system glibc2.36. The system Z3 cohort passed ten of eleven

@@ -1,3 +1,16 @@
+# SDK 1.0.0 and language 0.30
+
+SDK 1.0.0 is available for macOS ARM64, Windows x64, Linux x86-64 and Linux ARM64.
+New projects select language 0.30. The release record identifies the archive,
+compiler, source test results and device checks for each target. The compatibility
+report identifies the pair of archives used to restore project history, execute
+beta programs and compare the CLI and public standard library on each host.
+[SDK archives](https://github.com/sae-ru/NEX/releases/tag/v1.0.0) · [Release record](https://github.com/sae-ru/NEX/releases/download/v1.0.0/qualification.json) · [Compatibility report](https://github.com/sae-ru/NEX/releases/download/v1.0.0/compatibility.json)
+
+Установку SDK и первый проект описывают русское и английское руководства.
+Ниже сохранена история предыдущих выпусков.
+[Начать работу](docs/getting-started.ru.md) · [Get started](docs/getting-started.en.md) · [Условия совместимости](docs/compatibility.ru.md)
+
 # Published macOS SDK0.280.1 — explicit source coverage and portable installation
 
 [SDK0.280.1](docs/releases/0.280.1.json) is public with14 assets; anonymous

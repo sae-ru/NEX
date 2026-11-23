@@ -1,12 +1,12 @@
 ---
 status: current
-applies_to: "language 0.30"
+applies_to: "toolchain 1.0.0; language 0.30"
 owner: repository
 ---
 
 # NEX 0.30 на Windows x64 в Codex
 
-Язык указывается в `nex.json`. Версию исполняемого SDK показывает `doctor`. Для работы с релизом установите архив Windows x64 и сверьте его SHA256. Описание проверенных платформ и устройств находится в `qualification.json` в Assets выбранного тега. [Установка в PowerShell](getting-started.ru.md) · [Промпт для нового чата Codex](WINDOWS-CODEX-PROMPT.md) · [Релизы](https://github.com/sae-ru/NEX/releases)
+Язык указывается в `nex.json`. Версию исполняемого SDK показывает `doctor`. Для SDK 1.0.0 скачайте `nex-sdk-1.0.0-windows-x86_64-development.tar.gz` и сверьте его SHA256 с файлом из того же выпуска. Описание проверенных платформ и устройств находится в `qualification.json` в Assets выбранного тега. [Установка в PowerShell](getting-started.ru.md) · [Промпт для нового чата Codex](WINDOWS-CODEX-PROMPT.md) · [Скачать SDK 1.0.0](https://github.com/sae-ru/NEX/releases/tag/v1.0.0)
 
 ## Проверить компилятор и выполнить пример
 
