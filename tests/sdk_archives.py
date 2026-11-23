@@ -590,6 +590,21 @@ class StreamHostPlatformEvidence(unittest.TestCase):
         return {'host':'x86_64-w64-windows-gnu','doctor':{'host':'x86_64-w64-windows-gnu'},
                 'evidence':{'structured_task_file_writes':{'private_stream_host':host}}}
 
+    def test_windows_source_receipts_keep_hashes_with_either_path_separator(self):
+        report = self.report()
+        host = report['evidence']['structured_task_file_writes']['private_stream_host']
+        pins = host['installed_sources']
+        legacy = {path.replace('/', '\\'): digest for path, digest in pins.items()}
+        host['installed_sources'] = legacy.copy()
+        acceptance.validate_installed_stream_host(report, (1, 0, 0))
+        self.assertEqual(host['installed_sources'], legacy)
+        host['installed_sources']['tests/host_test.h'] = pins['tests/host_test.h']
+        with self.assertRaisesRegex(RuntimeError, 'duplicate installed stream host source path'):
+            acceptance.validate_installed_stream_host(report, (1, 0, 0))
+        host['installed_sources'] = {**legacy, r'tests\host_test.h': 'invalid hash'}
+        with self.assertRaisesRegex(RuntimeError, 'installed private stream host evidence'):
+            acceptance.validate_installed_stream_host(report, (1, 0, 0))
+
     def test_Windows_records_pending_partial_write_without_claiming_27_executions(self):
         report=self.report();acceptance.validate_installed_stream_host(report,(0,162,0))
         host=report['evidence']['structured_task_file_writes']['private_stream_host']
