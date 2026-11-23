@@ -319,18 +319,66 @@ class SourceCompatibilityHost(unittest.TestCase):
             targets = {'linux-arm64': linux, 'macos-arm64': mac}
             record = {'schema': 'nex.multi-platform-release/1', 'ok': True, 'tag': 'v0.281.0',
                       'source_commit': 'b'*40, 'version': '0.281.0', 'targets': targets}
-            self.assertEqual(self.compat.select_baseline(record, path), ('0.281.0', 'macos-arm64', mac))
+            self.assertEqual(self.compat.select_archive(record, path), ('0.281.0', 'macos-arm64', mac))
             legacy = {'schema': 'nex.delivery-record/1', 'toolchain': '0.280.1', 'archive': mac['archive']}
-            self.assertEqual(self.compat.select_baseline(legacy, path), ('0.280.1', None, legacy))
+            self.assertEqual(self.compat.select_archive(legacy, path), ('0.280.1', None, legacy))
             for changes in ({'ok': False}, {'tag': 'v1.0.0'}, {'source_commit': 'f'*40},
                             {'targets': {'linux-arm64': mac}},
                             {'targets': {**targets, 'duplicate': mac}}, {'schema': 'unrecognized'}):
                 with self.subTest(changes=changes), self.assertRaises(ValueError):
-                    self.compat.select_baseline({**record, **changes}, path)
+                    self.compat.select_archive({**record, **changes}, path)
             for content in (b'bad', b'truncated'):
                 path.write_bytes(content)
                 with self.assertRaises(ValueError):
-                    self.compat.select_baseline(record, path)
+                    self.compat.select_archive(record, path)
+
+    def test_archive_pair_rejects_missing_record_and_duplicate_bytes_before_replay(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            payload = b'stored SDK'
+            baseline, candidate = root/'baseline', root/'renamed-copy'
+            for path in (baseline, candidate):
+                path.write_bytes(payload)
+            record = root/'delivery.json'
+            record.write_text(json.dumps({'schema': 'nex.delivery-record/1', 'toolchain': '0.281.0',
+                'archive': {'bytes': len(payload), 'name': 'sdk.tar.gz', 'sha256': hashlib.sha256(payload).hexdigest()}}))
+            output = root/'out'
+            driver = [sys.executable, '-B', self.compat.__file__, '--release-record', record,
+                      '--baseline-archive', baseline, '--output', output]
+            for args, message in [
+                    (['--candidate-archive', candidate], 'must be supplied together'),
+                    (['--candidate-sdk', root, '--candidate-release-record', record], 'must be supplied together'),
+                    (['--candidate-archive', candidate, '--candidate-release-record', record], 'identical bytes')]:
+                with self.subTest(args=args):
+                    result = subprocess.run([*driver, *args], capture_output=True, text=True)
+                    self.assertEqual(result.returncode, 2, result.stderr)
+                    self.assertIn(message, result.stderr)
+                    self.assertFalse(output.exists())
+
+    def test_agreement_input_identity_includes_the_source_for_every_selected_case(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root/'next.nex'
+            source.write_bytes(b'first source')
+            (root/'pinned.nex').write_bytes(b'pinned source')
+            (root/'cases.json').write_text(json.dumps({'cases': [{'name': 'pinned', 'source': 'pinned.nex'}],
+                'additional_cases': {'0.30': [{'name': 'added030', 'source': source.name}]}}))
+            before = self.compat.agreement_inputs(root)
+            self.assertEqual(set(before['sources']), {'pinned', 'added030'})
+            source.write_bytes(b'changed source')
+            after = self.compat.agreement_inputs(root)
+            self.assertEqual(after['manifest_sha256'], before['manifest_sha256'])
+            self.assertEqual(after['sources']['pinned'], before['sources']['pinned'])
+            self.assertNotEqual(after['sources']['added030'], before['sources']['added030'])
+
+    def test_candidate_cannot_drop_the_published_agreement_corpus(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            published = root/'beta/tests/agreement'
+            published.mkdir(parents=True)
+            (published/'cases.json').write_text('{}')
+            with self.assertRaisesRegex(ValueError, 'missing the agreement corpus'):
+                self.compat.check_release_agreement(Path(sys.executable),root/'beta',root/'candidate',root,{})
 
     def test_platform_qualification_matches_restored_compiler_and_inventory(self):
         for target, host in [('macos-arm64', 'arm64-apple-darwin27.2.0'),
@@ -342,14 +390,14 @@ class SourceCompatibilityHost(unittest.TestCase):
             manifest = {'toolchain': '0.281.0', 'host': host, 'platform': platform,
                         'files': {compiler: {'sha256': 'c'*64}}}
             row = {'compiler_host': host, 'compiler_sha256': 'c'*64, 'archive': {'files': 1}}
-            self.compat.check_baseline_bundle('0.281.0', target, row, manifest, host)
+            self.compat.check_recorded_bundle('0.281.0', target, row, manifest, host)
             for version, name, changes, candidate in [
                     ('0.281.0', 'other', {}, host), ('1.0.0', target, {}, host),
                     ('0.281.0', target, {}, 'other-abi'), ('0.281.0', target, {'compiler_host': 'other'}, host),
                     ('0.281.0', target, {'archive': {'files': 2}}, host),
                     ('0.281.0', target, {'compiler_sha256': 'd'*64}, host)]:
                 with self.subTest(target=target, changes=changes, host=candidate), self.assertRaises(ValueError):
-                    self.compat.check_baseline_bundle(version, name, {**row, **changes}, manifest, candidate)
+                    self.compat.check_recorded_bundle(version, name, {**row, **changes}, manifest, candidate)
 
 
 class WindowsAssemblyEnvironment(unittest.TestCase):

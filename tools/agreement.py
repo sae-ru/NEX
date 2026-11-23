@@ -19,17 +19,25 @@ def sha(path):
 
 def run(command,cwd,timeout):
     started=time.monotonic()
+    failure={}
     try:
         child=subprocess.run(list(map(str,command)),cwd=cwd,capture_output=True,timeout=timeout)
         code=child.returncode
-        stdout=child.stdout.decode('utf-8')
         stderr=child.stderr.decode('utf-8',errors='replace')
+        try:
+            stdout=child.stdout.decode('utf-8')
+        except UnicodeDecodeError as error:
+            stdout=child.stdout.decode('utf-8',errors='replace')
+            failure={'driver_error':'invalid_stdout_utf8','byte_offset':error.start,
+                     'stdout_sha256':hashlib.sha256(child.stdout).hexdigest(),'process_exit_code':code}
+            code=-1
     except subprocess.TimeoutExpired as error:
         stdout=(error.stdout or b'').decode(errors='replace')
         stderr=(error.stderr or b'').decode(errors='replace')+'\nagreement command timed out'
         code=-1
+        failure={'driver_error':'timeout'}
     return {'command':[str(item) for item in command],'exit_code':code,'stdout':stdout,'stderr':stderr,
-        'seconds':round(time.monotonic()-started,4)}
+        'seconds':round(time.monotonic()-started,4),**failure}
 
 
 def payload(result):
@@ -42,6 +50,7 @@ def payload(result):
 
 
 def code_of(result,data):
+    if result.get('driver_error'):return ''
     if data and isinstance(data,dict):
         if isinstance(data.get('code'),str):return data['code']
         diagnostics=data.get('native_diagnostics')
@@ -199,8 +208,12 @@ def main():
     parser.add_argument('--case',action='append',default=[])
     parser.add_argument('--timeout',type=int,default=180)
     parser.add_argument('--no-typescript',action='store_true')
+    parser.add_argument('--require-complete',action='store_true',
+        help='require every case and all executable backends, including strict TypeScript')
     parser.add_argument('--language-version',help='project language for portable cases, e.g. 0.30')
     args=parser.parse_args()
+    if args.require_complete and (args.case or args.no_typescript or os.environ.get('NEX_SKIP_TYPESCRIPT')):
+        parser.error('--require-complete requires all cases and TypeScript execution')
     compiler=args.compiler.resolve(strict=True)
     root=args.root.resolve(strict=True)
     output=args.output.resolve()
@@ -234,6 +247,11 @@ def main():
     report['coverage']=measured
     executable=measured['executable_cases']
     report['typescript_executed']=executable>0 and measured['typescript_executed']==executable
+    report['complete']=not args.case and executable>0 and measured['check']==len(cases) and all(
+        measured[key]==executable for key in ('reference','native-debug','native-release','typescript',
+                                              'typescript_executed','typescript_strict'))
+    if args.require_complete and not report['complete']:
+        report['failures'].append({'coverage':measured,'expected_cases':len(cases),'expected_executable':executable})
     report['ok']=not report['failures']
     report['registered_cases']=len(report['cases'])
     (output/'report.json').write_text(json.dumps(report,indent=2)+'\n')

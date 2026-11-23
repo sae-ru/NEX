@@ -1853,7 +1853,10 @@ set_tests_properties(docs_index PROPERTIES TIMEOUT 120)
 add_test(NAME backend_agreement COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tools/agreement.py --compiler $<TARGET_FILE:nex>
   --output ${CMAKE_CURRENT_BINARY_DIR}/backend-agreement)
-set_tests_properties(backend_agreement PROPERTIES TIMEOUT 900)
+add_test(NAME backend_agreement_030 COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tools/agreement.py --compiler $<TARGET_FILE:nex>
+  --language-version 0.30 --require-complete --output ${CMAKE_CURRENT_BINARY_DIR}/backend-agreement-030)
+set_tests_properties(backend_agreement backend_agreement_030 PROPERTIES TIMEOUT 900)
 
 add_test(NAME agreement_generator COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/agreement_generator.py $<TARGET_FILE:nex>)

@@ -13,7 +13,7 @@ acceptance.
 
 ```sh
 python3 tools/agreement.py --compiler build/nex --output build/agreement
-python3 tools/agreement.py --compiler build/nex --language-version 0.30 --output build/agreement-030
+python3 tools/agreement.py --compiler build/nex --language-version 0.30 --require-complete --output build/agreement-030
 python3 tools/agreement.py --compiler build/nex --output build/agreement --case arith
 python3 tools/agreement.py --compiler build/nex --output build/agreement --no-typescript
 ```
@@ -28,6 +28,9 @@ with the pinned Node and typechecked with the pinned `NEX_TSC`.
 The runner reads program output as UTF-8 in every terminal locale. The Unicode
 case checks a supplementary character, embedded NUL, carriage return, CRLF and
 a final empty line across the interpreter, both native profiles and Node.
+For invalid UTF-8 it records the byte offset, stream checksum and actual process
+exit code. A timeout or decoding failure fails the observation even when the
+process already printed the expected language error.
 
 By default a portable case uses the manifest's project language (0.28 in the
 checked-in corpus). `--language-version 0.30` selects 0.30 for the same portable
@@ -44,7 +47,9 @@ The historical top-level `language` field identifies the compiler fallback.
 `coverage` counts passing checker, reference and native profiles as well as
 TypeScript executions and successful strict checks. `typescript_executed` is true
 when every eligible case ran in Node and at least one was eligible. Check
-`ok` together with coverage when qualifying a full agreement run.
+`complete` for coverage of every case, including native Debug and Release,
+reference execution and strict, executed TypeScript. The `backend_agreement_030`
+CTest group uses `--require-complete` and fails if any of this coverage is missing.
 
 ## Deterministic generator
 
