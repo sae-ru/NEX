@@ -296,12 +296,60 @@ class LinuxLinkLibraries(unittest.TestCase):
 
 
 class SourceCompatibilityHost(unittest.TestCase):
-    def test_darwin_build_release_can_differ_but_architecture_and_abi_must_match(self):
+    def setUp(self):
         with mock.patch.object(sys, 'path', [str(Path(__file__).resolve().parents[1]/'tools'), *sys.path]):
-            from sdk_compatibility import host_abi
+            import sdk_compatibility
+        self.compat = sdk_compatibility
+
+    def test_darwin_build_release_can_differ_but_architecture_and_abi_must_match(self):
+        host_abi = self.compat.host_abi
         self.assertEqual(host_abi('arm64-apple-darwin26.5.0'), host_abi('arm64-apple-darwin27.2.0'))
         self.assertNotEqual(host_abi('arm64-apple-darwin27.2.0'), host_abi('x86_64-apple-darwin27.2.0'))
         self.assertNotEqual(host_abi('x86_64-unknown-linux-gnu'), host_abi('x86_64-unknown-linux-musl'))
+
+    def test_select_archive_by_content_including_renamed_legacy_download(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'renamed-download'
+            path.write_bytes(b'mac')
+            def row(target, contents):
+                return {'target': target, 'source_commit': 'b'*40, 'compiler_host': 'arm64-apple-darwin27',
+                        'compiler_sha256': 'c'*64, 'archive': {'name': target+'.tar.gz', 'bytes': len(contents),
+                                                               'sha256': hashlib.sha256(contents).hexdigest()}}
+            mac, linux = row('macos-arm64', b'mac'), row('linux-arm64', b'lnx')
+            targets = {'linux-arm64': linux, 'macos-arm64': mac}
+            record = {'schema': 'nex.multi-platform-release/1', 'ok': True, 'tag': 'v0.281.0',
+                      'source_commit': 'b'*40, 'version': '0.281.0', 'targets': targets}
+            self.assertEqual(self.compat.select_baseline(record, path), ('0.281.0', 'macos-arm64', mac))
+            legacy = {'schema': 'nex.delivery-record/1', 'toolchain': '0.280.1', 'archive': mac['archive']}
+            self.assertEqual(self.compat.select_baseline(legacy, path), ('0.280.1', None, legacy))
+            for changes in ({'ok': False}, {'tag': 'v1.0.0'}, {'source_commit': 'f'*40},
+                            {'targets': {'linux-arm64': mac}},
+                            {'targets': {**targets, 'duplicate': mac}}, {'schema': 'unrecognized'}):
+                with self.subTest(changes=changes), self.assertRaises(ValueError):
+                    self.compat.select_baseline({**record, **changes}, path)
+            for content in (b'bad', b'truncated'):
+                path.write_bytes(content)
+                with self.assertRaises(ValueError):
+                    self.compat.select_baseline(record, path)
+
+    def test_platform_qualification_matches_restored_compiler_and_inventory(self):
+        for target, host in [('macos-arm64', 'arm64-apple-darwin27.2.0'),
+                             ('linux-arm64', 'aarch64-unknown-linux-gnu'),
+                             ('linux-amd64', 'x86_64-unknown-linux-gnu'),
+                             ('windows-x86_64', 'x86_64-w64-windows-gnu')]:
+            platform = target.split('-', 1)[0]
+            compiler = 'bin/nex.exe' if platform == 'windows' else 'bin/nex'
+            manifest = {'toolchain': '0.281.0', 'host': host, 'platform': platform,
+                        'files': {compiler: {'sha256': 'c'*64}}}
+            row = {'compiler_host': host, 'compiler_sha256': 'c'*64, 'archive': {'files': 1}}
+            self.compat.check_baseline_bundle('0.281.0', target, row, manifest, host)
+            for version, name, changes, candidate in [
+                    ('0.281.0', 'other', {}, host), ('1.0.0', target, {}, host),
+                    ('0.281.0', target, {}, 'other-abi'), ('0.281.0', target, {'compiler_host': 'other'}, host),
+                    ('0.281.0', target, {'archive': {'files': 2}}, host),
+                    ('0.281.0', target, {'compiler_sha256': 'd'*64}, host)]:
+                with self.subTest(target=target, changes=changes, host=candidate), self.assertRaises(ValueError):
+                    self.compat.check_baseline_bundle(version, name, {**row, **changes}, manifest, candidate)
 
 
 class WindowsAssemblyEnvironment(unittest.TestCase):

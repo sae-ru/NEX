@@ -1,0 +1,72 @@
+{
+  "schema": "nex.promotion-runner-observation/1",
+  "scope": "Local macOS compatibility rehearsal using an unpublished two-target index, earlier development archives, and separately built compilers.",
+  "language": "0.30",
+  "rehearsal": {
+    "source_commit": "d492bf7f3c3feca69c2b7363aa5aa564866d2752",
+    "release_record_sha256": "075022a8155f3b4f08b3c58e3cda790bab90ff5c1a45099b0208f5452cfc83aa",
+    "index_targets": [
+      "linux-arm64",
+      "macos-arm64"
+    ],
+    "executed_target": "macos-arm64",
+    "baseline_archive_sha256": "9d6c08ad658f801865b818a26fad5b6d5a4576c5924ca5376e408ffc81747bcb",
+    "baseline_compiler_sha256": "5473d126908b60b424c4a33af557f88f8fc54c3aae022dd84258e13333ada07b",
+    "candidate_source_commit": "7f1b75eae61335c37254fa5b31dc798b3189cfe0",
+    "candidate_compiler_sha256": "015bf751c727cd1374e0deab1f7ad62cf25e75e4cf803c7c3a27f845970efc24",
+    "host": "arm64-apple-darwin27.2.0",
+    "replay_sha256": "8ad92f29793384ae8d83276e66d7d041a1d4af42139d138454f83a4501339a57",
+    "passed_checks": [
+      "consumer_cli",
+      "public_stdlib",
+      "graph_snapshot",
+      "published_examples",
+      "published_migration_suite",
+      "candidate_migration_suite"
+    ],
+    "projects_checked": 11,
+    "retained_revisions": 2
+  },
+  "current_examples": {
+    "source_commit": "584715e45d05be53e5a8eb967edcd4d5ab7fc1b5",
+    "baseline_source_commit": "7f1b75eae61335c37254fa5b31dc798b3189cfe0",
+    "baseline_compiler_sha256": "015bf751c727cd1374e0deab1f7ad62cf25e75e4cf803c7c3a27f845970efc24",
+    "candidate_compiler_sha256": "00936b0088a620d009f756c8c39da9ecb0eae325526dd5ec1a0e44f9e63a8c1a",
+    "report_sha256": "00c401030f47b9528bbb89188faac32a15d993f509e39dd10444d8fcad70bf23",
+    "passed_projects": [
+      "hash-containers",
+      "insertion-ordered-map",
+      "java-circular-fifo",
+      "java-long",
+      "native-host-session",
+      "persistent-ui",
+      "reference-provider-debugging",
+      "reference-task-profiling",
+      "reference-task-providers",
+      "references",
+      "sequence-containers",
+      "workboard"
+    ],
+    "insertion_ordered_map": {
+      "entry": "main.nex",
+      "revision": "39a4a5857fd164dc063f165b70d620fe0bda6bc05f6090ef6dd50e47c56da112",
+      "stdout": "east\nwest\n",
+      "reference_value": null,
+      "native_exit": 0,
+      "tests": [
+        {
+          "name": "insertion_order_example::reinsertion_appends",
+          "backend": "native",
+          "reference_agreement": true
+        }
+      ]
+    }
+  },
+  "legacy_record": {
+    "release": "v0.280.1",
+    "source": "docs/releases/0.280.1.json",
+    "archive_sha256": "6d52a14f076c8382c06a6ac1f78d1b5e05f49553471116759a0c6f79eab3fa57",
+    "verified_inventory_files": 4388,
+    "restored_compiler_sha256": "a37aab72fb84cf2bf938859017282977b9b9f2445f16fcae9457086e8df9f0b4"
+  }
+}

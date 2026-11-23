@@ -132,8 +132,18 @@ intended compatibility exception in the release notes before making the promise.
 
 ### Checking a proposed host SDK against a published beta
 
-Use the checked-in release record, the original archive for the host, and a
-separate installed candidate. The runner checks the published archive SHA256,
+Use the release record, the original archive for the host, and a separate
+installed candidate. For the single-platform 0.280.1 release, use the checked-in
+delivery record shown below. For a multi-platform release, download
+`qualification.json` and the host archive from the same GitHub release and
+pass that JSON file to `--release-record`. The runner selects the target by
+archive length and SHA256, so a renamed local download also works. The target
+must cite the release's source commit. The restored SDK must match the target's
+compiler host, compiler checksum and file count. The report records the target
+and source commit. Use the record from GitHub Releases when qualifying a public
+baseline.
+
+The runner checks the archive SHA256,
 restores its complete inventory, then verifies that both compilers select
 their own installed runtime. It exercises the public CLI and standard-library
 contracts against both installations, runs the published examples from fresh copies,
@@ -164,6 +174,15 @@ declaration in 0.280.1. It preserved 207 functions and 35 structures across
 20 modules. All ten published projects and both retained revisions ran on
 macOS ARM64. Eleven executable agreement cases passed in the interpreter,
 native Debug and Release and executed strict TypeScript.
+
+On macOS ARM64, a local rehearsal used a two-platform index assembled from
+development archives. All six compatibility checks passed with the selected
+macOS archive, including its eleven 0.30 projects. A separate check executed
+all twelve 0.30 example projects from `584715e4` with two compiler builds. The
+new map example printed `east` then `west` after removing and reinserting a key.
+The future 1.0 release gate still requires the publicly distributed beta and
+the actual candidate for each supported host.
+[Compiler identities and rehearsal results](evidence/multi-platform-baseline-rehearsal-2026-11-23.json)
 
 ## Historical source migrations
 

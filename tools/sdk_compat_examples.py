@@ -9,8 +9,11 @@ import subprocess
 
 # Reviewed entry points from the published examples. Named checks belong to the
 # application, so adding an unrelated test to an installed library is compatible.
-# The optional Java FIFO example first appeared after the 0.280.1 distribution.
+# Java FIFO and the insertion-ordered map first appeared after the 0.280.1 distribution.
 PROGRAMS = {
+    "insertion-ordered-map": {
+        "main.nex": ("east\nwest\n", ("insertion_order_example::reinsertion_appends",)),
+    },
     "hash-containers": {
         "main.nex": ("hash-containers-ok\n", ("hash_inventory::retained_values",)),
         "tasks.nex": ("42\n", ("hash_tasks::snapshots_across_tasks",)),
@@ -40,7 +43,7 @@ WORKBOARD = {
 }
 
 
-PUBLISHED_02801 = (set(PROGRAMS) - {"java-circular-fifo"}) | {"workboard"}
+PUBLISHED_02801 = (set(PROGRAMS) - {"java-circular-fifo", "insertion-ordered-map"}) | {"workboard"}
 
 
 def digest(data):
