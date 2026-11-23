@@ -1,0 +1,878 @@
+{
+  "schema": "nex.sdk-source-compatibility/1",
+  "ok": true,
+  "platform": "Darwin-arm64",
+  "language": "0.30",
+  "release_record_sha256": "496311f6a6e04debaa237b6044f4c6320c920021e16527a5e12c1a6060495170",
+  "baseline_archive_sha256": "6d52a14f076c8382c06a6ac1f78d1b5e05f49553471116759a0c6f79eab3fa57",
+  "baseline_archive_name": "nex-sdk-0.280.1-macos-arm64-development.tar.gz",
+  "checks": {
+    "graph_snapshot": {
+      "schema": "nex.sdk-snapshot-compatibility/1",
+      "ok": true,
+      "head": "ef61240fc0e54a831499006c62bfdaef545ab6729583e68afc2b8d34bea7eef4",
+      "namespace": "5ecd39495530497673e1a0a533f3be41",
+      "snapshot_database_sha256": "10f23367afa20a2344f57c890962f18f2cf58c274f8df625112cc235016d6376",
+      "snapshot_manifest_sha256": "ccd5a5cf383ebcff1584d17f54be9a7537812c452713b8f13d3fe18afd39f515",
+      "baseline_rows_sha256": "aa4fe982b6473ed9121a8185f43e947cd23fbbfdd5f97135f3f6db3e4800ba52",
+      "history_sha256": "6514b9fea81fb58a7f279b2c7228dad9b76679ae039ce5348b5ae3a64eedb358",
+      "change_journal_sha256": "c3e9c006bf41128e7f6202ba12df59c49b4768311ebff0240ea39ceb04b813cf",
+      "revisions": [
+        {
+          "revision": "bf77354044d9f306ef6c96bb22ef95590be94788f63b375189003d6339196be7",
+          "language": "0.30",
+          "stdout": "41\n",
+          "identities": {
+            "function": {
+              "count": 2,
+              "sha256": "5f56f2c6f3ebd7a2d9dfc9c95b1d95b5e905df834f0bb60e441d440cd0be50b0",
+              "local_ids_sha256": "2ec6f3d566f6d79721d92fb7d0e2cde7443b394df3b0c48f2235247a0aacd5df",
+              "namespace": "5ecd39495530497673e1a0a533f3be41"
+            },
+            "operation": {
+              "count": 18,
+              "sha256": "8d38457df708504d27472e622c512bad6d3870adcd8419bf1cabd66ca2397e1b",
+              "local_ids_sha256": "c1292c0acb4ffa1c7fe113e73906b6cd373fd24d12e7ee5f5bfb18462df6be34",
+              "namespace": "5ecd39495530497673e1a0a533f3be41"
+            }
+          },
+          "archived_check": true,
+          "native": true,
+          "reference": true,
+          "physical_export_checked_and_evaluated": true
+        },
+        {
+          "revision": "ef61240fc0e54a831499006c62bfdaef545ab6729583e68afc2b8d34bea7eef4",
+          "language": "0.30",
+          "stdout": "42\n",
+          "identities": {
+            "function": {
+              "count": 2,
+              "sha256": "78c9788a8c8c87a9a9befffb079009fac6fd447ac75c8037a34a0b857f85d8c7",
+              "local_ids_sha256": "2ec6f3d566f6d79721d92fb7d0e2cde7443b394df3b0c48f2235247a0aacd5df",
+              "namespace": "5ecd39495530497673e1a0a533f3be41"
+            },
+            "operation": {
+              "count": 18,
+              "sha256": "7642c1e7529bf08d818e081886e3c7944ced6e33cf550f3b17da7d0df807810a",
+              "local_ids_sha256": "c1292c0acb4ffa1c7fe113e73906b6cd373fd24d12e7ee5f5bfb18462df6be34",
+              "namespace": "5ecd39495530497673e1a0a533f3be41"
+            }
+          },
+          "archived_check": true,
+          "native": true,
+          "reference": true,
+          "physical_export_checked_and_evaluated": true
+        }
+      ]
+    },
+    "published_examples": {
+      "schema": "nex.sdk-compat-examples/1",
+      "ok": true,
+      "language": "0.30",
+      "projects": [
+        {
+          "name": "hash-containers",
+          "manifest_entry": "main.nex",
+          "manifest_sha256": "677a6ca3cec3fb7acd2f2aa8468af981d3288a256eafb9c041079342cf3ca3fe",
+          "inputs_sha256": {
+            "main.nex": "e3e6a6b49ee3b7a4f327b3960d423642518df6bbf376d628888b393f5155adb2",
+            "nex.json": "677a6ca3cec3fb7acd2f2aa8468af981d3288a256eafb9c041079342cf3ca3fe",
+            "nex.lock.json": "da95f5179198880028e31f7b7243c6d50bd309e588784560be8729f0d21fec99",
+            "tasks.nex": "664819631051a2ffcb7458a42757d5c71c8d72d92330295808b949affa856370"
+          },
+          "observed": {
+            "baseline": [
+              {
+                "entry": "main.nex",
+                "revision": "d0b2491ce4f527aaf9e426f575a8de47e4512698a5a0de00e8e2a3b533ac7380",
+                "stdout": "hash-containers-ok\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": [
+                  {
+                    "name": "hash_inventory::retained_values",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              },
+              {
+                "entry": "tasks.nex",
+                "revision": "48bb2a6752594f7b43fdb8d26884fd458bdc9ad99b2443ed1678345e12dd4580",
+                "stdout": "42\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": [
+                  {
+                    "name": "hash_tasks::snapshots_across_tasks",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              }
+            ],
+            "candidate": [
+              {
+                "entry": "main.nex",
+                "revision": "d0b2491ce4f527aaf9e426f575a8de47e4512698a5a0de00e8e2a3b533ac7380",
+                "stdout": "hash-containers-ok\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": [
+                  {
+                    "name": "hash_inventory::retained_values",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              },
+              {
+                "entry": "tasks.nex",
+                "revision": "48bb2a6752594f7b43fdb8d26884fd458bdc9ad99b2443ed1678345e12dd4580",
+                "stdout": "42\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": [
+                  {
+                    "name": "hash_tasks::snapshots_across_tasks",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              }
+            ]
+          },
+          "ok": true
+        },
+        {
+          "name": "java-long",
+          "manifest_entry": "main.nex",
+          "manifest_sha256": "8a0bd135f5f3dc5dadde3d561cbf3cb2b9e2f768ba6386343bc2880acb31993e",
+          "inputs_sha256": {
+            "main.nex": "1c813305ed097b2dd5355b1eb454c824ddfb7023e2b862f95375ffd7535923ed",
+            "nex.json": "8a0bd135f5f3dc5dadde3d561cbf3cb2b9e2f768ba6386343bc2880acb31993e",
+            "nex.lock.json": "b0061ea9aacd1621cba3c0352f264ac77428cff6831b4b5ea279e36c492c30bd"
+          },
+          "observed": {
+            "baseline": [
+              {
+                "entry": "main.nex",
+                "revision": "510c552640967526d3ab5aef1787deda69d7dc09c48fdcbd629619faa67f5548",
+                "stdout": "java-long-ok\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": [
+                  {
+                    "name": "java_long_example::exact_long_wrap",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              }
+            ],
+            "candidate": [
+              {
+                "entry": "main.nex",
+                "revision": "510c552640967526d3ab5aef1787deda69d7dc09c48fdcbd629619faa67f5548",
+                "stdout": "java-long-ok\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": [
+                  {
+                    "name": "java_long_example::exact_long_wrap",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              }
+            ]
+          },
+          "ok": true
+        },
+        {
+          "name": "native-host-session",
+          "manifest_entry": "app/main.nex",
+          "manifest_sha256": "4480a42a3fcc15093bafd78ff2148b4cb4a0b696d863e442658abe33115cd2b9",
+          "inputs_sha256": {
+            "app/main.nex": "227936fd798a08bdb0ff70c717ee79a0caffaf952acf8b1b8ab058adb6c51e1b",
+            "core/value.nex": "33359393cf1923430a7a5f21eb00f58031cd8bff3830271b5033c842c263951a",
+            "files/value.nex": "5af2c610950d0b9c453602e3a4a6d7de3466c3f19011b4c1b819526269608898",
+            "mid/value.nex": "2d3c73bb4807cc73725d2e0adc13f09b601225844c60c09204b3a8f3b6c3766f",
+            "nex.build.json": "89b0ec3b5c1181707b6b62dd368f0ff5a374657a0a473bed07c3999e689e4d2b",
+            "nex.json": "4480a42a3fcc15093bafd78ff2148b4cb4a0b696d863e442658abe33115cd2b9"
+          },
+          "observed": {
+            "baseline": [
+              {
+                "entry": "app/main.nex",
+                "revision": "025f6a2797a5715c948cf72b4a91e51dcc3536016debb79bb6d6aeec5c6390e7",
+                "stdout": "42\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": []
+              }
+            ],
+            "candidate": [
+              {
+                "entry": "app/main.nex",
+                "revision": "025f6a2797a5715c948cf72b4a91e51dcc3536016debb79bb6d6aeec5c6390e7",
+                "stdout": "42\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": []
+              }
+            ]
+          },
+          "ok": true
+        },
+        {
+          "name": "persistent-ui",
+          "manifest_entry": "main.nex",
+          "manifest_sha256": "677a6ca3cec3fb7acd2f2aa8468af981d3288a256eafb9c041079342cf3ca3fe",
+          "inputs_sha256": {
+            "main.nex": "ca6ba70af9a98c2f41844fd15719d7aa4cbf60981706f08d50ee986d84665e7b",
+            "nex.json": "677a6ca3cec3fb7acd2f2aa8468af981d3288a256eafb9c041079342cf3ca3fe"
+          },
+          "observed": {
+            "baseline": [
+              {
+                "entry": "main.nex",
+                "revision": "c75192420de624c72623b3b9c7b30d19efdffbce2344670851f9f9ba3ebccc4d",
+                "stdout": "41\n42\n43\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": [
+                  {
+                    "name": "persistent_ui::shared_state_after_suspension",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              }
+            ],
+            "candidate": [
+              {
+                "entry": "main.nex",
+                "revision": "c75192420de624c72623b3b9c7b30d19efdffbce2344670851f9f9ba3ebccc4d",
+                "stdout": "41\n42\n43\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": [
+                  {
+                    "name": "persistent_ui::shared_state_after_suspension",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              }
+            ]
+          },
+          "ok": true
+        },
+        {
+          "name": "reference-provider-debugging",
+          "manifest_entry": "app/main.nex",
+          "manifest_sha256": "4480a42a3fcc15093bafd78ff2148b4cb4a0b696d863e442658abe33115cd2b9",
+          "inputs_sha256": {
+            "app/main.nex": "da1646bb25f6c5dcf37d0d50d98644ea1d52a7d26388e255c1bb324fda4cc88b",
+            "leaf/value.nex": "4e1fec513c5e145e4af70cf327aeef7df6ff0aec82a3956b6e76a4496616797f",
+            "mid/value.nex": "dde03d2e2c7c71ce4f1f53c7a0aa3187396adc2fc1aca65ca1e24d58f86e9e7e",
+            "nex.build.json": "24047cb30f03f41169d9732ab323b1816fbc3b93ef286a6e55d46f7300fa9760",
+            "nex.json": "4480a42a3fcc15093bafd78ff2148b4cb4a0b696d863e442658abe33115cd2b9",
+            "pure/value.nex": "0c09b501d7b16fe0e03bd1f4f937a7ba0a680029a5ea7b528dfc3f3d93fac7d7"
+          },
+          "observed": {
+            "baseline": [
+              {
+                "entry": "app/main.nex",
+                "revision": "7a69832623d42a7fa197bbb57f0c7da5bebd7daf6f8cdb20f0947016df38ab53",
+                "stdout": "42\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": []
+              }
+            ],
+            "candidate": [
+              {
+                "entry": "app/main.nex",
+                "revision": "7a69832623d42a7fa197bbb57f0c7da5bebd7daf6f8cdb20f0947016df38ab53",
+                "stdout": "42\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": []
+              }
+            ]
+          },
+          "ok": true
+        },
+        {
+          "name": "reference-task-profiling",
+          "manifest_entry": "app/main.nex",
+          "manifest_sha256": "205dc91efdf4a393d07caefa8624721b57d018a8b569f81c3254b803d9775233",
+          "inputs_sha256": {
+            "app/main.nex": "c92c36a33c455da24bf4adc62173047f95eeda4ca1e635113d3756ff97270e36",
+            "leaf/value.nex": "ba59a9d6ce27eda0be230b2ef8870b772f8d8d7b4e99b5d655b8b6721ab42bc4",
+            "mid/value.nex": "142bd5d198b60bc491e272d8218ffc01db6249829ce9053eba954e5bb06f511f",
+            "nex.build.json": "291a9d4ec2545e203c6e37cbf60ed7999019dd6f1afc8ccfbadfab92b84f8718",
+            "nex.json": "205dc91efdf4a393d07caefa8624721b57d018a8b569f81c3254b803d9775233",
+            "pure/value.nex": "dd6e1c9da3842f175afd4a5ce87788d949a056f9282aa38af1547052d9e9aeff"
+          },
+          "observed": {
+            "baseline": [
+              {
+                "entry": "app/main.nex",
+                "revision": "ff5bd5328f9bc180cf0bfceebdab7a978007508e1934bcd52993450d8a079545",
+                "stdout": "42\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": []
+              }
+            ],
+            "candidate": [
+              {
+                "entry": "app/main.nex",
+                "revision": "ff5bd5328f9bc180cf0bfceebdab7a978007508e1934bcd52993450d8a079545",
+                "stdout": "42\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": []
+              }
+            ]
+          },
+          "ok": true
+        },
+        {
+          "name": "reference-task-providers",
+          "manifest_entry": "app/main.nex",
+          "manifest_sha256": "4480a42a3fcc15093bafd78ff2148b4cb4a0b696d863e442658abe33115cd2b9",
+          "inputs_sha256": {
+            "app/main.nex": "21c9dcb466d157a951205de02d14b85cd755c9517176d67312b3335f2884c6cb",
+            "leaf/value.nex": "63df94d175e586462b6cc812c858d00de9ba31a4b3640abe33ef4ba02b683d32",
+            "mid/value.nex": "5d61971f2a02bea102a3990091de88229b3458928622b6c3e0b00e5e5367d018",
+            "nex.build.json": "a4241f91f50cdde80442e8fa2da48306f888864b4e58554b390373ee27eff0c1",
+            "nex.json": "4480a42a3fcc15093bafd78ff2148b4cb4a0b696d863e442658abe33115cd2b9",
+            "pure/value.nex": "ad8b29f0be488353b2b1ef22923ba47d2bef3980cecf717e86afc6ef86367b99"
+          },
+          "observed": {
+            "baseline": [
+              {
+                "entry": "app/main.nex",
+                "revision": "1f0983c217eb31d5136d4564c951bfe8d7bdcb048d20da0a37ba6a5877d277ca",
+                "stdout": "42\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": [
+                  {
+                    "name": "provider_app::aliases",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              }
+            ],
+            "candidate": [
+              {
+                "entry": "app/main.nex",
+                "revision": "1f0983c217eb31d5136d4564c951bfe8d7bdcb048d20da0a37ba6a5877d277ca",
+                "stdout": "42\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": [
+                  {
+                    "name": "provider_app::aliases",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              }
+            ]
+          },
+          "ok": true
+        },
+        {
+          "name": "references",
+          "manifest_entry": "main.nex",
+          "manifest_sha256": "8a0bd135f5f3dc5dadde3d561cbf3cb2b9e2f768ba6386343bc2880acb31993e",
+          "inputs_sha256": {
+            "main.nex": "62c568f9e33a792a54b4de3f68fe45675db65e0bd466a480d133ff8038dc4e9b",
+            "nex.json": "8a0bd135f5f3dc5dadde3d561cbf3cb2b9e2f768ba6386343bc2880acb31993e",
+            "tasks.nex": "eb753458217b13b741057db93ed03ea3edd0aa62598097947cec7a59e65b3d65"
+          },
+          "observed": {
+            "baseline": [
+              {
+                "entry": "main.nex",
+                "revision": "768c80f66691ac5059b785236431dfac27cace3d725b9771715101bc8243bddf",
+                "stdout": "42\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": [
+                  {
+                    "name": "references::aliases_and_captures",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              },
+              {
+                "entry": "tasks.nex",
+                "revision": "456a53585969f4f3bce0be0a39ce185524b48e44d6043f9c5371d1062299164a",
+                "stdout": "42\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": [
+                  {
+                    "name": "reference_tasks::shared_background_counter",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              }
+            ],
+            "candidate": [
+              {
+                "entry": "main.nex",
+                "revision": "768c80f66691ac5059b785236431dfac27cace3d725b9771715101bc8243bddf",
+                "stdout": "42\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": [
+                  {
+                    "name": "references::aliases_and_captures",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              },
+              {
+                "entry": "tasks.nex",
+                "revision": "456a53585969f4f3bce0be0a39ce185524b48e44d6043f9c5371d1062299164a",
+                "stdout": "42\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": [
+                  {
+                    "name": "reference_tasks::shared_background_counter",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              }
+            ]
+          },
+          "ok": true
+        },
+        {
+          "name": "sequence-containers",
+          "manifest_entry": "main.nex",
+          "manifest_sha256": "677a6ca3cec3fb7acd2f2aa8468af981d3288a256eafb9c041079342cf3ca3fe",
+          "inputs_sha256": {
+            "main.nex": "050dc89a9cb229172654f2fbdd2a2f395857b9d0cd5dec69701c48935f00b8ae",
+            "nex.json": "677a6ca3cec3fb7acd2f2aa8468af981d3288a256eafb9c041079342cf3ca3fe",
+            "nex.lock.json": "12b9a5261975c9a6a4d0ed69cdae547e5b2a68b25ddc3973b251ca4755b7d3a4",
+            "tasks.nex": "4288972c238b5578aded160a96c88f9868266f2ea8444e5d79b5b66c35e88a21"
+          },
+          "observed": {
+            "baseline": [
+              {
+                "entry": "main.nex",
+                "revision": "b2e66fe0759064eb07c0a87a865ab4bca32fddaada581884b60d6f193b626cd7",
+                "stdout": "sequence-containers-ok\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": [
+                  {
+                    "name": "work_containers::retained_versions",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              },
+              {
+                "entry": "tasks.nex",
+                "revision": "fd4f81742a08931bd6bd951fa5e087f7cbadbec43de5fa22e8a810e12a0cffae",
+                "stdout": "42\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": [
+                  {
+                    "name": "task_containers::snapshots_across_tasks",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              }
+            ],
+            "candidate": [
+              {
+                "entry": "main.nex",
+                "revision": "b2e66fe0759064eb07c0a87a865ab4bca32fddaada581884b60d6f193b626cd7",
+                "stdout": "sequence-containers-ok\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": [
+                  {
+                    "name": "work_containers::retained_versions",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              },
+              {
+                "entry": "tasks.nex",
+                "revision": "fd4f81742a08931bd6bd951fa5e087f7cbadbec43de5fa22e8a810e12a0cffae",
+                "stdout": "42\n",
+                "reference_value": null,
+                "native_exit": 0,
+                "tests": [
+                  {
+                    "name": "task_containers::snapshots_across_tasks",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              }
+            ]
+          },
+          "ok": true
+        },
+        {
+          "name": "workboard",
+          "manifest_entry": "client.nex",
+          "manifest_sha256": "1cae0af424fc991a2543779fc2ab5b19038895d7cd45b4c7260962afd4b90ac8",
+          "inputs_sha256": {
+            "client.nex": "252b61a595bd22a77fcb5708ca4725ecdaa717686136b9d607ce0ee07734e2e6",
+            "model.nex": "3d4e9ce89ec2222bab075f2c684890f9d6e621c1fea291bfd540c2a07eeb2a92",
+            "nex.json": "1cae0af424fc991a2543779fc2ab5b19038895d7cd45b4c7260962afd4b90ac8",
+            "server.nex": "7290e35ed11a09a047ab4556157a2fa093fee4587146422d93fd7a9f21c57c76"
+          },
+          "observed": {
+            "baseline": [
+              {
+                "entry": "client.nex",
+                "revision": "f89194722b1203901e68dc6449a1ff6842d79bb6d133eab6f96bfc89f57be516",
+                "tests": [
+                  {
+                    "name": "workboard::client_app::persistent_requests_and_worker_values",
+                    "backend": "web",
+                    "reference_agreement": true
+                  }
+                ]
+              },
+              {
+                "entry": "server.nex",
+                "revision": "bcd09d05d3b1b07390ba73303e60b32bb4798a77f46e40a9118a1be04efe6e79",
+                "tests": [
+                  {
+                    "name": "workboard::server_app::principal_export_names",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              },
+              {
+                "entry": "model.nex",
+                "revision": "93c236836d45bc997da7fd99cc56cf01a0fb361ac667e6bb3e3313d0130b034d",
+                "tests": [
+                  {
+                    "name": "workboard::model::snapshot_contract",
+                    "backend": "native",
+                    "reference_agreement": true
+                  },
+                  {
+                    "name": "workboard::model::Unicode_summary",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              }
+            ],
+            "candidate": [
+              {
+                "entry": "client.nex",
+                "revision": "f89194722b1203901e68dc6449a1ff6842d79bb6d133eab6f96bfc89f57be516",
+                "tests": [
+                  {
+                    "name": "workboard::client_app::persistent_requests_and_worker_values",
+                    "backend": "web",
+                    "reference_agreement": true
+                  }
+                ]
+              },
+              {
+                "entry": "server.nex",
+                "revision": "bcd09d05d3b1b07390ba73303e60b32bb4798a77f46e40a9118a1be04efe6e79",
+                "tests": [
+                  {
+                    "name": "workboard::server_app::principal_export_names",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              },
+              {
+                "entry": "model.nex",
+                "revision": "93c236836d45bc997da7fd99cc56cf01a0fb361ac667e6bb3e3313d0130b034d",
+                "tests": [
+                  {
+                    "name": "workboard::model::snapshot_contract",
+                    "backend": "native",
+                    "reference_agreement": true
+                  },
+                  {
+                    "name": "workboard::model::Unicode_summary",
+                    "backend": "native",
+                    "reference_agreement": true
+                  }
+                ]
+              }
+            ]
+          },
+          "ok": true
+        }
+      ],
+      "other_manifest_counts": {
+        "0.28": 47,
+        "0.29": 2
+      },
+      "missing_published_02801_projects": [],
+      "scope": "Published projects explicitly selecting 0.30: source checks, reference/native Release mains, named reference/native tests and the Workboard reference/generated TypeScript client test.",
+      "outside_scope": [
+        "Examples without an explicit 0.30 manifest",
+        "Browser interaction and deployed HTTP traffic",
+        "External C++ hosts, separate library linkage, debugger and profiler sessions",
+        "Device and mobile execution"
+      ]
+    },
+    "published_migration_suite": {
+      "ok": true,
+      "suite_sha256": "4573484861799595271040b0c706fa7ef76cfdaef4171aaf493df00e3849f115",
+      "report_sha256": "264ef815314b39c71c07ec1224ceeba0957e9b647709521237932be11253bcc0",
+      "commands": 50,
+      "gates": [
+        {
+          "migration_collision": false,
+          "old_rows_preserved": true,
+          "namespace_preserved": true
+        },
+        {
+          "migration_collision": true,
+          "old_rows_preserved": true,
+          "namespace_preserved": true
+        }
+      ],
+      "observed_plans": [
+        {
+          "from": "0.29",
+          "collision": false
+        },
+        {
+          "from": "0.29",
+          "collision": true
+        }
+      ],
+      "static_components": true,
+      "api_projection": true,
+      "source_deleted_task_replay": true
+    },
+    "candidate_migration_suite": {
+      "ok": true,
+      "suite_sha256": "282eb8f56e2a7bfcf960213d03f6e4c65c6724823a2f8dbef105eb9168a03b16",
+      "report_sha256": "6c7eea5104820e8c27a418708e079fd92ae0e5cf6e88d69ecb3b4030660b7eb8",
+      "commands": 78,
+      "gates": [
+        {
+          "migration_from": "0.28",
+          "migration_collision": false,
+          "old_rows_preserved": true,
+          "namespace_preserved": true,
+          "same_version_retry": true
+        },
+        {
+          "migration_from": "0.29",
+          "migration_collision": false,
+          "old_rows_preserved": true,
+          "namespace_preserved": true,
+          "same_version_retry": true
+        },
+        {
+          "migration_from": "0.29",
+          "migration_collision": true,
+          "old_rows_preserved": true,
+          "namespace_preserved": true,
+          "same_version_retry": true
+        }
+      ],
+      "observed_plans": [
+        {
+          "from": "0.28",
+          "collision": false
+        },
+        {
+          "from": "0.29",
+          "collision": false
+        },
+        {
+          "from": "0.29",
+          "collision": true
+        }
+      ],
+      "static_components": true,
+      "api_projection": true,
+      "source_deleted_task_replay": true
+    }
+  },
+  "baseline": {
+    "toolchain": "0.280.1",
+    "host": "arm64-apple-darwin27.2.0",
+    "llvm": "22.1.8",
+    "compiler_build": "44eb36a347e91963b3cf27bbb3fbf292b411a1c4fa50d2cbf823b5742b9f5805",
+    "compiler_sha256": "a37aab72fb84cf2bf938859017282977b9b9f2445f16fcae9457086e8df9f0b4",
+    "descriptor_hash": "f9271f65651c9395bdaa307d0fdb49a62b4e28ec0aa363e21c078ec9f4dbc2c1",
+    "source_versions": [
+      "0.28",
+      "0.29",
+      "0.30"
+    ],
+    "runtime_sha256": "d904286a5f251b41636bb6609e4cc7a70963ba9b1c5651bc29ad9b83fdbd6b9d"
+  },
+  "candidate": {
+    "toolchain": "0.281.0",
+    "host": "arm64-apple-darwin27.2.0",
+    "llvm": "22.1.8",
+    "compiler_build": "1c6518a3c0de9c8985193f97b4965427e1ad0b710a364706455eb691d5c89edf",
+    "compiler_sha256": "2e32f2679a5607e09942892e7c90cff222b591f20f4b0c5dc2aa4f5f3f61c3d5",
+    "descriptor_hash": "2c0ce02c1e8c0a83e3dc4cd4245278232d6c4cfe4d8099553bdb8560220c5533",
+    "source_versions": [
+      "0.28",
+      "0.29",
+      "0.30"
+    ],
+    "runtime_sha256": "acbe58989e9af440306e0b63c791f6c6059e760eaf6fcb31efe828e93f1551a0"
+  },
+  "source_commit": "efef1032e1d7964197ff8d95a82f56a78b53e57d",
+  "candidate_install": "ordinary macOS ARM64 CMake Release install from the committed source archive",
+  "compatibility_report_sha256": "18ee27e5be96f957c951ed3c6dbb8e6d7cec703eda4b8605b9405578b70c6018",
+  "agreement": {
+    "schema": "nex.agreement-run/1",
+    "compiler_build": "1c6518a3c0de9c8985193f97b4965427e1ad0b710a364706455eb691d5c89edf",
+    "compiler_sha256": "2e32f2679a5607e09942892e7c90cff222b591f20f4b0c5dc2aa4f5f3f61c3d5",
+    "manifest_sha256": "c459cd5ed07f91e9592341f755d6df9b3e1aedf09e906b143ea0ccbd38de1b88",
+    "requested_language": "0.30",
+    "project_languages": [
+      "0.30"
+    ],
+    "coverage": {
+      "check": 13,
+      "reference": 11,
+      "native-debug": 11,
+      "native-release": 11,
+      "typescript": 11,
+      "typescript_executed": 11,
+      "typescript_strict": 11,
+      "executable_cases": 11
+    },
+    "ok": true,
+    "raw_report_sha256": "9e7277e7b30da638328c34f9129e79734b5d415b4ba92de96724d232fe32f402",
+    "cases": [
+      {
+        "name": "arith",
+        "kind": "valid",
+        "language": "0.30",
+        "source_sha256": "a9618285678dfb528a67e7728a3770bdb62d8cab357f551b12d935ddc4b08747",
+        "ok": true
+      },
+      {
+        "name": "unicode",
+        "kind": "valid",
+        "language": "0.30",
+        "source_sha256": "b1ce7636b5ae3b19dca3849aab84a5d4fa8377c53051cafaf516551b1f6ddf79",
+        "ok": true
+      },
+      {
+        "name": "lists",
+        "kind": "valid",
+        "language": "0.30",
+        "source_sha256": "d12eb6e91ddf1fbb9dd2dc22340f5f62ee2b2c6a7a686731ed660d0aa112c741",
+        "ok": true
+      },
+      {
+        "name": "text",
+        "kind": "valid",
+        "language": "0.30",
+        "source_sha256": "8fec23ab9e3c2b2104c95b1364b0778d92e70b0061ff5b99f68d8320968d9c81",
+        "ok": true
+      },
+      {
+        "name": "bytes",
+        "kind": "valid",
+        "language": "0.30",
+        "source_sha256": "b43e5901b5b3e2f7b9fe2459203e2d29b821fefe079a78cdad52f58055cf5ed4",
+        "ok": true
+      },
+      {
+        "name": "match",
+        "kind": "valid",
+        "language": "0.30",
+        "source_sha256": "66d0cf587a8cf02f3acdddef510c1405cb9730cba10024325d091ee93427c86c",
+        "ok": true
+      },
+      {
+        "name": "result",
+        "kind": "valid",
+        "language": "0.30",
+        "source_sha256": "d8a1478d9923e90b25930b312329cffbb2450c9bf63b7ec9d6c4dcf999433c9f",
+        "ok": true
+      },
+      {
+        "name": "generics",
+        "kind": "valid",
+        "language": "0.30",
+        "source_sha256": "c060833a62243987713bc829bbc7f61c42e3c7c9b9cde079bac1bf6fc98cba7d",
+        "ok": true
+      },
+      {
+        "name": "rejected_type",
+        "kind": "rejected",
+        "language": "0.30",
+        "source_sha256": "ce4dae0e99f5198b6c4c75c646267bd2c82e2f231f3e4f9e62b5d1d0a72301e5",
+        "ok": true
+      },
+      {
+        "name": "rejected_effect",
+        "kind": "rejected",
+        "language": "0.30",
+        "source_sha256": "88121d745f10819d48f9f190224a2639624ac47ddb511a09035335f3c8172ad1",
+        "ok": true
+      },
+      {
+        "name": "overflow",
+        "kind": "trap",
+        "language": "0.30",
+        "source_sha256": "b636babfe7b3e0d967e91b15c84793a2b32e2b2a204459f6d8cce280795e9ea5",
+        "ok": true
+      },
+      {
+        "name": "bounds",
+        "kind": "trap",
+        "language": "0.30",
+        "source_sha256": "b0ab94336c328a8d6f1c43f707b23488352f301e4b31db18e14ad7b2199683a9",
+        "ok": true
+      },
+      {
+        "name": "cell_alias_snapshot",
+        "kind": "valid",
+        "language": "0.30",
+        "source_sha256": "bf01932f3788aeade2afddfe5dafdbec41a870cc8323c8295fdbe7be931eab75",
+        "ok": true
+      }
+    ]
+  },
+  "scope": "0.30 source examples and snapshots across SDKs, explicit historical migrations and three-backend agreement on macOS ARM64",
+  "pending": [
+    "portable qualification of the next release cohort",
+    "Linux and Windows beta publication and cross-version evidence",
+    "1.0 compatibility promise"
+  ]
+}

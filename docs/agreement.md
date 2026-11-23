@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.174; language 0.28"
+applies_to: "toolchain 0.281.0; language 0.28, 0.29, 0.30"
 owner: repository
 ---
 
@@ -13,6 +13,7 @@ acceptance.
 
 ```sh
 python3 tools/agreement.py --compiler build/nex --output build/agreement
+python3 tools/agreement.py --compiler build/nex --language-version 0.30 --output build/agreement-030
 python3 tools/agreement.py --compiler build/nex --output build/agreement --case arith
 python3 tools/agreement.py --compiler build/nex --output build/agreement --no-typescript
 ```
@@ -24,11 +25,22 @@ expected runtime code. Valid cases compare reference/native/TypeScript stdout;
 trap cases compare the code from each backend. TypeScript is emitted, executed
 with the pinned Node and typechecked with the pinned `NEX_TSC`.
 
-`NEX_TSC` is required unless `--no-typescript` is used; a reduced run is recorded
-as `typescript_executed: false` and is not full agreement. Every run writes
-`report.json` with the compiler SHA256/build identity, manifest SHA256, per-case
-commands, exit codes, stdout/stderr and failures. Failures are retained; the
-runner exits nonzero.
+By default a portable case uses the manifest's project language (0.28 in the
+checked-in corpus). `--language-version 0.30` selects 0.30 for the same portable
+cases and runs the additional 0.30 cell-alias case. A case with its own
+`language` keeps that declaration, including when testing historical behavior.
+The optional `additional_cases` map groups cases by selected project language.
+
+Set `NEX_NODE` to the Node executable and `NEX_TSC` to the pinned TypeScript
+compiler for a full run. With `--no-typescript` or a nonempty
+`NEX_SKIP_TYPESCRIPT`, the report records a reduced run. Each report includes
+`requested_language`, effective `project_languages`, each case's `language`,
+compiler SHA256/build identity, manifest SHA256, commands, exits and outputs.
+The historical top-level `language` field identifies the compiler fallback.
+`coverage` counts passing checker, reference and native profiles as well as
+TypeScript executions and successful strict checks. `typescript_executed` is true
+when every eligible case ran in Node and at least one was eligible. Check
+`ok` together with coverage when qualifying a full agreement run.
 
 ## Deterministic generator
 

@@ -1,0 +1,17 @@
+module agreement_cell_alias;
+
+fn increment(counter: cell<i64>) -> i64 !{state} {
+  let next: i64 = cell_read(counter) + 1;
+  cell_write(counter, next);
+  return next;
+}
+
+fn main() -> unit !{io,state} {
+  let counter: cell<i64> = cell_new(41);
+  let alias: cell<i64> = counter;
+  let before: i64 = cell_read(alias);
+  let after: i64 = increment(counter);
+  print(before);
+  print(after);
+  print(cell_read(alias));
+}

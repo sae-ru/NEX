@@ -23,7 +23,9 @@ def run(command,cwd,timeout):
         child=subprocess.run(list(map(str,command)),cwd=cwd,capture_output=True,text=True,timeout=timeout)
         code,stdout,stderr=child.returncode,child.stdout,child.stderr
     except subprocess.TimeoutExpired as error:
-        code,stdout,stderr=-1,error.stdout or '',(error.stderr or '')+'\nagreement command timed out'
+        stdout=(error.stdout or b'').decode(errors='replace')
+        stderr=(error.stderr or b'').decode(errors='replace')+'\nagreement command timed out'
+        code=-1
     return {'command':[str(item) for item in command],'exit_code':code,'stdout':stdout,'stderr':stderr,
         'seconds':round(time.monotonic()-started,4)}
 
@@ -95,11 +97,11 @@ def typescript(case,project,env,timeout):
         actual=executed['stdout'].rstrip('\n').split('\n') if executed['stdout'] else []
         ok=executed['exit_code']==0 and actual==expected
     elif case['kind']=='trap':
-        ok=observed==case['expected_code']
+        ok=executed['exit_code']==0 and observed==case['expected_code']
     else:
         ok=True
     strict=strict_typescript(folder,env,timeout)
-    return {'ok':ok and strict.get('ok',False),'execute':executed,'stdout':executed['stdout'],
+    return {'ok':ok and strict.get('ok',False),'emit':result,'execute':executed,'stdout':executed['stdout'],
         'strict_typescript':strict,'observed_code':observed if case['kind']=='trap' else None}
 
 
@@ -151,9 +153,42 @@ def run_case(case,root,output,env,timeout):
     elif case['kind']!='rejected':
         checks.append({'backend':'typescript','ok':True,'skipped':True})
     failures=[check['backend'] for check in checks if not check.get('ok')]
-    return {'name':case['name'],'kind':case['kind'],'ok':not failures,'failures':failures,
+    return {'name':case['name'],'kind':case['kind'],'language':case['language'],'ok':not failures,'failures':failures,
         'seconds':round(time.monotonic()-started,4),'checks':checks,
         'source_sha256':sha(project/'main.nex')}
+
+
+def select_cases(manifest, requested_language, names):
+    # Explicit case languages pin version-specific expectations. The selected
+    # project language only changes the default for otherwise portable inputs.
+    language=requested_language or manifest.get('language','0.28')
+    cases=[dict(case,language=case.get('language',language)) for case in
+           (*manifest['cases'], *manifest.get('additional_cases',{}).get(language,[]))]
+    registered=[case['name'] for case in cases]
+    if len(registered)!=len(set(registered)):
+        raise ValueError('duplicate agreement case names')
+    if names:
+        selected=set(names)
+        missing=selected-set(registered)
+        if missing:raise ValueError('unknown agreement case(s): '+', '.join(sorted(missing)))
+        cases=[case for case in cases if case['name'] in selected]
+    if not cases:raise ValueError('empty agreement corpus')
+    return cases
+
+
+def coverage(cases):
+    counts={key:0 for key in ('check','reference','native-debug','native-release',
+                              'typescript','typescript_executed','typescript_strict')}
+    counts['executable_cases']=sum(case['kind']!='rejected' for case in cases)
+    for case in cases:
+        for check in case['checks']:
+            if check.get('skipped'):continue
+            counts[check['backend']]+=int(check['ok'])
+            if check['backend']=='typescript':
+                details=check['details']
+                counts['typescript_executed']+=int('execute' in details)
+                counts['typescript_strict']+=int(details.get('strict_typescript',{}).get('ok') is True)
+    return counts
 
 
 def main():
@@ -164,6 +199,7 @@ def main():
     parser.add_argument('--case',action='append',default=[])
     parser.add_argument('--timeout',type=int,default=180)
     parser.add_argument('--no-typescript',action='store_true')
+    parser.add_argument('--language-version',help='project language for portable cases, e.g. 0.30')
     args=parser.parse_args()
     compiler=args.compiler.resolve(strict=True)
     root=args.root.resolve(strict=True)
@@ -171,19 +207,22 @@ def main():
     output.mkdir(parents=True,exist_ok=True)
     manifest=json.loads((root/'cases.json').read_text())
     if manifest.get('schema')!='nex.agreement/1':raise SystemExit('unsupported agreement manifest')
-    cases=manifest['cases']
-    if args.case:
-        selected=set(args.case);cases=[case for case in cases if case['name'] in selected]
-        missing=selected-{case['name'] for case in cases}
-        if missing:raise SystemExit('unknown agreement case(s): '+', '.join(sorted(missing)))
+    try:cases=select_cases(manifest,args.language_version,args.case)
+    except ValueError as error:parser.error(str(error))
     env={**os.environ,'NEX_COMPILER':str(compiler)}
     if args.no_typescript:env['NEX_SKIP_TYPESCRIPT']='1'
-    if 'NEX_SKIP_TYPESCRIPT' not in env and not env.get('NEX_TSC'):
+    skip_typescript=bool(env.get('NEX_SKIP_TYPESCRIPT'))
+    if not skip_typescript and not env.get('NEX_TSC'):
         raise SystemExit('NEX_TSC is required; pass --no-typescript only for an explicitly reduced run')
+    if args.language_version:
+        supported=json.loads(subprocess.check_output(
+            [compiler,'describe','--field','project_languages','--json'],text=True))['value']
+        if args.language_version not in supported:parser.error('unsupported language version '+args.language_version)
     identity=json.loads(subprocess.check_output([compiler,'describe','--kind','index','--json'],text=True))
     report={'schema':'nex.agreement-run/1','ok':False,'compiler':str(compiler),'compiler_sha256':sha(compiler),
         'compiler_build':identity.get('compiler_build'),'language':identity.get('language'),
-        'typescript_executed':not args.no_typescript,'manifest_sha256':sha(root/'cases.json'),
+        'requested_language':args.language_version,'project_languages':sorted({case['language'] for case in cases}),
+        'typescript_requested':not skip_typescript,'manifest_sha256':sha(root/'cases.json'),
         'cases':[],'failures':[]}
     for case in cases:
         result=run_case(case,root,output,env,args.timeout)
@@ -191,6 +230,10 @@ def main():
         if not result['ok']:report['failures'].append({'case':result['name'],'backends':result['failures']})
         print(json.dumps({'case':result['name'],'ok':result['ok'],'failures':result['failures'],
             'seconds':result['seconds']}),flush=True)
+    measured=coverage(report['cases'])
+    report['coverage']=measured
+    executable=measured['executable_cases']
+    report['typescript_executed']=executable>0 and measured['typescript_executed']==executable
     report['ok']=not report['failures']
     report['registered_cases']=len(report['cases'])
     (output/'report.json').write_text(json.dumps(report,indent=2)+'\n')

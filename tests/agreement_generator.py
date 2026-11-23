@@ -1,6 +1,7 @@
 """Deterministic agreement generator: seeds, reproducers and a real run."""
 import hashlib
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -13,8 +14,8 @@ GENERATOR=REPO/'tools/agreement_generate.py'
 RUNNER=REPO/'tools/agreement.py'
 
 
-def run(command,timeout=300):
-    child=subprocess.run(list(map(str,command)),capture_output=True,text=True,timeout=timeout)
+def run(command,timeout=300,env=None):
+    child=subprocess.run(list(map(str,command)),capture_output=True,text=True,timeout=timeout,env=env)
     return child
 
 
@@ -51,6 +52,40 @@ class Generator(unittest.TestCase):
             report=json.loads((output/'report.json').read_text())
             self.assertTrue(report['ok'],report['failures'])
             self.assertEqual(len(report['cases']),3)
+            self.assertFalse(report['typescript_executed'])
+
+    def test_selected_project_version_preserves_pinned_cases_and_reports_reduced_scope(self):
+        with tempfile.TemporaryDirectory(prefix='nex agreement modes ') as folder:
+            root=Path(folder)
+            corpus=root/'cases'
+            corpus.mkdir()
+            source=(REPO/'tests/agreement/cases/cell_alias_snapshot.nex').read_bytes()
+            (corpus/'cells.nex').write_bytes(source)
+            portable={'name':'new','kind':'valid','source':'cells.nex','expected_stdout':'41\n42\n42\n'}
+            pinned={'name':'legacy','kind':'rejected','source':'cells.nex','language':'0.28','expected_check_code':'E_TYPE'}
+            (corpus/'cases.json').write_text(json.dumps({'schema':'nex.agreement/1','language':'0.28',
+                'cases':[pinned],'additional_cases':{'0.30':[portable]}}))
+            output=root/'run'
+            env={**os.environ,'NEX_SKIP_TYPESCRIPT':'1'}
+            result=run([sys.executable,'-I','-B',RUNNER,'--compiler',COMPILER,'--root',corpus,
+                '--output',output,'--language-version','0.30'],env=env)
+            self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+            report=json.loads((output/'report.json').read_text())
+            self.assertTrue(report['ok'])
+            self.assertEqual(report['requested_language'],'0.30')
+            self.assertEqual(report['project_languages'],['0.28','0.30'])
+            self.assertEqual([(r['name'],r['language']) for r in report['cases']],[('legacy','0.28'),('new','0.30')])
+            self.assertFalse(report['typescript_requested'])
+            self.assertFalse(report['typescript_executed'])
+            self.assertEqual(report['coverage'],{'check':2,'reference':1,'native-debug':1,'native-release':1,
+                'typescript':0,'typescript_executed':0,'typescript_strict':0,'executable_cases':1})
+
+            old=root/'legacy-run'
+            result=run([sys.executable,'-I','-B',RUNNER,'--compiler',COMPILER,'--root',corpus,
+                '--output',old,'--no-typescript'])
+            self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+            report=json.loads((old/'report.json').read_text())
+            self.assertEqual([(r['name'],r['language']) for r in report['cases']],[('legacy','0.28')])
             self.assertFalse(report['typescript_executed'])
 
 

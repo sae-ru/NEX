@@ -126,6 +126,31 @@ compiler. Recover beta snapshots and rerun their selected revisions. Record
 which preserved source, archive, CLI and platform contracts passed. Include any
 intended compatibility exception in the release notes before making the promise.
 
+### Checking a proposed host SDK against a published beta
+
+Use the checked-in release record, the original archive for the host, and a
+separate installed candidate. The runner checks the published archive SHA256,
+restores its complete inventory, then verifies that both compilers select
+their own installed runtime. It runs the published examples from fresh copies,
+recovers two historical revisions and checks both the published and current
+migration suites. Use a fresh output directory.
+
+```sh
+python3 -B tools/sdk_compatibility.py \
+  --release-record docs/releases/0.280.1.json --baseline-archive "$beta_archive" \
+  --candidate-sdk "$candidate_prefix" --output build/beta-compatibility
+python3 -B tools/agreement.py --compiler "$candidate_prefix/bin/nex" \
+  --language-version 0.30 --output build/candidate-agreement
+```
+
+For the agreement run set `NEX_TSC` to the pinned TypeScript compiler and
+`NEX_NODE` to Node. The [recorded macOS ARM64 comparison](evidence/beta-source-compatibility-efef1032-2026-11-23.json)
+uses the published 0.280.1 archive and an ordinary 0.281.0 Release installation
+from `efef1032`. It covers ten explicit 0.30 projects, archived identities,
+0.28/0.29 migration and all thirteen checker cases. Eleven executable cases
+passed reference, native Debug and Release, strict TypeScript and Node execution.
+Each platform and subsequent release candidate needs its own identified SDKs.
+
 ## Historical source migrations
 
 Language0.17 result propagation is additive syntax with an appended AST kind15;

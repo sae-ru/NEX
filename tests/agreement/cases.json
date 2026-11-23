@@ -84,5 +84,16 @@
       "entry": "main",
       "expected_code": "E_BOUNDS"
     }
-  ]
+  ],
+  "additional_cases": {
+    "0.30": [
+      {
+        "name": "cell_alias_snapshot",
+        "kind": "valid",
+        "source": "cases/cell_alias_snapshot.nex",
+        "entry": "main",
+        "expected_stdout": "41\n42\n42\n"
+      }
+    ]
+  }
 }
