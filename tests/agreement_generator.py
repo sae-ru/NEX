@@ -25,6 +25,21 @@ def tree(root):
 
 
 class Generator(unittest.TestCase):
+    def test_command_capture_preserves_utf8_and_exact_line_endings(self):
+        # The controller may use a single-byte locale while NEX and Node emit UTF-8.
+        sample='Я🌍\r\nA\rB\0\n\n'.encode()
+        driver="""import runpy, sys
+runner = runpy.run_path(sys.argv[1])
+child = 'import sys; sys.stdout.buffer.write(bytes.fromhex(' + repr(sys.argv[2]) + '))'
+result = runner['run']([sys.executable, '-c', child], '.', 30)
+assert result['exit_code'] == 0
+print(result['stdout'].encode('utf-8').hex())
+"""
+        env={**os.environ,'LC_ALL':'C','PYTHONCOERCECLOCALE':'0','PYTHONUTF8':'0'}
+        result=run([sys.executable,'-B','-c',driver,RUNNER,sample.hex()],env=env)
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertEqual(result.stdout.strip(),sample.hex())
+
     def test_seed_reproducer_and_real_agreement(self):
         with tempfile.TemporaryDirectory(prefix='nex agreement generator ') as temporary:
             root=Path(temporary)

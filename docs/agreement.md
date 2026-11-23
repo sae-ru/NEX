@@ -25,6 +25,10 @@ expected runtime code. Valid cases compare reference/native/TypeScript stdout;
 trap cases compare the code from each backend. TypeScript is emitted, executed
 with the pinned Node and typechecked with the pinned `NEX_TSC`.
 
+The runner reads program output as UTF-8 in every terminal locale. The Unicode
+case checks a supplementary character, embedded NUL, carriage return, CRLF and
+a final empty line across the interpreter, both native profiles and Node.
+
 By default a portable case uses the manifest's project language (0.28 in the
 checked-in corpus). `--language-version 0.30` selects 0.30 for the same portable
 cases and runs the additional 0.30 cell-alias case. A case with its own

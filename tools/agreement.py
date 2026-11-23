@@ -20,8 +20,10 @@ def sha(path):
 def run(command,cwd,timeout):
     started=time.monotonic()
     try:
-        child=subprocess.run(list(map(str,command)),cwd=cwd,capture_output=True,text=True,timeout=timeout)
-        code,stdout,stderr=child.returncode,child.stdout,child.stderr
+        child=subprocess.run(list(map(str,command)),cwd=cwd,capture_output=True,timeout=timeout)
+        code=child.returncode
+        stdout=child.stdout.decode('utf-8')
+        stderr=child.stderr.decode('utf-8',errors='replace')
     except subprocess.TimeoutExpired as error:
         stdout=(error.stdout or b'').decode(errors='replace')
         stderr=(error.stderr or b'').decode(errors='replace')+'\nagreement command timed out'
@@ -68,9 +70,9 @@ def strict_typescript(folder,env,timeout):
     if not selected:
         return {'ok':False,'error':'NEX_TSC is required for strict TypeScript agreement'}
     tsc=Path(selected).resolve(strict=True)
-    pin=json.loads((ROOT/'web/package.json').read_text())['devDependencies']['typescript']
+    pin=json.loads((ROOT/'web/package.json').read_bytes())['devDependencies']['typescript']
     package=tsc.parent.parent/'package.json'
-    if not package.is_file() or json.loads(package.read_text()).get('version')!=pin:
+    if not package.is_file() or json.loads(package.read_bytes()).get('version')!=pin:
         return {'ok':False,'error':'selected TypeScript compiler does not match the repository pin '+pin}
     result=run([env.get('NEX_NODE','node'),tsc,'--noEmit','--strict','--target','ES2022','--module','ESNext',
         '--moduleResolution','bundler','--allowImportingTsExtensions','--lib','ES2022,DOM',folder/'program.ts'],folder,timeout)
@@ -91,11 +93,9 @@ def typescript(case,project,env,timeout):
         driver="import {entry} from './program.ts';\nentry();\n"
     (folder/'driver.mjs').write_text(driver)
     executed=run([env.get('NEX_NODE','node'),'--experimental-strip-types','driver.mjs'],folder,timeout)
-    observed=executed['stdout'].strip()
+    observed=executed['stdout']
     if case['kind']=='valid':
-        expected=case['expected_stdout'].rstrip('\n').split('\n') if case['expected_stdout'] else []
-        actual=executed['stdout'].rstrip('\n').split('\n') if executed['stdout'] else []
-        ok=executed['exit_code']==0 and actual==expected
+        ok=executed['exit_code']==0 and observed==case['expected_stdout']
     elif case['kind']=='trap':
         ok=executed['exit_code']==0 and observed==case['expected_code']
     else:
@@ -205,7 +205,7 @@ def main():
     root=args.root.resolve(strict=True)
     output=args.output.resolve()
     output.mkdir(parents=True,exist_ok=True)
-    manifest=json.loads((root/'cases.json').read_text())
+    manifest=json.loads((root/'cases.json').read_bytes())
     if manifest.get('schema')!='nex.agreement/1':raise SystemExit('unsupported agreement manifest')
     try:cases=select_cases(manifest,args.language_version,args.case)
     except ValueError as error:parser.error(str(error))
@@ -216,9 +216,9 @@ def main():
         raise SystemExit('NEX_TSC is required; pass --no-typescript only for an explicitly reduced run')
     if args.language_version:
         supported=json.loads(subprocess.check_output(
-            [compiler,'describe','--field','project_languages','--json'],text=True))['value']
+            [compiler,'describe','--field','project_languages','--json']))['value']
         if args.language_version not in supported:parser.error('unsupported language version '+args.language_version)
-    identity=json.loads(subprocess.check_output([compiler,'describe','--kind','index','--json'],text=True))
+    identity=json.loads(subprocess.check_output([compiler,'describe','--kind','index','--json']))
     report={'schema':'nex.agreement-run/1','ok':False,'compiler':str(compiler),'compiler_sha256':sha(compiler),
         'compiler_build':identity.get('compiler_build'),'language':identity.get('language'),
         'requested_language':args.language_version,'project_languages':sorted({case['language'] for case in cases}),
