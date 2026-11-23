@@ -122,14 +122,14 @@ class StandardLibrary(h.ToolchainCase):
     def strict_ts(self,folder):
         selected=os.environ.get('NEX_TSC')
         if not selected:
-            if not os.environ.get('NEX_NPM_CACHE'):
-                default_cache=Path.home()/'.npm'
-                if default_cache.is_dir():os.environ['NEX_NPM_CACHE']=str(default_cache)
-            self.assertTrue(os.environ.get('NEX_NPM_CACHE'),'Select pinned NEX_TSC or populated offline NEX_NPM_CACHE')
             tool=self.root/'typescript-tool';tool.mkdir(exist_ok=True)
             for name in ('package.json','package-lock.json'):shutil.copy2(h.REPO/'web'/name,tool/name)
-            self.run_child([os.environ.get('NEX_NPM','npm'),'ci','--ignore-scripts','--offline','--prefix',tool,
-                '--cache',os.environ['NEX_NPM_CACHE']],180)
+            npm=os.environ.get('NEX_NPM') or ('npm.cmd' if os.name=='nt' else 'npm')
+            command=[npm,'ci','--ignore-scripts','--offline','--prefix',tool]
+            cache=os.environ.get('NEX_NPM_CACHE')
+            if cache:
+                command.extend(['--cache',cache])
+            self.run_child(command,180)
             selected=tool/'node_modules/typescript/bin/tsc'
         tsc=Path(selected).resolve(strict=True)
         pin=json.loads((h.REPO/'web/package.json').read_text())['devDependencies']['typescript']
