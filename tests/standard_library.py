@@ -122,6 +122,9 @@ class StandardLibrary(h.ToolchainCase):
     def strict_ts(self,folder):
         selected=os.environ.get('NEX_TSC')
         if not selected:
+            if not os.environ.get('NEX_NPM_CACHE'):
+                default_cache=Path.home()/'.npm'
+                if default_cache.is_dir():os.environ['NEX_NPM_CACHE']=str(default_cache)
             self.assertTrue(os.environ.get('NEX_NPM_CACHE'),'Select pinned NEX_TSC or populated offline NEX_NPM_CACHE')
             tool=self.root/'typescript-tool';tool.mkdir(exist_ok=True)
             for name in ('package.json','package-lock.json'):shutil.copy2(h.REPO/'web'/name,tool/name)
