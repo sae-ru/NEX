@@ -7,12 +7,12 @@ Language, языке нейронного исполнения**. Навык з�
 установленного компилятора, нужные правила языка и контекст символов, затем
 проверяет завершённое изменение компилятором и подходящими тестами.
 
-**Версия плагина: 0.1.1**, лицензия MIT. Версия плагина не является версией языка
+**Версия плагина: 0.1.2**, лицензия MIT. Версия плагина не является версией языка
 или SDK. Пакет распространяется через GitHub; заявка в общий каталог OpenAI
 пока не отправлена, одобрения каталога нет.
 
-[Скачать ZIP для каталога](https://github.com/sae-ru/NEX/raw/refs/heads/main/plugins/releases/nex-developer-tools-0.1.1.zip)
-и [проверить SHA256](../releases/nex-developer-tools-0.1.1.sha256).
+[Скачать ZIP для каталога](https://github.com/sae-ru/NEX/raw/refs/heads/main/plugins/releases/nex-developer-tools-0.1.2.zip)
+и [проверить SHA256](../releases/nex-developer-tools-0.1.2.sha256).
 
 ## Установка навыка
 
@@ -34,6 +34,14 @@ https://github.com/sae-ru/NEX/tree/main/plugins/nex/skills/nex-programming
 каталог `skills/nex-programming` целиком в `.agents/skills/` вашего проекта
 или в `~/.agents/skills/` для всех своих проектов. Сохраните примеры, инструкции
 и LICENSE. При установленном плагине отдельная копия навыка обычно не нужна.
+
+## DeepSeek Harness
+
+Скопируйте каталог `skills/nex-programming` целиком в `.agents/skills/` проекта
+и добавьте его в Git, чтобы команда получала те же инструкции. Для установки
+во всех проектах используйте `~/.dsh/skills/`. Откройте проект в Harness и
+введите `/nex-programming Исправь упавший тест.` Команда `nex` должна быть
+доступна в PATH терминала Harness. [Установка SDK](https://github.com/sae-ru/NEX/blob/main/docs/getting-started.ru.md#deepseek-harness)
 
 ## Установка плагина с GitHub
 
@@ -78,6 +86,6 @@ codex plugin add nex-developer-tools@nex-plugins
 python3 tools/package_codex_plugin.py --output /absolute/path/to/artifacts
 ```
 
-Команда создаёт `nex-developer-tools-0.1.1.zip`, состав файлов и SHA256.
+Команда создаёт `nex-developer-tools-0.1.2.zip`, состав файлов и SHA256.
 Порядок подачи, проверки и оставшиеся действия владельца описаны в
 [PUBLISHING.md](PUBLISHING.md). Подготовка плагина не пересобирает SDK.

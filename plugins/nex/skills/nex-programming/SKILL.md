@@ -70,11 +70,18 @@ when targeted, TypeScript behavior. Successful code generation alone does not
 establish successful execution or packaging. Reserve full SDK/device suites for
 milestones or changes that require them.
 
-On failure, keep the original diagnostic code/message/span. When
-`diagnostic_catalogue` is advertised, consult `nex explain CODE --json`. Fix the
-source against the user's requirements; do not repeat an unchanged candidate,
-weaken acceptance tests or substitute a stub for missing behavior. If an SDK
-or dependency is unavailable, identify what remains unverified.
+For a failing source test, check `nex help test` once per compiler. If it lists
+`--repair-context`, run `nex test ENTRY --repair-context --json` from the project
+root, using the entry from `nex.json`. If the SDK ships the separate
+[`nex-repair-context.py` helper](https://github.com/sae-ru/NEX/releases/download/v1.0.0/nex-repair-context.py),
+run it there with `python3` (Windows: `py -3`) when the flag is absent.
+Read the failed comparison and function excerpt, then request an entry from
+`repair_context.inspect` only if a callee matters. After the edit, run
+`nex test --symbol NAME --json` against the physical source.
+
+If the failure has no repair context, use its code, span and a brief for the
+failing symbol. Query `nex explain CODE --json` for an unfamiliar diagnostic.
+Preserve the test's expected behavior.
 
 Report the actual change, commands/results, selected SDK/language and material
 limits. Make performance or token-cost claims only from measurements of the

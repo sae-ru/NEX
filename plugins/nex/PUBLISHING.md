@@ -1,6 +1,6 @@
 # Publish NEX Developer Tools
 
-Package version: **0.1.1**. Package type: **skills only, local executor required**.
+Package version: **0.1.2**. Package type: **skills only, local executor required**.
 GitHub distribution and public-directory approval are separate. No directory
 submission or approval is implied by the files in this repository.
 
