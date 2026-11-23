@@ -15,6 +15,10 @@ on:
         description: 'Keep the accepted ordinary installation as an artifact for portable packaging (full runs only)'
         default: false
         type: boolean
+      native_portable:
+        description: 'Qualify the accepted 584715e4 x86-64 archive on the native SDK service branch'
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -28,7 +32,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  portable:
+    if: github.ref == 'refs/heads/codex/native-sdk-584715' && inputs.native_portable
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/native-portable.yml
+
   linux-full:
+    if: github.ref != 'refs/heads/codex/native-sdk-584715' || !inputs.native_portable
     name: ${{ inputs.test_group && 'linux-selected' || 'linux-full' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 360
