@@ -208,22 +208,26 @@ class FrontendDiagnostics(harness.ToolchainCase):
                     'test fn alpha()->unit{}test fn counts()->unit!{io}{a::check_count();}')
         helper = ('module audit;\nfn value(x:i64)->i64!{io}{print(x);return x;}\n'
                   'pub fn check_count()->unit!{io}{assert(value(13) == value(17));}\n')
-        (self.root/'audit.nex').write_text(helper)
-        error = self.cli('test', 'main.nex', '--interpreter-only', ok=False)
-        self.assertEqual((error['code'], error['message'], error['stdout']),
-                         ('E_ASSERT', 'assertion failed', '13\n17\n'))
-        self.assertEqual((error['file'],error['line']),('audit.nex',3))
-        info = error['test_failure']
-        self.assertEqual(info['symbol'], 'app::counts')
-        self.assertEqual(info['comparison'], {'operator':'==','type':'i64','left':'13','right':'17'})
-        condition=info['condition']
-        self.assertEqual(helper.encode()[condition['byte_begin']:condition['byte_end']].decode(), condition['preview'])
-        self.assertEqual(condition['preview'], 'value(13) == value(17)')
-        self.assertFalse(condition['truncated'])
-        args=info['rerun_argv']
-        self.assertEqual(args[0:3], ['nex','test','main.nex'])
-        again=self.cli(*args[1:],machine=False,ok=False)
-        self.assertEqual(json.loads(again.stdout),error)
+        helper_path = self.root / "audit.nex"
+        for newline in ("\n", "\r\n"):
+            with self.subTest(newline=newline):
+                helper_path.write_text(helper, encoding="utf-8", newline=newline)
+                error = self.cli('test', 'main.nex', '--interpreter-only', ok=False)
+                self.assertEqual((error['code'], error['message'], error['stdout']),
+                                 ('E_ASSERT', 'assertion failed', '13\n17\n'))
+                self.assertEqual((error['file'],error['line']),('audit.nex',3))
+                info = error['test_failure']
+                self.assertEqual(info['symbol'], 'app::counts')
+                self.assertEqual(info['comparison'], {'operator':'==','type':'i64','left':'13','right':'17'})
+                condition=info['condition']
+                span = helper_path.read_bytes()[condition['byte_begin']:condition['byte_end']]
+                self.assertEqual(span.decode('utf-8'), condition['preview'])
+                self.assertEqual(condition['preview'], 'value(13) == value(17)')
+                self.assertFalse(condition['truncated'])
+                args=info['rerun_argv']
+                self.assertEqual(args[0:3], ['nex','test','main.nex'])
+                again=self.cli(*args[1:],machine=False,ok=False)
+                self.assertEqual(json.loads(again.stdout),error)
 
     def test_assert_failure_limits_preview_and_preserves_short_circuit(self):
         self.source('module logic;fn main()->unit{}'
