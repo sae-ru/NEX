@@ -36,6 +36,14 @@ identity; a source `unit` may contain many objects. Older module reports retain
 their original `granularity: module`. Lifted closure and specialized generic
 names remain derived metadata.
 
+## Reuse SDK runtime objects during one Linux or macOS CI run
+
+For a set of independent cold host Release builds, set `NEX_RUNTIME_CACHE_DIR` to an absolute, private directory for that job. Each project keeps its own application sources, generated code, runtime inputs, build outputs and metadata. The shared directory holds content-addressed copies of SDK runtime sources and compiled runtime objects. Independent projects can publish concurrently. The compiler verifies each object against the digest bound to its inputs before copying it into the project's build directory. Missing or damaged entries are rebuilt.
+
+The key covers the exact preprocessed C++ input, compiler executable and version, effective Clang driver invocation, target, flags, profile, toolchain configuration and source path. The compiler uses a stable runtime source location for Release DWARF. Keep the directory for the duration of the job and for any later native debugger session that needs these C++ runtime sources. The finished executable and its NEX source projection are independently usable after job cleanup.
+
+The optimization applies to ordinary host Release builds with the matching SDK's default Clang. Debug, profile, cross-target and Windows builds, explicit toolchain/compiler/resource overrides, injected include/search settings, packaged foreign-catalogue overrides and separate shared-runtime image assembly retain their own compilation paths. The variable is unset by default. Use a fresh directory per CI job; the cache supplies no application ABI or cross-version distribution contract.
+
 ## Native targets and SDKs
 
 Toolchain 0.27 also selects compiler, archive/debug tools and host dependencies

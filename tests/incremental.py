@@ -1,4 +1,5 @@
 """Separate native compilation checked against real compiler calls and behavior."""
+from concurrent.futures import ThreadPoolExecutor
 from host_fixture import python_executable
 import json
 import os
@@ -424,6 +425,63 @@ fn main()->unit!{io}{print(first());print(observe(1.25));}
                         self.assertEqual(self.cli('inspect',captured,'--manifest',session['manifest'],'--expression','local')['value'],1.5)
                     finally:
                         client.close()
+
+
+@unittest.skipUnless(sys.platform in ('darwin', 'linux'), 'host Clang Release cache')
+class SharedRuntimeObjects(harness.ToolchainCase):
+    def test_cross_project_objects_are_verified_and_stay_separate_from_applications(self):
+        shared = self.root / 'job cache'
+        env = dict(os.environ, NEX_RUNTIME_CACHE_DIR=str(shared))
+        for name in ('NEX_RESOURCE_DIR', 'NEX_CLANG', 'CPATH', 'CPLUS_INCLUDE_PATH', 'C_INCLUDE_PATH',
+                     'OBJC_INCLUDE_PATH', 'CCC_OVERRIDE_OPTIONS', 'COMPILER_PATH', 'GCC_EXEC_PREFIX',
+                     'CLANG_CONFIG_FILE_USER_DIR', 'CLANG_CONFIG_FILE_SYSTEM_DIR'):
+            env.pop(name, None)
+
+        def build(index, environment=env, profile='release'):
+            work = self.root / str(index)
+            work.mkdir()
+            (work / 'nex.json').write_text('{"schema":"nex.project/1","language":"0.30","entry":"main.nex"}')
+            (work / 'main.nex').write_text(
+                f'module application_marker_{index}; fn main()->unit!{{io}}{{print({index});}}')
+            result = subprocess.run([harness.NEX, 'build', '--profile', profile, '--json'], cwd=work,
+                                    env=environment, capture_output=True, timeout=180)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            record = json.loads(result.stdout)
+            self.assertGreater(record['compiled_functions'], 0)
+            metadata = json.loads(Path(record['metadata']).read_bytes())
+            self.assertTrue(Path(metadata['runtime_source_projection']).resolve().is_relative_to(work.resolve()))
+            self.assertTrue((Path(metadata['runtime_source_projection']) / 'runtime.cpp').is_file())
+            self.assertEqual(subprocess.check_output([record['executable']]), f'{index}\n'.encode())
+            return Path(record['executable'])
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            outputs = list(pool.map(build, (41, 42)))
+        indexes = list((shared / 'nex-runtime-v1' / 'index').iterdir())
+        self.assertEqual(len(indexes), 1)
+        index = indexes[0]
+        marker = index.read_bytes()
+        mtime = index.stat().st_mtime_ns
+        obj = shared / 'nex-runtime-v1' / 'objects' / marker.decode().strip()
+        self.assertTrue(obj.is_file())
+        build(43)
+        self.assertEqual(index.stat().st_mtime_ns, mtime, 'a warm build republished the runtime')
+        obj.write_bytes(b'damaged')
+        build(44)
+        self.assertNotEqual(obj.read_bytes(), b'damaged')
+        index.write_bytes(b'malformed')
+        build(45)
+        self.assertEqual(index.read_bytes(), marker)
+        self.assertFalse(any(b'application_marker_' in f.read_bytes() for f in shared.rglob('*') if f.is_file()))
+        self.assertFalse(any(f.suffix == '.nex' for f in shared.rglob('*')))
+
+        other = self.root / 'ineligible'
+        bypass = dict(env, NEX_RUNTIME_CACHE_DIR=str(other))
+        build(46, bypass, profile='debug')
+        build(47, dict(bypass, CPATH=str(self.root)))
+        self.assertFalse(other.exists())
+        shutil.rmtree(shared)
+        self.assertEqual(subprocess.check_output([outputs[0]]), b'41\n')
+
 
 
 if __name__ == '__main__':

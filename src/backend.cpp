@@ -1515,6 +1515,57 @@ void captureFile(const std::filesystem::path &path,const std::string &text){
   if(!std::filesystem::is_regular_file(path)||readFile(path.string())!=text)atomicWrite(path,text);
 }
 bool digest(const std::string &value){return value.size()==64&&value.find_first_not_of("0123456789abcdef")==std::string::npos;}
+// A single CI run may share only SDK runtime objects across independent builds.
+// Publish immutable content first, then its small atomic index. A reader keeps
+// the exact verified bytes even if two compilers finish the same key together.
+void buildSharedRuntimeObject(const std::filesystem::path &cache,const std::filesystem::path &source,
+                              const std::filesystem::path &destination,std::vector<std::string> flags,
+                              const std::string &compilerStamp){
+  namespace fs=std::filesystem;
+  struct Scratch {
+    fs::path path=createTemporaryDirectory("nex-runtime-compile");
+    ~Scratch(){std::error_code ec;fs::remove_all(path,ec);}
+  } scratch;
+  auto ii=scratch.path/"runtime.ii",object=scratch.path/"runtime.o";
+  auto preprocess=flags;
+  preprocess.insert(preprocess.end(),{"-E",source.string(),"-o",ii.string()});
+  if(executeNativeBuildTool(preprocess)!=0)throw Error("E_LINK","cannot preprocess SDK runtime: "+source.string());
+  // Compile these exact bytes rather than opening headers again after hashing.
+  // Keep the real source filename via Clang's preprocessor line markers.
+  // Include search paths and preprocessor definitions have done their job in
+  // the first invocation; do not emit unused-option warnings compiling .ii.
+  std::vector<std::string> codegen;
+  for(size_t i=0;i<flags.size();++i){
+    if(flags[i]=="-I"){++i;continue;}
+    if(!flags[i].starts_with("-D"))codegen.push_back(flags[i]);
+  }
+  codegen.insert(codegen.end(),{"-x","c++-cpp-output","-c"});
+  auto planArgs=codegen;planArgs.insert(planArgs.end(),{"-","-o","/dev/null","-###"});
+  auto plan=capture(planArgs);
+  if(plan.code!=0)throw Error("E_TOOL","cannot identify runtime compiler invocation: "+plan.errors);
+  llvm::json::Array args;for(const auto &flag:flags)args.push_back(flag);
+  auto key=hash(json(llvm::json::Object{{"schema","nex.shared-runtime-object/1"},{"compiler",compilerStamp},
+    {"args",std::move(args)},{"plan",plan.output+plan.errors},{"source",source.string()},
+    {"preprocessed",hash(readFile(ii.string()))}},false));
+  auto index=cache/"index"/key;
+  if(fs::is_regular_file(index)&&fs::file_size(index)==65){
+    auto id=readFile(index.string());
+    if(id.size()==65&&id.back()=='\n'&&digest(id.substr(0,64))){
+      auto cached=cache/"objects"/id.substr(0,64);
+      if(fs::is_regular_file(cached)){
+        auto contents=readFile(cached.string());
+        if(hash(key+hash(contents))==id.substr(0,64)){writeFile(destination.string(),contents);return;}
+      }
+    }
+  }
+  codegen.insert(codegen.end(),{ii.string(),"-o",object.string()});
+  if(executeNativeBuildTool(codegen)!=0)throw Error("E_LINK","cannot compile SDK runtime: "+source.string());
+  auto contents=readFile(object.string());
+  auto id=hash(key+hash(contents));
+  captureFile(cache/"objects"/id,contents);
+  atomicWrite(index,id+"\n");
+  writeFile(destination.string(),contents);
+}
 struct NativeArtifact {std::string mlir,llvm,object,id;bool reused=false;};
 std::string artifactID(const std::string &key,const NativeArtifact &artifact){return hash(key+hash(artifact.mlir)+hash(artifact.llvm)+hash(artifact.object));}
 bool loadArtifact(const std::filesystem::path &root,const std::string &key,NativeArtifact &artifact){
@@ -2588,7 +2639,24 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     (void)nativeTaskDebugInfo(catalog,sources);(void)validateNativeTaskDebugSources(catalog,sources,pendingDebugBundles);
     debugCatalogText=json(nativeTaskDebugCatalogJSON(catalog))+"\n";debugSourcesText=json(nativeTaskDebugSourceUnionJSON(sources))+"\n";taskDebugHash=nativeTaskDebugMetadataHash(catalog,sources);linkageIdentity+=":task-debug-catalog="+hash(debugCatalogText)+":task-debug-sources="+hash(debugSourcesText)+":task-debug-metadata="+taskDebugHash;
   }
+  std::filesystem::path sharedRuntime;
+  if(auto selected=std::getenv("NEX_RUNTIME_CACHE_DIR");selected&&*selected){
+    std::filesystem::path requested(selected);
+    if(!requested.is_absolute())throw Error("E_OPTION","NEX_RUNTIME_CACHE_DIR must be an absolute directory");
+    // Only ordinary Release host builds. Archived/overridden resources and
+    // foreign catalogue packaging keep their independent, local projections.
+    bool injectedInputs=false;
+    for(auto name:{"CPATH","CPLUS_INCLUDE_PATH","C_INCLUDE_PATH","OBJC_INCLUDE_PATH","CCC_OVERRIDE_OPTIONS",
+                   "COMPILER_PATH","GCC_EXEC_PREFIX","CLANG_CONFIG_FILE_USER_DIR","CLANG_CONFIG_FILE_SYSTEM_DIR"})
+      if(auto value=std::getenv(name);value&&*value)injectedInputs=true;
+    if(!injectedInputs&&options.profile=="release"&&toolchain.hostCompatible&&!windows&&!options.taskDebug&&
+       !options.deferredLink&&!options.codeOnlyLibrary&&options.foreignCatalogue.empty()&&
+       options.toolchain.empty()&&!std::getenv("NEX_CLANG")&&!std::getenv("NEX_RESOURCE_DIR")&&
+       identity.output.find("clang")!=std::string::npos)
+      sharedRuntime=std::filesystem::weakly_canonical(requested)/"nex-runtime-v1";
+  }
   std::string key=hash(revision(p)+json(sourceBundle(p),false)+p.path+options.profile+target+toolchain.identity+toolchainFingerprint+compilerTarget+dataLayout+options.entry+std::to_string(options.libraryEntry)+std::to_string(server)+NEX_BUILD_ID+LLVM_VERSION_STRING+compiler+identity.output+runtimeIdentity+hash(formatter)+hash(dapAdapter)+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET")+linkageIdentity);
+  if(!sharedRuntime.empty())key=hash(key+sharedRuntime.string());
   auto folder=std::filesystem::absolute(std::filesystem::path(directory)/key);
   // The linkage key pins the original checked inputs. Profile reports and
   // retained receipts inspect the closed, byte-identical captured frontier.
@@ -2851,14 +2919,24 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       auto source=folder/"task-debug-entry.cpp",object=folder/"task-debug-entry.o";writeFile(source.string(),code);auto args=command({"-std=c++20","-c",source.string(),"-I",runtimeProjection.string(),"-o",object.string(),"-g",optimization});if(options.positionIndependent)args.push_back("-fPIC");if(executeNativeBuildTool(args)!=0)throw Error("E_LINK","task debugger preparation bridge compilation failed");link.push_back(object.string());
     }
   }
+  auto compileProjection=runtimeProjection;
+  std::string compilerStamp;
+  if(!sharedRuntime.empty()){
+    llvm::json::Object inputs;for(const auto &[file,source]:runtimeFiles)inputs[file]=hash(source);
+    compileProjection=sharedRuntime/"sources"/hash(json(std::move(inputs),false));
+    for(const auto &[file,source]:runtimeFiles)captureFile(compileProjection/file,source);
+    auto driver=llvm::sys::findProgramByName(compiler);
+    if(!driver)throw Error("E_TOOL","cannot identify SDK runtime compiler: "+compiler);
+    compilerStamp=hash(json(llvm::json::Object{{"compiler_binary",hash(readFile(*driver))},{"compiler_build",NEX_BUILD_ID},
+      {"driver_version",identity.output},{"target",target},{"driver_target",compilerTarget},{"layout",dataLayout},
+      {"toolchain",toolchain.identity},{"profile",options.profile},{"sdkroot",environment("SDKROOT")},
+      {"deployment",environment("MACOSX_DEPLOYMENT_TARGET")}},false));
+  }
   for(const auto &component:components){
     if(options.codeOnlyLibrary||options.deferredLink)continue;
-    auto source=(runtimeProjection/component).string();auto runtimeKey=hash("nex.runtime-object/2"+runtimeProjection.string()+runtimeIdentity+component+(component=="nex_resource_executor.cpp"&&!windows?"pthread/1":"")+compiler+identity.output+optimization+options.profile+std::to_string(options.positionIndependent)+target+toolchain.identity+toolchainFingerprint+compilerTarget+dataLayout+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET"));
-    auto cache=std::filesystem::absolute(std::filesystem::path(directory)/"runtime-cache"/runtimeKey);auto cached=cache/"runtime.o",marker=cache/"complete";
-    std::filesystem::create_directories(cache);
-    if(!std::filesystem::is_regular_file(cached)||!std::filesystem::is_regular_file(marker)||readFile(marker.string())!=hash(readFile(cached.string()))+"\n"){
-      auto temporary=cache/("runtime-"+std::to_string(std::random_device{}())+".o");
-      auto arguments=command({"-std=c++20","-c",source,"-I",runtimeProjection.string(),"-o",temporary.string(),"-g",optimization});
+    auto destination=folder/std::filesystem::path(component).replace_extension(".o");
+    std::filesystem::create_directories(destination.parent_path());
+    auto runtimeFlags=[&](std::vector<std::string> arguments){
       if(foreign){
         if(!windows)arguments.insert(arguments.end(),{"-I",toolchain.opensslInclude});
         arguments.insert(arguments.end(),{"-pthread","-DNEX_FOREIGN_ENABLED"});
@@ -2881,11 +2959,23 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
         arguments.insert(arguments.end(),{"-DNEX_PROFILE_ENABLED","-DTRACY_ENABLE","-DTRACY_ON_DEMAND","-DTRACY_DELAYED_INIT","-DTRACY_MANUAL_LIFETIME","-DTRACY_ONLY_LOCALHOST","-DTRACY_NO_BROADCAST","-DTRACY_NO_CODE_TRANSFER","-DTRACY_NO_CALLSTACK","-DTRACY_NO_SYSTEM_TRACING","-DTRACY_NO_SAMPLING","-DTRACY_NO_CRASH_HANDLER","-DTRACY_NO_FRAME_IMAGE","-pthread"});
         if(tasks)arguments.push_back("-DNEX_TASK_PROFILE_ENABLED");
       }
+      return arguments;
+    };
+    if(!sharedRuntime.empty()){
+      auto args=runtimeFlags(command({"-std=c++20","-I",compileProjection.string(),"-g",optimization,
+                                      "-ffile-compilation-dir="+compileProjection.string()}));
+      buildSharedRuntimeObject(sharedRuntime,compileProjection/component,destination,std::move(args),compilerStamp);
+      link.push_back(destination.string());continue;
+    }
+    auto source=(runtimeProjection/component).string();auto runtimeKey=hash("nex.runtime-object/2"+runtimeProjection.string()+runtimeIdentity+component+(component=="nex_resource_executor.cpp"&&!windows?"pthread/1":"")+compiler+identity.output+optimization+options.profile+std::to_string(options.positionIndependent)+target+toolchain.identity+toolchainFingerprint+compilerTarget+dataLayout+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET"));
+    auto cache=std::filesystem::absolute(std::filesystem::path(directory)/"runtime-cache"/runtimeKey);auto cached=cache/"runtime.o",marker=cache/"complete";
+    std::filesystem::create_directories(cache);
+    if(!std::filesystem::is_regular_file(cached)||!std::filesystem::is_regular_file(marker)||readFile(marker.string())!=hash(readFile(cached.string()))+"\n"){
+      auto temporary=cache/("runtime-"+std::to_string(std::random_device{}())+".o");
+      auto arguments=runtimeFlags(command({"-std=c++20","-c",source,"-I",runtimeProjection.string(),"-o",temporary.string(),"-g",optimization}));
       if(executeNativeBuildTool(arguments)!=0)throw Error("E_LINK","runtime compilation failed; artifacts retained at "+cache.string());
       auto digest=hash(readFile(temporary.string()));std::filesystem::rename(temporary,cached);writeFile(marker.string(),digest+"\n");
     }
-    auto destination=folder/std::filesystem::path(component).replace_extension(".o");
-    std::filesystem::create_directories(destination.parent_path());
     copyFile(cached.string(),destination.string(),true);link.push_back(destination.string());
   }
   if(server&&!options.deferredLink){
