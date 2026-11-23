@@ -229,6 +229,50 @@ class FrontendDiagnostics(harness.ToolchainCase):
                 again=self.cli(*args[1:],machine=False,ok=False)
                 self.assertEqual(json.loads(again.stdout),error)
 
+    def test_repair_context_matches_live_and_archived_functions(self):
+        self.source('module app;import "./rate.nex" as rate;fn main()->unit{}'
+                    'test fn price()->unit{assert(rate::total()==42);}')
+        rate = self.root / 'rate.nex'
+        rate.write_text('module rate;fn base()->i64{return 41;}'
+                        'pub fn total()->i64{return base();}', encoding='utf-8')
+        revision = self.cli('check', 'main.nex')['revision']
+        self.assertNotIn('repair_context', self.cli('test', 'main.nex', ok=False))
+        args = ('--symbol', 'app::price', '--repair-context', '--interpreter-only')
+        for archived in (False, True):
+            with self.subTest(archived=archived):
+                if archived:
+                    rate.write_text('module rate;pub fn total()->i64{return 42;}', encoding='utf-8')
+                    self.assertTrue(self.cli('test', 'main.nex', *args)['ok'])
+                source = ('--revision', revision) if archived else ('main.nex',)
+                failure = self.cli('test', *source, *args, ok=False)
+                brief = failure['repair_context']
+                self.assertEqual(failure['test_failure']['comparison']['left'], '41')
+                self.assertEqual(brief['symbol'], 'rate::total')
+                actual = self.cli('context', *source, '--kind', 'brief', '--symbol', brief['symbol'])
+                self.assertEqual({k:v for k,v in brief.items() if k != 'inspect'},
+                                 {k:actual[k] for k in brief if k != 'inspect'})
+                driver = harness.REPO / 'tools/llm/repair_context.py'
+                result = subprocess.run([sys.executable, '-B', driver, '--nex', harness.NEX,
+                                         *source, '--symbol', 'app::price', '--interpreter-only'],
+                                        cwd=self.root, capture_output=True, timeout=30)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertEqual(json.loads(result.stdout)['repair_context'], brief)
+                inspect, = brief['inspect']
+                self.assertEqual(inspect, ['nex','context',*source,'--kind','brief','--symbol','rate::base','--json'])
+                callee = self.cli(*inspect[1:-1])
+                self.assertIn('return 41;', callee['source'])
+
+    def test_repair_context_falls_back_to_test_and_bounds_source(self):
+        self.source('module app;fn main()->unit{}test fn check()->unit{' +
+                    '// ' + '🙂' * 600 + '\nassert(false);}')
+        failure = self.cli('test', '--repair-context', '--interpreter-only', ok=False)
+        brief = failure['repair_context']
+        self.assertEqual((brief['symbol'], brief['inspect']), ('app::check', []))
+        self.assertTrue(brief['source_truncated'])
+        self.assertLessEqual(len(brief['source'].encode()), 2048)
+        broken = self.cli('test', '--repair-context', machine=False, ok=False)
+        self.assertIn('--json', broken.stderr + broken.stdout)
+
     def test_assert_failure_limits_preview_and_preserves_short_circuit(self):
         self.source('module logic;fn main()->unit{}'
                     'fn wrong()->bool!{io}{print(7);return true;}'
