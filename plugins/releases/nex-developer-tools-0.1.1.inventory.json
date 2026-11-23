@@ -1,0 +1,77 @@
+{
+  "schema": "nex.codex-plugin-package/1",
+  "name": "nex-developer-tools",
+  "version": "0.1.1",
+  "archive": "nex-developer-tools-0.1.1.zip",
+  "bytes": 30917,
+  "sha256": "41eb1ab4d1d85ad2449b49ab178dc090caf4637571bd068d4c57c74131ea4d42",
+  "files": [
+    {
+      "path": "LICENSE",
+      "bytes": 1073,
+      "sha256": "3e609ea0cdf472612ddda1023fb1ecdee13ebc2eb18e011af6eb11a4d6538200"
+    },
+    {
+      "path": "PUBLISHING.md",
+      "bytes": 4152,
+      "sha256": "27206de491129e25db417305bb6a279d7e144585ca790a0f2790a6f214a597a0"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3932,
+      "sha256": "02e3d0f6f0111bd937d953bb20ddd8fdc6cd15f8a74a3f94e7a51356e45a2259"
+    },
+    {
+      "path": "README.ru.md",
+      "bytes": 5038,
+      "sha256": "99842be58b47e8be7e73050021128b89e7c165a4ccbd6a49bfdeb82e0351e758"
+    },
+    {
+      "path": "assets/icon-dark.svg",
+      "bytes": 552,
+      "sha256": "555c34cf67e2be0b56690c26e60e49bd090550e49e461d50e2a2aed619669033"
+    },
+    {
+      "path": "assets/icon.svg",
+      "bytes": 552,
+      "sha256": "21b2612bff142a217f802a194993edd95c04ac9481ba735a2db6af36d44f9499"
+    },
+    {
+      "path": "plugin.json",
+      "bytes": 2725,
+      "sha256": "fc5d436cb157f8c3640d8a7105a4f57e2296a8ca92e2803fedc8a6ba1665e0cf"
+    },
+    {
+      "path": "skills/nex-programming/LICENSE",
+      "bytes": 1073,
+      "sha256": "3e609ea0cdf472612ddda1023fb1ecdee13ebc2eb18e011af6eb11a4d6538200"
+    },
+    {
+      "path": "skills/nex-programming/SKILL.md",
+      "bytes": 4479,
+      "sha256": "a62665373a19f5bdc7977990f10799700bec96b41c983a075cdb820bef13b5a6"
+    },
+    {
+      "path": "skills/nex-programming/agents/openai.yaml",
+      "bytes": 236,
+      "sha256": "623a86862db45d16c54b11ccc221b481dddc2a63dfc9a1fafd3401576b6f7d0e"
+    },
+    {
+      "path": "skills/nex-programming/assets/hello.nex",
+      "bytes": 221,
+      "sha256": "646ea396716bbc9906f7f31671e15eedd4f2bba5e04d0305cfac73bfcbd8db86"
+    },
+    {
+      "path": "skills/nex-programming/references/sdk-setup.md",
+      "bytes": 2236,
+      "sha256": "bf364d08c6b1e5696a0c8cbfa595dd1e312255a9acf0b3b6f401d1b524b9ae6a"
+    },
+    {
+      "path": "skills/nex-programming/references/workflows.md",
+      "bytes": 2998,
+      "sha256": "9d3aca5e491da68aa39646ecd52aff83a5afac46dbbd1c54030315ff9fb076d5"
+    }
+  ],
+  "directory_submitted": false,
+  "directory_approved": false
+}
