@@ -9,10 +9,15 @@ import subprocess
 import tempfile
 
 
-def source_language(descriptor, kind=None):
+def source_language(descriptor, kind=None, *, project_language=None):
     if not isinstance(descriptor,dict):
         raise RuntimeError('provider preparation needs a checked source descriptor')
     language=descriptor.get('version','')
+    if project_language is not None and project_language != language:
+        versions = descriptor.get('project_languages')
+        if not isinstance(versions, list) or project_language not in versions:
+            raise ValueError('the compiler does not advertise project language ' + str(project_language))
+        language = project_language
     parts=language.split('.') if isinstance(language,str) else []
     foreign=descriptor.get('foreign_boundary',{})
     if (descriptor.get('schema')!='nex.language/1' or len(parts)!=2 or parts[0]!='0' or

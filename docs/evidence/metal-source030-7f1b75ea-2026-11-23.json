@@ -1,0 +1,161 @@
+{
+  "schema": "nex.metal-language030-observation/1",
+  "source_commit": "7f1b75eae61335c37254fa5b31dc798b3189cfe0",
+  "platform": "Darwin-arm64",
+  "project_language": "0.30",
+  "toolchain": "0.281.0",
+  "compiler_sha256": "015bf751c727cd1374e0deab1f7ad62cf25e75e4cf803c7c3a27f845970efc24",
+  "prepare_sha256": "01977382ab768e4894b2893b4157f3a813468496618a0ae108bc7b888e8decca",
+  "provider_helper_sha256": "22ec3feeef9bf28f2cfd6d066049c78c05ccde4201716af54c7ecf2e819f3c4b",
+  "verify_sha256": "90672a8c6f37d8dda3e632ff4b4170e2cc6b36d0bc39412dfa1d4bf2f78ef447",
+  "module_sha256": "4e4ddde080836f048da7cc282320c1ae8b224d4c0b60db0b07730355b9c31684",
+  "worker_sha256": "fa718c7d38764422da0f66e8dd27f21bc26970f39af6c8a3cfa62a1d5ef8d4a9",
+  "provider_manifest_sha256": "c7a5afcf8ac08d12a87a03532632be48ed3d2874f79a675fa3f604437e62bd9b",
+  "hardware_report_sha256": "cdf0efe307a964948c7c4e4cb8765be9c0a526f103881f7acd78beebd746c4da",
+  "full_hardware_suite": false,
+  "actual_kernel_events": 14,
+  "cases": [
+    {
+      "name": "small_cpu_oracle",
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "actual_kernel_events": [
+          [
+            3,
+            3,
+            9291,
+            0
+          ]
+        ],
+        "all_buffers_released": true
+      },
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "actual_kernel_events": [
+          [
+            3,
+            3,
+            9625,
+            0
+          ]
+        ],
+        "all_buffers_released": true
+      }
+    },
+    {
+      "name": "all_octets",
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "actual_kernel_events": [
+          [
+            256,
+            1,
+            9666,
+            0
+          ]
+        ],
+        "all_buffers_released": true
+      },
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "actual_kernel_events": [
+          [
+            256,
+            1,
+            9791,
+            0
+          ]
+        ],
+        "all_buffers_released": true
+      }
+    },
+    {
+      "name": "persistent_session_scales",
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "actual_kernel_events": [
+          [
+            1,
+            0,
+            9624,
+            0
+          ],
+          [
+            1,
+            1,
+            9208,
+            0
+          ],
+          [
+            1,
+            2,
+            9750,
+            0
+          ],
+          [
+            1,
+            127,
+            9624,
+            0
+          ],
+          [
+            1,
+            255,
+            9625,
+            0
+          ]
+        ],
+        "all_buffers_released": true
+      },
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "actual_kernel_events": [
+          [
+            1,
+            0,
+            9791,
+            0
+          ],
+          [
+            1,
+            1,
+            9500,
+            0
+          ],
+          [
+            1,
+            2,
+            9541,
+            0
+          ],
+          [
+            1,
+            127,
+            9416,
+            0
+          ],
+          [
+            1,
+            255,
+            9500,
+            0
+          ]
+        ],
+        "all_buffers_released": true
+      }
+    }
+  ],
+  "scope": "Three source 0.30 compute provider examples on a physical Metal device with a normal Release install and explicit source-version selection during provider preparation."
+}

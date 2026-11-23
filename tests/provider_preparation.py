@@ -100,6 +100,9 @@ class ProviderPreparation(unittest.TestCase):
                     (directory/'scope.json').write_text(json.dumps({'platform_selection_simulated':'Linux ARM64','actual_NEX_source_and_signature_check':True,'compiler_sha256':hashlib.sha256(COMPILER.read_bytes()).hexdigest(),'native_compiler_deliberately_stopped':True,'native_worker_built':False,'hardware_executed':False})+'\n', newline="\n")
 
     def test_versions_require_capabilities_and_supported_contracts(self):
+        self.assertEqual(helper.source_language(self.descriptor, 'compute', project_language='0.30'), '0.30')
+        with self.assertRaisesRegex(ValueError, 'does not advertise project language'):
+            helper.source_language(self.descriptor, 'compute', project_language='0.99')
         for language in ['0.20','0.21','0.24','0.24']:
             value=copy.deepcopy(self.descriptor);value['version']=language
             self.assertEqual(helper.source_language(value,'model'),language)

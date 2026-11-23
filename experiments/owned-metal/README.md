@@ -35,6 +35,13 @@ python3 -B experiments/owned-metal/logs.py --sdk "$NEX_SDK" \
 From an installed SDK, replace `experiments/owned-metal` in the commands with
 `$NEX_SDK/share/nex/tools/owned-metal`.
 
+Pass `--language-version 0.30` to `prepare.py` to generate and check the Metal
+application and its foreign signatures under project language 0.30. The SDK
+lists the available modes with `nex describe --field project_languages --json`.
+On an Apple M5 Max, the 0.30 CPU-oracle, byte-value and persistent-session
+cases completed 14 GPU kernel events between native and reference execution.
+See the [compiler, provider and hardware observations](../../docs/evidence/metal-source030-7f1b75ea-2026-11-23.json).
+
 `prepare.py --check-sdk` performs source/signature discovery without building a
 provider, selecting an Apple SDK or initializing a GPU, including on non-macOS
 64-bit hosts. Run `check_sources.py --sdk ... --project ... --output ...` after

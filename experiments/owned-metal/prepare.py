@@ -17,6 +17,7 @@ def main():
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--sdk',required=True,type=Path);parser.add_argument('--output',required=True,type=Path)
  parser.add_argument('--index',type=int,default=0);parser.add_argument('--cxx',default=shutil.which('clang++') or shutil.which('g++'))
  parser.add_argument('--check-sdk',action='store_true',help='check actual source and FFI signatures without building or initializing a device')
+ parser.add_argument('--language-version',help='select an advertised project language for the Metal application')
  args=parser.parse_args();sdk=args.sdk.resolve(strict=True);out=args.output.absolute();compiler=sdk/'bin'/('nex.exe' if os.name=='nt' else 'nex');resources=sdk/'share/nex'
  if platform.machine().lower() not in ('arm64','aarch64','x86_64','amd64'):parser.error('owned Metal preparation requires a supported64-bit architecture')
  if platform.system()!='Darwin' and not args.check_sdk:parser.error('native Metal worker preparation requires macOS; use --check-sdk for source-only validation')
@@ -33,7 +34,7 @@ def main():
   return p.stdout
  descriptor=json.loads(run('describe',[compiler,'describe','--json']));parent=descriptor.get('resource_regions',{}).get('dependency_graph',{})
  spec=importlib.util.spec_from_file_location('nex_owned_provider_sdk',ROOT/'tools/provider_sdk.py');helper=importlib.util.module_from_spec(spec);spec.loader.exec_module(helper)
- language=helper.source_language(descriptor,'compute')
+ language=helper.source_language(descriptor,'compute',project_language=args.language_version)
  if parent.get('C_table_parent_creation') is not True or descriptor.get('foreign_boundary',{}).get('owned_external_host',{}).get('source_task_bridge') is not True or descriptor.get('foreign_boundary',{}).get('module_loading',{}).get('executable_members') is not True:raise RuntimeError('selected compiler must support dependent C resources, source task/FFI and pinned executable members')
  (out/'stdlib').mkdir()
  for name in ['compute.nex','device.nex']:shutil.copy2(resources/'lib'/name,out/'stdlib'/name)
