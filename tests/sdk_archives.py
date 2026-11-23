@@ -319,6 +319,23 @@ class SourceCompatibilityHost(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'put'):
             check_1x(stable, changed, '1.0.1')
 
+    def test_1x_sdk_ships_the_catalogue_used_to_check_its_declarations(self):
+        from sdk_compat_stdlib import API_1_0, installed_contract
+        contract = API_1_0.read_bytes()
+        with tempfile.TemporaryDirectory() as directory:
+            prefix = Path(directory)
+            compiler = prefix / 'bin' / 'nex'
+            catalogue = prefix / 'share' / 'nex' / 'llm' / API_1_0.name
+            with self.assertRaisesRegex(ValueError, 'missing'):
+                installed_contract(compiler, contract, 'exact-1.0.0')
+            catalogue.parent.mkdir(parents=True)
+            catalogue.write_bytes(b'{}')
+            with self.assertRaisesRegex(ValueError, 'different'):
+                installed_contract(compiler, contract, 'exact-1.0.0')
+            catalogue.write_bytes(contract)
+            self.assertEqual(installed_contract(compiler, contract, 'exact-1.0.0'),
+                             {'policy': 'exact-1.0.0', 'sha256': hashlib.sha256(contract).hexdigest()})
+
     def test_darwin_build_release_can_differ_but_architecture_and_abi_must_match(self):
         host_abi = self.compat.host_abi
         self.assertEqual(host_abi('arm64-apple-darwin26.5.0'), host_abi('arm64-apple-darwin27.2.0'))

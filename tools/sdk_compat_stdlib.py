@@ -185,6 +185,14 @@ def check_1x(held, actual, version):
     return 'preserves-1.0.0'
 
 
+def installed_contract(nex, contract, policy):
+    path = nex.parent.parent / 'share' / 'nex' / 'llm' / API_1_0.name
+    require(path.is_file(), 'installed SDK is missing ' + API_1_0.name)
+    shipped = path.read_bytes()
+    require(shipped == contract, 'installed SDK ships a different ' + API_1_0.name)
+    return {'policy': policy, 'sha256': digest(shipped)}
+
+
 def baseline_controls(held):
     expanded = deepcopy(held)
     releases = expanded['modules']['std/math.nex']['functions']
@@ -329,7 +337,7 @@ def check_stdlib(baseline_nex: Path, candidate_nex: Path, root: Path) -> dict:
                         **counts(api)}
         policy = check_1x(stable_api, api, version)
         if policy:
-            result[role]['source_contract_1x'] = {'policy': policy, 'sha256': digest(contract)}
+            result[role]['source_contract_1x'] = installed_contract(nex, contract, policy)
         result[role]['behavior'] = semantics(nex, work / (role + '-behavior'))
     result['controls'] = mutations(original)
     result['controls']['baseline_policy'] = baseline_controls(held)
