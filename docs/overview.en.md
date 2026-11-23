@@ -1,20 +1,17 @@
 # Why NEX exists
 
-Current source is **toolchain 0.248.0 / language 0.28 / task ABI 7**, in
-development. It includes ordinary source contracts and experimental checked
-scalar Metal emission. The published [0.246.1 macOS SDK](releases/0.246.1.json)
-has its own completed acceptance; matching current-source SDK qualification remains
-pending. The [current platform summary](../README.md#development-status) links
-exact source and hardware records; [STATUS](../STATUS.md) retains the history.
-Older SDK archives keep their own source, compiler and acceptance identities.
-
 [Русский](overview.ru.md) · [Start here](getting-started.en.md)
 
 NEX means **Neural Execution Language**. The project explores a practical question:
 how can a person and a language model express, change and verify a large program
 with less repeated context, while keeping execution efficient and behavior precise?
 The goal is maximum exact meaning per necessary token, high performance and safe
-execution. NEX is still a development language; its advantages must be measured.
+execution.
+
+New projects created by the **0.281.0 beta candidate** select source language
+**0.30**. Existing projects can select 0.28, 0.29 or 0.30. The compiler fallback
+is 0.28. Each released SDK identifies its compiler, host and acceptance results.
+[Published macOS SDK 0.280.1](releases/0.280.1.json) · [Platform status](../README.md#development-status) · [Proposed 1.0 compatibility terms](compatibility.md#compatibility-target-for-10)
 
 ## The principle
 
@@ -24,9 +21,11 @@ functions, types, operations and revisions. Persistent IDs identify objects in
 one store; content hashes identify canonical checked content. Guarded changes can reject stale
 context instead of silently overwriting another revision.
 
-A model can ask `nex describe --field PATH --json` about one feature and
-`nex context --symbol NAME --json` about one symbol. It can then make a bounded
-change, check it and run the relevant tests. The graph is useful to people too:
+A model can ask `nex describe --field project_languages --json` which source
+versions the SDK supports. In a fresh project,
+`nex context src/main.nex --kind brief --symbol app::main --json` reads the entry
+function and its immediate dependencies.
+The model can then change the function and run the relevant tests. The graph is useful to people too:
 changes, debugger views, profiles and captured builds can refer to exact source
 and build identities.
 
@@ -54,7 +53,10 @@ immutable collections and aggregates, enums and exhaustive matching, generics,
 traits and snapshot closures. `var` permits rebinding; aggregate aliases do not
 become arbitrary mutable pointers.
 
-Effects include `io`, `db`, `fs`, `ffi`, `task` and `throw`. Realms separate
+Source 0.30 adds `cell<T>` for state shared through explicit references.
+Reading or writing the cell requires the `state` effect. [Source reference rules](references030.md)
+
+Other effects include `io`, `db`, `fs`, `ffi`, `task` and `throw`. Realms separate
 client, server and shared code. An effect declaration describes a permitted kind
 of operation; filesystem/device authority still requires actual operator grants.
 Browser output includes reachable client/shared code under the checked boundary.
@@ -105,7 +107,7 @@ That demonstrates reuse in the recorded corpus, not model-token savings.
 The user-selected [local Qwen3.8 27B study](llm-cost-qwen38-27b-2026-11-11.en.md)
 completed60 attempts: NEX4/20 accepted, C++14/20 and Python20/20. Including all
 failures, NEX used821,214 tokens, C++254,634 and Python212,556. No saving was
-demonstrated. Other-model/workload comparisons remain unmeasured. The
+demonstrated in that study. The
 [quality protocol](quality.md) counts full context/tools/retries/correctness;
 the project's30% reduction objective is not an achieved result.
 
@@ -115,6 +117,13 @@ The [version2 study on0.280.1](llm-cost-qwen38-27b-2026-11-17.en.md) completed
 an exact NEX total or ratio is unavailable. Source-review limitations and
 explicit suffix-only execution amendments are retained. Runtime, source language
 and references changed from version1, so a prompt-only causal claim is invalid.
+
+Codex repaired the same warehouse invoice defect three times per language.
+All nine changes passed the same acceptance scenarios. Mean time through
+acceptance was 25.69 s for NEX, 20.89 s for C++20 and 19.89 s for Python.
+NEX averaged 71,809 tokens per accepted fix, including 56,448 cached input
+tokens. These measurements cover one defect on one Mac.
+[Per-language times, cached input and total tokens](codex-billing-languages-2026-11-23.ru.md)
 
 The [0.162 SDK measurement](releases/0.162.0.json) repeats the checked recurrence
 for 100 million steps and five samples per language. Median wall times on this
@@ -145,12 +154,12 @@ disabled for NPU. Each uses its own pinned ordinary development installation;
 complete source and portable SDK qualification remain separate.
 
 The earlier [0.162 SDK record](releases/0.162.0.json) retains its 300 source groups,
-moved/restored workflows, browser and OpenCL scope. It does not qualify the
-current 0.165 source or SDK. Matching Windows/Linux portable delivery, Apple NPU,
-remaining GPU/NPU operations, mobile/native UI, broader algebraic effects,
-remaining network/DB integrations, project conversion and NEX Studio remain in
-[PLAN](../PLAN.md). The selected Qwen study found no token saving; improvements
-and any later matched measurements retain that original result.
+moved/restored workflows, browser and OpenCL scope. See the
+[platform table](../README.md#development-status) for subsequent measurements
+and the [installation guide](getting-started.en.md) for Windows and Linux archives.
+The roadmap also covers Apple NPU, additional GPU/NPU operations, mobile and
+desktop interfaces, algebraic effects, networking and database integrations,
+project conversion and NEX Studio. [Development plan](../PLAN.md)
 
 Read the [normative specification](language.md), [grammar](grammar.ebnf),
 [architecture](architecture.md) and [model-independent workflow](../llm/LEARNING.md).
