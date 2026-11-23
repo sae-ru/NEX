@@ -125,7 +125,10 @@ configuration used with that installation. Select the Wasm linker from the
 all-target Clang dependency set. During assembly the unbundled host compiler
 loads its LLVM, SQLite and solver DLLs from the directory beside that linker.
 If the host DLLs live elsewhere, pass `--host-runtime-bin DIRECTORY`. Moved
-and restored acceptance use the Windows system PATH and the assembled SDK.
+and restored acceptance use the assembled SDK and a Windows system PATH
+augmented with a private directory containing the selected standalone
+`node.exe`. This lets npm's TypeScript and Vite scripts find that executable
+by name while keeping compiler and OpenSSL installations off the consumer PATH.
 
 On Windows x86-64 the 0.281.0 beta input from `d492bf7f` reproduced a
 `0xC0000135` loader exit during assembly. With the host DLL path supplied,

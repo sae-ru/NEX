@@ -56,4 +56,4 @@ def check_installed_task_streams(run,root,resources,driver):
    'actual_partial_write':partial,'typed_open_no_raw_file_ids':True,'original_grants':True,'physical_quota_retention':True,
    'single_CPU_worker_progress':True,'cancel_physical_drain':True,'immutable_input_snapshots':True,'large_file_streaming':True,
    'protocol_rejections':True,'probe_sha256':_sha(binary.read_bytes()),'raw_report':raw,
-   'installed_sources':{str(p.relative_to(resources)):_sha(p.read_bytes()) for p in [*sources,*[runtime/name for name in HEADERS],resources/'tests/host_test.h']}}
+   'installed_sources':{p.relative_to(resources).as_posix():_sha(p.read_bytes()) for p in [*sources,*[runtime/name for name in HEADERS],resources/'tests/host_test.h']}}

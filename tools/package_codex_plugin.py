@@ -4,8 +4,10 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
+import tempfile
 import xml.etree.ElementTree as ET
 import zipfile
 
@@ -74,15 +76,7 @@ def validate():
     return manifest, contents
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, required=True, help="Artifact directory outside plugin")
-    args = parser.parse_args()
-    manifest, contents = validate()
-    destination = args.output.resolve()
-    require(destination != PLUGIN and PLUGIN not in destination.parents,
-            "Output must be outside the packaged plugin")
-    destination.mkdir(parents=True, exist_ok=True)
+def build_package(destination, manifest, contents):
     stem = manifest["name"] + "-" + manifest["version"]
     archive = destination / (stem + ".zip")
     # Fixed timestamp, permissions, ordering and storage avoid platform/zlib variance.
@@ -105,11 +99,47 @@ def main():
                    "sha256": hashlib.sha256(contents[name]).hexdigest()} for name in sorted(contents)],
         "directory_submitted": False, "directory_approved": False,
     }
-    (destination / (stem + ".inventory.json")).write_text(
-        json.dumps(inventory, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    (destination / (stem + ".sha256")).write_text(digest + "  " + archive.name + "\n", encoding="ascii")
-    print(json.dumps({"archive": str(archive), "files": len(contents),
-                      "bytes": inventory["bytes"], "sha256": digest}))
+    (destination / (stem + ".inventory.json")).write_bytes(
+        (json.dumps(inventory, indent=2, ensure_ascii=False) + "\n").encode("utf-8"))
+    (destination / (stem + ".sha256")).write_bytes((digest + "  " + archive.name + "\n").encode("ascii"))
+    return inventory
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--output", type=Path, help="Write the package to this directory")
+    mode.add_argument("--check", action="store_true", help="Verify the checked-in release against the plugin source")
+    args = parser.parse_args()
+    manifest, contents = validate()
+    releases = ROOT / "plugins" / "releases"
+    destination = releases if args.check else args.output.resolve()
+    require(destination != PLUGIN and PLUGIN not in destination.parents,
+            "Output must be outside the packaged plugin")
+    if not args.check:
+        destination.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=None if args.check else destination) as work:
+        staged = Path(work)
+        inventory = build_package(staged, manifest, contents)
+        for artifact in sorted(staged.iterdir()):
+            target = destination / artifact.name
+            # Published filenames stay immutable. A changed package gets a new version.
+            if args.check or (destination == releases and target.exists()):
+                require(target.is_file() and target.read_bytes() == artifact.read_bytes(),
+                        "Release artifact differs from the plugin source: " + target.name)
+        if not args.check:
+            for artifact in sorted(staged.iterdir(), key=lambda path: path.suffix != ".zip"):
+                target = destination / artifact.name
+                if destination == releases:
+                    try:
+                        os.link(artifact, target)
+                    except FileExistsError:
+                        require(target.read_bytes() == artifact.read_bytes(),
+                                "Versioned release file already exists with different contents: " + target.name)
+                else:
+                    os.replace(artifact, target)
+    print(json.dumps({"archive": str(destination / inventory["archive"]), "files": len(contents),
+                      "bytes": inventory["bytes"], "sha256": inventory["sha256"]}))
 
 
 if __name__ == "__main__":

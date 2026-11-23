@@ -1073,6 +1073,12 @@ def validate_installed_stream_host(report, version):
     windows=version >= (0,162,0) and report.get('host')=='x86_64-w64-windows-gnu'
     expected=contract.cases_for_platform('Windows') if windows else CASES
     if windows:
+        # Older Windows receipts serialized relative paths using the native separator.
+        if isinstance(pins, dict):
+            require(all(isinstance(path, str) for path in pins), 'invalid installed stream host source path')
+            canonical = {path.replace('\\', '/'): digest for path, digest in pins.items()}
+            require(len(canonical) == len(pins), 'duplicate installed stream host source path')
+            pins = canonical
         require(report.get('doctor',{}).get('host')==report['host'] and host.get('host_platform')=='Windows' and
                 host.get('portable_corpus_complete') is False and host.get('actual_partial_write') is False and
                 host.get('pending_cases')==[contract.PARTIAL_WRITE_CASE],

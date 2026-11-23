@@ -42,6 +42,12 @@ exports = {
     'core': ('native_session_core', ['make', 'get', 'add', 'fail', 'snapshot', 'cycle', 'spin', 'overflow']),
     'mid': ('native_session_mid', ['twice']),
     'files': ('native_session_files', ['open_file', 'read_file', 'seek_file', 'close_file', 'error_file', 'empty_stash', 'stash', 'use_stash'])}
+driver_flags = []
+if os.name == 'nt':
+    doctor = json.loads(run([compiler, 'doctor', '--json'], out).stdout)
+    if doctor.get('sdk_manifest') and clang.samefile(doctor['native_compiler']):
+        # The relocated Clang and the packaged UCRT sysroot live in different trees.
+        driver_flags = ['--target=' + doctor['host'], '--sysroot=' + doctor['native_sysroot']]
 kernel = json.loads(run([host], out).stdout)
 assert kernel['ok'] and kernel['cases'] == 14 and kernel['live_delta'] == 0
 report = {'schema': 'nex.native-task-sessions/1', 'compiler_sha256': sha(compiler),
@@ -88,7 +94,7 @@ for profile in ('debug', 'release'):
             flags = ['-shared', '-fPIC', '-Wl,--whole-archive', archive, '-Wl,--no-whole-archive']
             if component == 'mid':
                 flags += ['-Wl,--no-as-needed', images['core']]
-        run([clang, *flags, '-o', shared], folder)
+        run([clang, *driver_flags, *flags, '-o', shared], folder)
         images[component] = shared
         accessors += [record['exports'][module+'::'+name]['accessor'] for name in names]
         records[component] = {'provider': record, 'archive_sha256': sha(archive), 'image_sha256': sha(shared)}

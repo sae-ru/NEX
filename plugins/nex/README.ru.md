@@ -7,12 +7,12 @@ Language, языке нейронного исполнения**. Навык з�
 установленного компилятора, нужные правила языка и контекст символов, затем
 проверяет завершённое изменение компилятором и подходящими тестами.
 
-**Версия плагина: 0.1.0**, лицензия MIT. Версия плагина не является версией языка
+**Версия плагина: 0.1.1**, лицензия MIT. Версия плагина не является версией языка
 или SDK. Пакет распространяется через GitHub; заявка в общий каталог OpenAI
 пока не отправлена, одобрения каталога нет.
 
-[Скачать ZIP для каталога](https://github.com/sae-ru/NEX/raw/refs/heads/main/plugins/releases/nex-developer-tools-0.1.0.zip)
-и [проверить SHA256](../releases/nex-developer-tools-0.1.0.sha256).
+[Скачать ZIP для каталога](https://github.com/sae-ru/NEX/raw/refs/heads/main/plugins/releases/nex-developer-tools-0.1.1.zip)
+и [проверить SHA256](../releases/nex-developer-tools-0.1.1.sha256).
 
 ## Установка навыка
 
@@ -78,6 +78,6 @@ codex plugin add nex-developer-tools@nex-plugins
 python3 tools/package_codex_plugin.py --output /absolute/path/to/artifacts
 ```
 
-Команда создаёт `nex-developer-tools-0.1.0.zip`, состав файлов и SHA256.
+Команда создаёт `nex-developer-tools-0.1.1.zip`, состав файлов и SHA256.
 Порядок подачи, проверки и оставшиеся действия владельца описаны в
 [PUBLISHING.md](PUBLISHING.md). Подготовка плагина не пересобирает SDK.
