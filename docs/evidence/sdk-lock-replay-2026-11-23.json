@@ -1,0 +1,136 @@
+{
+  "schema": "nex.sdk-lock-replay-observation/1",
+  "baseline_archive_sha256": "6d52a14f076c8382c06a6ac1f78d1b5e05f49553471116759a0c6f79eab3fa57",
+  "checks": {
+    "published-on-baseline": {
+      "hash-containers": {
+        "revision": "d0b2491ce4f527aaf9e426f575a8de47e4512698a5a0de00e8e2a3b533ac7380",
+        "sha256": "da95f5179198880028e31f7b7243c6d50bd309e588784560be8729f0d21fec99",
+        "dependencies": [
+          "@std/hash.nex",
+          "@std/hash_map.nex",
+          "@std/hash_set.nex"
+        ],
+        "stale_lock_error": "E_LOCK",
+        "stale_lock_sha256": "069ad12dcc0948931c5d03790fa20e6913c3f44fa49a8ed94b9a8c99b1442620"
+      },
+      "java-long": {
+        "revision": "510c552640967526d3ab5aef1787deda69d7dc09c48fdcbd629619faa67f5548",
+        "sha256": "b0061ea9aacd1621cba3c0352f264ac77428cff6831b4b5ea279e36c492c30bd",
+        "dependencies": [
+          "@std/java_int.nex",
+          "@std/java_long.nex"
+        ],
+        "stale_lock_error": "E_LOCK",
+        "stale_lock_sha256": "e29b558175b083284f346ba69dd45a98706953105f5bd9a01a13fe6ea3e335b7"
+      },
+      "sequence-containers": {
+        "revision": "b2e66fe0759064eb07c0a87a865ab4bca32fddaada581884b60d6f193b626cd7",
+        "sha256": "12b9a5261975c9a6a4d0ed69cdae547e5b2a68b25ddc3973b251ca4755b7d3a4",
+        "dependencies": [
+          "@std/fifo.nex",
+          "@std/heap.nex",
+          "@std/lifo.nex",
+          "@std/sequence.nex"
+        ],
+        "stale_lock_error": "E_LOCK",
+        "stale_lock_sha256": "ee74f7ab6684624325fb1d733961602eb8733eb7cb2dd0f2a6fa5d470ec9adb9"
+      }
+    },
+    "published-on-candidate": {
+      "hash-containers": {
+        "revision": "d0b2491ce4f527aaf9e426f575a8de47e4512698a5a0de00e8e2a3b533ac7380",
+        "sha256": "da95f5179198880028e31f7b7243c6d50bd309e588784560be8729f0d21fec99",
+        "dependencies": [
+          "@std/hash.nex",
+          "@std/hash_map.nex",
+          "@std/hash_set.nex"
+        ],
+        "stale_lock_error": "E_LOCK",
+        "stale_lock_sha256": "069ad12dcc0948931c5d03790fa20e6913c3f44fa49a8ed94b9a8c99b1442620"
+      },
+      "java-long": {
+        "revision": "510c552640967526d3ab5aef1787deda69d7dc09c48fdcbd629619faa67f5548",
+        "sha256": "b0061ea9aacd1621cba3c0352f264ac77428cff6831b4b5ea279e36c492c30bd",
+        "dependencies": [
+          "@std/java_int.nex",
+          "@std/java_long.nex"
+        ],
+        "stale_lock_error": "E_LOCK",
+        "stale_lock_sha256": "e29b558175b083284f346ba69dd45a98706953105f5bd9a01a13fe6ea3e335b7"
+      },
+      "sequence-containers": {
+        "revision": "b2e66fe0759064eb07c0a87a865ab4bca32fddaada581884b60d6f193b626cd7",
+        "sha256": "12b9a5261975c9a6a4d0ed69cdae547e5b2a68b25ddc3973b251ca4755b7d3a4",
+        "dependencies": [
+          "@std/fifo.nex",
+          "@std/heap.nex",
+          "@std/lifo.nex",
+          "@std/sequence.nex"
+        ],
+        "stale_lock_error": "E_LOCK",
+        "stale_lock_sha256": "ee74f7ab6684624325fb1d733961602eb8733eb7cb2dd0f2a6fa5d470ec9adb9"
+      }
+    },
+    "current-on-candidate": {
+      "hash-containers": {
+        "revision": "d0b2491ce4f527aaf9e426f575a8de47e4512698a5a0de00e8e2a3b533ac7380",
+        "sha256": "da95f5179198880028e31f7b7243c6d50bd309e588784560be8729f0d21fec99",
+        "dependencies": [
+          "@std/hash.nex",
+          "@std/hash_map.nex",
+          "@std/hash_set.nex"
+        ],
+        "stale_lock_error": "E_LOCK",
+        "stale_lock_sha256": "069ad12dcc0948931c5d03790fa20e6913c3f44fa49a8ed94b9a8c99b1442620"
+      },
+      "insertion-ordered-map": {
+        "revision": "39a4a5857fd164dc063f165b70d620fe0bda6bc05f6090ef6dd50e47c56da112",
+        "sha256": "417a9a8059b2c2adbba34ad15684be7e58dcedc05dc69d6eb510df084eff2986",
+        "dependencies": [
+          "@std/hash.nex",
+          "@std/hash_map.nex",
+          "@std/insertion_ordered_map.nex",
+          "@std/ordered_map.nex"
+        ],
+        "stale_lock_error": "E_LOCK",
+        "stale_lock_sha256": "93d0d8318f72075519b57d3078c8c1b48ff31b50291bf7a4984f14e91ba14328"
+      },
+      "java-circular-fifo": {
+        "revision": "d8978027c2a48d880fc32350a2d46915048b2ba3ccad25090aa16a3bf2788002",
+        "sha256": "dacb88e43c2d132394f346917e6c02bbe60fad35ab3d8a08f69644d236e4016e",
+        "dependencies": [
+          "@std/java_int.nex"
+        ],
+        "stale_lock_error": "E_LOCK",
+        "stale_lock_sha256": "71fbcf4ca45f7166dece2d06595144dff08de35f194f839ae2c4c86c86c031a3"
+      },
+      "java-long": {
+        "revision": "510c552640967526d3ab5aef1787deda69d7dc09c48fdcbd629619faa67f5548",
+        "sha256": "b0061ea9aacd1621cba3c0352f264ac77428cff6831b4b5ea279e36c492c30bd",
+        "dependencies": [
+          "@std/java_int.nex",
+          "@std/java_long.nex"
+        ],
+        "stale_lock_error": "E_LOCK",
+        "stale_lock_sha256": "e29b558175b083284f346ba69dd45a98706953105f5bd9a01a13fe6ea3e335b7"
+      },
+      "sequence-containers": {
+        "revision": "b2e66fe0759064eb07c0a87a865ab4bca32fddaada581884b60d6f193b626cd7",
+        "sha256": "12b9a5261975c9a6a4d0ed69cdae547e5b2a68b25ddc3973b251ca4755b7d3a4",
+        "dependencies": [
+          "@std/fifo.nex",
+          "@std/heap.nex",
+          "@std/lifo.nex",
+          "@std/sequence.nex"
+        ],
+        "stale_lock_error": "E_LOCK",
+        "stale_lock_sha256": "ee74f7ab6684624325fb1d733961602eb8733eb7cb2dd0f2a6fa5d470ec9adb9"
+      }
+    }
+  },
+  "compilers": {
+    "baseline": "a37aab72fb84cf2bf938859017282977b9b9f2445f16fcae9457086e8df9f0b4",
+    "candidate": "00936b0088a620d009f756c8c39da9ecb0eae325526dd5ec1a0e44f9e63a8c1a"
+  }
+}

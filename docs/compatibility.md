@@ -161,7 +161,10 @@ restores its complete inventory, then verifies that both compilers select
 their own installed runtime. It exercises the public CLI and standard-library
 contracts against both installations, runs the published examples from fresh copies,
 recovers two historical revisions and checks both the published and current
-migration suites. Use a fresh output directory. Successful runs discard the
+migration suites. For each published project with a dependency lock, both SDKs
+must preserve the original bytes. Each also opens a separate copy with stale
+dependency hashes and must report `E_LOCK` while preserving that copy's pins.
+Use a fresh output directory. Successful runs discard the
 copied projects' native build cache. Failed runs keep it for diagnosis.
 On macOS the runner uses the selected Apple SDK. Set `SDKROOT` to override
 the SDK reported by `xcrun --sdk macosx --show-sdk-path`.
@@ -214,6 +217,13 @@ predate the packaged agreement corpus. The maintained corpus ran 13 checker
 cases and 11 executable cases on the candidate and separately on the
 `584715e4` macOS source build.
 [Host, archive and backend measurements](evidence/host-archive-pair-and-030-agreement-2026-11-23.json)
+
+On macOS, the published 0.280.1 SDK and the 0.281.0 installation from
+`584715e4` both accepted the original dependency locks for hash containers,
+sequence containers and Java long integers. The candidate also checked all
+five locked 0.30 projects in its own installation. Each of the eleven runs
+preserved the original lock and returned `E_LOCK` for a stale copy.
+[Projects, revisions and lock checksums](evidence/sdk-lock-replay-2026-11-23.json)
 
 ## Historical source migrations
 
