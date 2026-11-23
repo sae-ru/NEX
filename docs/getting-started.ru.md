@@ -7,10 +7,9 @@
 
 [English](getting-started.en.md) · [Описание](overview.ru.md)
 
-Выберите архив для своей ОС и процессора. Инструкция для macOS ниже относится
-к опубликованному SDK 0.280.1. Для Linux и Windows воспользуйтесь командами
-ниже, когда в релизе появятся архив для вашей платформы и соответствующая
-контрольная сумма. Системные требования указаны в описании релиза. [Релизы GitHub](https://github.com/sae-ru/NEX/releases)
+Выберите опубликованный тег, у которого в разделе Assets есть архив для вашей ОС
+и процессора и соответствующий файл `.sha256`. Системные требования указаны
+в описании релиза. [Релизы GitHub](https://github.com/sae-ru/NEX/releases)
 
 ## Установить SDK для Linux или Windows из релиза
 
@@ -69,18 +68,25 @@ tools с macOS SDK и Python 3.10+. Для веб-сборок нужны так
 Переносимый архив для разработки включает выбранный компилятор и зависимости
 библиотек. Храните весь распакованный каталог вместе.
 
-Скачайте, проверьте SHA256 и распакуйте:
+В пустом каталоге введите тег релиза (например, `v0.280.1`). Архив останется
+в этом каталоге. Каждая версия SDK распакуется в свой каталог под `~/.local/nex`.
 
 ```sh
-curl -fL -o nex-sdk-0.280.1-macos-arm64-development.tar.gz \
-  https://github.com/sae-ru/NEX/releases/download/v0.280.1/nex-sdk-0.280.1-macos-arm64-development.tar.gz
-echo '6d52a14f076c8382c06a6ac1f78d1b5e05f49553471116759a0c6f79eab3fa57  nex-sdk-0.280.1-macos-arm64-development.tar.gz' | shasum -a 256 -c -
-mkdir -p "$HOME/.local/nex"
-tar -xzf nex-sdk-0.280.1-macos-arm64-development.tar.gz -C "$HOME/.local/nex"
-export PATH="$HOME/.local/nex/nex-sdk-0.280.1-macos-arm64-development/bin:$PATH"
-export SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
-nex doctor --json
-nex describe --kind index --json
+printf 'Release tag (e.g. v0.280.1): '
+IFS= read -r tag
+archive="nex-sdk-${tag#v}-macos-arm64-development.tar.gz"
+url="https://github.com/sae-ru/NEX/releases/download/$tag"
+sdk_dir="$HOME/.local/nex"
+curl -fL "$url/$archive" -o "$archive" &&
+  curl -fL "$url/$archive.sha256" -o "$archive.sha256" &&
+  shasum -a 256 -c "$archive.sha256" &&
+  mkdir -p "$sdk_dir" &&
+  tar -xzf "$archive" -C "$sdk_dir" &&
+  sdkroot_path="$(xcrun --sdk macosx --show-sdk-path)" &&
+  export SDKROOT="$sdkroot_path" &&
+  export PATH="$sdk_dir/${archive%.tar.gz}/bin:$PATH" &&
+  nex doctor --json &&
+  nex describe --kind index --json
 ```
 
 [Результаты приёмки](evidence/sdk-current-0.280.1-2026-11-17.json) закрепляют
