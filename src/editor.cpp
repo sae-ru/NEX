@@ -361,38 +361,91 @@ struct Index {
     return result;
   }
 };
+struct BriefCallee {
+  const Function *function;
+  std::string signature;
+};
+
+std::vector<BriefCallee> briefCallees(const Program &program, const Function &function) {
+  std::vector<BriefCallee> result;
+  size_t remaining = 3072;
+  for (const auto &name : function.dependencies) {
+    if (result.size() == 12 || remaining == 0) break;
+    const Function &callee = program.function(name);
+    auto signature = Index::sourceSignature(callee);
+    size_t bytes = json(signature, false).size() + 1;
+    if (bytes <= remaining) {
+      result.push_back({&callee, std::move(signature)});
+      remaining -= bytes;
+    }
+  }
+  return result;
 }
-std::string briefFunctionContext(const Program &program,const std::string &symbol,bool physical){
-  const auto &function=program.function(symbol);
+
+Object functionExcerpt(const Program &program, const Function &function,
+                       const std::vector<BriefCallee> &dependencies) {
   const auto source=program.definition(function);
   size_t end=std::min<size_t>(2048,source.size());
   while(end<source.size()&&end>0&&(static_cast<unsigned char>(source[end])&0xc0)==0x80)--end;
 
-  // Bound each list in encoded bytes as well as entries, including JSON escaping.
-  auto append=[](Array &rows,const std::string &value,size_t &remaining){
-    if(rows.size()>=12)return;
-    size_t bytes=json(value,false).size()+1;
-    if(bytes<=remaining){rows.push_back(value);remaining-=bytes;}
-  };
-  Array callees,tests;
-  size_t signatureBudget=3072,testBudget=1024,testCount=0;
-  for(const auto &name:function.dependencies){
-    if(callees.size()<12&&signatureBudget)append(callees,Index::sourceSignature(program.function(name)),signatureBudget);
+  Array callees;
+  for (const auto &callee : dependencies) callees.push_back(callee.signature);
+  return Object{{"symbol",function.name},{"file",function.unit},{"line",int64_t(function.span.line)},
+    {"source",source.substr(0,end)},{"source_bytes",int64_t(source.size())},{"source_truncated",end!=source.size()},
+    {"callees_truncated",callees.size()!=function.dependencies.size()},{"callees",std::move(callees)}};
+}
+}
+
+llvm::json::Value testRepairContext(const Program &program, const Function &test,
+                                    const std::vector<std::string> &contextArguments) {
+  auto dependencies = briefCallees(program, test);
+  const Function *selected = &test;
+  for (const auto &callee : dependencies) {
+    if (callee.function->exported && !callee.function->traitSignature) {
+      selected = callee.function;
+      break;
+    }
   }
+  if (selected != &test) dependencies = briefCallees(program, *selected);
+  auto result = functionExcerpt(program, *selected, dependencies);
+  result.erase("source_bytes");
+  Array inspect;
+  for (size_t i = 0; i < std::min<size_t>(3, dependencies.size()); ++i) {
+    Array args{"nex", "context"};
+    for (const auto &arg : contextArguments) args.push_back(arg);
+    args.push_back("--kind"); args.push_back("brief"); args.push_back("--symbol");
+    args.push_back(dependencies[i].function->name); args.push_back("--json");
+    inspect.push_back(std::move(args));
+  }
+  result["inspect"] = std::move(inspect);
+  JSON value(std::move(result));
+  if (json(value, false).size() + 1 > 16384) return nullptr;
+  return value;
+}
+
+std::string briefFunctionContext(const Program &program,const std::string &symbol,bool physical){
+  const auto &function=program.function(symbol);
+  auto result = functionExcerpt(program, function, briefCallees(program, function));
+  Array tests;
+  size_t testBudget=1024,testCount=0;
   for(const auto &candidate:program.functions){
     if(candidate.test&&(candidate.name==function.name||candidate.dependencies.contains(function.name))){
       ++testCount;
-      append(tests,candidate.name,testBudget);
+      if(tests.size()<12){
+        size_t bytes=json(candidate.name,false).size()+1;
+        if(bytes<=testBudget){tests.push_back(candidate.name);testBudget-=bytes;}
+      }
     }
   }
-  Object result{{"schema","nex.function-brief/1"},{"input",physical?"physical":"archived"},
-    {"language",programLanguage(program)},{"revision",revision(program)},
-    {"source_hash",hash(json(sourceBundle(program),false))},{"entry",program.entryUnit},
-    {"symbol",function.name},{"file",function.unit},{"line",int64_t(function.span.line)},
-    {"editable",function.templateName.empty()&&!function.closure&&!function.traitSignature&&function.sourceContractOrigin.empty()},
-    {"source",source.substr(0,end)},{"source_bytes",int64_t(source.size())},{"source_truncated",end!=source.size()},
-    {"callees_truncated",callees.size()!=function.dependencies.size()},{"callees",std::move(callees)},
-    {"direct_tests_truncated",tests.size()!=testCount},{"direct_tests",std::move(tests)}};
+  result["schema"] = "nex.function-brief/1";
+  result["input"] = physical ? "physical" : "archived";
+  result["language"] = programLanguage(program);
+  result["revision"] = revision(program);
+  result["source_hash"] = hash(json(sourceBundle(program),false));
+  result["entry"] = program.entryUnit;
+  result["editable"] = function.templateName.empty() && !function.closure && !function.traitSignature && function.sourceContractOrigin.empty();
+  result["direct_tests_truncated"] = tests.size() != testCount;
+  result["direct_tests"] = std::move(tests);
   auto wire=json(JSON(std::move(result)),false);
   if(wire.size()+1>16384)throw Error("E_QUERY_LIMIT","brief context exceeds 16 KiB; request full function context");
   return wire;

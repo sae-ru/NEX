@@ -433,6 +433,21 @@
         "stdout": {
           "type": "string"
         },
+        "repair_context": {
+          "type": "object",
+          "required": ["symbol", "file", "line", "source", "source_truncated", "callees", "callees_truncated", "inspect"],
+          "additionalProperties": false,
+          "properties": {
+            "symbol": {"type": "string"},
+            "file": {"type": "string"},
+            "line": {"type": "integer", "minimum": 1},
+            "source": {"type": "string", "maxLength": 2048},
+            "source_truncated": {"type": "boolean"},
+            "callees": {"type": "array", "maxItems": 12, "items": {"type": "string"}},
+            "callees_truncated": {"type": "boolean"},
+            "inspect": {"type": "array", "maxItems": 3, "items": {"type": "array", "items": {"type": "string"}}}
+          }
+        },
         "test_failure": {
           "type": "object",
           "required": ["symbol"],

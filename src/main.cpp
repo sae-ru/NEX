@@ -507,6 +507,8 @@ int run(const Options &o) {
     else print(inspectCore(core));return 0;
   }
   bool graphQuery=o.command=="search"||o.command=="subgraph";GraphQueryOptions queryOptions;
+  if (o.has("--repair-context") && (o.command != "test" || !o.has("--json")))
+    throw Error("E_OPTION", "--repair-context requires test --json");
   for(const auto &key:{"--query","--field","--depth","--direction","--edge-offset","--edge-limit"})
     if(!graphQuery&&o.values.contains(key)&&!(o.command=="describe"&&std::string(key)=="--field"))
       throw Error("E_OPTION",std::string(key)+(std::string(key)=="--field"?" requires search or describe":" requires search or subgraph"));
@@ -1165,8 +1167,17 @@ int run(const Options &o) {
         }
         rerun.push_back("--symbol");rerun.push_back(f.name);
         auto diagnostic=diagnosticJSON(error,NEX_VERSION,NEX_BUILD_ID);
-        (*diagnostic.getAsObject())["test_failure"]=testFailureJSON(error,p,f.name,rerun);
-        print(std::move(diagnostic));
+        auto failure = testFailureJSON(error,p,f.name,rerun);
+        if (o.has("--repair-context") && failure.getAsObject()->getArray("rerun_argv")) {
+          std::vector<std::string> contextArguments;
+          if (physical) contextArguments.push_back(o.positional.empty() ? defaultSource(root) : o.positional.front());
+          else contextArguments = {"--revision", revision(p)};
+          auto excerpt = testRepairContext(p, f, contextArguments);
+          if (excerpt.getAsObject()) (*diagnostic.getAsObject())["repair_context"] = std::move(excerpt);
+        }
+        (*diagnostic.getAsObject())["test_failure"] = std::move(failure);
+        if (o.has("--repair-context")) std::cout << json(diagnostic, false) << '\n';
+        else print(std::move(diagnostic));
         return 1;
       }
       bool native=!o.has("--interpreter-only");

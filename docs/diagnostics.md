@@ -84,6 +84,30 @@ using the same SDK. The array preserves the entry, target and supported test
 options, selects that test, and resolves an explicit archived HEAD to its revision.
 It is omitted if any argument cannot be represented in UTF-8.
 
+For model-assisted repair, run `nex test ENTRY --repair-context --json`.
+On an assertion failure, `repair_context` includes a source excerpt for
+the first public function in the failing test's bounded list of direct
+callees. If the list has no public function, the excerpt shows the test.
+It includes up to 2,048 UTF-8 bytes of source, 12 callee signatures and
+three argument arrays for inspecting callees. For an archived run, execute
+those arrays from the selected project root. They pin the tested revision.
+The whole excerpt must fit in 16 KiB. It can include string literals and
+comments from the selected function. A passing test keeps its usual output.
+Use `nex help test --json` to check whether an installed SDK has this option.
+
+For an archive that supports function briefs and lacks the flag, use the
+standalone SDK driver. From the project root, run
+`python3 repair_context.py --nex /path/to/nex entry.nex`. The driver checks
+the entry once, pins its revision and runs the test and context queries on
+that revision. On Windows, use `py -3` and the path to `nex.exe`.
+[Standalone SDK driver](../tools/llm/repair_context.py)
+
+On three NEX 0.30 defects, Codex accepted six repairs in each condition.
+Total input plus output fell from 396,127 to 344,777 tokens (13.0%),
+including tokens read from the cache. Mean time to acceptance was 24.12 s
+with the ordinary diagnostic and 24.16 s with the excerpt.
+[Trial counts, cache reads and original time criterion](evidence/test-repair-context-cost-2026-11-23.json)
+
 When a source predicate range survives interpretation, `condition` gives its
 byte interval in the reported file and a preview of at most 256 UTF-8 bytes.
 String literal contents and line comments are hidden. A direct comparison of

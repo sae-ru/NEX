@@ -134,6 +134,7 @@ const std::vector<CliOption> &cliOptions(){
     add("--quiet","","Suppress routine NEX success status; retain results, errors and JSON.");
     add("--json","","Use the command's machine-readable JSON protocol.");
     add("--interpreter-only","","Use reference execution instead of native compilation.");
+    add("--repair-context","","Include bounded function source and direct callees in a JSON test assertion failure.");
     add("--library","","Build/emit a native library entry.");
     add("--dpkg-notices","","Include selected system package notices when packaging.");
     add("--task-debug","","Prepare task debugging for project plan/build/package.");
@@ -261,7 +262,7 @@ const std::vector<CliCommand> &cliCommands(){
     add("eval","[FILE]","Evaluate with the reference engine; preserve source stdout.","language","--revision --entry --steps --task-steps --task-timeout-ms --task-workers --foreign");
     add("build","[FILE]","Build a native application/library or a supported adapter target.","build",native+" --output --directory --library");
     add("run","[FILE] [-- PROGRAM_ARGS...]","Compile and run a native program.","build",native+" --foreign");
-    add("test","[FILE]","Run checked source tests.","language",native+" --foreign --interpreter-only --symbol");
+    add("test","[FILE]","Run checked source tests.","language",native+" --foreign --interpreter-only --symbol --repair-context");
     add("emit","[FILE]","Emit checked MLIR/LLVM/TypeScript/Metal/CUDA source.","gpu",native+" --kind --output --directory --library --input-layout --list-capacity --byte-capacity --text-capacity");
     add("package","[FILE] --directory NEW","Build/package a native application with its notices.","build",native+" --directory --notices --dpkg-notices --foreign");
     add("profile","[FILE]","Profile actual native work with a bounded event budget.","profile",native+" --foreign --events --timeout --scenario --output");

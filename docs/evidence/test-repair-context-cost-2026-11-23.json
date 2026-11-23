@@ -1,0 +1,189 @@
+{
+  "schema": "nex.test-repair-context-cost/1",
+  "model": "gpt-6.2-sol",
+  "reasoning_effort": "low",
+  "language": "0.30",
+  "toolchain": "0.281.0",
+  "compiler_sha256": "b29e22aeb1fe62a1a9a29cabe619be76b0b0e75f44963b26d43d7e4f0a0ce27c",
+  "source_base": "efef1032e1d7964197ff8d95a82f56a78b53e57d",
+  "campaign_summary_sha256": "ade48ca67008795cc7af9e8cdae40da2f6b25b6557431088c2ae8b132377a42c",
+  "tasks": {
+    "deep": "print-proof rounding",
+    "empty": "dock status after missed readings",
+    "contract": "radio telemetry field order"
+  },
+  "arms": {
+    "plain": {
+      "accepted": 6,
+      "attempts": 6,
+      "totals": {
+        "end_to_end_seconds": 144.728,
+        "total_tokens": 396127,
+        "input_tokens": 394148,
+        "cached_input_tokens": 321536,
+        "uncached_input_tokens": 72612,
+        "output_tokens": 1979,
+        "uncached_input_plus_output": 74591
+      }
+    },
+    "brief": {
+      "accepted": 6,
+      "attempts": 6,
+      "totals": {
+        "end_to_end_seconds": 144.963,
+        "total_tokens": 344777,
+        "input_tokens": 342923,
+        "cached_input_tokens": 302336,
+        "uncached_input_tokens": 40587,
+        "output_tokens": 1854,
+        "uncached_input_plus_output": 42441
+      }
+    }
+  },
+  "trials": [
+    {
+      "task": "deep",
+      "block": 1,
+      "arm": "plain",
+      "accepted": true,
+      "end_to_end_seconds": 24.037,
+      "input_tokens": 55693,
+      "cached_input_tokens": 45824,
+      "output_tokens": 312,
+      "trial_log_sha256": "9697be2926c2945b9233c83a5744291dd326b338f9c6f143ecd72559d6d51eb1"
+    },
+    {
+      "task": "deep",
+      "block": 1,
+      "arm": "brief",
+      "accepted": true,
+      "end_to_end_seconds": 34.562,
+      "input_tokens": 57811,
+      "cached_input_tokens": 52992,
+      "output_tokens": 257,
+      "trial_log_sha256": "320fce29b0b83258adc3e36c7e1b758b2ca3652a2cf7323ff71ac1bfd2603997"
+    },
+    {
+      "task": "empty",
+      "block": 1,
+      "arm": "brief",
+      "accepted": true,
+      "end_to_end_seconds": 20.473,
+      "input_tokens": 56485,
+      "cached_input_tokens": 48640,
+      "output_tokens": 255,
+      "trial_log_sha256": "1ede7ab7806f5e36c9e9589fd415a8bcf801583df61e030f80246f986f6a57d8"
+    },
+    {
+      "task": "empty",
+      "block": 1,
+      "arm": "plain",
+      "accepted": true,
+      "end_to_end_seconds": 23.959,
+      "input_tokens": 69804,
+      "cached_input_tokens": 51712,
+      "output_tokens": 319,
+      "trial_log_sha256": "7a87cd625255766f98ec235ca0a6b32f45f0a1dddb0c25e9c87e9a3ff3d65069"
+    },
+    {
+      "task": "contract",
+      "block": 1,
+      "arm": "plain",
+      "accepted": true,
+      "end_to_end_seconds": 22.86,
+      "input_tokens": 56430,
+      "cached_input_tokens": 46336,
+      "output_tokens": 328,
+      "trial_log_sha256": "b0aa84da19a16e312c3735850e95b1b49ee8a6b5d22964cdb63f617a4d539418"
+    },
+    {
+      "task": "contract",
+      "block": 1,
+      "arm": "brief",
+      "accepted": true,
+      "end_to_end_seconds": 23.634,
+      "input_tokens": 58018,
+      "cached_input_tokens": 50176,
+      "output_tokens": 341,
+      "trial_log_sha256": "a21582c3dd15ee68a71afe743d17acf231f12220c0c8e74b8981c345f260fe61"
+    },
+    {
+      "task": "contract",
+      "block": 2,
+      "arm": "brief",
+      "accepted": true,
+      "end_to_end_seconds": 22.831,
+      "input_tokens": 56508,
+      "cached_input_tokens": 49408,
+      "output_tokens": 354,
+      "trial_log_sha256": "157cc04ac36aa0a6a4296d88b1ac3930731f28c68a20b5fb3fcd6b42f1bd3399"
+    },
+    {
+      "task": "contract",
+      "block": 2,
+      "arm": "plain",
+      "accepted": true,
+      "end_to_end_seconds": 24.986,
+      "input_tokens": 71825,
+      "cached_input_tokens": 64640,
+      "output_tokens": 354,
+      "trial_log_sha256": "eb55a266844804b1bb3c0648d3254aa8617a6c0f64e4d6e958b081002776c77f"
+    },
+    {
+      "task": "empty",
+      "block": 2,
+      "arm": "plain",
+      "accepted": true,
+      "end_to_end_seconds": 24.963,
+      "input_tokens": 69953,
+      "cached_input_tokens": 50176,
+      "output_tokens": 339,
+      "trial_log_sha256": "9c08c5ea37a65c408fa9dee6c778e61a3ea52710cc571e6eb298f034f93d8fe2"
+    },
+    {
+      "task": "empty",
+      "block": 2,
+      "arm": "brief",
+      "accepted": true,
+      "end_to_end_seconds": 21.296,
+      "input_tokens": 57250,
+      "cached_input_tokens": 48640,
+      "output_tokens": 340,
+      "trial_log_sha256": "d6b255e23f9160cc5f97fa9908ba4c622cd798783e68258981835947286bfd6a"
+    },
+    {
+      "task": "deep",
+      "block": 2,
+      "arm": "brief",
+      "accepted": true,
+      "end_to_end_seconds": 22.167,
+      "input_tokens": 56851,
+      "cached_input_tokens": 52480,
+      "output_tokens": 307,
+      "trial_log_sha256": "35851339a6e1fbec48e59b15dc798f6bb902afdf39608a6aa235e406db2089c8"
+    },
+    {
+      "task": "deep",
+      "block": 2,
+      "arm": "plain",
+      "accepted": true,
+      "end_to_end_seconds": 23.923,
+      "input_tokens": 70443,
+      "cached_input_tokens": 62848,
+      "output_tokens": 327,
+      "trial_log_sha256": "243ec67905e3736e53cd0e90704b7419c4eaa00941bae33cc0fd617aaeb39add"
+    }
+  ],
+  "original_time_gate": {
+    "met": false,
+    "acceptance_preserved_each_task": true,
+    "accepted_observations_each_cell": true,
+    "complete_token_and_cache_usage": true,
+    "time_reduced_at_least_15pct": false,
+    "gross_tokens_did_not_increase": true,
+    "time_saving_pct": -0.162374,
+    "gross_tokens_saving_pct": 12.963014
+  },
+  "adoption_metric": "total input plus output tokens per accepted repair, cached input included once",
+  "currency_cost": null
+}
