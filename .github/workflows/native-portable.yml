@@ -27,7 +27,7 @@ jobs:
       - name: Cache pinned debugger packages for the builder
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          path: pinned-sdk/build/linux-debugger-packages
+          path: build/linux-debugger-packages
           key: nex-lldb-debs-v1-amd64-${{ hashFiles('pinned-sdk/tools/linux/debugger-packages.json') }}
       - name: Verify the accepted native source run and assemble its installed SDK
         env:

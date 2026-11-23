@@ -176,7 +176,14 @@ def prepare_images():
     from check import prepare_image
     from debugger_packages import prepare
     lock = PIN / 'tools/linux/debugger-packages.json'
-    prepare(read(lock), PIN / 'build/linux-debugger-packages', 'amd64')
+    inputs = prepare(read(lock), ROOT / 'build/linux-debugger-packages', 'amd64')
+    # Restore the source workflow's exact cache path, then stage only files
+    # whose sizes and SHA-256 the immutable SDK lock has verified.
+    target = PIN / 'build/linux-debugger-packages/amd64'
+    target.mkdir(parents=True, exist_ok=True)
+    for package in inputs['packages']:
+        source = Path(package['path'])
+        shutil.copy2(source, target / source.name)
     builder = 'nex-portable-builder:' + SOURCE[:12]
     clean = 'nex-portable-clean:' + SOURCE[:12]
     common = ['docker', 'build', '--platform', 'linux/amd64', '--progress', 'plain']
