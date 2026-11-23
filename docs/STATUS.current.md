@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.281.0"
+applies_to: "language 0.28; toolchain 1.0.0"
 owner: repository
 generated_from: README.md#development-status
 ---
@@ -12,7 +12,8 @@ It reports recorded evidence, not a live observation of devices or remote jobs.
 For syntax and capabilities, query the selected compiler. For detailed history,
 use [STATUS](../STATUS.md); for next work, use [development priorities](development-priorities.md).
 
-Current source: **toolchain 0.281.0 / language 0.28 / task ABIs 7/8**, the beta candidate.
+Current source builds the **toolchain 1.0.0 / language 0.28 / task ABIs 7/8** release candidate.
+The proposed 1.x compatibility terms take effect when the qualified 1.0 release is published.
 The compiler fallback remains0.28. Projects explicitly select0.28,0.29 or0.30;
 new `nex init` projects select0.30. Existing graphs need an explicit migration.
 

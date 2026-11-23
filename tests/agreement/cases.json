@@ -14,7 +14,7 @@
       "kind": "valid",
       "source": "cases/unicode.nex",
       "entry": "main",
-      "expected_stdout": "4\n\ud83c\udf0d\n\u042f\ud83c\udf0d\n8\ntrue\n"
+      "expected_stdout": "4\n\ud83c\udf0d\n\u042f\ud83c\udf0d\n8\ntrue\nA\r\nB\rC\u0000!\n\n"
     },
     {
       "name": "lists",

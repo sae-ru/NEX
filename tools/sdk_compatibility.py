@@ -6,11 +6,14 @@ import json
 import os
 import platform
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
+from dataclasses import dataclass
 from pathlib import Path
 
+import agreement
 import sdk_archive
 from sdk_compat_cli import check_cli
 from sdk_compat_examples import check_examples
@@ -39,6 +42,90 @@ def host_abi(triple):
     # programs execute together on this host even if the SDKs were built on
     # different macOS releases. Keep the architecture and OS/ABI boundary.
     return re.sub(r'(?<=-darwin)[0-9]+(?:\.[0-9]+)*$', '', triple)
+
+
+def select_archive(record, archive):
+    """Select the recorded archive by bytes so a locally renamed download works."""
+    size = archive.stat().st_size
+    schema = record.get('schema')
+    if schema == 'nex.delivery-record/1':
+        version = record['toolchain']
+        rows = [(None, record)]
+    elif schema == 'nex.multi-platform-release/1':
+        version = record['version']
+        if (record.get('ok') is not True or record.get('tag') != 'v' + version
+                or not re.fullmatch(r'[a-f0-9]{40}', record.get('source_commit', ''))):
+            raise ValueError('invalid multi-platform release identity or qualification')
+        rows = record['targets'].items()
+    else:
+        raise ValueError('unknown release record schema')
+    candidates = [(target, row) for target, row in rows if row['archive']['bytes'] == size]
+    if not candidates:
+        raise ValueError('SDK archive size differs from the release record')
+    checksum = sdk_archive.digest(archive)
+    matches = [(target, row) for target, row in candidates if row['archive']['sha256'] == checksum]
+    if len(matches) != 1:
+        raise ValueError('SDK archive must match exactly one recorded checksum')
+    target, row = matches[0]
+    if schema == 'nex.multi-platform-release/1':
+        if (row.get('target') != target or row.get('source_commit') != record['source_commit']
+                or not row.get('compiler_host') or not re.fullmatch('[a-f0-9]{64}', row.get('compiler_sha256', ''))):
+            raise ValueError('invalid platform qualification for ' + target)
+    return version, target, row
+
+
+def check_recorded_bundle(version, target, row, manifest, expected_host):
+    if manifest['toolchain'] != version:
+        raise ValueError('restored SDK differs from its recorded toolchain version')
+    if expected_host is not None and host_abi(manifest['host']) != host_abi(expected_host):
+        raise ValueError('baseline and candidate host ABIs differ')
+    if target is None:
+        return
+    host = manifest['host']
+    arch = host.split('-', 1)[0]
+    if arch == 'aarch64':
+        arch = 'arm64'
+    if arch == 'x86_64' and '-linux-' in host:
+        arch = 'amd64'
+    system = manifest['platform']
+    compiler = 'bin/nex.exe' if system == 'windows' else 'bin/nex'
+    if (target != f'{system}-{arch}' or host != row['compiler_host']
+            or manifest['files'][compiler]['sha256'] != row['compiler_sha256']
+            or len(manifest['files']) != row['archive']['files']):
+        raise ValueError('restored SDK differs from its platform qualification')
+
+
+@dataclass
+class RecordedArchive:
+    path: Path
+    version: str
+    target: str | None
+    row: dict
+    provenance: dict
+
+
+def archive_input(record_path, archive):
+    raw = record_path.read_bytes()
+    version, target, row = select_archive(json.loads(raw), archive)
+    provenance = {'record_sha256': hashlib.sha256(raw).hexdigest(), 'archive_name': row['archive']['name'],
+                  'archive_sha256': row['archive']['sha256']}
+    if target is not None:
+        provenance.update(target=target, source_commit=row['source_commit'])
+    elif 'SDK_source_commit' in row:
+        provenance['source_commit'] = row['SDK_source_commit']
+    return RecordedArchive(archive, version, target, row, provenance)
+
+
+def open_archive(selected, destination, environment, expected_host=None):
+    sdk = sdk_archive.restore(selected.path, destination, selected.provenance['archive_sha256'])
+    manifest = json.loads((sdk / sdk_archive.MANIFEST).read_bytes())
+    check_recorded_bundle(selected.version, selected.target, selected.row, manifest, expected_host)
+    compiler, identity = sdk_identity(sdk, destination, environment)
+    binary = compiler.relative_to(sdk).as_posix()
+    if (identity['toolchain'] != selected.version or identity['host'] != manifest['host']
+            or identity['compiler_sha256'] != manifest['files'][binary]['sha256']):
+        raise ValueError('running compiler differs from the restored SDK')
+    return sdk, compiler, identity
 
 
 def migration_observations(folder, receipt):
@@ -95,6 +182,56 @@ def check_migrations(baseline, candidate, resources, root, environment, publishe
             'static_components': True, 'api_projection': True, 'source_deleted_task_replay': True}
 
 
+def agreement_inputs(folder):
+    manifest = folder/'cases.json'
+    cases = agreement.select_cases(json.loads(manifest.read_bytes()), '0.30', [])
+    return {'manifest_sha256': sdk_archive.digest(manifest),
+            'sources': {case['name']: sdk_archive.digest(folder/case['source']) for case in cases}}
+
+
+def check_release_agreement(candidate, baseline_resources, candidate_resources, root, environment):
+    runner = Path(agreement.__file__).resolve()
+    compiler_sha = sdk_archive.digest(candidate)
+    result = {'ok': False, 'compiler_sha256': compiler_sha, 'runner_sha256': sdk_archive.digest(runner),
+              'corpora': {}, 'runs': {}}
+    corpora = {'baseline': baseline_resources/'tests/agreement', 'candidate': candidate_resources/'tests/agreement'}
+    # Historical SDKs shipped before the agreement corpus was installed.
+    if not (corpora['candidate']/'cases.json').is_file():
+        if (corpora['baseline']/'cases.json').is_file():
+            raise ValueError('candidate SDK is missing the agreement corpus shipped by the baseline')
+        corpora['maintained'] = runner.parents[1]/'tests/agreement'
+    for role, folder in corpora.items():
+        if not (folder/'cases.json').is_file():
+            if role == 'maintained':
+                raise ValueError('compatibility tool has no maintained agreement corpus')
+            result['corpora'][role] = {'shipped': False}
+            continue
+        inputs = agreement_inputs(folder)
+        prior = next((name for name, run in result['runs'].items() if run['inputs'] == inputs), None)
+        result['corpora'][role] = {'run': prior or role}
+        if prior:
+            continue
+        output = root/('agreement-' + role)
+        output.mkdir()
+        with (output/'driver.log').open('wb') as log:
+            executed = subprocess.run([sys.executable, '-B', runner, '--compiler', candidate, '--root', folder,
+                                       '--language-version', '0.30', '--require-complete', '--output', output],
+                                      cwd=root, env=environment, stdout=log, stderr=subprocess.STDOUT)
+        if executed.returncode:
+            raise ValueError('candidate failed the ' + role + ' corpus; see ' + str(output/'driver.log'))
+        raw = output/'report.json'
+        receipt = json.loads(raw.read_bytes())
+        observed = {case['name']: case['source_sha256'] for case in receipt['cases']}
+        if (not receipt['ok'] or not receipt['complete'] or receipt['compiler_sha256'] != compiler_sha
+                or receipt['requested_language'] != '0.30' or receipt['manifest_sha256'] != inputs['manifest_sha256']
+                or observed != inputs['sources'] or len(receipt['cases']) != len(observed)):
+            raise ValueError('incomplete or mismatched agreement report for ' + role)
+        result['runs'][role] = {'inputs': inputs, 'coverage': receipt['coverage'],
+                                'report_sha256': sdk_archive.digest(raw)}
+    result['ok'] = True
+    return result
+
+
 def save(path, value):
     tmp = path.with_suffix('.tmp')
     tmp.write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
@@ -103,17 +240,26 @@ def save(path, value):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--release-record', type=Path, required=True, help='committed beta delivery record')
+    parser.add_argument('--release-record', type=Path, required=True, help='beta delivery record or qualification.json')
     parser.add_argument('--baseline-archive', type=Path, required=True, help='unaltered published host archive')
-    parser.add_argument('--candidate-sdk', type=Path, required=True, help='installed candidate prefix')
+    candidate = parser.add_mutually_exclusive_group(required=True)
+    candidate.add_argument('--candidate-sdk', type=Path, help='installed candidate prefix for development')
+    candidate.add_argument('--candidate-archive', type=Path, help='candidate archive for release qualification')
+    parser.add_argument('--candidate-release-record', type=Path, help='release record for the candidate archive')
     parser.add_argument('--output', type=Path, required=True, help='new directory for receipts and diagnostics')
     args = parser.parse_args()
+    if bool(args.candidate_archive) != bool(args.candidate_release_record):
+        parser.error('--candidate-archive and --candidate-release-record must be supplied together')
+    baseline = archive_input(args.release_record, args.baseline_archive)
+    proposal = None
+    if args.candidate_archive:
+        proposal = archive_input(args.candidate_release_record, args.candidate_archive)
+        if proposal.provenance['archive_sha256'] == baseline.provenance['archive_sha256']:
+            parser.error('the baseline and candidate archives contain identical bytes')
+        if not os.environ.get('NEX_TSC') or os.environ.get('NEX_SKIP_TYPESCRIPT'):
+            parser.error('archive comparison requires NEX_TSC with TypeScript execution enabled')
     root = args.output.resolve()
     root.mkdir(parents=True, exist_ok=False)
-    record = json.loads(args.release_record.read_bytes())
-    archive = args.baseline_archive.resolve(strict=True)
-    if record.get('schema') != 'nex.delivery-record/1' or archive.stat().st_size != record['archive']['bytes']:
-        raise ValueError('incorrect baseline release record or archive size')
     # Run helpers with SDK resource discovery even when the calling shell uses a source checkout.
     os.environ.pop('NEX_RESOURCE_DIR', None)
     if sys.platform == 'darwin' and not os.environ.get('SDKROOT'):
@@ -125,18 +271,26 @@ def main():
     environment = os.environ.copy()
     result = {'schema': 'nex.sdk-source-compatibility/1', 'ok': False,
               'platform': platform.system() + '-' + platform.machine(), 'language': '0.30',
-              'release_record_sha256': sdk_archive.digest(args.release_record),
-              'baseline_archive_sha256': record['archive']['sha256'],
-              'baseline_archive_name': record['archive']['name'], 'checks': {}}
+              'release_record_sha256': baseline.provenance['record_sha256'],
+              'baseline_archive_sha256': baseline.provenance['archive_sha256'],
+              'baseline_archive_name': baseline.provenance['archive_name'], 'checks': {}}
+    if baseline.target is not None:
+        result['baseline_target'] = baseline.target
+    if 'source_commit' in baseline.provenance:
+        result['baseline_source_commit'] = baseline.provenance['source_commit']
+    if proposal:
+        result['candidate_archive'] = proposal.provenance
     report = root / 'report.json'
     save(report, result)
-    with tempfile.TemporaryDirectory(prefix='beta-sdk-', dir=root) as temp:
-        beta_sdk = sdk_archive.restore(archive, Path(temp) / 'restore', record['archive']['sha256'])
-        old, result['baseline'] = sdk_identity(beta_sdk, root, environment)
-        new, result['candidate'] = sdk_identity(args.candidate_sdk.resolve(strict=True), root, environment)
-        if (result['baseline']['toolchain'] != record['toolchain']
-                or host_abi(result['baseline']['host']) != host_abi(result['candidate']['host'])):
-            raise ValueError('baseline and candidate must match the recorded version and host respectively')
+    with tempfile.TemporaryDirectory(prefix='compat-sdk-', dir=root) as temp:
+        if proposal:
+            candidate_sdk, new, result['candidate'] = open_archive(
+                proposal, Path(temp)/'candidate', environment)
+        else:
+            candidate_sdk = args.candidate_sdk.resolve(strict=True)
+            new, result['candidate'] = sdk_identity(candidate_sdk, root, environment)
+        beta_sdk, old, result['baseline'] = open_archive(
+            baseline, Path(temp)/'baseline', environment, result['candidate']['host'])
         if old.samefile(new):
             raise ValueError('pass separate baseline and candidate SDKs')
         save(report, result)
@@ -148,13 +302,25 @@ def main():
                 ('published_examples', check_examples, (old, new, resources/'examples', root)),
                 ('published_migration_suite', check_migrations, (old, new, resources, root, environment, True)),
                 ('candidate_migration_suite', check_migrations,
-                 (old, new, args.candidate_sdk.resolve()/'share'/'nex', root, environment, False))):
+                 (old, new, candidate_sdk/'share'/'nex', root, environment, False))):
             print(name, flush=True)
             data = check(*params)
             if data.get('ok') is not True:
                 raise ValueError(name + ' returned an incomplete result')
             result['checks'][name] = data
             save(report, result)
+        if proposal:
+            print('backend_agreement', flush=True)
+            result['checks']['backend_agreement'] = check_release_agreement(
+                new, resources, candidate_sdk/'share'/'nex', root, environment)
+    # check_examples creates these native build products in this new run directory.
+    # Keep them on failures so intermediate code remains available for diagnosis.
+    examples_build = root/'build'
+    if examples_build.is_dir():
+        try:
+            shutil.rmtree(examples_build)
+        except OSError as error:
+            result['retained_example_build'] = str(error)
     result['ok'] = True
     save(report, result)
     print(report)

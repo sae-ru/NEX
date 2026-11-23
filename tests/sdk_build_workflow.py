@@ -127,5 +127,21 @@ class Workflow(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'inside a denied root'):
                 mac.read_probes(sdk, notices, roots, [outside])
 
+    def test_macos_inventory_resolves_custom_linker_and_solver_once(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            sdk = root/'installed'
+            sdk.mkdir()
+            compiler, linker, solver = sdk/'nex', root/'wasm-ld', root/'libz3.dylib'
+            for file in (compiler, linker, solver):
+                file.touch()
+            alias = sdk/'..'/solver.name
+            manifest = {'files': {'bin/nex': {'source': str(compiler)},
+                                  'bin/wasm-ld': {'source': str(linker)},
+                                  'lib/z3': {'source': str(alias)},
+                                  'lib/z3-copy': {'source': str(solver)}, 'generated': {}}}
+            self.assertEqual(mac.component_inputs(manifest, [sdk]), sorted((linker, solver)))
+            self.assertEqual(mac.component_inputs(manifest, [root]), [])
+
 
 if __name__ == '__main__': unittest.main(verbosity=2)

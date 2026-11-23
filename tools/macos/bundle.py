@@ -20,6 +20,12 @@ def inside(path, root):
     return path == root or root in path.parents
 
 
+def component_inputs(manifest, roots):
+    sources = {Path(item['source']).resolve(strict=True)
+               for item in manifest['files'].values() if 'source' in item}
+    return sorted(path for path in sources if not any(inside(path, root) for root in roots))
+
+
 def profile(roots, sdk):
     filters = ' '.join('(subpath '+json.dumps(str(root), ensure_ascii=False)+')' for root in roots)
     return '(version 1)\n(allow default)\n(deny file-read* '+filters+')\n' + \
@@ -110,12 +116,17 @@ def package(args):
         environment.pop('NEX_WASM_LD', None)
         moved = case/'moved SDK, % 🧠'; (case/'stage').rename(moved)
         manifest, _, _ = sdk_archive.inventory(moved)
-        original_paths = [sdk] + [Path(item['source']).resolve() for item in manifest['files'].values() if 'source' in item]
-        if any(not any(inside(path, root) for root in roots) for path in original_paths):
+        extra = component_inputs(manifest, roots)
+        if (not any(inside(sdk, root) for root in roots) or
+                (extra and not getattr(args, 'include_component_inputs', False))):
             raise ValueError('--deny-read must cover the input SDK and all copied host-component sources')
+        if any(not path.is_file() or path in (python, node, npm) for path in extra):
+            raise ValueError('a copied component must be an ordinary input file distinct from SDK prerequisites')
+        roots.extend(extra)
+        report['denied_read_roots'] = list(map(str, roots))
         report.update(toolchain=manifest['toolchain'], language=manifest['language'], host=manifest['host'],
                       minimum_macos=manifest['minimum_macos'], external_prerequisites=manifest['external_prerequisites'])
-        probes = read_probes(sdk, notices, roots, getattr(args, 'deny_probe', []))
+        probes = read_probes(sdk, notices, roots, [*getattr(args, 'deny_probe', []), *extra])
         report['negative_control_inputs'] = list(map(str, probes))
         deny_read = '''import json,sys
 try:
@@ -197,6 +208,8 @@ def main():
                         help='Block this source/host-dependency tree with a tested kernel policy; repeat as needed')
     parser.add_argument('--deny-probe', type=Path, action='append', default=[],
                         help='Explicit readable control file in a denied source/build root; repeat as needed')
+    parser.add_argument('--include-component-inputs', action='store_true',
+                        help='Also cover individual copied dependency files outside the supplied roots')
     parser.add_argument('--node', default=shutil.which('node'))
     parser.add_argument('--npm', default=shutil.which('npm'))
     parser.add_argument('--python', default=sys.executable)

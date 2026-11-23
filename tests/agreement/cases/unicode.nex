@@ -6,4 +6,6 @@ fn main() -> unit !{io} {
   print(slice(text, 0, 2));
   print(len(utf8_bytes(text)));
   print(unwrap(decode_utf8(utf8_bytes(text))) == text);
+  print("A\r\nB\rC\u0000!");
+  print("");
 }

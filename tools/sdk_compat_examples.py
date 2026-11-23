@@ -3,14 +3,18 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 
 
 # Reviewed entry points from the published examples. Named checks belong to the
 # application, so adding an unrelated test to an installed library is compatible.
-# The optional Java FIFO example first appeared after the 0.280.1 distribution.
+# Java FIFO and the insertion-ordered map first appeared after the 0.280.1 distribution.
 PROGRAMS = {
+    "insertion-ordered-map": {
+        "main.nex": ("east\nwest\n", ("insertion_order_example::reinsertion_appends",)),
+    },
     "hash-containers": {
         "main.nex": ("hash-containers-ok\n", ("hash_inventory::retained_values",)),
         "tasks.nex": ("42\n", ("hash_tasks::snapshots_across_tasks",)),
@@ -40,25 +44,65 @@ WORKBOARD = {
 }
 
 
-PUBLISHED_02801 = (set(PROGRAMS) - {"java-circular-fifo"}) | {"workboard"}
+PUBLISHED_02801 = (set(PROGRAMS) - {"java-circular-fifo", "insertion-ordered-map"}) | {"workboard"}
+LOCKED_PROJECTS = {"hash-containers", "sequence-containers", "java-long",
+                   "insertion-ordered-map", "java-circular-fifo"}
 
 
 def digest(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def invoke(nex, project, *args):
+def invoke(nex, project, *args, expected_error=None):
     env = os.environ.copy()
     env.pop("NEX_RESOURCE_DIR", None)
     proc = subprocess.run([str(nex), *args, "--json"], cwd=project, env=env,
                           capture_output=True, timeout=300)
-    if proc.returncode:
+    if proc.returncode and expected_error is None:
         message = (proc.stdout + proc.stderr).decode("utf-8", "replace")[:1500]
         raise ValueError(f"{project.name}: {' '.join(args)} exited {proc.returncode}: {message}")
     report = json.loads(proc.stdout)
+    if expected_error is not None:
+        if (proc.returncode <= 0 or report.get("ok") is not False
+                or report.get("code") != expected_error):
+            raise ValueError(f"{project.name}: expected {expected_error} from {args[0]}, got {report.get('code')}")
+        return report
     if report.get("ok") is not True:
         raise ValueError(f"{project.name}: {' '.join(args)} did not return a positive report")
     return report
+
+
+def check_lock(nex, project, entry, sha, scratch):
+    original = project / "nex.lock.json"
+    if not original.is_file():
+        raise ValueError(f"{project.name}: the SDK changed the published dependency lock")
+    contents = original.read_bytes()
+    if digest(contents) != sha:
+        raise ValueError(f"{project.name}: the SDK changed the published dependency lock")
+    lock = json.loads(contents)
+    deps = lock.get("dependencies")
+    if lock.get("schema") != "nex.lock/1" or lock.get("language") != "0.30" or not isinstance(deps, dict):
+        raise ValueError(f"{project.name}: invalid published dependency lock")
+    result = {"sha256": sha, "dependencies": sorted(deps)}
+    if not deps:
+        if project.name in LOCKED_PROJECTS:
+            raise ValueError(f"{project.name}: published example lost its dependency pins")
+        return result
+    # Check a stale but well-formed lock in a separate source copy. A project
+    # may carry pins for several entry points, so change every dependency hash.
+    for pin in deps.values():
+        value = pin["source_hash"]
+        if not re.fullmatch(r"[a-f0-9]{64}", value):
+            raise ValueError(f"{project.name}: invalid source hash in dependency lock")
+        pin["source_hash"] = ("1" if value[0] == "0" else "0") + value[1:]
+    shutil.copytree(project, scratch, ignore=shutil.ignore_patterns(".nex", "node_modules", ".build"))
+    stale = scratch / original.name
+    body = json.dumps(lock, sort_keys=True).encode("utf-8")
+    stale.write_bytes(body)
+    error = invoke(nex, scratch, "check", entry, expected_error="E_LOCK")
+    if not stale.is_file() or stale.read_bytes() != body:
+        raise ValueError(f"{project.name}: check rewrote the stale lock")
+    return {**result, "stale_lock_error": error["code"], "stale_lock_sha256": digest(body)}
 
 
 def named_tests(nex, project, entry, backend, names, build_dir):
@@ -131,12 +175,19 @@ def check_examples(baseline_nex: Path, candidate_nex: Path, examples: Path, root
         if spec["entry"] not in entries:
             data.update(ok=False, reason="published 0.30 project has no reviewed executable entry plan")
             continue
-        observed, errors = {}, {}
+        lock_sha = inputs.get("nex.lock.json")
+        if name in LOCKED_PROJECTS and lock_sha is None:
+            data.update(ok=False, reason="published example is missing its dependency lock")
+            continue
+        observed, errors, locks = {}, {}, {}
         for role, nex in roles.items():
             work = root / role / name
             shutil.copytree(src, work, ignore=shutil.ignore_patterns(".nex", "node_modules", ".build"))
             try:
                 observed[role] = observe(nex, work, name, root / "build" / role)
+                if lock_sha is not None:
+                    locks[role] = check_lock(nex, work, spec["entry"], lock_sha,
+                                             root / "dependency-locks" / role / name)
             except ValueError as error:
                 errors[role] = str(error)
             except subprocess.TimeoutExpired as error:
@@ -144,6 +195,8 @@ def check_examples(baseline_nex: Path, candidate_nex: Path, examples: Path, root
         if errors:
             data.update(ok=False, observed=observed, errors=errors)
             continue
+        if locks:
+            data["dependency_locks"] = locks
         # A compiler's new bundled stdlib can change a physical program's hash.
         # Preserve both identities and compare its observed behavior.
         def behavior(rows):

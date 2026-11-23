@@ -3,7 +3,11 @@ from host_fixture import stop_server, run_native
 import argparse,concurrent.futures,contextlib,hashlib,http.client,json,os,queue,re,signal,socket,ssl,subprocess,tempfile,threading,time,traceback
 from pathlib import Path
 
-parser=argparse.ArgumentParser();parser.add_argument('compiler',type=Path);parser.add_argument('--output',type=Path);args=parser.parse_args()
+parser = argparse.ArgumentParser()
+parser.add_argument('compiler', type=Path)
+parser.add_argument('--output', type=Path)
+parser.add_argument('--openssl', default='openssl', help='OpenSSL executable for the test certificate')
+args = parser.parse_args()
 temporary=None
 if args.output:root=args.output.resolve();root.mkdir()
 else:temporary=tempfile.TemporaryDirectory(prefix='nex task HTTP server 🧠 ');root=Path(temporary.name).resolve()
@@ -99,7 +103,7 @@ try:
  (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.28','entry':'server.nex'})+'\n', newline="\n")
  alice=cli('alice','token','--user','alice','--auth',auth)['token'];bob=cli('bob','token','--user','bob','--auth',auth)['token']
  files=root/'files';files.mkdir();(files/'input').write_text('input 🌍\0β', newline="\n")
- run('TLS-certificate',['openssl','req','-x509','-newkey','rsa:2048','-nodes','-keyout',root/'private-key.pem','-out',root/'cert.pem','-days','1','-subj','/CN=localhost','-addext','subjectAltName=IP:127.0.0.1'])
+ run('TLS-certificate',[args.openssl,'req','-x509','-newkey','rsa:2048','-nodes','-keyout',root/'private-key.pem','-out',root/'cert.pem','-days','1','-subj','/CN=localhost','-addext','subjectAltName=IP:127.0.0.1'])
  reference=cli('reference','eval',source,'--entry','task_http::reference');oracle=json.loads(reference['value'])
  require(oracle=={'user':'alice','request_id':'1','body':'A🌍\0β','answer':'42'},oracle)
  limits=['--task-steps','100000000','--task-timeout-ms','5000','--task-workers','4']

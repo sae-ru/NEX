@@ -62,6 +62,7 @@
     "diagnostic_catalogue": ["core"],
     "docs_index": ["extended", "platform"],
     "backend_agreement": ["extended", "browser", "platform"],
+    "backend_agreement_030": ["extended", "browser", "platform"],
     "agreement_generator": ["extended", "platform"],
     "bench_command": ["extended", "platform"],
     "fix_command": ["extended", "platform"],
