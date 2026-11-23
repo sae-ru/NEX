@@ -11,6 +11,10 @@ on:
         required: false
         default: ''
         type: string
+      retain_sdk_input:
+        description: 'Keep the accepted ordinary installation as an artifact for portable packaging (full runs only)'
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -59,3 +63,15 @@ jobs:
           path: build/ci-linux-full-artifact/
           retention-days: 14
           if-no-files-found: warn
+      - name: Retain the exact installed Linux compiler for packaging
+        if: ${{ success() && inputs.retain_sdk_input && !inputs.test_group }}
+        run: sudo python3 -B tools/ci/export_linux_install.py --input build/ci-linux-full --output build/ci-linux-sdk --commit "$GITHUB_SHA"
+      - name: Upload ordinary Linux SDK
+        if: ${{ success() && inputs.retain_sdk_input && !inputs.test_group }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: linux-amd64-installed-${{ github.sha }}-${{ github.run_attempt }}
+          path: build/ci-linux-sdk/
+          retention-days: 7
+          compression-level: 0
+          if-no-files-found: error

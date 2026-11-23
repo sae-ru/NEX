@@ -65,6 +65,14 @@ The [pinned environment](../tools/linux/Dockerfile) prepares LLVM/MLIR22.1.8,
 Z3/Node and the locked npm cache. Image preparation uses network access. Source
 tests, installed checks and moved/restored checks run in offline containers.
 
+For a manual full GitHub Actions run, enable `retain_sdk_input` to keep the
+ordinary installation that passed source-free acceptance. Download the
+`linux-amd64-installed-…` artifact within seven days. Its `handoff.json` gives
+the checkout, toolchain image ID, archive SHA256, installed compiler SHA256
+and hashes of the three CI reports. Verify the archive checksum, extract it
+and use the enclosed `sdk/` as the input to the portable packager. Packaging
+still has to resolve dependencies and qualify the moved and restored copies.
+
 The complete Linux source/installed helper is followed by the existing
 [`tools/linux/bundle.py`](../tools/linux/bundle.py), which retains the exact
 source-free/archive acceptance workflow. The original inspected compiler image
