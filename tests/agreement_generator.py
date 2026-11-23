@@ -2,6 +2,7 @@
 import hashlib
 import json
 import os
+import runpy
 import subprocess
 import sys
 import tempfile
@@ -25,6 +26,48 @@ def tree(root):
 
 
 class Generator(unittest.TestCase):
+    def test_partial_error_code_does_not_pass_after_timeout_or_invalid_utf8(self):
+        runner=runpy.run_path(str(RUNNER))
+        children=[("import sys;sys.stdout.buffer.write(b'bad\\xff');print('E_BOUNDS',file=sys.stderr)",30,'invalid_stdout_utf8'),
+                  ("import time;print('E_BOUNDS',flush=True);time.sleep(60)",0.3,'timeout')]
+        for child,timeout,reason in children:
+            with self.subTest(reason=reason):
+                result=runner['run']([sys.executable,'-B','-c',child],REPO,timeout)
+                self.assertEqual(result['driver_error'],reason)
+                self.assertNotEqual(result['exit_code'],0)
+                self.assertEqual(runner['code_of'](result,{'code':'E_BOUNDS'}),'')
+                if reason=='invalid_stdout_utf8':
+                    self.assertEqual(result['byte_offset'],3)
+                    self.assertEqual(result['stdout_sha256'],hashlib.sha256(b'bad\xff').hexdigest())
+    def test_full_agreement_rejects_reduced_selections(self):
+        with tempfile.TemporaryDirectory() as folder:
+            output=Path(folder)/'run'
+            env=os.environ.copy()
+            env.pop('NEX_SKIP_TYPESCRIPT',None)
+            command=[sys.executable,'-B',RUNNER,'--compiler',COMPILER,'--output',output,'--require-complete']
+            for flags,settings in [(['--case','unicode'],env),(['--no-typescript'],env),
+                                   ([],{**env,'NEX_SKIP_TYPESCRIPT':'1'})]:
+                with self.subTest(flags=flags,skip=settings.get('NEX_SKIP_TYPESCRIPT')):
+                    result=run([*command,*flags],env=settings)
+                    self.assertEqual(result.returncode,2,result.stderr)
+                    self.assertIn('requires all cases and TypeScript execution',result.stderr)
+                    self.assertFalse(output.exists())
+
+    def test_command_capture_preserves_utf8_and_exact_line_endings(self):
+        # The controller may use a single-byte locale while NEX and Node emit UTF-8.
+        sample='Я🌍\r\nA\rB\0\n\n'.encode()
+        driver="""import runpy, sys
+runner = runpy.run_path(sys.argv[1])
+child = 'import sys; sys.stdout.buffer.write(bytes.fromhex(' + repr(sys.argv[2]) + '))'
+result = runner['run']([sys.executable, '-c', child], '.', 30)
+assert result['exit_code'] == 0
+print(result['stdout'].encode('utf-8').hex())
+"""
+        env={**os.environ,'LC_ALL':'C','PYTHONCOERCECLOCALE':'0','PYTHONUTF8':'0'}
+        result=run([sys.executable,'-B','-c',driver,RUNNER,sample.hex()],env=env)
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertEqual(result.stdout.strip(),sample.hex())
+
     def test_seed_reproducer_and_real_agreement(self):
         with tempfile.TemporaryDirectory(prefix='nex agreement generator ') as temporary:
             root=Path(temporary)

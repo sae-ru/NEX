@@ -104,6 +104,9 @@ full unfiltered CTest with checked JUnit/fixture closure, CMake install, then th
 [maintained macOS distributor](sdk.md#maintained-macos-distribution-workflow).
 It performs both moved/restored complete installed workflows. `live: true`
 requires real working LLDB/DAP; omitting it does not qualify live debugging.
+The distributor reads the assembled file inventory and automatically includes
+copied host files from custom prefixes, such as a standalone `wasm-ld` or a
+separately installed Z3 library, in both relocation checks.
 Python/Node/npm must remain outside denied source/build/dependency roots. The
 source and build copies receive explicit readable control files; the existing
 kernel read/write denial checks remain active. Host Apple SDK/system tools are

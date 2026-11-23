@@ -1,16 +1,15 @@
 # Начать работу с NEX
 
-Текущая версия инструментов — **0.281.0**, язык новых проектов — **0.30**.
+Из этих исходников собирается **кандидат SDK 1.0.0**. Новые проекты используют язык **0.30**.
 Если версия языка не указана, компилятор использует 0.28. Версии ABI задач — 7/8.
 Обычный CLI поддерживает читаемый исходный код, runtime-контракты и явную
 миграцию старых графов с сохранением истории.
 
 [English](getting-started.en.md) · [Описание](overview.ru.md)
 
-Выберите архив для своей ОС и процессора. Инструкция для macOS ниже относится
-к опубликованному SDK 0.280.1. Для Linux и Windows воспользуйтесь командами
-ниже, когда в релизе появятся архив для вашей платформы и соответствующая
-контрольная сумма. Системные требования указаны в описании релиза. [Релизы GitHub](https://github.com/sae-ru/NEX/releases)
+Выберите опубликованный тег, у которого в разделе Assets есть архив для вашей ОС
+и процессора и соответствующий файл `.sha256`. Системные требования указаны
+в описании релиза. [Релизы GitHub](https://github.com/sae-ru/NEX/releases)
 
 ## Установить SDK для Linux или Windows из релиза
 
@@ -21,6 +20,14 @@
 **Linux (Bash).** Для `uname -m` = `x86_64` выберите
 `nex-sdk-<версия>-linux-amd64-development.tar.gz`, для `aarch64` —
 `nex-sdk-<версия>-linux-arm64-development.tar.gz`. В том же релизе должен быть файл `<архив>.sha256`.
+
+Для нативной сборки нужны заголовочные файлы C/C++ и стартовые объектные файлы
+GCC для вашей архитектуры. Команда `getconf GNU_LIBC_VERSION` покажет версию
+glibc в системе. В описании релиза указаны старшие требуемые версии символов
+glibc и libstdc++ для каждого архива. Полные списки находятся в
+`share/nex/sdk-bundle.json` внутри SDK. Если в системных библиотеках нет нужных
+версий символов, используйте сборку из исходников или Linux-контейнер с
+подходящими библиотеками.
 
 ```bash
 read -r -p 'Release tag: ' tag
@@ -38,6 +45,10 @@ curl -fL "$url/$archive" -o "$archive" &&
 
 **Windows x64 (PowerShell).** Выберите `nex-sdk-<версия>-windows-x86_64-development.tar.gz`
 и файл `.tar.gz.sha256` из того же релиза. Для распаковки используется системная команда `tar.exe`.
+
+Выполните команды в обычном PowerShell. Для скриптов SDK установите Python
+3.10+ для Windows. Для веб-проектов также нужны Node.js 22.18+ и npm. Для живой
+отладки установите LLDB и lldb-dap для Windows.
 
 ```powershell
 $tag = Read-Host 'Release tag'
@@ -69,18 +80,25 @@ tools с macOS SDK и Python 3.10+. Для веб-сборок нужны так
 Переносимый архив для разработки включает выбранный компилятор и зависимости
 библиотек. Храните весь распакованный каталог вместе.
 
-Скачайте, проверьте SHA256 и распакуйте:
+В пустом каталоге введите тег релиза (например, `v0.280.1`). Архив останется
+в этом каталоге. Каждая версия SDK распакуется в свой каталог под `~/.local/nex`.
 
 ```sh
-curl -fL -o nex-sdk-0.280.1-macos-arm64-development.tar.gz \
-  https://github.com/sae-ru/NEX/releases/download/v0.280.1/nex-sdk-0.280.1-macos-arm64-development.tar.gz
-echo '6d52a14f076c8382c06a6ac1f78d1b5e05f49553471116759a0c6f79eab3fa57  nex-sdk-0.280.1-macos-arm64-development.tar.gz' | shasum -a 256 -c -
-mkdir -p "$HOME/.local/nex"
-tar -xzf nex-sdk-0.280.1-macos-arm64-development.tar.gz -C "$HOME/.local/nex"
-export PATH="$HOME/.local/nex/nex-sdk-0.280.1-macos-arm64-development/bin:$PATH"
-export SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
-nex doctor --json
-nex describe --kind index --json
+printf 'Release tag (e.g. v0.280.1): '
+IFS= read -r tag
+archive="nex-sdk-${tag#v}-macos-arm64-development.tar.gz"
+url="https://github.com/sae-ru/NEX/releases/download/$tag"
+sdk_dir="$HOME/.local/nex"
+curl -fL "$url/$archive" -o "$archive" &&
+  curl -fL "$url/$archive.sha256" -o "$archive.sha256" &&
+  shasum -a 256 -c "$archive.sha256" &&
+  mkdir -p "$sdk_dir" &&
+  tar -xzf "$archive" -C "$sdk_dir" &&
+  sdkroot_path="$(xcrun --sdk macosx --show-sdk-path)" &&
+  export SDKROOT="$sdkroot_path" &&
+  export PATH="$sdk_dir/${archive%.tar.gz}/bin:$PATH" &&
+  nex doctor --json &&
+  nex describe --kind index --json
 ```
 
 [Результаты приёмки](evidence/sdk-current-0.280.1-2026-11-17.json) закрепляют
@@ -219,4 +237,4 @@ nex snapshot --directory ../my-app-snapshot --json
 краткую точку входа. Приёмку определяют компилятор и тесты, а не уверенность ответа.
 
 Откройте каталог приложения как рабочую папку агента и выполните в его терминале
-`nex doctor --json`, чтобы сверить выбранный SDK. [Плагин Codex](../plugins/nex/README.ru.md) · [Настройка Hermes и общих инструкций проекта](quickstart.md#4-hermes-codex-и-другие-llm)
+`nex doctor --json`, чтобы сверить выбранный SDK. [Плагин Codex](https://github.com/sae-ru/NEX/blob/main/plugins/nex/README.ru.md) · [Настройка Hermes и общих инструкций проекта](quickstart.md#4-hermes-codex-и-другие-llm)

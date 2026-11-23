@@ -328,7 +328,7 @@ class Build:
                 argv = [python, '-B', source / 'tools/macos/bundle.py', '--sdk', installed,
                     '--notices', self.plan['notices'], '--output', self.output / 'distribution',
                     '--npm-cache', self.plan['npm_cache'], '--node', self.plan['node'],
-                    '--npm', self.plan['npm'], '--python', python]
+                    '--npm', self.plan['npm'], '--python', python, '--include-component-inputs']
                 for root in roots:
                     argv += ['--deny-read', root]
                 for probe in (Path(self.plan['source']) / 'LICENSE', source / 'LICENSE', build / 'CMakeCache.txt'):
