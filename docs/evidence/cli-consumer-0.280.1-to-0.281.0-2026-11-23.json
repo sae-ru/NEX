@@ -1,0 +1,82 @@
+{
+  "schema": "nex.cli-consumer-compatibility/1",
+  "contract": "nex.cli-consumer/1",
+  "ok": true,
+  "commands": [
+    "describe",
+    "init",
+    "check",
+    "test",
+    "eval",
+    "run"
+  ],
+  "fixture_sha256": "fa88cf3a98f33ab458b79de9254cbbe364da58800308359390583e9dfc2929b8",
+  "baseline": {
+    "toolchain": "0.280.1",
+    "compiler_sha256": "a37aab72fb84cf2bf938859017282977b9b9f2445f16fcae9457086e8df9f0b4",
+    "init_language": "0.30",
+    "revision": "0858d1e336b02736ed5ff6b9675a0ccaee0cf6cb075c3ebc6beaa6cf596cb0c7",
+    "tests": [
+      {
+        "name": "consumer::sample_total",
+        "ok": true,
+        "native": true
+      }
+    ],
+    "eval": {
+      "ok": true,
+      "stdout": "42\n",
+      "value": 0
+    },
+    "run": {
+      "ok": true,
+      "stdout": "42\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    "pinned_i64": "9223372036854775807",
+    "controls": {
+      "additive_members_accepted": 7,
+      "missing_field": 6,
+      "wrong_type": 6,
+      "wrong_result": 6
+    }
+  },
+  "candidate": {
+    "toolchain": "0.281.0",
+    "compiler_sha256": "2e32f2679a5607e09942892e7c90cff222b591f20f4b0c5dc2aa4f5f3f61c3d5",
+    "init_language": "0.30",
+    "revision": "0858d1e336b02736ed5ff6b9675a0ccaee0cf6cb075c3ebc6beaa6cf596cb0c7",
+    "tests": [
+      {
+        "name": "consumer::sample_total",
+        "ok": true,
+        "native": true
+      }
+    ],
+    "eval": {
+      "ok": true,
+      "stdout": "42\n",
+      "value": 0
+    },
+    "run": {
+      "ok": true,
+      "stdout": "42\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    "pinned_i64": "9223372036854775807",
+    "controls": {
+      "additive_members_accepted": 7,
+      "missing_field": 6,
+      "wrong_type": 6,
+      "wrong_result": 6
+    }
+  },
+  "platform": "Darwin-arm64",
+  "qualification_date": "2026-11-23",
+  "baseline_published_archive_sha256": "6d52a14f076c8382c06a6ac1f78d1b5e05f49553471116759a0c6f79eab3fa57",
+  "candidate_source_commit": "efef1032e1d7964197ff8d95a82f56a78b53e57d",
+  "harness_sha256": "0ab3c92305c957a6f01f5e8f744e264d88af23784f760d1216c72ee03226b950",
+  "raw_report_sha256": "610f0d1ad4bd4ac53f6f0c8e238ad8a2b82c317d4d4ec95d40e42c3cfdcbb14f"
+}

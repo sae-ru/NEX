@@ -122,6 +122,8 @@ install(FILES tools/mobile_project.py DESTINATION share/nex/tools)
 install(FILES tools/core_capsule.py DESTINATION share/nex/tools)
 install(FILES tools/sdk_bundle.py tools/windows_pe.py tools/windows_files.py DESTINATION share/nex/tools)
 install(FILES tools/sdk_archive.py DESTINATION share/nex/tools)
+install(FILES tools/sdk_compatibility.py tools/sdk_compat_cli.py tools/sdk_compat_stdlib.py
+  tools/sdk_compat_examples.py tools/sdk_compat_snapshot.py DESTINATION share/nex/tools)
 install(FILES tools/app_bundle.py DESTINATION share/nex/tools)
 install(FILES tools/foreign_bundle.py DESTINATION share/nex/tools)
 install(FILES tools/application_acceptance.py DESTINATION share/nex/tools)

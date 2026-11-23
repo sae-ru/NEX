@@ -115,7 +115,11 @@ source versions. A later language mode that changes meaning must be opt-in and
 offer an explicit, guarded migration.
 
 The 1.0 release notes identify the stable APIs, CLI and JSON schemas covered by
-that promise. Native components, task/debugger records and external providers
+that promise. The proposed [CLI contract](cli-consumer-contract.md) specifies
+the fields read by a tool that creates, checks, tests and runs a native project.
+The [standard-library contract](stdlib-source-compatibility.md) identifies
+the public signatures and constructor fields used by existing source programs.
+Native components, task/debugger records and external providers
 keep their own versioned compatibility contracts. Use their matching SDK and
 runtime when the release notes require them. GPU and NPU support is listed by
 qualified provider and device.
@@ -131,9 +135,12 @@ intended compatibility exception in the release notes before making the promise.
 Use the checked-in release record, the original archive for the host, and a
 separate installed candidate. The runner checks the published archive SHA256,
 restores its complete inventory, then verifies that both compilers select
-their own installed runtime. It runs the published examples from fresh copies,
+their own installed runtime. It exercises the public CLI and standard-library
+contracts against both installations, runs the published examples from fresh copies,
 recovers two historical revisions and checks both the published and current
 migration suites. Use a fresh output directory.
+On macOS the runner uses the selected Apple SDK. Set `SDKROOT` to override
+the SDK reported by `xcrun --sdk macosx --show-sdk-path`.
 
 ```sh
 python3 -B tools/sdk_compatibility.py \
@@ -150,6 +157,13 @@ from `efef1032`. It covers ten explicit 0.30 projects, archived identities,
 0.28/0.29 migration and all thirteen checker cases. Eleven executable cases
 passed reference, native Debug and Release, strict TypeScript and Node execution.
 Each platform and subsequent release candidate needs its own identified SDKs.
+
+The [comparison for candidate `7f1b75ea`](evidence/beta-contracts-7f1b75ea-2026-11-23.json)
+also checked the six-command consumer workflow and every catalogued source
+declaration in 0.280.1. It preserved 207 functions and 35 structures across
+20 modules. All ten published projects and both retained revisions ran on
+macOS ARM64. Eleven executable agreement cases passed in the interpreter,
+native Debug and Release and executed strict TypeScript.
 
 ## Historical source migrations
 

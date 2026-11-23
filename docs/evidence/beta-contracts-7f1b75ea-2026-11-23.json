@@ -1,0 +1,108 @@
+{
+  "schema": "nex.beta-compatibility-observation/1",
+  "source_commit": "7f1b75eae61335c37254fa5b31dc798b3189cfe0",
+  "platform": "Darwin-arm64",
+  "project_language": "0.30",
+  "candidate_install": "Ordinary CMake Release installation from a Git archive of the recorded source commit.",
+  "release_record_sha256": "496311f6a6e04debaa237b6044f4c6320c920021e16527a5e12c1a6060495170",
+  "baseline_archive_sha256": "6d52a14f076c8382c06a6ac1f78d1b5e05f49553471116759a0c6f79eab3fa57",
+  "baseline": {
+    "toolchain": "0.280.1",
+    "host": "arm64-apple-darwin27.2.0",
+    "llvm": "22.1.8",
+    "compiler_build": "44eb36a347e91963b3cf27bbb3fbf292b411a1c4fa50d2cbf823b5742b9f5805",
+    "compiler_sha256": "a37aab72fb84cf2bf938859017282977b9b9f2445f16fcae9457086e8df9f0b4",
+    "descriptor_hash": "f9271f65651c9395bdaa307d0fdb49a62b4e28ec0aa363e21c078ec9f4dbc2c1",
+    "source_versions": [
+      "0.28",
+      "0.29",
+      "0.30"
+    ],
+    "runtime_sha256": "d904286a5f251b41636bb6609e4cc7a70963ba9b1c5651bc29ad9b83fdbd6b9d"
+  },
+  "candidate": {
+    "toolchain": "0.281.0",
+    "host": "arm64-apple-darwin27.2.0",
+    "llvm": "22.1.8",
+    "compiler_build": "661e389d4f5e38d10eec8108d95e4c31d5c160ea0b4bc12ff46c60d1517bf044",
+    "compiler_sha256": "015bf751c727cd1374e0deab1f7ad62cf25e75e4cf803c7c3a27f845970efc24",
+    "descriptor_hash": "da2bf31291d68a3abb40fb50a0f596319c0cb77500572ad3634ef400f3060244",
+    "source_versions": [
+      "0.28",
+      "0.29",
+      "0.30"
+    ],
+    "runtime_sha256": "acbe58989e9af440306e0b63c791f6c6059e760eaf6fcb31efe828e93f1551a0"
+  },
+  "checks_passed": [
+    "consumer_cli",
+    "public_stdlib",
+    "graph_snapshot",
+    "published_examples",
+    "published_migration_suite",
+    "candidate_migration_suite"
+  ],
+  "compatibility_report_sha256": "9735f0e47a73ec41f449625f1e8906be4466ad3ef53fd04c421cfc7ba83b7452",
+  "agreement_report_sha256": "906aeaf3653c34bdf83e8f9348f1ac4824d31b7db8e2962ffdd4dd0f8d6d89c1",
+  "agreement": {
+    "check": 13,
+    "reference": 11,
+    "native-debug": 11,
+    "native-release": 11,
+    "typescript": 11,
+    "typescript_executed": 11,
+    "typescript_strict": 11,
+    "executable_cases": 11
+  },
+  "tested_cli": [
+    "describe",
+    "init",
+    "check",
+    "test",
+    "eval",
+    "run"
+  ],
+  "stdlib": {
+    "baseline": {
+      "modules": 20,
+      "functions": 207,
+      "types": 35,
+      "api_sha256": "aaff151ff79f5b7fe1d3abea25bc87722214d763dd3472a9f62cbb44d225e0b7"
+    },
+    "candidate": {
+      "modules": 21,
+      "functions": 217,
+      "types": 38,
+      "api_sha256": "8c77f9a8e99ce851fa84b9714726bc02ebf95c96eb484cf7d1889b7e839c7824"
+    }
+  },
+  "published_projects": [
+    "hash-containers",
+    "java-long",
+    "native-host-session",
+    "persistent-ui",
+    "reference-provider-debugging",
+    "reference-task-profiling",
+    "reference-task-providers",
+    "references",
+    "sequence-containers",
+    "workboard"
+  ],
+  "history": [
+    {
+      "revision": "bf77354044d9f306ef6c96bb22ef95590be94788f63b375189003d6339196be7",
+      "language": "0.30",
+      "stdout": "41\n"
+    },
+    {
+      "revision": "ef61240fc0e54a831499006c62bfdaef545ab6729583e68afc2b8d34bea7eef4",
+      "language": "0.30",
+      "stdout": "42\n"
+    }
+  ],
+  "migration_commands": {
+    "published_migration_suite": 50,
+    "candidate_migration_suite": 78
+  },
+  "pending": "Per-platform source, portable assembly, moved and archive-restored acceptance and release promotion."
+}

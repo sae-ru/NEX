@@ -5,14 +5,17 @@ import hashlib
 import json
 import os
 import platform
+import re
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 import sdk_archive
+from sdk_compat_cli import check_cli
 from sdk_compat_examples import check_examples
 from sdk_compat_snapshot import check_snapshot
+from sdk_compat_stdlib import check_stdlib
 
 
 def sdk_identity(directory, cwd, environment):
@@ -29,6 +32,13 @@ def sdk_identity(directory, cwd, environment):
                       'compiler_build': discovery['compiler_build'], 'compiler_sha256': sdk_archive.digest(compiler),
                       'descriptor_hash': discovery['descriptor_hash'], 'source_versions': discovery['value'],
                       'runtime_sha256': sdk_archive.digest(resources / 'runtime' / 'runtime.cpp')}
+
+
+def host_abi(triple):
+    # Darwin's build-host kernel release is present in the LLVM triple. The
+    # programs execute together on this host even if the SDKs were built on
+    # different macOS releases. Keep the architecture and OS/ABI boundary.
+    return re.sub(r'(?<=-darwin)[0-9]+(?:\.[0-9]+)*$', '', triple)
 
 
 def migration_observations(folder, receipt):
@@ -104,10 +114,15 @@ def main():
     archive = args.baseline_archive.resolve(strict=True)
     if record.get('schema') != 'nex.delivery-record/1' or archive.stat().st_size != record['archive']['bytes']:
         raise ValueError('incorrect baseline release record or archive size')
-    environment = os.environ.copy()
-    environment.pop('NEX_RESOURCE_DIR', None)
     # Run helpers with SDK resource discovery even when the calling shell uses a source checkout.
     os.environ.pop('NEX_RESOURCE_DIR', None)
+    if sys.platform == 'darwin' and not os.environ.get('SDKROOT'):
+        sdkroot = subprocess.check_output(['/usr/bin/xcrun', '--sdk', 'macosx', '--show-sdk-path'],
+                                          text=True, timeout=30).strip()
+        if not Path(sdkroot).is_absolute() or not Path(sdkroot).is_dir():
+            raise ValueError('select the installed macOS SDK with SDKROOT or xcode-select')
+        os.environ['SDKROOT'] = sdkroot
+    environment = os.environ.copy()
     result = {'schema': 'nex.sdk-source-compatibility/1', 'ok': False,
               'platform': platform.system() + '-' + platform.machine(), 'language': '0.30',
               'release_record_sha256': sdk_archive.digest(args.release_record),
@@ -119,13 +134,16 @@ def main():
         beta_sdk = sdk_archive.restore(archive, Path(temp) / 'restore', record['archive']['sha256'])
         old, result['baseline'] = sdk_identity(beta_sdk, root, environment)
         new, result['candidate'] = sdk_identity(args.candidate_sdk.resolve(strict=True), root, environment)
-        if result['baseline']['toolchain'] != record['toolchain'] or result['baseline']['host'] != result['candidate']['host']:
+        if (result['baseline']['toolchain'] != record['toolchain']
+                or host_abi(result['baseline']['host']) != host_abi(result['candidate']['host'])):
             raise ValueError('baseline and candidate must match the recorded version and host respectively')
         if old.samefile(new):
             raise ValueError('pass separate baseline and candidate SDKs')
         save(report, result)
         resources = beta_sdk / 'share' / 'nex'
         for name, check, params in (
+                ('consumer_cli', check_cli, (old, new, root)),
+                ('public_stdlib', check_stdlib, (old, new, root)),
                 ('graph_snapshot', check_snapshot, (old, new, root)),
                 ('published_examples', check_examples, (old, new, resources/'examples', root)),
                 ('published_migration_suite', check_migrations, (old, new, resources, root, environment, True)),

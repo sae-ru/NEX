@@ -9,7 +9,7 @@ document describes current behavior. Query the selected compiler for actual
 capabilities; `status: current` documents are checked against the current
 advertised project source languages and toolchain by the same script.
 
-## Current contracts (45)
+## Current contracts (47)
 
 | Document | Applies to | Owner |
 |---|---|---|
@@ -50,6 +50,8 @@ advertised project source languages and toolchain by the same script.
 | [Private TypeScript managed heap](managed-reference-typescript-heap.md) | toolchain 0.253.0; no public source-language extension | repository |
 | [Private TypeScript reference execution](managed-reference-typescript-prototype.md) | toolchain 0.260.0; private 0.30-refs-prototype candidate | repository |
 | [Profiling reference tasks and native libraries](reference-task-profiling.md) | toolchain 0.279.0; language 0.30; task ABI8 | repository |
+| [Proposed 1.0 CLI contract for a native project](cli-consumer-contract.md) | toolchain 0.281.0; language 0.30 | repository |
+| [Proposed 1.0 standard-library source contract](stdlib-source-compatibility.md) | toolchain 0.281.0; language 0.30 | repository |
 | [Public reference context for LLM authors and reviewers](llm-entry-v3.md) | language 0.30; toolchain 0.280.1 | repository |
 | [Reference tasks across debug library images](reference-provider-debugging.md) | toolchain 0.279.0; language 0.30; task ABI8 | repository |
 | [Repeated native runtime benchmark](bench.md) | toolchain 0.175; language 0.28 | repository |
@@ -250,4 +252,4 @@ advertised project source languages and toolchain by the same script.
 
 ## Totals
 
-223 documents: 45 current, 1 deferred, 5 historical, 168 reference/unclassified.
+225 documents: 47 current, 1 deferred, 5 historical, 168 reference/unclassified.

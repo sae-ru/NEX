@@ -1,0 +1,3640 @@
+{
+  "modules": {
+    "std/deque.nex": {
+      "functions": {
+        "empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [],
+          "realm": "shared",
+          "result": "std::deque::Deque<$0>"
+        },
+        "is_empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::deque::Deque<$0>"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "peek_back": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::deque::Deque<$0>"
+          ],
+          "realm": "shared",
+          "result": "result<$0>"
+        },
+        "peek_front": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::deque::Deque<$0>"
+          ],
+          "realm": "shared",
+          "result": "result<$0>"
+        },
+        "pop_back": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::deque::Deque<$0>"
+          ],
+          "realm": "shared",
+          "result": "result<std::deque::Popped<$0>>"
+        },
+        "pop_front": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::deque::Deque<$0>"
+          ],
+          "realm": "shared",
+          "result": "result<std::deque::Popped<$0>>"
+        },
+        "push_back": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::deque::Deque<$0>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "std::deque::Deque<$0>"
+        },
+        "push_front": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::deque::Deque<$0>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "std::deque::Deque<$0>"
+        },
+        "size": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::deque::Deque<$0>"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        }
+      },
+      "module": "std::deque",
+      "types": {
+        "Deque": {
+          "fields": [
+            [
+              "items",
+              "list<$0>"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        },
+        "Popped": {
+          "fields": [
+            [
+              "deque",
+              "std::deque::Deque<$0>"
+            ],
+            [
+              "value",
+              "$0"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        }
+      }
+    },
+    "std/fifo.nex": {
+      "functions": {
+        "dequeue": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::fifo::Queue<$0>"
+          ],
+          "realm": "shared",
+          "result": "result<std::fifo::Popped<$0>>"
+        },
+        "empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [],
+          "realm": "shared",
+          "result": "std::fifo::Queue<$0>"
+        },
+        "enqueue": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::fifo::Queue<$0>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "std::fifo::Queue<$0>"
+        },
+        "height": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::fifo::Queue<$0>"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "is_empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::fifo::Queue<$0>"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "items": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::fifo::Queue<$0>"
+          ],
+          "realm": "shared",
+          "result": "list<$0>"
+        },
+        "peek": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::fifo::Queue<$0>"
+          ],
+          "realm": "shared",
+          "result": "result<$0>"
+        },
+        "size": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::fifo::Queue<$0>"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "validate": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::fifo::Queue<$0>"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        }
+      },
+      "module": "std::fifo",
+      "types": {
+        "Popped": {
+          "fields": [
+            [
+              "queue",
+              "std::fifo::Queue<$0>"
+            ],
+            [
+              "value",
+              "$0"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        },
+        "Queue": {
+          "fields": [
+            [
+              "sequence",
+              "std::sequence::Sequence<$0>"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        }
+      }
+    },
+    "std/hash.nex": {
+      "functions": {
+        "binary": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "bytes"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "boolean": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "bool"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "equal": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "$0",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "integer": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "i64"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "text": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "str"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        }
+      },
+      "module": "std::hash",
+      "types": {}
+    },
+    "std/hash_map.nex": {
+      "functions": {
+        "empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "fn($0)->i64",
+            "fn($0,$0)->bool"
+          ],
+          "realm": "shared",
+          "result": "std::hash_map::Map<$0,$1>"
+        },
+        "entries": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_map::Map<$0,$1>"
+          ],
+          "realm": "shared",
+          "result": "list<std::hash_map::Entry<$0,$1>>"
+        },
+        "get": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_map::Map<$0,$1>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "result<$1>"
+        },
+        "has": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_map::Map<$0,$1>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "height": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_map::Map<$0,$1>"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "is_empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_map::Map<$0,$1>"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "keys": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_map::Map<$0,$1>"
+          ],
+          "realm": "shared",
+          "result": "list<$0>"
+        },
+        "put": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_map::Map<$0,$1>",
+            "$0",
+            "$1"
+          ],
+          "realm": "shared",
+          "result": "std::hash_map::Map<$0,$1>"
+        },
+        "remove": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_map::Map<$0,$1>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "std::hash_map::Map<$0,$1>"
+        },
+        "size": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_map::Map<$0,$1>"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "validate": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_map::Map<$0,$1>"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "values": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_map::Map<$0,$1>"
+          ],
+          "realm": "shared",
+          "result": "list<$1>"
+        }
+      },
+      "module": "std::hash_map",
+      "types": {
+        "Entry": {
+          "fields": [
+            [
+              "key",
+              "$0"
+            ],
+            [
+              "value",
+              "$1"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        },
+        "Item": {
+          "fields": [
+            [
+              "hash",
+              "i64"
+            ],
+            [
+              "key",
+              "$0"
+            ],
+            [
+              "value",
+              "$1"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        },
+        "Map": {
+          "fields": [
+            [
+              "root",
+              "list<std::hash_map::Node<$0,$1>>"
+            ],
+            [
+              "hash",
+              "fn($0)->i64"
+            ],
+            [
+              "equal",
+              "fn($0,$0)->bool"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        },
+        "Node": {
+          "fields": [
+            [
+              "items",
+              "list<std::hash_map::Item<$0,$1>>"
+            ],
+            [
+              "slots",
+              "list<i64>"
+            ],
+            [
+              "children",
+              "list<std::hash_map::Node<$0,$1>>"
+            ],
+            [
+              "count",
+              "i64"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        }
+      }
+    },
+    "std/hash_set.nex": {
+      "functions": {
+        "add": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_set::Set<$0>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "std::hash_set::Set<$0>"
+        },
+        "difference": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_set::Set<$0>",
+            "std::hash_set::Set<$0>"
+          ],
+          "realm": "shared",
+          "result": "std::hash_set::Set<$0>"
+        },
+        "empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "fn($0)->i64",
+            "fn($0,$0)->bool"
+          ],
+          "realm": "shared",
+          "result": "std::hash_set::Set<$0>"
+        },
+        "has": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_set::Set<$0>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "height": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_set::Set<$0>"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "intersection": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_set::Set<$0>",
+            "std::hash_set::Set<$0>"
+          ],
+          "realm": "shared",
+          "result": "std::hash_set::Set<$0>"
+        },
+        "is_empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_set::Set<$0>"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "items": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_set::Set<$0>"
+          ],
+          "realm": "shared",
+          "result": "list<$0>"
+        },
+        "remove": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_set::Set<$0>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "std::hash_set::Set<$0>"
+        },
+        "size": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_set::Set<$0>"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "union": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_set::Set<$0>",
+            "std::hash_set::Set<$0>"
+          ],
+          "realm": "shared",
+          "result": "std::hash_set::Set<$0>"
+        },
+        "validate": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::hash_set::Set<$0>"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        }
+      },
+      "module": "std::hash_set",
+      "types": {
+        "Set": {
+          "fields": [
+            [
+              "table",
+              "std::hash_map::Map<$0,bool>"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        }
+      }
+    },
+    "std/heap.nex": {
+      "functions": {
+        "ascending": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": [
+                "ordered"
+              ]
+            }
+          ],
+          "parameters": [],
+          "realm": "shared",
+          "result": "std::heap::Heap<$0>"
+        },
+        "descending": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": [
+                "ordered"
+              ]
+            }
+          ],
+          "parameters": [],
+          "realm": "shared",
+          "result": "std::heap::Heap<$0>"
+        },
+        "empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "fn($0,$0)->i64"
+          ],
+          "realm": "shared",
+          "result": "std::heap::Heap<$0>"
+        },
+        "is_empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::heap::Heap<$0>"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "items": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::heap::Heap<$0>"
+          ],
+          "realm": "shared",
+          "result": "list<$0>"
+        },
+        "merge": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::heap::Heap<$0>",
+            "std::heap::Heap<$0>"
+          ],
+          "realm": "shared",
+          "result": "std::heap::Heap<$0>"
+        },
+        "peek": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::heap::Heap<$0>"
+          ],
+          "realm": "shared",
+          "result": "result<$0>"
+        },
+        "pop": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::heap::Heap<$0>"
+          ],
+          "realm": "shared",
+          "result": "result<std::heap::Popped<$0>>"
+        },
+        "push_value": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::heap::Heap<$0>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "std::heap::Heap<$0>"
+        },
+        "rank": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::heap::Heap<$0>"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "size": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::heap::Heap<$0>"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "sorted": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::heap::Heap<$0>"
+          ],
+          "realm": "shared",
+          "result": "list<$0>"
+        },
+        "validate": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::heap::Heap<$0>"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        }
+      },
+      "module": "std::heap",
+      "types": {
+        "Heap": {
+          "fields": [
+            [
+              "root",
+              "list<std::heap::Node<$0>>"
+            ],
+            [
+              "compare",
+              "fn($0,$0)->i64"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        },
+        "Node": {
+          "fields": [
+            [
+              "value",
+              "$0"
+            ],
+            [
+              "left",
+              "list<std::heap::Node<$0>>"
+            ],
+            [
+              "right",
+              "list<std::heap::Node<$0>>"
+            ],
+            [
+              "rank",
+              "i64"
+            ],
+            [
+              "count",
+              "i64"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        },
+        "Popped": {
+          "fields": [
+            [
+              "heap",
+              "std::heap::Heap<$0>"
+            ],
+            [
+              "value",
+              "$0"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        }
+      }
+    },
+    "std/java_int.nex": {
+      "functions": {
+        "add": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_int::Int32",
+            "std::java_int::Int32"
+          ],
+          "realm": "shared",
+          "result": "std::java_int::Int32"
+        },
+        "bit_and": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_int::Int32",
+            "std::java_int::Int32"
+          ],
+          "realm": "shared",
+          "result": "std::java_int::Int32"
+        },
+        "bit_not": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_int::Int32"
+          ],
+          "realm": "shared",
+          "result": "std::java_int::Int32"
+        },
+        "bit_or": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_int::Int32",
+            "std::java_int::Int32"
+          ],
+          "realm": "shared",
+          "result": "std::java_int::Int32"
+        },
+        "bit_xor": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_int::Int32",
+            "std::java_int::Int32"
+          ],
+          "realm": "shared",
+          "result": "std::java_int::Int32"
+        },
+        "divide": {
+          "effects": [
+            "throw"
+          ],
+          "generics": [],
+          "parameters": [
+            "std::java_int::Int32",
+            "std::java_int::Int32"
+          ],
+          "realm": "shared",
+          "result": "std::java_int::Int32"
+        },
+        "from_i64": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "i64"
+          ],
+          "realm": "shared",
+          "result": "std::java_int::Int32"
+        },
+        "multiply": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_int::Int32",
+            "std::java_int::Int32"
+          ],
+          "realm": "shared",
+          "result": "std::java_int::Int32"
+        },
+        "narrow_byte": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_int::Int32"
+          ],
+          "realm": "shared",
+          "result": "std::java_int::Int32"
+        },
+        "narrow_char": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_int::Int32"
+          ],
+          "realm": "shared",
+          "result": "std::java_int::Int32"
+        },
+        "narrow_short": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_int::Int32"
+          ],
+          "realm": "shared",
+          "result": "std::java_int::Int32"
+        },
+        "negate": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_int::Int32"
+          ],
+          "realm": "shared",
+          "result": "std::java_int::Int32"
+        },
+        "remainder": {
+          "effects": [
+            "throw"
+          ],
+          "generics": [],
+          "parameters": [
+            "std::java_int::Int32",
+            "std::java_int::Int32"
+          ],
+          "realm": "shared",
+          "result": "std::java_int::Int32"
+        },
+        "shift_left": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_int::Int32",
+            "i64"
+          ],
+          "realm": "shared",
+          "result": "std::java_int::Int32"
+        },
+        "shift_right": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_int::Int32",
+            "i64"
+          ],
+          "realm": "shared",
+          "result": "std::java_int::Int32"
+        },
+        "subtract": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_int::Int32",
+            "std::java_int::Int32"
+          ],
+          "realm": "shared",
+          "result": "std::java_int::Int32"
+        },
+        "to_i64": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_int::Int32"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "unsigned_shift_right": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_int::Int32",
+            "i64"
+          ],
+          "realm": "shared",
+          "result": "std::java_int::Int32"
+        }
+      },
+      "module": "std::java_int",
+      "types": {
+        "ArithmeticError": {
+          "fields": [
+            [
+              "operation",
+              "str"
+            ]
+          ],
+          "generics": []
+        },
+        "Int32": {
+          "fields": [
+            [
+              "value",
+              "i64"
+            ]
+          ],
+          "generics": []
+        }
+      }
+    },
+    "std/java_long.nex": {
+      "functions": {
+        "add": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_long::Int64",
+            "std::java_long::Int64"
+          ],
+          "realm": "shared",
+          "result": "std::java_long::Int64"
+        },
+        "bit_and": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_long::Int64",
+            "std::java_long::Int64"
+          ],
+          "realm": "shared",
+          "result": "std::java_long::Int64"
+        },
+        "bit_not": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_long::Int64"
+          ],
+          "realm": "shared",
+          "result": "std::java_long::Int64"
+        },
+        "bit_or": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_long::Int64",
+            "std::java_long::Int64"
+          ],
+          "realm": "shared",
+          "result": "std::java_long::Int64"
+        },
+        "bit_xor": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_long::Int64",
+            "std::java_long::Int64"
+          ],
+          "realm": "shared",
+          "result": "std::java_long::Int64"
+        },
+        "compare": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_long::Int64",
+            "std::java_long::Int64"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "divide": {
+          "effects": [
+            "throw"
+          ],
+          "generics": [],
+          "parameters": [
+            "std::java_long::Int64",
+            "std::java_long::Int64"
+          ],
+          "realm": "shared",
+          "result": "std::java_long::Int64"
+        },
+        "from_i64": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "i64"
+          ],
+          "realm": "shared",
+          "result": "std::java_long::Int64"
+        },
+        "from_int": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_int::Int32"
+          ],
+          "realm": "shared",
+          "result": "std::java_long::Int64"
+        },
+        "multiply": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_long::Int64",
+            "std::java_long::Int64"
+          ],
+          "realm": "shared",
+          "result": "std::java_long::Int64"
+        },
+        "narrow_byte": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_long::Int64"
+          ],
+          "realm": "shared",
+          "result": "std::java_int::Int32"
+        },
+        "narrow_char": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_long::Int64"
+          ],
+          "realm": "shared",
+          "result": "std::java_int::Int32"
+        },
+        "narrow_int": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_long::Int64"
+          ],
+          "realm": "shared",
+          "result": "std::java_int::Int32"
+        },
+        "narrow_short": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_long::Int64"
+          ],
+          "realm": "shared",
+          "result": "std::java_int::Int32"
+        },
+        "negate": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_long::Int64"
+          ],
+          "realm": "shared",
+          "result": "std::java_long::Int64"
+        },
+        "remainder": {
+          "effects": [
+            "throw"
+          ],
+          "generics": [],
+          "parameters": [
+            "std::java_long::Int64",
+            "std::java_long::Int64"
+          ],
+          "realm": "shared",
+          "result": "std::java_long::Int64"
+        },
+        "shift_left": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_long::Int64",
+            "i64"
+          ],
+          "realm": "shared",
+          "result": "std::java_long::Int64"
+        },
+        "shift_right": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_long::Int64",
+            "i64"
+          ],
+          "realm": "shared",
+          "result": "std::java_long::Int64"
+        },
+        "subtract": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_long::Int64",
+            "std::java_long::Int64"
+          ],
+          "realm": "shared",
+          "result": "std::java_long::Int64"
+        },
+        "to_i64": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_long::Int64"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "unsigned_shift_right": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "std::java_long::Int64",
+            "i64"
+          ],
+          "realm": "shared",
+          "result": "std::java_long::Int64"
+        }
+      },
+      "module": "std::java_long",
+      "types": {
+        "ArithmeticError": {
+          "fields": [
+            [
+              "operation",
+              "str"
+            ]
+          ],
+          "generics": []
+        },
+        "Int64": {
+          "fields": [
+            [
+              "value",
+              "i64"
+            ]
+          ],
+          "generics": []
+        }
+      }
+    },
+    "std/lifo.nex": {
+      "functions": {
+        "empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [],
+          "realm": "shared",
+          "result": "std::lifo::Stack<$0>"
+        },
+        "is_empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::lifo::Stack<$0>"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "items": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::lifo::Stack<$0>"
+          ],
+          "realm": "shared",
+          "result": "list<$0>"
+        },
+        "peek": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::lifo::Stack<$0>"
+          ],
+          "realm": "shared",
+          "result": "result<$0>"
+        },
+        "pop": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::lifo::Stack<$0>"
+          ],
+          "realm": "shared",
+          "result": "result<std::lifo::Popped<$0>>"
+        },
+        "push_value": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::lifo::Stack<$0>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "std::lifo::Stack<$0>"
+        },
+        "size": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::lifo::Stack<$0>"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "validate": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::lifo::Stack<$0>"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        }
+      },
+      "module": "std::lifo",
+      "types": {
+        "Node": {
+          "fields": [
+            [
+              "value",
+              "$0"
+            ],
+            [
+              "next",
+              "list<std::lifo::Node<$0>>"
+            ],
+            [
+              "count",
+              "i64"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        },
+        "Popped": {
+          "fields": [
+            [
+              "stack",
+              "std::lifo::Stack<$0>"
+            ],
+            [
+              "value",
+              "$0"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        },
+        "Stack": {
+          "fields": [
+            [
+              "root",
+              "list<std::lifo::Node<$0>>"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        }
+      }
+    },
+    "std/list.nex": {
+      "functions": {
+        "all": {
+          "effects": [
+            "?0"
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "list<$0>",
+            "fn($0)->bool!{?0}"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "any": {
+          "effects": [
+            "?0"
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "list<$0>",
+            "fn($0)->bool!{?0}"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "filter": {
+          "effects": [
+            "?0"
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "list<$0>",
+            "fn($0)->bool!{?0}"
+          ],
+          "realm": "shared",
+          "result": "list<$0>"
+        },
+        "find_index": {
+          "effects": [
+            "?0"
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "list<$0>",
+            "fn($0)->bool!{?0}"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "fold": {
+          "effects": [
+            "?0"
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "list<$0>",
+            "$1",
+            "fn($1,$0)->$1!{?0}"
+          ],
+          "realm": "shared",
+          "result": "$1"
+        },
+        "generate": {
+          "effects": [
+            "?0"
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "i64",
+            "fn(i64)->$0!{?0}"
+          ],
+          "realm": "shared",
+          "result": "list<$0>"
+        },
+        "map": {
+          "effects": [
+            "?0"
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "list<$0>",
+            "fn($0)->$1!{?0}"
+          ],
+          "realm": "shared",
+          "result": "list<$1>"
+        },
+        "reverse": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "list<$0>"
+          ],
+          "realm": "shared",
+          "result": "list<$0>"
+        },
+        "sort": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": [
+                "ordered"
+              ]
+            }
+          ],
+          "parameters": [
+            "list<$0>"
+          ],
+          "realm": "shared",
+          "result": "list<$0>"
+        },
+        "sort_by": {
+          "effects": [
+            "?0"
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "list<$0>",
+            "fn($0,$0)->bool!{?0}"
+          ],
+          "realm": "shared",
+          "result": "list<$0>"
+        }
+      },
+      "module": "std::lists",
+      "types": {}
+    },
+    "std/map.nex": {
+      "functions": {
+        "empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [],
+          "realm": "shared",
+          "result": "std::map::Map<$0,$1>"
+        },
+        "get": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::map::Map<$0,$1>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "result<$1>"
+        },
+        "has": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::map::Map<$0,$1>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "keys": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::map::Map<$0,$1>"
+          ],
+          "realm": "shared",
+          "result": "list<$0>"
+        },
+        "put": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::map::Map<$0,$1>",
+            "$0",
+            "$1"
+          ],
+          "realm": "shared",
+          "result": "std::map::Map<$0,$1>"
+        },
+        "remove": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::map::Map<$0,$1>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "std::map::Map<$0,$1>"
+        },
+        "size": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::map::Map<$0,$1>"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "values": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::map::Map<$0,$1>"
+          ],
+          "realm": "shared",
+          "result": "list<$1>"
+        }
+      },
+      "module": "std::map",
+      "types": {
+        "Entry": {
+          "fields": [
+            [
+              "key",
+              "$0"
+            ],
+            [
+              "value",
+              "$1"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        },
+        "Map": {
+          "fields": [
+            [
+              "entries",
+              "list<std::map::Entry<$0,$1>>"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        }
+      }
+    },
+    "std/math.nex": {
+      "functions": {
+        "abs": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "i64"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "ceil_div": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "i64",
+            "i64"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "clamp": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "i64",
+            "i64",
+            "i64"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "floor_div": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "i64",
+            "i64"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "gcd": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "i64",
+            "i64"
+          ],
+          "realm": "shared",
+          "result": "result<i64>"
+        },
+        "lcm": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "i64",
+            "i64"
+          ],
+          "realm": "shared",
+          "result": "result<i64>"
+        },
+        "max": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "i64",
+            "i64"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "min": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "i64",
+            "i64"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "pow_i64": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "i64",
+            "i64"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "sign": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "i64"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        }
+      },
+      "module": "std::math",
+      "types": {}
+    },
+    "std/ordered_map.nex": {
+      "functions": {
+        "empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "fn($0,$0)->i64"
+          ],
+          "realm": "shared",
+          "result": "std::ordered_map::Map<$0,$1>"
+        },
+        "entries": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_map::Map<$0,$1>"
+          ],
+          "realm": "shared",
+          "result": "list<std::ordered_map::Entry<$0,$1>>"
+        },
+        "get": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_map::Map<$0,$1>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "result<$1>"
+        },
+        "has": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_map::Map<$0,$1>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "height": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_map::Map<$0,$1>"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "is_empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_map::Map<$0,$1>"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "keys": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_map::Map<$0,$1>"
+          ],
+          "realm": "shared",
+          "result": "list<$0>"
+        },
+        "put": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_map::Map<$0,$1>",
+            "$0",
+            "$1"
+          ],
+          "realm": "shared",
+          "result": "std::ordered_map::Map<$0,$1>"
+        },
+        "remove": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_map::Map<$0,$1>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "std::ordered_map::Map<$0,$1>"
+        },
+        "size": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_map::Map<$0,$1>"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "validate": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_map::Map<$0,$1>"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "values": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_map::Map<$0,$1>"
+          ],
+          "realm": "shared",
+          "result": "list<$1>"
+        }
+      },
+      "module": "std::ordered_map",
+      "types": {
+        "Entry": {
+          "fields": [
+            [
+              "key",
+              "$0"
+            ],
+            [
+              "value",
+              "$1"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        },
+        "Map": {
+          "fields": [
+            [
+              "root",
+              "list<std::ordered_map::Node<$0,$1>>"
+            ],
+            [
+              "compare",
+              "fn($0,$0)->i64"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        },
+        "Node": {
+          "fields": [
+            [
+              "key",
+              "$0"
+            ],
+            [
+              "value",
+              "$1"
+            ],
+            [
+              "left",
+              "list<std::ordered_map::Node<$0,$1>>"
+            ],
+            [
+              "right",
+              "list<std::ordered_map::Node<$0,$1>>"
+            ],
+            [
+              "height",
+              "i64"
+            ],
+            [
+              "count",
+              "i64"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            },
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        }
+      }
+    },
+    "std/ordered_set.nex": {
+      "functions": {
+        "add": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_set::Set<$0>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "std::ordered_set::Set<$0>"
+        },
+        "difference": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_set::Set<$0>",
+            "std::ordered_set::Set<$0>"
+          ],
+          "realm": "shared",
+          "result": "std::ordered_set::Set<$0>"
+        },
+        "empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "fn($0,$0)->i64"
+          ],
+          "realm": "shared",
+          "result": "std::ordered_set::Set<$0>"
+        },
+        "has": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_set::Set<$0>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "height": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_set::Set<$0>"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "intersection": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_set::Set<$0>",
+            "std::ordered_set::Set<$0>"
+          ],
+          "realm": "shared",
+          "result": "std::ordered_set::Set<$0>"
+        },
+        "is_empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_set::Set<$0>"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "items": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_set::Set<$0>"
+          ],
+          "realm": "shared",
+          "result": "list<$0>"
+        },
+        "remove": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_set::Set<$0>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "std::ordered_set::Set<$0>"
+        },
+        "size": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_set::Set<$0>"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "union": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_set::Set<$0>",
+            "std::ordered_set::Set<$0>"
+          ],
+          "realm": "shared",
+          "result": "std::ordered_set::Set<$0>"
+        },
+        "validate": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::ordered_set::Set<$0>"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        }
+      },
+      "module": "std::ordered_set",
+      "types": {
+        "Set": {
+          "fields": [
+            [
+              "tree",
+              "std::ordered_map::Map<$0,bool>"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        }
+      }
+    },
+    "std/priority_queue.nex": {
+      "functions": {
+        "empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": [
+                "ordered"
+              ]
+            }
+          ],
+          "parameters": [],
+          "realm": "shared",
+          "result": "std::priority_queue::PriorityQueue<$0>"
+        },
+        "is_empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": [
+                "ordered"
+              ]
+            }
+          ],
+          "parameters": [
+            "std::priority_queue::PriorityQueue<$0>"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "peek": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": [
+                "ordered"
+              ]
+            }
+          ],
+          "parameters": [
+            "std::priority_queue::PriorityQueue<$0>"
+          ],
+          "realm": "shared",
+          "result": "result<$0>"
+        },
+        "pop": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": [
+                "ordered"
+              ]
+            }
+          ],
+          "parameters": [
+            "std::priority_queue::PriorityQueue<$0>"
+          ],
+          "realm": "shared",
+          "result": "result<std::priority_queue::Popped<$0>>"
+        },
+        "push_value": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": [
+                "ordered"
+              ]
+            }
+          ],
+          "parameters": [
+            "std::priority_queue::PriorityQueue<$0>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "std::priority_queue::PriorityQueue<$0>"
+        },
+        "size": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": [
+                "ordered"
+              ]
+            }
+          ],
+          "parameters": [
+            "std::priority_queue::PriorityQueue<$0>"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        }
+      },
+      "module": "std::priority_queue",
+      "types": {
+        "Popped": {
+          "fields": [
+            [
+              "queue",
+              "std::priority_queue::PriorityQueue<$0>"
+            ],
+            [
+              "value",
+              "$0"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        },
+        "PriorityQueue": {
+          "fields": [
+            [
+              "items",
+              "list<$0>"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        }
+      }
+    },
+    "std/queue.nex": {
+      "functions": {
+        "dequeue": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::queue::Queue<$0>"
+          ],
+          "realm": "shared",
+          "result": "result<std::queue::Popped<$0>>"
+        },
+        "empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [],
+          "realm": "shared",
+          "result": "std::queue::Queue<$0>"
+        },
+        "enqueue": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::queue::Queue<$0>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "std::queue::Queue<$0>"
+        },
+        "is_empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::queue::Queue<$0>"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "peek": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::queue::Queue<$0>"
+          ],
+          "realm": "shared",
+          "result": "result<$0>"
+        },
+        "size": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::queue::Queue<$0>"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        }
+      },
+      "module": "std::queue",
+      "types": {
+        "Popped": {
+          "fields": [
+            [
+              "queue",
+              "std::queue::Queue<$0>"
+            ],
+            [
+              "value",
+              "$0"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        },
+        "Queue": {
+          "fields": [
+            [
+              "items",
+              "list<$0>"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        }
+      }
+    },
+    "std/sequence.nex": {
+      "functions": {
+        "empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [],
+          "realm": "shared",
+          "result": "std::sequence::Sequence<$0>"
+        },
+        "get": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::sequence::Sequence<$0>",
+            "i64"
+          ],
+          "realm": "shared",
+          "result": "result<$0>"
+        },
+        "height": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::sequence::Sequence<$0>"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "is_empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::sequence::Sequence<$0>"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "items": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::sequence::Sequence<$0>"
+          ],
+          "realm": "shared",
+          "result": "list<$0>"
+        },
+        "peek_back": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::sequence::Sequence<$0>"
+          ],
+          "realm": "shared",
+          "result": "result<$0>"
+        },
+        "peek_front": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::sequence::Sequence<$0>"
+          ],
+          "realm": "shared",
+          "result": "result<$0>"
+        },
+        "pop_back": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::sequence::Sequence<$0>"
+          ],
+          "realm": "shared",
+          "result": "result<std::sequence::Popped<$0>>"
+        },
+        "pop_front": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::sequence::Sequence<$0>"
+          ],
+          "realm": "shared",
+          "result": "result<std::sequence::Popped<$0>>"
+        },
+        "push_back": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::sequence::Sequence<$0>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "std::sequence::Sequence<$0>"
+        },
+        "push_front": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::sequence::Sequence<$0>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "std::sequence::Sequence<$0>"
+        },
+        "replace": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::sequence::Sequence<$0>",
+            "i64",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "result<std::sequence::Sequence<$0>>"
+        },
+        "size": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::sequence::Sequence<$0>"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "validate": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::sequence::Sequence<$0>"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        }
+      },
+      "module": "std::sequence",
+      "types": {
+        "Node": {
+          "fields": [
+            [
+              "value",
+              "$0"
+            ],
+            [
+              "left",
+              "list<std::sequence::Node<$0>>"
+            ],
+            [
+              "right",
+              "list<std::sequence::Node<$0>>"
+            ],
+            [
+              "height",
+              "i64"
+            ],
+            [
+              "count",
+              "i64"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        },
+        "Popped": {
+          "fields": [
+            [
+              "sequence",
+              "std::sequence::Sequence<$0>"
+            ],
+            [
+              "value",
+              "$0"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        },
+        "Sequence": {
+          "fields": [
+            [
+              "root",
+              "list<std::sequence::Node<$0>>"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        }
+      }
+    },
+    "std/set.nex": {
+      "functions": {
+        "add": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::set::Set<$0>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "std::set::Set<$0>"
+        },
+        "difference": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::set::Set<$0>",
+            "std::set::Set<$0>"
+          ],
+          "realm": "shared",
+          "result": "std::set::Set<$0>"
+        },
+        "empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [],
+          "realm": "shared",
+          "result": "std::set::Set<$0>"
+        },
+        "has": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::set::Set<$0>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "intersection": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::set::Set<$0>",
+            "std::set::Set<$0>"
+          ],
+          "realm": "shared",
+          "result": "std::set::Set<$0>"
+        },
+        "items": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::set::Set<$0>"
+          ],
+          "realm": "shared",
+          "result": "list<$0>"
+        },
+        "remove": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::set::Set<$0>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "std::set::Set<$0>"
+        },
+        "size": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::set::Set<$0>"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "union": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::set::Set<$0>",
+            "std::set::Set<$0>"
+          ],
+          "realm": "shared",
+          "result": "std::set::Set<$0>"
+        }
+      },
+      "module": "std::set",
+      "types": {
+        "Set": {
+          "fields": [
+            [
+              "items",
+              "list<$0>"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        }
+      }
+    },
+    "std/stack.nex": {
+      "functions": {
+        "empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [],
+          "realm": "shared",
+          "result": "std::stack::Stack<$0>"
+        },
+        "is_empty": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::stack::Stack<$0>"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "peek": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::stack::Stack<$0>"
+          ],
+          "realm": "shared",
+          "result": "result<$0>"
+        },
+        "pop": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::stack::Stack<$0>"
+          ],
+          "realm": "shared",
+          "result": "result<std::stack::Popped<$0>>"
+        },
+        "push_value": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::stack::Stack<$0>",
+            "$0"
+          ],
+          "realm": "shared",
+          "result": "std::stack::Stack<$0>"
+        },
+        "size": {
+          "effects": [],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ],
+          "parameters": [
+            "std::stack::Stack<$0>"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        }
+      },
+      "module": "std::stack",
+      "types": {
+        "Popped": {
+          "fields": [
+            [
+              "stack",
+              "std::stack::Stack<$0>"
+            ],
+            [
+              "value",
+              "$0"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        },
+        "Stack": {
+          "fields": [
+            [
+              "items",
+              "list<$0>"
+            ]
+          ],
+          "generics": [
+            {
+              "arity": 0,
+              "bounds": []
+            }
+          ]
+        }
+      }
+    },
+    "std/text.nex": {
+      "functions": {
+        "ends_with": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "str",
+            "str"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "find": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "str",
+            "str"
+          ],
+          "realm": "shared",
+          "result": "i64"
+        },
+        "join": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "list<str>",
+            "str"
+          ],
+          "realm": "shared",
+          "result": "str"
+        },
+        "replace": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "str",
+            "str",
+            "str"
+          ],
+          "realm": "shared",
+          "result": "str"
+        },
+        "split": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "str",
+            "str"
+          ],
+          "realm": "shared",
+          "result": "list<str>"
+        },
+        "starts_with": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "str",
+            "str"
+          ],
+          "realm": "shared",
+          "result": "bool"
+        },
+        "trim": {
+          "effects": [],
+          "generics": [],
+          "parameters": [
+            "str"
+          ],
+          "realm": "shared",
+          "result": "str"
+        }
+      },
+      "module": "std::text",
+      "types": {}
+    }
+  },
+  "project_language": "0.30",
+  "schema": "nex.stdlib-public-api/1"
+}

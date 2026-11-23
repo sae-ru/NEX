@@ -295,6 +295,15 @@ class LinuxLinkLibraries(unittest.TestCase):
         self.assertFalse((self.output/'lib/nex/host'/malformed.name).exists())
 
 
+class SourceCompatibilityHost(unittest.TestCase):
+    def test_darwin_build_release_can_differ_but_architecture_and_abi_must_match(self):
+        with mock.patch.object(sys, 'path', [str(Path(__file__).resolve().parents[1]/'tools'), *sys.path]):
+            from sdk_compatibility import host_abi
+        self.assertEqual(host_abi('arm64-apple-darwin26.5.0'), host_abi('arm64-apple-darwin27.2.0'))
+        self.assertNotEqual(host_abi('arm64-apple-darwin27.2.0'), host_abi('x86_64-apple-darwin27.2.0'))
+        self.assertNotEqual(host_abi('x86_64-unknown-linux-gnu'), host_abi('x86_64-unknown-linux-musl'))
+
+
 class WindowsAssemblyEnvironment(unittest.TestCase):
     def test_host_runtime_lookup_only_during_assembly(self):
         spec = importlib.util.spec_from_file_location('windows_distribution',

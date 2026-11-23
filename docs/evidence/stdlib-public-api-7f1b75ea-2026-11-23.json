@@ -1,0 +1,99 @@
+{
+  "schema": "nex.stdlib-api-compatibility/1",
+  "contract": "nex.stdlib-public-api/1",
+  "published_api_sha256": "994b8d1fed1971bc680f1fa248991f75064f27a80d605138d2dab868f98fc968",
+  "probe_sha256": "cbce1e1644a1022c3db7fa346553116a3b20882ae092d74af61ea71bf9d92291",
+  "baseline_policy": "exact-0.280.1",
+  "baseline": {
+    "toolchain": "0.280.1",
+    "compiler_sha256": "a37aab72fb84cf2bf938859017282977b9b9f2445f16fcae9457086e8df9f0b4",
+    "api_sha256": "aaff151ff79f5b7fe1d3abea25bc87722214d763dd3472a9f62cbb44d225e0b7",
+    "modules": 20,
+    "functions": 207,
+    "types": 35,
+    "behavior": {
+      "test": "compat::standard_library::public_behavior",
+      "reference": true,
+      "native": true,
+      "stdout": "stdlib-compat-ok\n"
+    }
+  },
+  "added_modules": [
+    "std/insertion_ordered_map.nex"
+  ],
+  "candidate": {
+    "toolchain": "0.281.0",
+    "compiler_sha256": "015bf751c727cd1374e0deab1f7ad62cf25e75e4cf803c7c3a27f845970efc24",
+    "api_sha256": "8c77f9a8e99ce851fa84b9714726bc02ebf95c96eb484cf7d1889b7e839c7824",
+    "modules": 21,
+    "functions": 217,
+    "types": 38,
+    "behavior": {
+      "test": "compat::standard_library::public_behavior",
+      "reference": true,
+      "native": true,
+      "stdout": "stdlib-compat-ok\n"
+    }
+  },
+  "controls": {
+    "accepted_additions": [
+      "module",
+      "function",
+      "type"
+    ],
+    "rejected_changes": [
+      "missing module",
+      "module identity",
+      "missing function",
+      "parameter arity",
+      "parameter type",
+      "result type",
+      "callback type",
+      "effects",
+      "realm",
+      "generic arity",
+      "constructor kind",
+      "generic bound",
+      "missing type",
+      "field name",
+      "field type",
+      "field order"
+    ],
+    "baseline_policy": {
+      "later_baseline_with_addition": true,
+      "rejected": [
+        "modified original beta",
+        "later baseline lost an original declaration",
+        "candidate lost a later-only declaration",
+        "unsupported earlier baseline"
+      ]
+    },
+    "compiled_compatible_change": {
+      "revision_changed": true,
+      "source_body_changed": true,
+      "additional_function": true,
+      "renamed_positional_and_generic_and_effect_parameters": true
+    }
+  },
+  "ok": true,
+  "platform": "macOS ARM64",
+  "candidate_source_commit": "7f1b75eae61335c37254fa5b31dc798b3189cfe0",
+  "published_baseline_archive_sha256": "6d52a14f076c8382c06a6ac1f78d1b5e05f49553471116759a0c6f79eab3fa57",
+  "qualification_date": "2026-11-23",
+  "harness_sha256": "d8f1c7e44fb302e98a87f2127749bec5b24f884c295a9ca51b45e1b42edd6aa0",
+  "raw_report_sha256": "871f4f2ec0655671bed405241444fef22a77662b98043c8dd81b3eec7a59a4d8",
+  "later_baseline_local_control": {
+    "baseline_source": "Local 0.281.0 installation compared with a separate copy of the same SDK.",
+    "published_baseline_claimed": false,
+    "policy": "preserves-0.280.1-and-pins-full-baseline",
+    "compiler_sha256": "015bf751c727cd1374e0deab1f7ad62cf25e75e4cf803c7c3a27f845970efc24",
+    "api_sha256": "8c77f9a8e99ce851fa84b9714726bc02ebf95c96eb484cf7d1889b7e839c7824",
+    "counts": {
+      "modules": 21,
+      "functions": 217,
+      "types": 38
+    },
+    "ok": true,
+    "raw_report_sha256": "4a43eb12775c8f1aa81ea640f60ac477fbaa42b227d2c6fc04643dd02e404cf1"
+  }
+}
