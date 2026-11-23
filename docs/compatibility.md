@@ -259,3 +259,17 @@ declarations before task use. All historical rows/IDs/schema remain unchanged;
 program/14 includes actual language and therefore gives distinct revisions.
 Migration preflight precedes mutable destination access. See [migration](task-migration.md)
 and [the exact source/target boundary](task-file-reads.md).
+
+## Moving a project history between Windows and macOS
+
+In the project directory on the original machine, run `nex snapshot --directory ../stock-snapshot`. Copy the entire snapshot directory, including `graph.db` and `snapshot.json`, to the other machine. Run the following commands from the parent of the copied directory.
+
+```sh
+nex recover stock-snapshot --directory recovered
+cd recovered
+nex history --json
+```
+
+Choose a revision ID from the history. Run it with `nex run --revision ID --profile release`, or write its editable sources to a new directory with `nex export --revision ID --directory ../stock-src`. The receiving SDK builds native code for its own platform.
+
+Before publication, a Windows x64 SDK 0.281.0 recorded two revisions of a language 0.30 inventory project. The macOS ARM64 SDK 1.0.0 candidate restored both revisions. Both the interpreter and the native build reported 7 units for the first revision and 6 for the second. Each revision passed its web test. Both exported source files matched the Windows originals byte for byte, including their CRLF line endings. [Compiler, snapshot and exported file hashes](evidence/windows-macos-snapshot030-2026-11-23.json)
