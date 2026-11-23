@@ -226,10 +226,32 @@ class LinuxLinkLibraries(unittest.TestCase):
         self.main = self.root/'main.c'
         self.main.write_text('#include <stdio.h>\nint answer(void);int main(void){printf("%d\\n",answer());return 0;}\n')
 
-    def run_command(self, command):
-        result = subprocess.run(list(map(str,command)),env=self.environment,capture_output=True,text=True,timeout=30)
+    def run_command(self, command, *, cwd=None):
+        result = subprocess.run(list(map(str,command)),cwd=cwd,env=self.environment,capture_output=True,text=True,timeout=30)
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         return result.stdout
+
+    @unittest.skipUnless(shutil.which('clang') and shutil.which('ld.lld'), 'Clang and LLD cross targets')
+    def test_multilib_clang_resources_keep_foreign_targets_out_of_host_loader(self):
+        compiler = self.root / 'bin/nex'
+        compiler.parent.mkdir()
+        shutil.copy2(sys.executable, compiler)
+        resources = self.output / 'resource directory'
+        host_target = self.bundle_module.elf_image_target(compiler)
+        expected = {compiler}
+        for triple, machine, elf_class in [('x86_64-linux-gnu', 62, 2), ('i686-linux-gnu', 3, 1),
+                                          ('aarch64-linux-gnu', 183, 2)]:
+            origin = self.inputs / (triple + '.so')
+            self.run_command(['clang', '--target=' + triple, '-fuse-ld=lld', '-nostdlib',
+                              '-shared', '-fPIC', self.source.name, '-o', origin.name], cwd=self.inputs)
+            destination = resources / origin.name
+            self.bundle.external(origin, destination)
+            self.assertEqual(self.bundle_module.elf_image_target(destination), (elf_class, 1, machine))
+            self.assertEqual(destination.read_bytes(), origin.read_bytes())
+            if (elf_class, 1, machine) == host_target:
+                expected.add(origin)
+        self.assertEqual({source for source, _ in self.bundle.host_images(resources)}, expected)
+        self.assertEqual(len(self.bundle.origins), 3)
 
     def test_regular_archive_links_after_original_objects_and_archive_are_deleted(self):
         original = self.inputs/'libanswer.a'
@@ -268,7 +290,7 @@ class LinuxLinkLibraries(unittest.TestCase):
             self.bundle.copy_link_library(thin,self.archiver)
         self.assertFalse((self.output/'lib/nex/host'/thin.name).exists())
         malformed = self.inputs/'malformed.a';malformed.write_bytes(b'!<arch>\n'+b'garbage'*16)
-        with self.assertRaisesRegex(RuntimeError,'command failed'):
+        with self.assertRaisesRegex(RuntimeError,r"command failed \(exit [1-9]\d*\): .*'t'.*malformed\.a"):
             self.bundle.copy_link_library(malformed,self.archiver)
         self.assertFalse((self.output/'lib/nex/host'/malformed.name).exists())
 

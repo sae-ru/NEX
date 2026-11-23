@@ -21,7 +21,7 @@ PYTHON_REQUIREMENT = 'Python 3.10+'
 def run(arguments, **options):
     result = subprocess.run(list(map(str, arguments)), capture_output=True, text=True, **options)
     if result.returncode:
-        raise RuntimeError(f'command exited {result.returncode}: ' + repr(list(map(str, arguments))) + '\n' + result.stdout + result.stderr)
+        raise RuntimeError(f'command failed (exit {result.returncode}): ' + repr(list(map(str, arguments))) + '\n' + result.stdout + result.stderr)
     return result.stdout
 
 
@@ -553,11 +553,19 @@ class WindowsBundle(Bundle):
             'signing':'unsigned; publisher signing not performed'})
 
 
-def elf_image(path):
+def elf_image_target(path):
     with path.open('rb') as source:
         header = source.read(20)
-    return (len(header) == 20 and header[:4] == b'\x7fELF' and header[5] in (1, 2)
-            and int.from_bytes(header[16:18], 'little' if header[5] == 1 else 'big') in (2, 3))
+    if len(header) != 20 or header[:4] != b'\x7fELF' or header[4] not in (1, 2) or header[5] not in (1, 2):
+        return None
+    byteorder = 'little' if header[5] == 1 else 'big'
+    if int.from_bytes(header[16:18], byteorder) not in (2, 3):
+        return None
+    return header[4], header[5], int.from_bytes(header[18:20], byteorder)
+
+
+def elf_image(path):
+    return elf_image_target(path) is not None
 
 
 class LinuxBundle(Bundle):
@@ -671,6 +679,23 @@ class LinuxBundle(Bundle):
                     alias.symlink_to(target.name)
         return target
 
+    def host_images(self, bundled_resources):
+        compiler = self.sdk / 'bin/nex'
+        host_target = elf_image_target(compiler)
+        if host_target is None:
+            raise ValueError('Linux SDK compiler must be a loadable ELF image')
+        yield compiler, self.output / 'bin/nex'
+        for relative, origin in self.origins.items():
+            destination = self.output / relative
+            target = elf_image_target(destination)
+            if target is None:
+                continue
+            # Multilib compiler-rt also ships target-side shared libraries. Keep
+            # their original bytes; the host loader cannot resolve their ABI.
+            if destination.is_relative_to(bundled_resources) and target != host_target:
+                continue
+            yield Path(origin['source']), destination
+
     def assemble(self, patchelf):
         environment = dict(os.environ, NEX_RESOURCE_DIR=str(self.sdk / 'share/nex'))
         for name in ('NEX_CLANG', 'LD_LIBRARY_PATH', 'LD_PRELOAD'):
@@ -696,7 +721,8 @@ class LinuxBundle(Bundle):
             configuration['tools'][key] = target.relative_to(self.output).as_posix()
         (self.output / 'libexec/nex/llvm/bin/clang').symlink_to('clang++')
         resource = Path(run([doctor['native_compiler'], '-print-resource-dir'], env=environment).strip())
-        self.external_tree(resource, self.output / 'libexec/nex/llvm/lib/clang' / resource.name)
+        bundled_resources = self.output / 'libexec/nex/llvm/lib/clang' / resource.name
+        self.external_tree(resource, bundled_resources)
         includes = self.output / 'lib/nex/deps/include'
         for name in ('sqlite3.h', 'sqlite3ext.h'):
             self.external(Path(doctor['native_sqlite_include']) / name, includes / name)
@@ -706,11 +732,8 @@ class LinuxBundle(Bundle):
         architecture_headers = openssl_include / multiarch / 'openssl'
         if architecture_headers.is_dir():
             self.external_tree(architecture_headers, includes / 'openssl')
-        initial = [(self.sdk / 'bin/nex', self.output / 'bin/nex')]
-        for relative, origin in list(self.origins.items()):
-            if elf_image(self.output / relative):
-                initial.append((Path(origin['source']), self.output / relative))
-        for source, destination in initial:
+        # Resolve the roots before dependency collection adds further origins.
+        for source, destination in list(self.host_images(bundled_resources)):
             self.collect_elf(source, destination)
         for key in ('native_sqlite_library', 'native_openssl_ssl', 'native_openssl_crypto'):
             self.copy_link_library(Path(doctor[key]), doctor['native_archiver'])
