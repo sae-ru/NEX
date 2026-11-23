@@ -48,15 +48,21 @@ def main():
     report={'ok':False,'source':'/src','network':'none','tier':args.tier,
             'selected_groups':args.select or [],'phases':[], 'release_qualification':False}
     def save(): (root/'verification.json').write_text(json.dumps(report,indent=2)+'\n')
-    def run(name,command):
-        row={'name':name,'command':list(map(str,command)),'status':'running'};report['phases'].append(row);save()
+    def run(name,command, *, runtime_cache=None):
+        row={'name':name,'command':list(map(str,command)),'status':'running',
+             'runtime_object_cache':'eligible-source-groups' if runtime_cache is not None else 'off'}
+        report['phases'].append(row);save()
         with (root/(name+'.log')).open('w') as log:
-            result=subprocess.run(row['command'],stdout=log,stderr=subprocess.STDOUT)
+            env = os.environ.copy()
+            env.pop('NEX_RUNTIME_CACHE_DIR', None)
+            if runtime_cache is not None:
+                env['NEX_RUNTIME_CACHE_DIR'] = runtime_cache
+            result=subprocess.run(row['command'],stdout=log,stderr=subprocess.STDOUT,env=env)
         row.update(status='passed' if result.returncode==0 else 'failed',exit_code=result.returncode);save()
         if result.returncode:raise RuntimeError(name+' failed; inspect /build/'+name+'.log')
     try:
         report['scratch_filesystem']=check_scratch_filesystem();save()
-        run('configure',['cmake','-S','/src','-B','/build','-DCMAKE_CXX_COMPILER=clang++','-DCMAKE_C_COMPILER=clang','-DCMAKE_BUILD_TYPE=Debug','-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld','-DLLVM_DIR=/usr/lib/llvm-22/lib/cmake/llvm','-DMLIR_DIR=/usr/lib/llvm-22/lib/cmake/mlir','-DNEX_Z3_ROOT=/opt/z3'])
+        run('configure',['cmake','-S','/src','-B','/build','-DCMAKE_CXX_COMPILER=clang++','-DCMAKE_C_COMPILER=clang','-DCMAKE_BUILD_TYPE=Debug','-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld','-DLLVM_DIR=/usr/lib/llvm-22/lib/cmake/llvm','-DMLIR_DIR=/usr/lib/llvm-22/lib/cmake/mlir','-DNEX_Z3_ROOT=/opt/z3','-DNEX_CI_SCOPE_RUNTIME_CACHE=ON'])
         build=['cmake','--build','/build','-j',str(args.jobs)]
         if args.tier=='core':build+=['--target','nex_core_tests']
         run('build',build)
@@ -91,7 +97,10 @@ def main():
         command=['python3','/src/tools/ci/ctest.py','--build','/build',
                  '--output',evidence,'--tier',args.tier,'--jobs',str(args.jobs)]
         for name in args.select or []:command+=['--select',name]
-        run('ctest',command)
+        # TemporaryDirectory is private to this invocation. CTest removes the
+        # opt-in for all groups except the source suites explicitly listed in CMake.
+        with tempfile.TemporaryDirectory(prefix='nex-ci-runtime-objects-') as cache_dir:
+            run('ctest',command,runtime_cache=cache_dir)
         report['ctest']=json.loads((Path(evidence)/'ctest-receipt.json').read_text())
         if args.tier=='selected':
             report['compiler_sha256']=hashlib.sha256((root/'nex').read_bytes()).hexdigest()

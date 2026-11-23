@@ -4,6 +4,8 @@
 # language targets exist. Paths are relative to the top-level source directory;
 # Python3_EXECUTABLE and the selected native toolchain are already configured.
 
+option(NEX_CI_SCOPE_RUNTIME_CACHE "Scope Linux source CI runtime-object reuse by test" OFF)
+
 # The production executable and the private native-stage probe use the same
 # backend objects, compiler identity and selected toolchain defaults.
 get_target_property(NEX_NATIVE_DEFINITIONS nex COMPILE_DEFINITIONS)
@@ -292,8 +294,8 @@ add_test(NAME task_provider_profile_native COMMAND ${Python3_EXECUTABLE} -u -B $
 # Profile capture and replay build several provider images. Keep the group
 # serial so the compiler processes have dedicated resources.
 set_tests_properties(task_provider_profile_native PROPERTIES COST 60 TIMEOUT 1200 RUN_SERIAL TRUE)
-if(WIN32)
-  # The Windows release run reached 1200 seconds after 12 of the 14 methods passed.
+if(WIN32 OR NEX_CI_SCOPE_RUNTIME_CACHE)
+  # Both Windows and hosted Linux reached 1200s after 11 or 12 of 14 methods.
   set_tests_properties(task_provider_profile_native PROPERTIES TIMEOUT 1800)
 endif()
 add_test(NAME task_provider_debugging_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_provider_debugging.py $<TARGET_FILE:nex> ${NEX_TEST_PACKAGE_NOTICES_ARGS})
@@ -1864,3 +1866,19 @@ set_tests_properties(bench_command PROPERTIES TIMEOUT 300)
 add_test(NAME fix_command COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixes.py $<TARGET_FILE:nex>)
 set_tests_properties(fix_command PROPERTIES TIMEOUT 120)
+
+# The offline Linux verifier exports a disposable runtime-object cache only during
+# the source CTest invocation. Limit it to suites that exercise application
+# semantics. Cold-build, cache invalidation, replay and SDK acceptance keep
+# their original environments, including for any new test registered above.
+if(NEX_CI_SCOPE_RUNTIME_CACHE)
+  # Captured/replayed builds must compile without the shared object cache.
+  # Reserve CPU capacity for their compiler subprocesses on four-slot CI.
+  set_tests_properties(task_foreign tasks task_limits_workflow PROPERTIES PROCESSORS 2)
+  get_directory_property(NEX_UNCACHED_TESTS TESTS)
+  list(REMOVE_ITEM NEX_UNCACHED_TESTS
+    foreign_packaging hash_containers public_task_foreign_language_migration
+    runtime_value_contracts source_external_resources source_ffi)
+  set_property(TEST ${NEX_UNCACHED_TESTS} APPEND PROPERTY
+    ENVIRONMENT_MODIFICATION "NEX_RUNTIME_CACHE_DIR=unset:")
+endif()

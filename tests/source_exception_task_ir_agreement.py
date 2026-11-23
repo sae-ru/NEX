@@ -39,9 +39,11 @@ for name, text in fixtures:
     d = out/(("case-"+name) if os.name=="nt" and name.upper()=="NUL" else name);d.mkdir(exist_ok=True)
     (d/'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.24', 'entry': 'main.nex'}), newline="\n")
     f = d/'main.nex';f.write_text('module task_ir_agreement;\n'+text+'\n', newline="\n")
+    # Use the budget from the source fixture for the intentional endless yield loop.
+    steps = 200 if name == 'task-scheduler-budget' else 1000000
     outcomes = {}
     for mode in ['reference', 'task-ir']:
-        r = subprocess.run([probe, mode, str(f), '1000000'], text=True, capture_output=True, timeout=45)
+        r = subprocess.run([probe, mode, str(f), str(steps)], text=True, capture_output=True, timeout=45)
         (d/(mode+'.json')).write_text(r.stdout, newline="\n");(d/(mode+'.stderr')).write_text(r.stderr, newline="\n")
         assert r.returncode == 0, (name, mode, r.returncode, r.stdout, r.stderr)
         outcomes[mode] = json.loads(r.stdout)
@@ -52,7 +54,9 @@ for name, text in fixtures:
         assert right.get('kind') == 'trap' and right.get('code') == 'E_LIMIT', (name, outcomes)
     else:
         assert left == right, (name, outcomes)
+    if name == 'task-scheduler-budget':
+        assert left.get('kind') == 'trap' and left.get('code') == 'E_LIMIT', (name, outcomes)
     if name.startswith('ir-'): assert left.get('kind') == 'return' and left.get('value') == 42, (name, outcomes)
-    report['cases'].append({'name': name, 'source_sha256': hashlib.sha256(f.read_bytes()).hexdigest(), 'outcomes': outcomes, 'passed': True});save()
+    report['cases'].append({'name': name, 'source_sha256': hashlib.sha256(f.read_bytes()).hexdigest(), 'outcomes': outcomes, 'step_limit': steps, 'passed': True});save()
 report.update(ok=True, comparisons=len(fixtures), retained_programs=66, new_programs=len(extra));save()
 print(json.dumps({'ok': True, 'comparisons': len(fixtures), 'report': str(out/'report.json')}))

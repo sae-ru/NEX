@@ -99,8 +99,8 @@ test fn examples() -> unit { assert(increment(2) == 3); }
     def save(self, task):
         self.taskfile.write_text(json.dumps(task, indent=2) + '\n', newline="\n")
 
-    def task(self, kind='run', *args, **kwargs):
-        return self.cli('task', self.taskfile, '--kind', kind, *args, timeout=180, **kwargs)
+    def task(self, kind='run', *args, timeout=180, **kwargs):
+        return self.cli('task', self.taskfile, '--kind', kind, *args, timeout=timeout, **kwargs)
 
     def requirement(self, task, check, symbol='taskdemo::increment', kind='function'):
         check.setdefault('program', 'app')
@@ -154,6 +154,10 @@ test fn examples() -> unit { assert(increment(2) == 3); }
         self.source('module retained_head;fn main()->i64{return 71;}')
         head=self.cli('check')['revision'];database=self.root/'.nex/graph.db';original=harness.database_rows(database)
         task=self.scaffold(STRUCTURED_SOURCE);candidate=task['programs'][0]['baseline_revision']
+        # Building a cold native runtime is independent of the program's task budget.
+        for check in task['checks']:
+            if check['kind'] == 'build':
+                check['timeout_seconds'] = 180
         self.assertEqual(task['language'],descriptor['version']);self.assertNotEqual(candidate,head)
         context=self.cli('context','--symbol','taskdemo::solve','--revision',candidate)
         self.assertEqual(context['revision'],candidate)
@@ -177,7 +181,7 @@ test fn examples() -> unit { assert(increment(2) == 3); }
         self.assertTrue(checked['ok']);self.assertTrue(all(c['status']=='ready' for c in checked['checks']))
         self.assertEqual(harness.database_rows(database),prepared)
         self.assertFalse((self.root/'.nex/tasks').exists());self.assertFalse((self.root/'.nex/build').exists())
-        result=self.task('run','--revision',candidate,'--task-hash',checked['task_hash'],'--directory',self.root/'structured-run')
+        result=self.task('run','--revision',candidate,'--task-hash',checked['task_hash'],'--directory',self.root/'structured-run',timeout=420)
         self.assertEqual(result['task_hash'],checked['task_hash'])
         saved=self.structured_receipt(result['output'],candidate)
         after=harness.database_rows(database);self.assertEqual(after[0],prepared[0])
@@ -189,7 +193,7 @@ test fn examples() -> unit { assert(increment(2) == 3); }
         import hashlib
         before_inputs={p.relative_to(inputs).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
                        for p in inputs.rglob('*') if p.is_file()}
-        replay=self.cli('task',receipt,'--kind','replay','--directory',self.root/'structured-replay',timeout=180)
+        replay=self.cli('task',receipt,'--kind','replay','--directory',self.root/'structured-replay',timeout=420)
         self.assertEqual(replay['task_hash'],result['task_hash']);self.assertEqual(replay['programs'],result['programs'])
         self.structured_receipt(replay['output'],candidate)
         self.assertEqual(harness.database_rows(database),after)
@@ -413,11 +417,13 @@ server test fn echo_test() -> unit { assert(unwrap(echo(api::Context("alice", "r
         task['programs'].append({**other['programs'][0], 'id': 'service'})
         for check in other['checks']:
             check = {**check, 'id': 'service-' + check['id'], 'program': 'service'}
+            if check['kind'] == 'build':
+                check['timeout_seconds'] = 180
             self.requirement(task, check, check['tests'][0]['symbol'] if check['kind'] == 'test' else 'service::handle')
         self.requirement(task, {'id': 'api', 'program': 'service', 'kind': 'api', 'target': 'source'}, 'service::echo_route', kind='endpoint')
         self.requirement(task, {'id': 'library', 'program': 'service', 'kind': 'build', 'target': 'native', 'mode': 'library', 'entry': 'service::echo'}, 'service::Payload', kind='structure')
         self.save(task)
-        result = self.task()
+        result = self.task(timeout=420)
         folder = Path(result['output']).parent / 'artifacts'
         self.assertTrue((folder / 'build-web/dist/index.html').is_file())
         self.assertTrue((folder / 'build-web/dist/THIRD_PARTY_NOTICES.txt').is_file())

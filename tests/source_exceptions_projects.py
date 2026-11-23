@@ -118,7 +118,8 @@ def debug(project,mode):
     assert frame['source_identity']['component']=='leaf' and frame['source_identity']['owner_image']==expected
     watch=next(row for row in rows if row.get('schema')=='nex.task-expression/2')
     assert watch['ok'] and watch['value']=='raise'
-    assert '42\n' in result.stdout and 'exited with status = 0' in result.stdout
+    assert '42\n' in result.stdout and 'exited with status = 0' in result.stdout, (
+        mode, result.stdout[-3500:], result.stderr[-1500:])
     report['cases'].append({'mode':mode,'real_LLDB':True,'pure_helper_frame':True,
                             'component':'leaf','physical_owner_image':expected,'watch':'raise'})
     save()
@@ -142,6 +143,9 @@ try:
                       'dependencies':{'leaf':'dynamic' if leaf_shared else 'static'}},
             'app':{'kind':'executable','root':'app','entry':'app/main.nex',
                    'dependencies':{'middle':'dynamic' if middle_shared else 'static'}}}}
+        if args.debug_only:
+            # Breakpoint inspection counts toward the running native task's wall clock.
+            architecture['configurations']['debug']['task_limits'] = {'timeout_ms': 180_000}
         (project/'nex.build.json').write_text(json.dumps(architecture,indent=2), newline="\n")
         if args.debug_only:
             debug(project,mode)

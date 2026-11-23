@@ -209,6 +209,14 @@ local loopback HTTP/TLS tests remain available. Native Linux tests cannot be
 replaced by interpreter-only checks. The report lists any platform-specific
 skips separately; macOS cross-SDK tests are unavailable in this Linux image.
 
+The full and selected source checks create one private runtime-object cache in
+the container for their CTest invocation. The CMake test configuration enables
+reuse for six source suites exercising foreign calls, resource and collection
+semantics, migration and packaging. Each project still compiles its own program.
+Cold-build and replay suites, tests of cache identity, and SDK installation
+checks run with their normal project-local caches. The temporary shared
+objects are removed when the source check finishes.
+
 Keep temporary test projects on the container's native Linux filesystem, normally
 `/tmp`. A macOS host-shared `TMPDIR` can reject raw non-UTF-8 filenames before
 NEX runs and can change SQLite locking or directory-iteration behavior. The

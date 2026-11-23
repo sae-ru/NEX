@@ -28,7 +28,11 @@ class TaskLimitsWorkflow(harness.ToolchainCase):
     def test_nonproject_limits_intent_actual_backends_and_source_deleted_replay(self):
         guide=self.cli('guide','--kind','task-limits');self.assertIn('task execution limits',str(guide).lower())
         self.source(SOURCE);task=self.cli('task',self.file,'--kind','init')
-        for check in task['checks']:check['task_limits']=LIMITS
+        for check in task['checks']:
+            check['task_limits'] = LIMITS
+            if check['kind'] == 'build':
+                # Allow compilation to finish while retaining the actual task's 5s deadline.
+                check['timeout_seconds'] = 180
         web=copy.deepcopy(next(c for c in task['checks'] if c['kind']=='test'))
         web['id']='web-capped';web['target']='web';task['checks'].append(web)
         task['requirements'].append({'id':'web-capped','text':'Execute the capped event-loop backend',
