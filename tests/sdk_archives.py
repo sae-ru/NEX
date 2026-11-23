@@ -455,6 +455,16 @@ class WindowsAssemblyEnvironment(unittest.TestCase):
                                  [str(root/'openssl/bin'), str(requested or linker.parent), *system_dirs])
                 self.assertNotIn('NEX_WASM_LD', clean)
                 self.assertEqual(assembler['NEX_WASM_LD'], str(linker))
+            node = linker.parent/'node.exe'
+            node.write_bytes(b'selected node')
+            (linker.parent/'unrelated.dll').touch()
+            consumer = driver.browser_environment(clean, node, root)
+            node_bin = root/'browser-tools'
+            self.assertEqual(consumer['PATH'].split(os.pathsep), [str(node_bin), *system_dirs])
+            self.assertEqual(consumer['NEX_NODE'], str(node))
+            self.assertEqual(list(node_bin.iterdir()), [node_bin/'node.exe'])
+            self.assertEqual((node_bin/'node.exe').read_bytes(), node.read_bytes())
+            self.assertEqual(clean['PATH'].split(os.pathsep), system_dirs)
 
 
 class WindowsOpenSSLPrefix(unittest.TestCase):

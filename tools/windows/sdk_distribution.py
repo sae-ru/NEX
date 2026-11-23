@@ -30,6 +30,16 @@ def process_environments(system, openssl_prefix, wasm_linker, host_runtime_bin=N
     return clean, assembly
 
 
+def browser_environment(environment, node, output):
+    # npm scripts and their tsc/vite shims start "node" by name. Expose only
+    # the selected executable, including when it lives alongside host tools.
+    node_bin = output/'browser-tools'
+    node_bin.mkdir()
+    shutil.copy2(node, node_bin/'node.exe')
+    return {**environment, 'PATH': os.pathsep.join((str(node_bin), environment['PATH'])),
+            'NEX_NODE': str(node)}
+
+
 def qualify(args):
     sdk = args.sdk.resolve(strict=True)
     output = args.output.resolve()
@@ -126,7 +136,7 @@ def qualify(args):
             raise ValueError('expected an assembled native Windows x86-64 SDK')
         cache = output/'npm-cache'
         shutil.copytree(paths['npm_cache'], cache)
-        validation_env = {**environment, 'NEX_NODE': str(paths['node']), 'NEX_NPM': str(paths['npm']),
+        validation_env = {**browser_environment(environment, paths['node'], output), 'NEX_NPM': str(paths['npm']),
                           'NEX_PYTHON': sys.executable, 'NEX_NPM_CACHE': str(cache),
                           'npm_config_offline': 'true', 'npm_config_audit': 'false', 'npm_config_fund': 'false'}
         for name in ('lldb', 'lldb_dap'):
