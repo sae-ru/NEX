@@ -9,7 +9,7 @@ document describes current behavior. Query the selected compiler for actual
 capabilities; `status: current` documents are checked against the current
 advertised project source languages and toolchain by the same script.
 
-## Current contracts (48)
+## Current contracts (50)
 
 | Document | Applies to | Owner |
 |---|---|---|
@@ -35,6 +35,7 @@ advertised project source languages and toolchain by the same script.
 | [Map and set containers](containers.md) | toolchain 0.247.0; language 0.28 and 0.29 | repository |
 | [Native reference libraries: one enclosing context](reference-library-abi.md) | toolchain 0.265.0; language 0.30 | repository |
 | [Native reference task debugging](reference-task-debugging.md) | toolchain 0.279.0; language 0.30; task ABI8 | repository |
+| [NEX 0.30 на Windows x64 в Codex](windows-handoff-current.md) | language 0.30 | repository |
 | [NEX architecture](architecture.md) | language 0.28; toolchain 0.165.0 | repository |
 | [Ordinary030 tasks in HTTP requests — development0.271.0](reference-http.md) | toolchain 0.271.0; language 0.30 | repository |
 | [Owned resources in private reference graphs](managed-reference-owned-payloads.md) | toolchain 0.260.0; private 0.30-refs-prototype candidate | repository |
@@ -61,6 +62,7 @@ advertised project source languages and toolchain by the same script.
 | [Three-backend agreement corpus](agreement.md) | toolchain 0.281.0; language 0.28, 0.29, 0.30 | repository |
 | [Versioned reference graphs: source0.30 development](references030.md) | toolchain 0.272.0; language 0.30 | repository |
 | [Предлагаемые условия совместимости NEX 1.x](compatibility.ru.md) | toolchain 1.0.0; language 0.30 | repository |
+| [Промпт для продолжения NEX в Codex на Windows](WINDOWS-CODEX-PROMPT.md) | language 0.30 | repository |
 
 ## Deferred (1)
 
@@ -68,17 +70,18 @@ advertised project source languages and toolchain by the same script.
 |---|---|---|
 | [Отложенные дополнительные проверки NEX](deferred-checks.ru.md) | language 0.28; unpublished instrumentation snapshot 0.168 | repository |
 
-## Historical (5)
+## Historical (6)
 
 | Document | Applies to | Owner |
 |---|---|---|
 | [Architecture decisions for the implemented core](history/architecture-before-2026-11-10.md) | mixed earlier milestones | repository |
+| [Передача NEX: Windows 0.165.0 / язык 0.28 / task ABI 7](windows-handoff-0.165.md) | toolchain 0.165.0; language 0.28 | repository |
 | [Приоритеты улучшения NEX](development-priorities.md) | language 0.28; toolchain 0.246.0 | repository |
 | [Ремонт складского биллинга в Codex. Парный эксперимент с контекстом и диагностикой](codex-multimodule-2026-11-22.ru.md) | language 0.30; toolchain 0.281.0 | repository |
 | [Сколько стоит исправление одного счёта на NEX, C++ и Python](codex-billing-languages-2026-11-23.ru.md) | language 0.30; toolchain 0.281.0 | repository |
 | [Стоимость трёх правок NEX в Codex, 22 ноября 2026 года](codex-maintenance-2026-11-22.ru.md) | language 0.30; toolchain 0.281.0 | repository |
 
-## Reference and history (168)
+## Reference and history (166)
 
 | Document | Applies to | Owner |
 |---|---|---|
@@ -244,13 +247,11 @@ advertised project source languages and toolchain by the same script.
 | [Критерии качества NEX](quality.md) | — | — |
 | [Локальный компилятор NEX для Windows](windows-host.md) | — | — |
 | [Начать работу с NEX](getting-started.ru.md) | — | — |
-| [Передача NEX: Windows 0.165.0 / язык 0.28 / task ABI 7](windows-handoff-current.md) | — | — |
 | [Продолжение NEX в Codex на Windows](windows-handoff.md) | — | — |
-| [Промпт для продолжения NEX в Codex на Windows](WINDOWS-CODEX-PROMPT.md) | — | — |
 | [Сборка отдельного Windows-отладчика](windows-debugger-build.md) | — | — |
 | [Сравнение на локальной Qwen3.8 27B — 2026-11-11](llm-cost-qwen38-27b-2026-11-11.ru.md) | — | — |
 | [Сравнение на локальной Qwen3.8 27B, версия2 — 2026-11-17](llm-cost-qwen38-27b-2026-11-17.ru.md) | — | — |
 
 ## Totals
 
-226 documents: 48 current, 1 deferred, 5 historical, 168 reference/unclassified.
+227 documents: 50 current, 1 deferred, 6 historical, 166 reference/unclassified.
