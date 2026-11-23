@@ -1,0 +1,74 @@
+module std::insertion_ordered_map;
+import "./hash_map.nex" as hashed;
+import "./ordered_map.nex" as ordered;
+
+pub struct Entry<K, V> { key: K; value: V; }
+pub struct Binding<K, V> { position: i64; entry: Entry<K, V>; }
+pub struct Map<K, V> {
+  by_key: hashed::Map<K, Binding<K, V>>;
+  by_position: ordered::Map<i64, Entry<K, V>>;
+  next_position: i64;
+}
+
+fn compare_position(left: i64, right: i64) -> i64 {
+  if left < right { return -1; }
+  if left > right { return 1; }
+  return 0;
+}
+pub fn empty<K, V>(hash: fn(K) -> i64, equal: fn(K, K) -> bool) -> Map<K, V> {
+  return Map(hashed::empty<K, Binding<K, V>>(hash, equal),
+             ordered::empty<i64, Entry<K, V>>(compare_position), 0);
+}
+
+pub fn size<K, V>(map: Map<K, V>) -> i64 { return hashed::size(map.by_key); }
+pub fn is_empty<K, V>(map: Map<K, V>) -> bool { return hashed::is_empty(map.by_key); }
+pub fn has<K, V>(map: Map<K, V>, key: K) -> bool { return hashed::has(map.by_key, key); }
+pub fn get<K, V>(map: Map<K, V>, key: K) -> result<V> {
+  let found: result<Binding<K, V>> = hashed::get(map.by_key, key);
+  if !is_ok(found) { return err<V>("E_NOT_FOUND", "insertion-ordered map key not found"); }
+  return ok(unwrap(found).entry.value);
+}
+pub fn entries<K, V>(map: Map<K, V>) -> list<Entry<K, V>> { return ordered::values(map.by_position); }
+pub fn keys<K, V>(map: Map<K, V>) -> list<K> {
+  return list(entries(map), fn(item: Entry<K, V>) -> K { return item.key; });
+}
+pub fn values<K, V>(map: Map<K, V>) -> list<V> {
+  return list(entries(map), fn(item: Entry<K, V>) -> V { return item.value; });
+}
+
+fn bind<K, V>(map: Map<K, V>, position: i64, item: Entry<K, V>, next: i64) -> Map<K, V> {
+  let keyed: hashed::Map<K, Binding<K, V>> = hashed::put(map.by_key, item.key, Binding(position, item));
+  return Map(keyed, ordered::put(map.by_position, position, item), next);
+}
+fn append_new<K, V>(map: Map<K, V>, item: Entry<K, V>) -> Map<K, V> {
+  return bind(map, map.next_position, item, map.next_position + 1);
+}
+fn renumber<K, V>(map: Map<K, V>) -> Map<K, V> {
+  let items: list<Entry<K, V>> = entries(map);
+  var fresh: Map<K, V> = empty<K, V>(map.by_key.hash, map.by_key.equal);
+  var i: i64 = 0;
+  while i < len(items) { fresh = append_new(fresh, items[i]); i = i + 1; }
+  return fresh;
+}
+pub fn put<K, V>(map: Map<K, V>, key: K, value: V) -> Map<K, V> {
+  let found: result<Binding<K, V>> = hashed::get(map.by_key, key);
+  if is_ok(found) {
+    let previous: Binding<K, V> = unwrap(found);
+    return bind(map, previous.position, Entry(previous.entry.key, value), map.next_position);
+  }
+  if map.next_position == 9223372036854775807 {
+    // Drop gaps left by removals before adding one more position. Earlier maps
+    // retain their original trees. Counts and arithmetic stay checked.
+    return append_new(renumber(map), Entry(key, value));
+  }
+  return append_new(map, Entry(key, value));
+}
+pub fn remove<K, V>(map: Map<K, V>, key: K) -> Map<K, V> {
+  let found: result<Binding<K, V>> = hashed::get(map.by_key, key);
+  if !is_ok(found) { return map; }
+  let previous: Binding<K, V> = unwrap(found);
+  let keyed: hashed::Map<K, Binding<K, V>> = hashed::remove(map.by_key, previous.entry.key);
+  let positions: ordered::Map<i64, Entry<K, V>> = ordered::remove(map.by_position, previous.position);
+  if hashed::is_empty(keyed) { return Map(keyed, positions, 0); }
+  return Map(keyed, positions, map.next_position);
+}

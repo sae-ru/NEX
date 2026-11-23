@@ -630,6 +630,8 @@
     "ieee_numeric_kernel": "docs/ieee-numeric.md",
     "reference_tasks": "docs/reference-tasks.md",
     "standard_hash_source": "lib/hash.nex",
+    "standard_insertion_ordered_map_source": "lib/insertion_ordered_map.nex",
+    "insertion_ordered_map": "docs/insertion-ordered-map.md",
     "standard_hash_map_source": "lib/hash_map.nex",
     "standard_hash_set_source": "lib/hash_set.nex",
     "hash_containers": "docs/hash-containers.md",
@@ -5027,6 +5029,38 @@
         "guide": "docs/hash-containers.md",
         "mutation": false,
         "sha256": "94c5b141c74de838eaa3d48dfcfe3ea064ff7af41d6f0806c8365b950fb9d037"
+      },
+      "insertion_ordered_map": {
+        "import": "std/insertion_ordered_map.nex",
+        "module": "std::insertion_ordered_map",
+        "resource": "lib/insertion_ordered_map.nex",
+        "types": [
+          "Map<K,V>",
+          "Entry<K,V>",
+          "Binding<K,V>"
+        ],
+        "functions": [
+          "empty",
+          "size",
+          "is_empty",
+          "get",
+          "has",
+          "put",
+          "remove",
+          "entries",
+          "keys",
+          "values"
+        ],
+        "representation": "persistent radix hash index and AVL insertion-position index",
+        "ordering": "insertion order; replacing retains original key and position; removal then reinsertion appends",
+        "callbacks": "pure hash and equivalence; equal keys must have equal stable hashes",
+        "complexity": "get/has O(d+c); ordinary put/remove O(d+c+log(n+1)); iteration O(n); d<=17 and c is full-hash bucket size; excludes callbacks, payloads and retirement",
+        "position_limit": "before inserting with exhausted i64 next position, rebuild surviving entries with dense positions; size and arithmetic remain checked",
+        "lookup": "result<V>; E_NOT_FOUND",
+        "mutation": false,
+        "guide": "docs/insertion-ordered-map.md",
+        "example": "examples/insertion-ordered-map/nex.json",
+        "sha256": "36285a7acab00a0f544644f29b2bcf186f494f1a179ea0e6814db1ec57f8f1e5"
       },
       "hash_map": {
         "import": "std/hash_map.nex",

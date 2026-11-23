@@ -1,0 +1,22 @@
+{
+  "dependencies": {
+    "@std/hash.nex": {
+      "module": "std::hash",
+      "source_hash": "224281404a0a1cbc8136478d0c4edb9f30631164bd3d96822113547f144ff622"
+    },
+    "@std/hash_map.nex": {
+      "module": "std::hash_map",
+      "source_hash": "5480eb29b954d250768524e950a04f36629a7cf0ed136d682c7d29b55bbfb9db"
+    },
+    "@std/insertion_ordered_map.nex": {
+      "module": "std::insertion_ordered_map",
+      "source_hash": "b84ddc2f3d5fa076a3dfd28e65d953119e1fdae0fceea2657bc7f15bc52ab27a"
+    },
+    "@std/ordered_map.nex": {
+      "module": "std::ordered_map",
+      "source_hash": "1c1825fefc5161c84af11b5d588aa3ed5f31872eb3ea62d296cf41cf8d283d1f"
+    }
+  },
+  "language": "0.30",
+  "schema": "nex.lock/1"
+}

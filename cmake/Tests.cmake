@@ -1791,6 +1791,10 @@ set_tests_properties(containers PROPERTIES TIMEOUT 300)
 add_test(NAME ordered_containers COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/ordered_containers.py $<TARGET_FILE:nex>)
 set_tests_properties(ordered_containers PROPERTIES TIMEOUT 600)
+add_test(NAME insertion_ordered_map COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/insertion_ordered_map.py $<TARGET_FILE:nex>
+  --output-parent ${CMAKE_CURRENT_BINARY_DIR})
+set_tests_properties(insertion_ordered_map PROPERTIES TIMEOUT 600)
 add_test(NAME hash_containers COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/hash_containers.py $<TARGET_FILE:nex>
   --output-parent ${CMAKE_CURRENT_BINARY_DIR})

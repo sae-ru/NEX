@@ -9,7 +9,7 @@ document describes current behavior. Query the selected compiler for actual
 capabilities; `status: current` documents are checked against the current
 advertised project source languages and toolchain by the same script.
 
-## Current contracts (44)
+## Current contracts (45)
 
 | Document | Applies to | Owner |
 |---|---|---|
@@ -26,6 +26,7 @@ advertised project source languages and toolchain by the same script.
 | [Formatting NEX source](formatting.md) | toolchain 0.265.0; language 0.28; language 0.29; language 0.30 | repository |
 | [Implementation sequence: items 1–6](implementation-1-6.md) | language 0.28; language 0.29; language 0.30; toolchain 0.280.1 | repository |
 | [Inferred effect parameters](effect-parameters.md) | toolchain 0.180; language 0.28 | repository |
+| [Insertion-ordered hash map](insertion-ordered-map.md) | toolchain 0.281.0; language 0.30 | repository |
 | [Installed Workboard SDK workflow](sdk-workboard.md) | toolchain 0.280.0; language 0.30 | repository |
 | [Installed030 SDK consumption](sdk-reference030.md) | toolchain 0.279.0; language 0.30 | repository |
 | [Language prerequisites for Java and Python migration](migration-readiness.md) | language 0.28; language 0.29; language 0.30; toolchain 0.280.1 | repository |
@@ -55,7 +56,7 @@ advertised project source languages and toolchain by the same script.
 | [Sequential immutable byte construction](bytes-construction.md) | toolchain 0.172; language 0.28 | repository |
 | [Sequential immutable list construction](list-construction.md) | toolchain 0.170; language 0.28 | repository |
 | [Sequential immutable text construction](text-construction.md) | toolchain 0.171; language 0.28 | repository |
-| [Three-backend agreement corpus](agreement.md) | toolchain 0.174; language 0.28 | repository |
+| [Three-backend agreement corpus](agreement.md) | toolchain 0.281.0; language 0.28, 0.29, 0.30 | repository |
 | [Versioned reference graphs: source0.30 development](references030.md) | toolchain 0.272.0; language 0.30 | repository |
 
 ## Deferred (1)
@@ -249,4 +250,4 @@ advertised project source languages and toolchain by the same script.
 
 ## Totals
 
-222 documents: 44 current, 1 deferred, 5 historical, 168 reference/unclassified.
+223 documents: 45 current, 1 deferred, 5 historical, 168 reference/unclassified.

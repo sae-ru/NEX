@@ -66,6 +66,11 @@ library/task host lifetimes, parallel transfer, debug/profile and complete
 SDK/platform qualification remain open. These execution contexts do not supply
 Java/Python class, reflection or dynamic runtime compatibility.
 
+An [insertion-ordered hash map](insertion-ordered-map.md) now covers insertion,
+update and remove/reinsert order with caller-defined stable hash/equality and
+persistent versions. Dynamic key dispatch and aliased mutable Python dictionaries
+remain outside this source-library contract.
+
 User direction, 2026-11-15: prepare NEX's language/runtime/library foundations
 before implementing converters. Java has priority, followed by Python. Converter
 implementation is deferred. This is part of item 2 of the

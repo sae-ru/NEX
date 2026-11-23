@@ -120,6 +120,8 @@ Toolchain 0.247 also provides [`std/ordered_map.nex` and
 comparators, O(log(n+1)) lookup/update and O(n) ordered enumeration. Existing
 list-backed modules preserve their API and insertion order.
 
+The [insertion-ordered hash map](insertion-ordered-map.md) preserves key order under updates and appends a removed key when reinserted.
+
 Toolchain0.273 adds [hash map/set](hash-containers.md) and stable byte/text/integer
 hash helpers as ordinary source modules. A persistent four-bit radix trie uses
 all64 hash bits, at most17 path nodes and explicit full-hash collision buckets.

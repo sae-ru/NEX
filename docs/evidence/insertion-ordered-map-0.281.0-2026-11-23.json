@@ -1,0 +1,54 @@
+{
+  "schema": "nex.insertion-ordered-map-development/1",
+  "ok": true,
+  "qualification_local_date": "2026-11-23",
+  "toolchain": "0.281.0",
+  "project_language": "0.30",
+  "platform": "macOS arm64",
+  "source_status": "Local CMake installation from a working tree based on base_commit.",
+  "base_commit": "efef1032e1d7964197ff8d95a82f56a78b53e57d",
+  "compiler_sha256": "aa080fbe42b02f353e36d161f32af36d77608d24ea7d0c7fba4b5be3127b5542",
+  "compiler_build": "12eef0717c0cc77e24dfc0f9930ab3eca1d8deef414e7461d96eeb8851f4d0c6",
+  "source_files_sha256": {
+    "lib/insertion_ordered_map.nex": "36285a7acab00a0f544644f29b2bcf186f494f1a179ea0e6814db1ec57f8f1e5",
+    "tests/insertion_ordered_map.py": "506b9b398dded047f2fff6e906c17eb1808f88e1f7b4c07131e754a2c987a8f3",
+    "tools/agreement.py": "c8a02d3d7fcd908d5f410d76a28d38d9b848eb863f0ff0f8f31f847249eeb1c5"
+  },
+  "oracle": {
+    "model": "Python dict keyed by equality group, storing the first representative and latest value.",
+    "generated_nex_sha256": "71d8abf2f949fcd8c043cbecd309fcd32418859a811661657e1ecc4af62b07da",
+    "state_observations": 26,
+    "largest_observed_size": 8,
+    "output_lines": 476,
+    "stdout_sha256": "423724b254518b208a8652be1c546a874ee7dbe103314340b5d0e91ab40c4b4e",
+    "coverage": {
+      "check": 2,
+      "reference": 1,
+      "native-debug": 1,
+      "native-release": 1,
+      "typescript": 1,
+      "typescript_executed": 1,
+      "typescript_strict": 1,
+      "executable_cases": 1
+    },
+    "callback_rejection": "E_EFFECT",
+    "observed_cases": [
+      "unequal keys with matching hashes",
+      "equivalent-key replacement and original key retention",
+      "removal, re-insertion and missing lookup",
+      "retained versions and independent branches",
+      "reset after removal of the last entry",
+      "replacement and dense reindex at a synthetic INT64_MAX next position"
+    ],
+    "agreement_report_sha256": "21746e1da110bbd24bb3d01a55ff01b5ccf8d786e8687f550fb364c06ac1f37c"
+  },
+  "installed_example": {
+    "path": "examples/insertion-ordered-map",
+    "revision": "39a4a5857fd164dc063f165b70d620fe0bda6bc05f6090ef6dd50e47c56da112",
+    "stdout": "east\nwest\n",
+    "lock_sha256": "417a9a8059b2c2adbba34ad15684be7e58dcedc05dc69d6eb510df084eff2986",
+    "lock_unchanged": true,
+    "installed_workflow": "nex.standard-library-consumption/2"
+  },
+  "full_platform_sdk_qualification": false
+}

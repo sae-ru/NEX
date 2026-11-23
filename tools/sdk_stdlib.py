@@ -7,14 +7,27 @@ import re
 import shutil
 
 EXPECTED='1,1,2,3\nЯ + 🌍\n5\n6\n'
-FILES=('lib/text.nex','lib/list.nex','lib/math.nex','lib/map.nex','lib/set.nex','lib/queue.nex','lib/stack.nex','lib/deque.nex','lib/priority_queue.nex','lib/ordered_map.nex','lib/ordered_set.nex','lib/java_int.nex','lib/java_long.nex','lib/hash.nex','lib/hash_map.nex','lib/hash_set.nex','lib/sequence.nex','lib/fifo.nex','lib/lifo.nex','lib/heap.nex')
-CONTAINER_EXAMPLE_FILES={'README.md','main.nex','tasks.nex','nex.json','nex.lock.json'}
+LEGACY_FILES=('lib/text.nex','lib/list.nex','lib/math.nex','lib/map.nex','lib/set.nex','lib/queue.nex','lib/stack.nex','lib/deque.nex','lib/priority_queue.nex','lib/ordered_map.nex','lib/ordered_set.nex','lib/java_int.nex','lib/java_long.nex','lib/hash.nex','lib/hash_map.nex','lib/hash_set.nex','lib/sequence.nex','lib/fifo.nex','lib/lifo.nex','lib/heap.nex')
+FILES=(*LEGACY_FILES,'lib/insertion_ordered_map.nex')
+# Each module's examples are independently verified in the installed tree.
+CONTAINER_EXAMPLES={
+    'hash_containers':('hash-containers','nex.hash-container-consumption/1',
+                       {'main.nex':'hash-containers-ok\n','tasks.nex':'42\n'}),
+    'sequence_containers':('sequence-containers','nex.sequence-container-consumption/1',
+                           {'main.nex':'sequence-containers-ok\n','tasks.nex':'42\n'}),
+    'insertion_ordered_map':('insertion-ordered-map','nex.insertion-ordered-map-consumption/1',
+                             {'main.nex':'east\nwest\n'}),
+}
+
+
+def example_files(programs):
+    return {'README.md','nex.json','nex.lock.json',*programs}
 
 
 def resource_names():
     examples=[*('examples/stdlib/'+name for name in ('main.nex','nex.json','nex.lock.json')),
-        *('examples/'+example+'/'+name for example in ('hash-containers','sequence-containers')
-            for name in sorted(CONTAINER_EXAMPLE_FILES))]
+        *('examples/'+example+'/'+name for example,_,programs in CONTAINER_EXAMPLES.values()
+            for name in sorted(example_files(programs)))]
     return (*FILES,*examples)
 
 
@@ -36,14 +49,14 @@ def resource_pins(resources,capability):
     return pins
 
 
-def container_examples(*,cli,run,resources,root,browser,name,main_stdout,schema):
+def container_examples(*,cli,run,resources,root,browser,name,schema,expected_outputs):
     directory=root/name
     shutil.copytree(resources/'examples'/name,directory,ignore=shutil.ignore_patterns('.nex','dist'))
     hashes={path.relative_to(directory).as_posix():hashlib.sha256(path.read_bytes()).hexdigest()
         for path in sorted(directory.rglob('*')) if path.is_file()}
-    require(set(hashes)==CONTAINER_EXAMPLE_FILES,'container example inventory differs: '+name)
+    require(set(hashes)==example_files(expected_outputs),'container example inventory differs: '+name)
     lock=directory/'nex.lock.json';before=lock.read_bytes();programs={}
-    for file,expected in [('main.nex',main_stdout),('tasks.nex','42\n')]:
+    for file,expected in expected_outputs.items():
         checked=cli('check',file,cwd=directory)
         require(cli('eval',file,cwd=directory)['stdout']==expected,'container reference result differs: '+name+'/'+file)
         native={}
@@ -95,22 +108,20 @@ def exercise(*,cli,run,compiler,resources,root,browser):
         require(output==EXPECTED,'standard library TypeScript result differs')
         typescript.update(executed=True,stdout=output)
     require(lock.read_bytes()==before,'standard library workflow silently changed dependency pins')
-    containers=container_examples(cli=cli,run=run,resources=resources,root=root,browser=browser,
-        name='hash-containers',main_stdout='hash-containers-ok\n',schema='nex.hash-container-consumption/1')
-    sequences=container_examples(cli=cli,run=run,resources=resources,root=root,browser=browser,
-        name='sequence-containers',main_stdout='sequence-containers-ok\n',schema='nex.sequence-container-consumption/1')
-    return {'schema':'nex.standard-library-consumption/1','ok':True,
+    containers={key:container_examples(cli=cli,run=run,resources=resources,root=root,browser=browser,
+        name=name,schema=schema,expected_outputs=programs) for key,(name,schema,programs) in CONTAINER_EXAMPLES.items()}
+    return {'schema':'nex.standard-library-consumption/2','ok':True,
         'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),
         **{key:capability[key] for key in ('language','toolchain','compiler_build','descriptor_hash')},
         'compiled_source_pins':pins,'example_hashes':source_hashes,'revision':checked['revision'],
         'reference_stdout':EXPECTED,'native':profiles,'typescript':typescript,
-        'hash_containers':containers,'sequence_containers':sequences,
+        **containers,
         'existing_lock_enforced':True,'lock_unchanged':True,'complete_SDK_workflow_claimed':False}
 
 
 def validate(report):
     proof=report.get('evidence',{}).get('standard_library',{})
-    require(isinstance(proof,dict) and proof.get('schema')=='nex.standard-library-consumption/1' and
+    require(isinstance(proof,dict) and proof.get('schema') in ('nex.standard-library-consumption/1','nex.standard-library-consumption/2') and
         proof.get('ok') is True and proof.get('compiler_sha256')==report.get('compiler_sha256') and
         proof.get('language')==report.get('language') and proof.get('toolchain')==report.get('version') and
         proof.get('descriptor_hash')==report.get('evidence',{}).get('scoped_discovery',{}).get('descriptor_hash') and
@@ -121,7 +132,10 @@ def validate(report):
         require(isinstance(proof.get(field),str) and re.fullmatch('[0-9a-f]{64}',proof[field]),
             'SDK standard library identity is missing: '+field)
     pins=proof.get('compiled_source_pins',{});inventory=report.get('resource_hashes',{})
-    require(isinstance(pins,dict) and set(pins)==set(FILES) and
+    legacy=proof['schema']=='nex.standard-library-consumption/1'
+    require(not legacy or 'lib/insertion_ordered_map.nex' not in inventory,
+            'SDK library evidence omits insertion-ordered map consumption')
+    require(isinstance(pins,dict) and set(pins)==set(LEGACY_FILES if legacy else FILES) and
         all(isinstance(digest,str) and re.fullmatch('[0-9a-f]{64}',digest) and inventory.get(name)==digest
             for name,digest in pins.items()),'SDK compiled standard-library pins differ')
     hashes=proof.get('example_hashes',{})
@@ -133,25 +147,24 @@ def validate(report):
     require(type(browser) is bool and isinstance(ts,dict) and ts.get('requested') is browser and
         ts.get('executed') is browser and (not browser or ts.get('stdout')==EXPECTED),
         'SDK standard-library browser scope differs')
-    for key,name,expected,schema in [
-        ('hash_containers','hash-containers','hash-containers-ok\n','nex.hash-container-consumption/1'),
-        ('sequence_containers','sequence-containers','sequence-containers-ok\n','nex.sequence-container-consumption/1')]:
-        validate_container_examples(proof.get(key,{}),inventory,browser,name,expected,schema)
+    for key,(name,schema,programs) in CONTAINER_EXAMPLES.items():
+        if legacy and key=='insertion_ordered_map':continue
+        validate_container_examples(proof.get(key,{}),inventory,browser,name,schema,programs)
 
 
-def validate_container_examples(containers,inventory,browser,name,main_stdout,schema):
+def validate_container_examples(containers,inventory,browser,name,schema,expected_outputs):
     require(isinstance(containers,dict) and containers.get('schema')==schema and
         containers.get('ok') is True and containers.get('source_language')=='0.30' and
         containers.get('existing_lock_enforced') is True and containers.get('lock_unchanged') is True,
         'SDK container consumption is missing or differs: '+name)
     hashes=containers.get('example_hashes',{})
-    require(isinstance(hashes,dict) and set(hashes)==CONTAINER_EXAMPLE_FILES and
+    require(isinstance(hashes,dict) and set(hashes)==example_files(expected_outputs) and
         all(isinstance(digest,str) and re.fullmatch('[0-9a-f]{64}',digest) and
             inventory.get('examples/'+name+'/'+file)==digest for file,digest in hashes.items()),
         'SDK container example differs: '+name)
     programs=containers.get('programs',{})
-    require(isinstance(programs,dict) and set(programs)=={'main.nex','tasks.nex'},'SDK container programs differ: '+name)
-    for file,expected in [('main.nex',main_stdout),('tasks.nex','42\n')]:
+    require(isinstance(programs,dict) and set(programs)==set(expected_outputs),'SDK container programs differ: '+name)
+    for file,expected in expected_outputs.items():
         case=programs[file]
         require(isinstance(case,dict),'SDK container program is not an object: '+name+'/'+file)
         ts=case.get('typescript',{})

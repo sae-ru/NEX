@@ -1,0 +1,21 @@
+module insertion_order_example;
+import "std/insertion_ordered_map.nex" as maps;
+import "std/hash.nex" as hash;
+
+fn labels() -> list<str> {
+  var stock: maps::Map<str, i64> = maps::empty(hash::text, hash::equal<str>);
+  stock = maps::put(stock, "west", 31);
+  stock = maps::put(stock, "east", 12);
+  stock = maps::put(stock, "west", 34);
+  let saved: maps::Map<str, i64> = stock;
+  stock = maps::remove(stock, "west");
+  stock = maps::put(stock, "west", 9);
+  assert(maps::keys(saved) == ["west", "east"]);
+  assert(maps::values(saved) == [34, 12]);
+  return maps::keys(stock);
+}
+fn main() -> unit !{io} {
+  let order: list<str> = labels();
+  print(order[0]); print(order[1]);
+}
+test fn reinsertion_appends() -> unit { assert(labels() == ["east", "west"]); }

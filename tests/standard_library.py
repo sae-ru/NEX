@@ -155,7 +155,7 @@ class StandardLibrary(h.ToolchainCase):
         for module in cap['modules'].values():
             names=re.findall(r'\bpub\s+fn\s+(\w+)',(h.REPO/module['resource']).read_text())
             self.assertEqual(set(names),set(module['functions']));total+=len(names)
-        self.assertEqual(total,207);self.assertFalse(cap['source_language_changed'])
+        self.assertEqual(total,217);self.assertFalse(cap['source_language_changed'])
         self.assertTrue(cap['modules']['list']['linear_bulk_construction'])
         self.assertEqual(self.cli('guide','--kind','stdlib')['text'],(h.REPO/'docs/stdlib.md').read_text())
         self.assertFalse((self.root/'.nex').exists())
@@ -173,7 +173,7 @@ class StandardLibrary(h.ToolchainCase):
         sdk.validate(report)
         for key,value in [('compiler_sha256','0'*64),('compiled_source_pins',{}),('native',{}),
             ('example_hashes',{}),('lock_unchanged',False),('typescript',{'requested':True,'executed':False}),
-            ('descriptor_hash','0'*64),('complete_SDK_workflow_claimed',True),('hash_containers',{}),('sequence_containers',{})]:
+            ('descriptor_hash','0'*64),('complete_SDK_workflow_claimed',True),('hash_containers',{}),('sequence_containers',{}),('insertion_ordered_map',{})]:
             bad=copy.deepcopy(report);bad['evidence']['standard_library'][key]=value
             with self.subTest(rejected=key),self.assertRaises(RuntimeError):sdk.validate(bad)
         bad=copy.deepcopy(report);del bad['evidence']['standard_library']
@@ -192,12 +192,15 @@ class StandardLibrary(h.ToolchainCase):
         with self.assertRaises(RuntimeError):sdk.validate(bad)
         bad=copy.deepcopy(report);bad['resource_hashes']['examples/sequence-containers/tasks.nex']='0'*64
         with self.assertRaises(RuntimeError):sdk.validate(bad)
+        bad=copy.deepcopy(report);bad['evidence']['standard_library']['schema']='nex.standard-library-consumption/1'
+        with self.assertRaises(RuntimeError):sdk.validate(bad)
+        self.strict_ts(self.root/'insertion-ordered-map-typescript-main')
         self.strict_ts(self.root/'standard-library-typescript')
         self.strict_ts(self.root/'hash-containers-typescript-main')
         self.strict_ts(self.root/'hash-containers-typescript-tasks')
         self.strict_ts(self.root/'sequence-containers-typescript-main')
         self.strict_ts(self.root/'sequence-containers-typescript-tasks')
-        print(json.dumps({'stdlib_SDK_subworkflow':proof,'strict_typescript':True,'receipt_rejection_controls':19,'complete_SDK_executed':False}))
+        print(json.dumps({'stdlib_SDK_subworkflow':proof,'strict_typescript':True,'receipt_rejection_controls':21,'complete_SDK_executed':False}))
 
     def test_independent_oracles_reference_native_profiles_and_typescript(self):
         program,count=corpus();self.source(program);self.cli('check')
