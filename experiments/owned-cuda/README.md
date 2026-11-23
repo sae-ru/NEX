@@ -7,7 +7,7 @@ does not invoke WSL, MSYS, NVCC, or an unsupported host-compiler override.
 From the repository root in PowerShell:
 
 ```powershell
-python experiments/owned-cuda/prepare.py --output build/my-cuda
+python experiments/owned-cuda/prepare.py --language-version 0.30 --output build/my-cuda
 Push-Location build/my-cuda
 & ../../nex.cmd run --foreign foreign.json --profile release --json
 Pop-Location
@@ -17,6 +17,13 @@ Preparation requires a new output directory and records the compiler, source,
 signature, DLL, standard-library, license and manifest hashes. It does not
 initialize the driver or claim hardware acceptance. The example selects CUDA
 device ordinal zero; use `--index` to select a different physical device.
+
+`--language-version` selects an application language advertised by the supplied
+compiler. The preparation report identifies its checked graph revision. Omit
+the option to use the compiler's fallback language. On a computer without the
+Windows NVIDIA driver, pass `--source-only` to check the project and its seven
+FFI signatures. The Windows hardware run records the selected source language,
+the actual native task ABI of each built case and the physical CUDA traces.
 
 The checked GPU kernels implement exact U8 Add and Affine on 1..262144 elements.
 Affine computes `scale * a + b`, with scale 0..255. Overflow is a typed error,

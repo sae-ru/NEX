@@ -103,5 +103,25 @@ class PlatformCohort(harness.ToolchainCase):
         refused=self.cli('build','--entry','client_value','--profile','release',cwd=out,ok=False)
         self.assertEqual(refused['code'],'E_REALM')
 
+    def test_cuda_project_selects_030_and_rejects_unknown_version(self):
+        script = harness.REPO/'experiments/owned-cuda/prepare.py'
+        project = self.root/'CUDA 030'
+        args = [sys.executable, '-B', script, '--compiler', harness.NEX, '--source-only', '--language-version']
+        subprocess.run([*args, '0.30', '--output', project], check=True, capture_output=True, timeout=180)
+        report = json.loads((project/'preparation/report.json').read_bytes())
+        self.assertEqual(json.loads((project/'nex.json').read_bytes())['language'], '0.30')
+        self.assertEqual(report['source_language'], '0.30')
+        history = self.cli('history', cwd=project)
+        self.assertEqual([(r['revision'], r['language']) for r in history['revisions']],
+                         [(report['project_revision'], '0.30')])
+        self.assertEqual(len(report['signature_sha256']), 7)
+        self.assertEqual(self.cli('eval','--entry','client_value',cwd=project)['value'], 42)
+        unsupported = self.root/'unsupported'
+        rejected = subprocess.run([*args, '9.99', '--output', unsupported],
+                                  capture_output=True, text=True, timeout=180)
+        self.assertNotEqual(rejected.returncode, 0)
+        self.assertIn('does not advertise project language 9.99', rejected.stderr)
+        self.assertFalse((unsupported/'nex.json').exists())
+
 
 if __name__ == '__main__': unittest.main()

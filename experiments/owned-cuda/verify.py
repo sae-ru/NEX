@@ -47,7 +47,7 @@ struct GpuFault {value:d::Tensor;}
     available=set(cases)|set(errors)
     if args.only and not set(args.only)<=available:parser.error('unknown case: '+str(set(args.only)-available))
     report={'schema':'nex.owned-cuda-hardware/1','ok':False,'environment':'native Windows','requires_WSL':False,
-            'compiler_sha256':sha(compiler),'manifest_sha256':sha(project/'bundle/manifest.json'),
+            'source_language':language,'compiler_sha256':sha(compiler),'manifest_sha256':sha(project/'bundle/manifest.json'),
             'module_sha256':sha(project/'bundle/module.dll'),'cases':[],'commands':[],
             'actual_GPU_execution':False,'CUDA_from_NEX_accepted':False,'full_windows_regression_accepted':False}
     started=time.monotonic()
@@ -68,6 +68,15 @@ struct GpuFault {value:d::Tensor;}
         shutil.copytree(project/'stdlib',directory/'stdlib');shutil.copy2(project/'nex.json',directory/'nex.json')
         (directory/'main.nex').write_bytes(shared['source_program'](prefix,body,language).encode('utf-8'))
         return directory
+    def build_case(name,directory):
+        built=json.loads(run(name+'-build',[compiler,'build','--profile','release','--task-timeout-ms','30000',
+                                        '--build-directory',out/'native','--json'],directory).stdout)
+        metadata=json.loads(Path(built['metadata']).read_bytes())
+        if not built['ok'] or metadata['revision']!=built['revision']:
+            raise RuntimeError('native build metadata differs from the checked CUDA case ' + name)
+        abi = metadata.get('task_execution_abi')
+        return built, {'executable':built['executable'],'executable_sha256':sha(Path(built['executable'])),
+                       'revision':built['revision'],'native_task_abi':hex(abi) if abi is not None else None}
     def inspect(path,kernels,overflow,pending=False):
         records=[json.loads(line) for line in path.read_bytes().decode('utf-8').splitlines()]
         assert records and records[-1]['event']=='module_unloaded',records[-3:]
@@ -88,6 +97,10 @@ struct GpuFault {value:d::Tensor;}
         assert sessions and all('NVIDIA' in row['name'] for row in sessions),sessions
         return {'sessions':sessions,'ledger':ledger,'completed_kernels':completed,'physical_drain':pending,'trace_sha256':sha(path)}
     try:
+        prep=json.loads((project/'preparation/report.json').read_bytes())
+        if (not prep['ok'] or prep['compiler_sha256']!=report['compiler_sha256']
+                or prep['manifest_sha256']!=report['manifest_sha256'] or prep['source_language']!=language):
+            raise ValueError('prepared CUDA project and selected SDK differ')
         context_probe=project/'preparation/context-probe.exe';context_trace=out/'context-probe.trace.jsonl'
         context=json.loads(run('trusted-host-context-probe',[context_probe],out,context_trace).stdout)
         assert context=={'ok':True,'actual_CUDA_contexts':2,'source_reentry_rejected':True,'nested_cleanup_restores_context':True,'constructor_trap_rolls_back':True,'physical_cleanup_verified':True},context
@@ -97,25 +110,25 @@ struct GpuFault {value:d::Tensor;}
             directory=create(name,body);reference_trace=directory/'reference.trace.jsonl'
             ref=json.loads(run(name+'-reference',[compiler,'eval','--foreign',project/'foreign.json','--task-workers','1','--task-timeout-ms','30000','--task-steps','16000000','--json'],directory,reference_trace).stdout)
             assert ref['stdout']=='42\n' and ref['foreign_resource_bytes_after_scope']==0,ref
-            built=json.loads(run(name+'-build',[compiler,'build','--profile','release','--task-timeout-ms','30000','--build-directory',out/'native','--json'],directory).stdout)
+            built, artifact=build_case(name,directory)
             native_trace=directory/'native.trace.jsonl'
             native=run(name+'-native',[built['executable'],'--nex-foreign',project/'foreign.json','--nex-task-workers','1'],directory,native_trace)
             assert native.stdout==b'42\n' and native.stderr==b'',(native.stdout,native.stderr)
             a,b=inspect(reference_trace,kernels,overflow),inspect(native_trace,kernels,overflow)
             assert a['sessions']==b['sessions'],(a['sessions'],b['sessions'])
-            report['cases'].append({'name':name,'status':'passed','reference':a,'native':b,'executable':built['executable'],'executable_sha256':sha(Path(built['executable']))});save()
+            report['cases'].append({'name':name,'status':'passed','reference':a,'native':b,**artifact});save()
         for name,(body,code,timeout) in errors.items():
             if args.only and name not in args.only:continue
             directory=create(name,body);extra={'NEX_CUDA_ACCEPTANCE_DELAY_CYCLES':'200000000','NEX_CUDA_ACCEPTANCE_KERNEL_REPEATS':'32'}
             reference_trace=directory/'reference.trace.jsonl'
             ref=json.loads(run(name+'-reference',[compiler,'eval','--foreign',project/'foreign.json','--task-workers','1','--task-timeout-ms',str(timeout),'--task-steps','16000000','--json'],directory,reference_trace,1,extra).stdout)
             assert ref['code']==code,ref
-            built=json.loads(run(name+'-build',[compiler,'build','--profile','release','--task-timeout-ms','30000','--build-directory',out/'native','--json'],directory).stdout)
+            built, artifact=build_case(name,directory)
             native_trace=directory/'native.trace.jsonl'
             native=run(name+'-native',[built['executable'],'--nex-foreign',project/'foreign.json','--nex-task-workers','1','--nex-task-timeout-ms',str(timeout)],directory,native_trace,70,extra)
             assert code.encode() in native.stderr and native.stdout==b'',(native.stdout,native.stderr)
             a,b=inspect(reference_trace,32,0,True),inspect(native_trace,32,0,True)
-            report['cases'].append({'name':name,'status':'passed','expected_error':code,'reference':a,'native':b,'physical_settlement_before_error_exit':True,'executable':built['executable'],'executable_sha256':sha(Path(built['executable']))});save()
+            report['cases'].append({'name':name,'status':'passed','expected_error':code,'reference':a,'native':b,'physical_settlement_before_error_exit':True,**artifact});save()
         assert sha(compiler)==report['compiler_sha256']
         report.update(ok=True,actual_GPU_execution=True,CUDA_from_NEX_accepted=True,full_hardware_corpus=not args.only)
     except BaseException as error:report['error']=repr(error);raise
