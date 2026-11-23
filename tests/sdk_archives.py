@@ -273,6 +273,28 @@ class LinuxLinkLibraries(unittest.TestCase):
         self.assertFalse((self.output/'lib/nex/host'/malformed.name).exists())
 
 
+class WindowsAssemblyEnvironment(unittest.TestCase):
+    def test_host_runtime_lookup_only_during_assembly(self):
+        spec = importlib.util.spec_from_file_location('windows_distribution',
+                    Path(__file__).resolve().parents[1]/'tools/windows/sdk_distribution.py')
+        driver = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(driver)
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(os.environ, {'PATH': 'unused-ambient-dir'}):
+            root = Path(tmp).resolve()
+            linker = root/'llvm bin'/'wasm-ld.exe'
+            linker.parent.mkdir()
+            alternate = root/'separate host runtime'
+            alternate.mkdir()
+            for requested in (None, alternate):
+                clean, assembler = driver.process_environments(root/'windows', root/'openssl', linker, requested)
+                system_dirs = [str(root/'windows/System32'), str(root/'windows')]
+                self.assertEqual(clean['PATH'].split(os.pathsep), system_dirs)
+                self.assertEqual(assembler['PATH'].split(os.pathsep),
+                                 [str(root/'openssl/bin'), str(requested or linker.parent), *system_dirs])
+                self.assertNotIn('NEX_WASM_LD', clean)
+                self.assertEqual(assembler['NEX_WASM_LD'], str(linker))
+
+
 class WindowsOpenSSLPrefix(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()

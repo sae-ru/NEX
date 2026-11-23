@@ -14,6 +14,22 @@ import sdk_acceptance
 from sdk_archive import create, digest, inventory, restore
 
 
+def process_environments(system, openssl_prefix, wasm_linker, host_runtime_bin=None):
+    clean = {k: v for k, v in os.environ.items()
+             if k.upper() != 'PATH' and not k.upper().startswith(('NEX_', 'PYTHON', 'NPM_CONFIG_'))}
+    system_path = (str(system/'System32'), str(system))
+    clean.update(PATH=os.pathsep.join(system_path), PYTHONDONTWRITEBYTECODE='1', PYTHONUTF8='1')
+    # The ordinary NEX executable has not yet had its PE dependencies collected.
+    # On the standard layout its host LLVM DLLs sit beside the selected Wasm linker.
+    host_bin = host_runtime_bin if host_runtime_bin is not None else wasm_linker.parent
+    host_bin = host_bin.resolve(strict=True)
+    if not host_bin.is_dir():
+        raise ValueError('select an existing directory of host compiler runtime DLLs')
+    assembly_path = (str(openssl_prefix/'bin'), str(host_bin), *system_path)
+    assembly = {**clean, 'PATH': os.pathsep.join(assembly_path), 'NEX_WASM_LD': str(wasm_linker)}
+    return clean, assembly
+
+
 def qualify(args):
     sdk = args.sdk.resolve(strict=True)
     output = args.output.resolve()
@@ -40,12 +56,8 @@ def qualify(args):
               'network_profile': args.network_profile, 'input_compiler_sha256': digest(sdk/'bin/nex.exe'),
               'forbidden_source_paths': list(map(str, forbidden)), 'commands': []}
     system = Path(os.environ['SystemRoot']).resolve(strict=True)
-    environment = {key: value for key, value in os.environ.items()
-                   if not key.upper().startswith(('NEX_', 'PYTHON', 'NPM_CONFIG_'))}
-    windows_path = (str(system/'System32'), str(system))
-    environment.update(PATH=os.pathsep.join(windows_path), PYTHONDONTWRITEBYTECODE='1', PYTHONUTF8='1')
-    assembly_env = {**environment, 'PATH': os.pathsep.join((str(paths['openssl_prefix']/'bin'), *windows_path)),
-                    'NEX_WASM_LD': str(paths['wasm_linker'])}
+    environment, assembly_env = process_environments(system, paths['openssl_prefix'], paths['wasm_linker'],
+                                                      args.host_runtime_bin)
 
     def save():
         temporary = output/'verification.tmp'
@@ -143,7 +155,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('sdk', 'output', 'notices', 'openssl-prefix', 'wasm-linker', 'npm-cache', 'node', 'npm'):
         parser.add_argument('--'+name, type=Path, required=True)
-    for name in ('lldb', 'lldb-dap', 'package-notices'):
+    for name in ('lldb', 'lldb-dap', 'package-notices', 'host-runtime-bin'):
         parser.add_argument('--'+name, type=Path)
     parser.add_argument('--live', action='store_true')
     parser.add_argument('--forbid-source', type=Path, action='append', default=[])

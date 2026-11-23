@@ -111,7 +111,18 @@ pinned UCRT dependencies. From that checkout, run the native Windows
 CMake installation and the catalogue of packages supplying its actual files.
 The OpenSSL prefix must include the CLI, libraries, provider modules and
 configuration used with that installation. Select the Wasm linker from the
-all-target Clang dependency set.
+all-target Clang dependency set. During assembly the unbundled host compiler
+loads its LLVM, SQLite and solver DLLs from the directory beside that linker.
+If the host DLLs live elsewhere, pass `--host-runtime-bin DIRECTORY`. Moved
+and restored acceptance use the Windows system PATH and the assembled SDK.
+
+On Windows x86-64 the 0.281.0 beta input from `d492bf7f` reproduced a
+`0xC0000135` loader exit during assembly. With the host DLL path supplied,
+the same input produced a movable bundle. Its compiler passed `doctor` on
+the system PATH and printed `42` in the interpreter and native Release build.
+The [assembly receipt](evidence/windows-sdk-assembly-2026-11-23.json) pins the
+executable and both packaging scripts. Full distribution acceptance also
+exercises the archived and restored SDK.
 
 Windows native HTTP and FFI builds capture the selected `openssl/` header
 tree with the runtime inputs. The target compiler supplies its own platform C

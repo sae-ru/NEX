@@ -21,7 +21,7 @@ PYTHON_REQUIREMENT = 'Python 3.10+'
 def run(arguments, **options):
     result = subprocess.run(list(map(str, arguments)), capture_output=True, text=True, **options)
     if result.returncode:
-        raise RuntimeError('command failed: ' + repr(list(map(str, arguments))) + '\n' + result.stdout + result.stderr)
+        raise RuntimeError(f'command exited {result.returncode}: ' + repr(list(map(str, arguments))) + '\n' + result.stdout + result.stderr)
     return result.stdout
 
 
