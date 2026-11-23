@@ -3,9 +3,15 @@
 NEX's `std/device` API accepts external GPU/NPU devices, but a general
 model/kernel compiler and portable NPU provider remain pending.
 
-## Current source on CIX P1
+## SDK 1.0 hardware coverage
 
-The **current 0.245.0 compiler** was built natively on CIX and used to prepare
+For the CIX P1 and RK3588, the platform record names the tested SDK, native device
+provider and workload. Use those results when choosing a target for an application.
+[Platform coverage](STATUS.current.md) · [Per-target qualification](https://github.com/sae-ru/NEX/releases/download/v1.0.0/qualification.json)
+
+## CIX P1 and RK3588 experiments with SDK 0.245.0
+
+The **0.245.0 compiler** was built natively on CIX and used to prepare
 and execute the current `experiments/cix-p1` source on a CIX P1 CD8160:
 
 - 12 actual Mali-G720 GPU calls;

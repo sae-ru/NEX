@@ -1,4 +1,4 @@
-# NEX Language Tools 0.6
+# NEX Language Tools 0.7.0
 
 For a declared architecture, use **NEX: Debug Project Component** in a trusted
 physical workspace with `nex.build.json`. Choose the executable component and

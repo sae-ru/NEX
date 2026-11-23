@@ -1,4 +1,11 @@
-# Native owner-thread control correction — development0.280.1
+# NEX roadmap
+
+SDK 1.0 supports projects written in language 0.30. Use the
+[current status](docs/STATUS.current.md) for platform coverage and the
+[compatibility contract](docs/compatibility.md) for maintenance decisions.
+The entries below record the plan at each development milestone.
+
+## Native owner-thread control correction — development0.280.1
 
 The0.280 full source attempt exposed a host-session deadline/context race.
 The0.280.1 [runtime correction](docs/evidence/native-owner-control-0.280.1-2026-11-17.json)

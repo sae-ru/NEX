@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.165.0"
+applies_to: "language 0.28, language 0.29, language 0.30; toolchain 1.0.0"
 owner: repository
 ---
 
@@ -13,10 +13,11 @@ of an LLM. The selected compiler's `describe` output defines its capabilities;
 execution and matching SDK acceptance. [The specification](language.md) and
 [grammar](grammar.ebnf) define the language; [PLAN](../PLAN.md) includes unfinished work.
 
-Toolchain0.165.0, source language0.28, checked program format16, task ABI7 and
-C FFI ABI major1 are different versioned contracts. A toolchain update does not
-necessarily change the language. Graph upgrades use explicit history-preserving
-migration; editing a version field alone is not migration.
+SDK 1.0 creates projects in language 0.30. Its checked graph uses
+`nex.program/18`. The compiler also accepts 0.28 and 0.29 projects using their
+own graph formats. Task descriptors distinguish ABI7 and ABI8. C FFI has its own
+ABI major 1. To change an existing graph's source language, use the versioned
+migration command. [Version selection and migration](compatibility.md)
 
 ```mermaid
 flowchart TD

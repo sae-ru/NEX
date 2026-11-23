@@ -2,7 +2,7 @@
 
 One language0.30 project combines a persistent browser controller, a native
 HTTP server, SQLite, file export/restore and a dedicated summary Worker.
-Use the current source build: published SDK0.246.1 predates persistent030 state.
+Run the example with SDK 1.0. Its installed acceptance includes this application.
 The application's compiled native server and browser assets run without an LLM.
 
 Copy this directory to your own workspace. Keep `.nex` build/graph state and

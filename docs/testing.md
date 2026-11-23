@@ -1,5 +1,7 @@
 # Development test layers
 
+For the SDK 1.0 installation checks and the replay of projects from the public beta, see the [SDK build guide](sdk-build.md) and [compatibility contract](compatibility.md). The versioned runs below retain their original scope.
+
 CTest labels select an explicit development scope. The full unfiltered registry
 remains the milestone/release gate. Language/backend changes still need the
 affected observable-semantics and rejected-program checks.

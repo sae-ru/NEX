@@ -2,7 +2,7 @@
 
 This example requires a compiler advertising
 `managed_references.source030_development.persistent_UI` and language0.30 in
-`nex.json`. Use the current source build; retained SDK0.246.1 predates it.
+`nex.json`. Use SDK 1.0 or a source build that advertises this capability.
 
 From this directory:
 

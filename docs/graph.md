@@ -2,8 +2,8 @@
 
 Toolchain 0.44 introduced independent module/type nodes and checked references
 between stores while retaining its then-current language 0.15/database schema 3.
-Current language 0.16 additionally indexes source traits and named implementations;
-the current main database schema is4. These versioned extensions preserve local
+Language 0.16 added indexes for source traits and named implementations.
+SDK 1.0 uses database schema 4. These versioned extensions preserve local
 identity history; source-language migration remains explicit. Query `nex describe
 --json` for the installed compiler's policy and limits; `nex guide --kind graph
 --json` returns this guide. `llm/graph-identity.schema.json` describes the JSON

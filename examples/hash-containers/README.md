@@ -2,7 +2,7 @@
 
 Requires a compiler advertising `standard_library.modules.hash_map` and
 `hash_set`. The project selects source0.30; the pure containers also work with
-source0.28/0.29. Published SDK0.246.1 predates these modules.
+source0.28/0.29. SDK 1.0 includes both modules.
 
 From this directory:
 
